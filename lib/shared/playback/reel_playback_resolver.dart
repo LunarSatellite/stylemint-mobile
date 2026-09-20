@@ -29,6 +29,10 @@ ReelPlaybackSource resolveReelPlayback(ReelMedia reel) {
       if (id == null || id.isEmpty) {
         return ExternalOnlySource(permalink: permalink);
       }
-      return EmbedSource(platform: platform, externalId: id, permalink: permalink);
+      return EmbedSource(
+        platform: platform,
+        externalId: id,
+        permalink: permalink,
+      );
   }
 }

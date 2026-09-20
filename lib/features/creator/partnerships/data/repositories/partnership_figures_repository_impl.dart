@@ -17,11 +17,10 @@ class PartnershipFiguresRepositoryImpl implements PartnershipFiguresRepository {
 
   @override
   Future<Either<NetworkExceptions, PartnershipAffiliateEarnings>>
-  getAffiliateEarnings(String partnershipId) =>
-      _guard(() async {
-        final dto = await remoteDataSource.getAffiliateEarnings(partnershipId);
-        return dto.toDomain();
-      });
+  getAffiliateEarnings(String partnershipId) => _guard(() async {
+    final dto = await remoteDataSource.getAffiliateEarnings(partnershipId);
+    return dto.toDomain();
+  });
 
   @override
   Future<Either<NetworkExceptions, PartnershipTagCounts>> getTagCounts(

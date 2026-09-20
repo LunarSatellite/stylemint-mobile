@@ -165,8 +165,7 @@ class DeliveryDistanceNote extends StatelessWidget {
           '${distance.method}',
     DeliveryDistanceState.noDeliveryJourney =>
       'No delivery journey. ${distance.withheldReason ?? distance.method}',
-    _ =>
-      'Distance not shown. ${distance.withheldReason ?? distance.method}',
+    _ => 'Distance not shown. ${distance.withheldReason ?? distance.method}',
   };
 
   /// The server rounds to one decimal place and this repeats that exactly. No
@@ -200,7 +199,7 @@ class _EmissionsNote extends StatelessWidget {
         Text(
           'Factor ${emissions.factorVersion}'
           '${effective == null ? '' : ', in effect from '
-              '${DateFormat('MMM d, y').format(effective.toLocal())}'}'
+                    '${DateFormat('MMM d, y').format(effective.toLocal())}'}'
           '\n${emissions.factorSourceUri}',
           style: const TextStyle(
             color: DesignTokens.textMuted,

@@ -12,8 +12,7 @@ import 'package:stylemint_mobile_frontend/core/config/api_config.dart';
 /// should not route through this helper.
 String absoluteMediaUrl(String? path) {
   if (path == null || path.isEmpty) return '';
-  final isAbsolute =
-      path.startsWith('http://') || path.startsWith('https://');
+  final isAbsolute = path.startsWith('http://') || path.startsWith('https://');
   final qIdx = path.indexOf('?');
   final main = qIdx == -1 ? path : path.substring(0, qIdx);
   final tail = qIdx == -1 ? '' : path.substring(qIdx);

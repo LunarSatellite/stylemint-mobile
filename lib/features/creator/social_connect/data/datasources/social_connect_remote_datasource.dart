@@ -21,7 +21,9 @@ class SocialConnectRemoteDataSource {
   /// `GET /v1/social/accounts/audience-summary` — followers and engagement
   /// rate per connected platform plus totals, read from the platforms' APIs.
   Future<AudienceSummary> getAudienceSummary() async {
-    final response = await apiClient.get('/v1/social/accounts/audience-summary');
+    final response = await apiClient.get(
+      '/v1/social/accounts/audience-summary',
+    );
     return AudienceSummaryDto.fromJson(response as Map<String, dynamic>);
   }
 
@@ -61,9 +63,9 @@ class SocialConnectRemoteDataSource {
   }
 
   Options _idempotent(String idempotencyKey) => Options(
-        headers: {
-          'requiresToken': true,
-          'Idempotency-Key': idempotencyKey,
-        },
-      );
+    headers: {
+      'requiresToken': true,
+      'Idempotency-Key': idempotencyKey,
+    },
+  );
 }

@@ -40,8 +40,9 @@ class _FakeAnalyticsRepository implements AnalyticsRepository {
 
   static final _dashboard = CreatorDashboard(
     window: _window,
-    totalEarnings:
-        const KpiTile<Money>(current: Money(amount: 100, currency: 'NPR')),
+    totalEarnings: const KpiTile<Money>(
+      current: Money(amount: 100, currency: 'NPR'),
+    ),
     pendingBalance: const Money(amount: 10, currency: 'NPR'),
     totalSales: const KpiTile<int>(current: 5),
     totalViews: const KpiTile<int>(current: 1000),
@@ -52,8 +53,9 @@ class _FakeAnalyticsRepository implements AnalyticsRepository {
 
   static final _overview = CreatorAnalyticsOverview(
     window: _window,
-    totalEarnings:
-        const KpiTile<Money>(current: Money(amount: 100, currency: 'NPR')),
+    totalEarnings: const KpiTile<Money>(
+      current: Money(amount: 100, currency: 'NPR'),
+    ),
     totalSales: const KpiTile<int>(current: 5),
     conversionRate: const KpiTile<double>(current: 2.5),
     totalViews: const KpiTile<int>(current: 1000),
@@ -187,21 +189,20 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadSuccess: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadSuccess: (_) => true, orElse: () => false),
         isTrue,
       );
     });
 
     test('emits loadFailure on repository error', () async {
-      final notifier =
-          CreatorDashboardNotifier(_FakeAnalyticsRepository(shouldFail: true));
+      final notifier = CreatorDashboardNotifier(
+        _FakeAnalyticsRepository(shouldFail: true),
+      );
       addTearDown(notifier.dispose);
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadFailure: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadFailure: (_) => true, orElse: () => false),
         isTrue,
       );
     });
@@ -214,21 +215,20 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadSuccess: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadSuccess: (_) => true, orElse: () => false),
         isTrue,
       );
     });
 
     test('emits loadFailure on repository error', () async {
-      final notifier =
-          CreatorOverviewNotifier(_FakeAnalyticsRepository(shouldFail: true));
+      final notifier = CreatorOverviewNotifier(
+        _FakeAnalyticsRepository(shouldFail: true),
+      );
       addTearDown(notifier.dispose);
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadFailure: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadFailure: (_) => true, orElse: () => false),
         isTrue,
       );
     });
@@ -241,21 +241,20 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadSuccess: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadSuccess: (_) => true, orElse: () => false),
         isTrue,
       );
     });
 
     test('emits loadFailure on repository error', () async {
       final notifier = CreatorFullReportNotifier(
-          _FakeAnalyticsRepository(shouldFail: true));
+        _FakeAnalyticsRepository(shouldFail: true),
+      );
       addTearDown(notifier.dispose);
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadFailure: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadFailure: (_) => true, orElse: () => false),
         isTrue,
       );
     });
@@ -277,14 +276,14 @@ void main() {
     });
 
     test('emits loadFailure on repository error', () async {
-      final notifier =
-          CreatorTopReelsNotifier(_FakeAnalyticsRepository(shouldFail: true));
+      final notifier = CreatorTopReelsNotifier(
+        _FakeAnalyticsRepository(shouldFail: true),
+      );
       addTearDown(notifier.dispose);
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadFailure: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadFailure: (_) => true, orElse: () => false),
         isTrue,
       );
     });
@@ -310,14 +309,15 @@ void main() {
     });
 
     test('emits loadSuccess on repository success', () async {
-      final notifier =
-          CreatorReelAnalyticsNotifier(_FakeAnalyticsRepository(), 'reel-1');
+      final notifier = CreatorReelAnalyticsNotifier(
+        _FakeAnalyticsRepository(),
+        'reel-1',
+      );
       addTearDown(notifier.dispose);
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadSuccess: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadSuccess: (_) => true, orElse: () => false),
         isTrue,
       );
     });
@@ -329,8 +329,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadFailure: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadFailure: (_) => true, orElse: () => false),
         isTrue,
       );
     });

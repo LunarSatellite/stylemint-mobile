@@ -304,8 +304,9 @@ void main() {
       // Six switches used to share PushMarketing and were OR-ed together, so
       // refusing one and reloading read it straight back on.
       const refused = NotificationPreferences(marketingPush: false);
-      final reloaded = NotificationPreferencesDto.fromDomain(refused)
-          .toDomain();
+      final reloaded = NotificationPreferencesDto.fromDomain(
+        refused,
+      ).toDomain();
       expect(reloaded.marketingPush, isFalse);
     });
 

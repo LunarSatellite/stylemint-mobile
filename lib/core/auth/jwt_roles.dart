@@ -14,7 +14,9 @@ Set<String> rolesFromJwt(String? jwt) {
   final parts = jwt.split('.');
   if (parts.length != 3) return const {};
   try {
-    final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+    final payload = utf8.decode(
+      base64Url.decode(base64Url.normalize(parts[1])),
+    );
     final map = jsonDecode(payload) as Map<String, dynamic>;
     final roles = map['roles'];
     if (roles is List) {
@@ -29,7 +31,9 @@ Set<String> rolesFromJwt(String? jwt) {
 /// Current roles from the stored access token. Recomputes whenever the session
 /// changes (login / refresh / role activation → re-login), so a freshly minted
 /// token's roles are picked up.
-final currentRolesProvider = FutureProvider.autoDispose<Set<String>>((ref) async {
+final currentRolesProvider = FutureProvider.autoDispose<Set<String>>((
+  ref,
+) async {
   ref.watch(sessionControllerProvider);
   final token = await ref.watch(tokenStorageProvider).accessToken;
   return rolesFromJwt(token);

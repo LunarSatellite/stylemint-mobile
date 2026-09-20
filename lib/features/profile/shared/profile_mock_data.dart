@@ -47,7 +47,8 @@ const kMockFollowingUsers = <FollowingUser>[
     isFollowing: true,
     followerCount: 52300,
     category: 'Travel & Skincare',
-    bio: 'Get personalised recommendations from creators in Fashion, Beauty, and Fitness.',
+    bio:
+        'Get personalised recommendations from creators in Fashion, Beauty, and Fitness.',
   ),
   FollowingUser(
     id: 'u_005',

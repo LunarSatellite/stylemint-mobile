@@ -183,6 +183,5 @@ class SimulatedFigure {
 
   /// Grouped, at most two decimals, with trailing zeros dropped so a count
   /// reads as `1,204` rather than `1,204.00`.
-  static String _decimal(num value) =>
-      NumberFormat('#,##0.##').format(value);
+  static String _decimal(num value) => NumberFormat('#,##0.##').format(value);
 }

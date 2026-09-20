@@ -45,11 +45,10 @@ class PartnershipAffiliateEarningsDto {
   factory PartnershipAffiliateEarningsDto.fromJson(Map<String, dynamic> json) {
     return PartnershipAffiliateEarningsDto(
       attribution: (json['attribution'] as String?) ?? '',
-      currencies:
-          (json['currencies'] as List<dynamic>? ?? const <dynamic>[])
-              .map((e) => e.toString())
-              .where((e) => e.isNotEmpty)
-              .toList(growable: false),
+      currencies: (json['currencies'] as List<dynamic>? ?? const <dynamic>[])
+          .map((e) => e.toString())
+          .where((e) => e.isNotEmpty)
+          .toList(growable: false),
       // A count, not a total: it is present in both attribution states and
       // its absence genuinely means "none", so an absent key is none.
       unattributedLinkCountForPair:

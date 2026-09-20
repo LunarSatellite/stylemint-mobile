@@ -35,8 +35,7 @@ class RegistrationStepIndicator extends StatelessWidget {
                 isCompleted: isCompleted,
                 isActive: isActive,
               ),
-              if (step < totalSteps - 1)
-                _StepLine(isCompleted: isCompleted),
+              if (step < totalSteps - 1) _StepLine(isCompleted: isCompleted),
             ],
           );
         }),
@@ -106,7 +105,9 @@ class _StepLine extends StatelessWidget {
     return Container(
       width: 32,
       height: 2,
-      color: isCompleted ? DesignTokens.primaryGreen : DesignTokens.bgAppBodyLight,
+      color: isCompleted
+          ? DesignTokens.primaryGreen
+          : DesignTokens.bgAppBodyLight,
     );
   }
 }

@@ -59,11 +59,14 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
     String? caption,
   }) async {
     if (reel.videoDuration <= 0) {
-      return left(const NetworkExceptions.validation(
-        code: 'reels.metadata_required',
-        field: 'durationSeconds',
-        message: 'Connect and refresh the source account to verify reel metadata before importing.',
-      ));
+      return left(
+        const NetworkExceptions.validation(
+          code: 'reels.metadata_required',
+          field: 'durationSeconds',
+          message:
+              'Connect and refresh the source account to verify reel metadata before importing.',
+        ),
+      );
     }
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());

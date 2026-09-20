@@ -32,7 +32,8 @@ class InviteLinkDto {
     expiresAt: expiresUtc,
     redemptionCap: redemptionCap,
     redemptionCount: redemptionCount,
-    status: InviteLinkStatus.values[status.clamp(0, InviteLinkStatus.values.length - 1)],
+    status: InviteLinkStatus
+        .values[status.clamp(0, InviteLinkStatus.values.length - 1)],
   );
 }
 
@@ -47,11 +48,12 @@ class InviteRedemptionDto {
   final String redeemerAccountId;
   final DateTime redeemedAtUtc;
 
-  factory InviteRedemptionDto.fromJson(Map<String, dynamic> json) => InviteRedemptionDto(
-    id: json['id'] as String,
-    redeemerAccountId: json['redeemerAccountId'] as String? ?? '',
-    redeemedAtUtc: DateTime.parse(json['redeemedAtUtc'] as String),
-  );
+  factory InviteRedemptionDto.fromJson(Map<String, dynamic> json) =>
+      InviteRedemptionDto(
+        id: json['id'] as String,
+        redeemerAccountId: json['redeemerAccountId'] as String? ?? '',
+        redeemedAtUtc: DateTime.parse(json['redeemedAtUtc'] as String),
+      );
 
   InviteRedemption toDomain() => InviteRedemption(
     id: id,

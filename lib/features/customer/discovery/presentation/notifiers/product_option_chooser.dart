@@ -6,8 +6,10 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 /// Why a value cannot be picked with the shopper's other picks.
 enum OptionValueAvailability {
   available,
+
   /// No variant sells this combination at all.
   unavailable,
+
   /// A variant exists but has no stock left.
   outOfStock;
 

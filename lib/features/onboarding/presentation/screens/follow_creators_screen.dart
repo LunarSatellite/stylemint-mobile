@@ -19,18 +19,18 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 /// state and never called any API.
 final _suggestedCreatorsProvider =
     FutureProvider.autoDispose<List<CreatorChipDto>>((ref) async {
-  final ApiClient api = ref.watch(apiClientProvider);
-  final res = await api.get(
-    '/api/v1/customer/feed/creators-you-may-like',
-    queryParameters: {'limit': 20},
-  );
-  final map = res as Map<String, dynamic>;
-  final items = (map['items'] as List<dynamic>? ?? const <dynamic>[]);
-  return items
-      .whereType<Map<String, dynamic>>()
-      .map(CreatorChipDto.fromJson)
-      .toList(growable: false);
-});
+      final ApiClient api = ref.watch(apiClientProvider);
+      final res = await api.get(
+        '/api/v1/customer/feed/creators-you-may-like',
+        queryParameters: {'limit': 20},
+      );
+      final map = res as Map<String, dynamic>;
+      final items = (map['items'] as List<dynamic>? ?? const <dynamic>[]);
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map(CreatorChipDto.fromJson)
+          .toList(growable: false);
+    });
 
 class FollowCreatorsScreen extends ConsumerStatefulWidget {
   const FollowCreatorsScreen({super.key});
@@ -64,7 +64,11 @@ class _FollowCreatorsScreenState extends ConsumerState<FollowCreatorsScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(
-                  DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, 0),
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                0,
+              ),
               child: _Header(),
             ),
             const SizedBox(height: DesignTokens.s24),
@@ -72,17 +76,22 @@ class _FollowCreatorsScreenState extends ConsumerState<FollowCreatorsScreen> {
               child: async.when(
                 loading: () => const SmPageLoader(),
                 error: (_, _e) => Center(
-                  child: Text("Couldn't load creators.",
-                      style: DesignTokens.bodyText),
+                  child: Text(
+                    "Couldn't load creators.",
+                    style: DesignTokens.bodyText,
+                  ),
                 ),
                 data: (creators) => creators.isEmpty
                     ? Center(
-                        child: Text('No suggestions right now.',
-                            style: DesignTokens.bodyText),
+                        child: Text(
+                          'No suggestions right now.',
+                          style: DesignTokens.bodyText,
+                        ),
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s16),
+                          horizontal: DesignTokens.s16,
+                        ),
                         itemCount: creators.length,
                         separatorBuilder: (_, _i) =>
                             const SizedBox(height: DesignTokens.s20),
@@ -178,15 +187,24 @@ class _CreatorCard extends StatelessWidget {
                   child: (avatar == null || avatar.isEmpty)
                       ? const ColoredBox(
                           color: DesignTokens.bgAppBodyLight,
-                          child: Icon(Icons.person,
-                              color: DesignTokens.textMuted, size: 22),
+                          child: Icon(
+                            Icons.person,
+                            color: DesignTokens.textMuted,
+                            size: 22,
+                          ),
                         )
-                      : Image.network(avatar,
+                      : Image.network(
+                          avatar,
                           fit: BoxFit.cover,
                           errorBuilder: (_, _e, _s) => const ColoredBox(
-                              color: DesignTokens.bgAppBodyLight,
-                              child: Icon(Icons.person,
-                                  color: DesignTokens.textMuted, size: 22))),
+                            color: DesignTokens.bgAppBodyLight,
+                            child: Icon(
+                              Icons.person,
+                              color: DesignTokens.textMuted,
+                              size: 22,
+                            ),
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: DesignTokens.s8),
@@ -194,15 +212,19 @@ class _CreatorCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: DesignTokens.oneLinerSemibold),
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.oneLinerSemibold,
+                    ),
                     const SizedBox(height: DesignTokens.s4),
-                    Text('@${creator.handle}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: DesignTokens.smallRegular),
+                    Text(
+                      '@${creator.handle}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.smallRegular,
+                    ),
                   ],
                 ),
               ),
@@ -218,17 +240,19 @@ class _CreatorCard extends StatelessWidget {
             children: [
               if (followers != null) ...[
                 _Stat(
-                    icon: Icons.person,
-                    iconColor: const Color(0xFF9F9FA9), // Icon-Light
-                    value: _compact(followers),
-                    label: 'Followers'),
+                  icon: Icons.person,
+                  iconColor: const Color(0xFF9F9FA9), // Icon-Light
+                  value: _compact(followers),
+                  label: 'Followers',
+                ),
                 const SizedBox(width: DesignTokens.s16),
               ],
               _Stat(
-                  icon: Icons.video_library_outlined,
-                  iconColor: const Color(0xFF9F9FA9),
-                  value: '${creator.reelCount}',
-                  label: 'Reels'),
+                icon: Icons.video_library_outlined,
+                iconColor: const Color(0xFF9F9FA9),
+                value: '${creator.reelCount}',
+                label: 'Reels',
+              ),
             ],
           ),
         ],
@@ -251,14 +275,18 @@ class _FollowButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: following ? DesignTokens.primaryGreen : DesignTokens.buttonGrayFill,
+      color: following
+          ? DesignTokens.primaryGreen
+          : DesignTokens.buttonGrayFill,
       borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
+            horizontal: DesignTokens.s16,
+            vertical: DesignTokens.s8,
+          ),
           child: Text(
             following ? 'Following' : 'Follow',
             style: DesignTokens.smallRegular.copyWith(
@@ -296,14 +324,18 @@ class _Stat extends StatelessWidget {
           TextSpan(
             children: [
               TextSpan(
-                  text: '$value ',
-                  style: DesignTokens.smallRegular.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: DesignTokens.textWhite)),
+                text: '$value ',
+                style: DesignTokens.smallRegular.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: DesignTokens.textWhite,
+                ),
+              ),
               TextSpan(
-                  text: label,
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textLight)),
+                text: label,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
+              ),
             ],
           ),
         ),

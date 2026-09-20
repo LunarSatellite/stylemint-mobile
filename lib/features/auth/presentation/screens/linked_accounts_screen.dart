@@ -40,8 +40,10 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DesignTokens.bgAppBody,
-        title: const Text('Unlink Account',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Unlink Account',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
         content: Text(
           'Are you sure you want to unlink your $provider account?',
           style: const TextStyle(color: DesignTokens.textLight),
@@ -49,22 +51,28 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: DesignTokens.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: DesignTokens.textMuted),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Unlink',
-                style: TextStyle(color: DesignTokens.colorError)),
+            child: const Text(
+              'Unlink',
+              style: TextStyle(color: DesignTokens.colorError),
+            ),
           ),
         ],
       ),
     );
     if (confirmed == true) {
-      await ref.read(externalIdsProvider.notifier).unlinkExternalId(
-        accountId: _accountId!,
-        provider: provider,
-      );
+      await ref
+          .read(externalIdsProvider.notifier)
+          .unlinkExternalId(
+            accountId: _accountId!,
+            provider: provider,
+          );
       SmSnackbar.success(context, '$provider unlinked');
     }
   }
@@ -85,20 +93,24 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded,
-              color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            color: DesignTokens.textWhite,
+            size: DesignTokens.iconMedium,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Linked Accounts',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Linked Accounts',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
       ),
       body: SafeArea(
         child: state.when(
           initial: _loader,
           loadInProgress: _loader,
           loadSuccess: (linkedIds) {
-            final linkedProviders =
-                linkedIds.map((e) => e.provider).toSet();
+            final linkedProviders = linkedIds.map((e) => e.provider).toSet();
 
             return ListView(
               padding: const EdgeInsets.all(DesignTokens.s16),
@@ -110,15 +122,18 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
                   padding: const EdgeInsets.all(DesignTokens.s16),
                   decoration: BoxDecoration(
                     color: DesignTokens.bgAppBody,
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.cardRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.cardRadius,
+                    ),
                     border: Border.all(color: DesignTokens.borderDefault),
                   ),
                   child: Row(
                     children: [
-                      Icon(provider['icon'] as IconData,
-                          size: DesignTokens.iconLarge,
-                          color: DesignTokens.textWhite),
+                      Icon(
+                        provider['icon'] as IconData,
+                        size: DesignTokens.iconLarge,
+                        color: DesignTokens.textWhite,
+                      ),
                       const SizedBox(width: DesignTokens.s16),
                       Expanded(
                         child: Column(
@@ -142,24 +157,24 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
                       ),
                       if (isLinked)
                         GestureDetector(
-                          onTap: () =>
-                              _unlink(provider['name'] as String),
+                          onTap: () => _unlink(provider['name'] as String),
                           child: Text(
                             'Unlink',
                             style: DesignTokens.mediumSemibold.copyWith(
-                                color: DesignTokens.colorError),
+                              color: DesignTokens.colorError,
+                            ),
                           ),
                         )
                       else
                         GestureDetector(
                           onTap: () {
-                            SmSnackbar.info(
-                                context, 'Linking coming soon');
+                            SmSnackbar.info(context, 'Linking coming soon');
                           },
                           child: Text(
                             'Link',
                             style: DesignTokens.mediumSemibold.copyWith(
-                                color: DesignTokens.primaryGreen),
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
                         ),
                     ],
@@ -172,16 +187,23 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: DesignTokens.colorError, size: 48),
+                const Icon(
+                  Icons.error_outline,
+                  color: DesignTokens.colorError,
+                  size: 48,
+                ),
                 const SizedBox(height: DesignTokens.s16),
-                Text('Failed to load linked accounts',
-                    style: DesignTokens.bodyText),
+                Text(
+                  'Failed to load linked accounts',
+                  style: DesignTokens.bodyText,
+                ),
                 const SizedBox(height: DesignTokens.s16),
                 GestureDetector(
                   onTap: _load,
-                  child: Text('Retry',
-                      style: TextStyle(color: DesignTokens.primaryGreen)),
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(color: DesignTokens.primaryGreen),
+                  ),
                 ),
               ],
             ),
@@ -191,6 +213,5 @@ class _LinkedAccountsScreenState extends ConsumerState<LinkedAccountsScreen> {
     );
   }
 
-  Widget _loader() =>
-      const SmPageLoader();
+  Widget _loader() => const SmPageLoader();
 }

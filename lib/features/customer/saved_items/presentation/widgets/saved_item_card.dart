@@ -85,7 +85,11 @@ class SavedItemCard extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star, size: 12, color: Color(0xFFF1C40F)),
+                        const Icon(
+                          Icons.star,
+                          size: 12,
+                          color: Color(0xFFF1C40F),
+                        ),
                         const SizedBox(width: 2),
                         Text(
                           item.rating.toStringAsFixed(1),

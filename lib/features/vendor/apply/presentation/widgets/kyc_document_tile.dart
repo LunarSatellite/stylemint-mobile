@@ -32,32 +32,30 @@ class KycDocumentTile extends StatelessWidget {
     final statusColor = isVerified
         ? DesignTokens.colorSuccess
         : isRejected
-            ? DesignTokens.colorError
-            : DesignTokens.secondaryYellow;
+        ? DesignTokens.colorError
+        : DesignTokens.secondaryYellow;
 
     final statusLabel = isVerified
         ? 'Verified'
         : isRejected
-            ? 'Rejected'
-            : 'Pending';
+        ? 'Rejected'
+        : 'Pending';
 
     final statusIcon = isVerified
         ? Icons.check_circle
         : isRejected
-            ? Icons.error_outline
-            : Icons.hourglass_top;
+        ? Icons.error_outline
+        : Icons.hourglass_top;
 
-    final actionLabel = hasDoc
-        ? (isRejected ? 'Retry' : 'Replace')
-        : 'Upload';
+    final actionLabel = hasDoc ? (isRejected ? 'Retry' : 'Replace') : 'Upload';
 
     return Container(
       decoration: DesignTokens.cardDecoration(
         borderColor: isVerified
             ? DesignTokens.primaryGreen.withOpacity(0.3)
             : isRejected
-                ? DesignTokens.colorError.withOpacity(0.3)
-                : null,
+            ? DesignTokens.colorError.withOpacity(0.3)
+            : null,
       ),
       padding: const EdgeInsets.all(DesignTokens.s12),
       child: Row(
@@ -83,7 +81,9 @@ class KycDocumentTile extends StatelessWidget {
                 Text(
                   hasDoc ? document!.fileName : _labelForType(effectiveType),
                   style: DesignTokens.mediumSemibold.copyWith(
-                    color: hasDoc ? DesignTokens.textWhite : DesignTokens.textMuted,
+                    color: hasDoc
+                        ? DesignTokens.textWhite
+                        : DesignTokens.textMuted,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

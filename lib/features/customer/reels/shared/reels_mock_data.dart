@@ -116,8 +116,7 @@ final kMockReels = <Reel>[
     id: 'reel_004',
     sourceUrl: 'https://www.youtube.com/shorts/IfMpGlHvpTM',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel4/400/700',
-    videoUrl:
-        'https://media.w3.org/2010/05/bunny/trailer.mp4',
+    videoUrl: 'https://media.w3.org/2010/05/bunny/trailer.mp4',
     creatorId: 'u_004',
     creatorName: 'Shree Teen',
     creatorAvatarUrl: '',

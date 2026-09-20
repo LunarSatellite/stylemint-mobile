@@ -10,8 +10,7 @@ class PauseAccountScreen extends ConsumerStatefulWidget {
   const PauseAccountScreen({super.key});
 
   @override
-  ConsumerState<PauseAccountScreen> createState() =>
-      _PauseAccountScreenState();
+  ConsumerState<PauseAccountScreen> createState() => _PauseAccountScreenState();
 }
 
 class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
@@ -26,8 +25,10 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DesignTokens.bgAppBody,
-        title: const Text('Pause Account',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Pause Account',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -44,15 +45,19 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
                   onTap: () => Navigator.pop(ctx, d),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.s20,
-                        vertical: DesignTokens.s12),
+                      horizontal: DesignTokens.s20,
+                      vertical: DesignTokens.s12,
+                    ),
                     decoration: BoxDecoration(
                       color: DesignTokens.bgAppBodyLight,
                       borderRadius: BorderRadius.circular(
-                          DesignTokens.buttonRadius),
+                        DesignTokens.buttonRadius,
+                      ),
                     ),
-                    child: Text('$d days',
-                        style: DesignTokens.oneLinerSemibold),
+                    child: Text(
+                      '$d days',
+                      style: DesignTokens.oneLinerSemibold,
+                    ),
                   ),
                 );
               }).toList(),
@@ -62,8 +67,10 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: DesignTokens.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: DesignTokens.textMuted),
+            ),
           ),
         ],
       ),
@@ -78,8 +85,10 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DesignTokens.bgAppBody,
-        title: const Text('Resume Account',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Resume Account',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
         content: const Text(
           'Your account will be reactivated.',
           style: TextStyle(color: DesignTokens.textLight),
@@ -87,13 +96,17 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: DesignTokens.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: DesignTokens.textMuted),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Resume',
-                style: TextStyle(color: DesignTokens.primaryGreen)),
+            child: const Text(
+              'Resume',
+              style: TextStyle(color: DesignTokens.primaryGreen),
+            ),
           ),
         ],
       ),
@@ -106,8 +119,10 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(accountPauseProvider);
-    ref.listen<AccountPauseActionState>(accountPauseActionProvider,
-        (previous, next) {
+    ref.listen<AccountPauseActionState>(accountPauseActionProvider, (
+      previous,
+      next,
+    ) {
       next.maybeWhen(
         loadSuccess: () {
           ref.read(accountPauseProvider.notifier).load();
@@ -124,12 +139,17 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded,
-              color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            color: DesignTokens.textWhite,
+            size: DesignTokens.iconMedium,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Pause Account',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Pause Account',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
       ),
       body: SafeArea(
         child: state.when(
@@ -147,23 +167,28 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
                     padding: const EdgeInsets.all(DesignTokens.s16),
                     decoration: BoxDecoration(
                       color: DesignTokens.infoFillDark,
-                      borderRadius:
-                          BorderRadius.circular(DesignTokens.cardRadius),
-                      border: Border.all(color: DesignTokens.infoIconLight
-                          .withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.cardRadius,
+                      ),
+                      border: Border.all(
+                        color: DesignTokens.infoIconLight.withOpacity(0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline,
-                            color: DesignTokens.infoIconLight,
-                            size: DesignTokens.iconMedium),
+                        const Icon(
+                          Icons.info_outline,
+                          color: DesignTokens.infoIconLight,
+                          size: DesignTokens.iconMedium,
+                        ),
                         const SizedBox(width: DesignTokens.s12),
                         Expanded(
                           child: Text(
                             'Pausing your account will temporarily hide your profile, '
                             'listings, and content. You can resume at any time.',
                             style: DesignTokens.smallRegular.copyWith(
-                                color: DesignTokens.infoTextLight),
+                              color: DesignTokens.infoTextLight,
+                            ),
                           ),
                         ),
                       ],
@@ -221,17 +246,23 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: DesignTokens.colorError, size: 48),
+                const Icon(
+                  Icons.error_outline,
+                  color: DesignTokens.colorError,
+                  size: 48,
+                ),
                 const SizedBox(height: DesignTokens.s16),
-                Text('Failed to load pause status',
-                    style: DesignTokens.bodyText),
+                Text(
+                  'Failed to load pause status',
+                  style: DesignTokens.bodyText,
+                ),
                 const SizedBox(height: DesignTokens.s16),
                 GestureDetector(
-                  onTap: () =>
-                      ref.read(accountPauseProvider.notifier).load(),
-                  child: Text('Retry',
-                      style: TextStyle(color: DesignTokens.primaryGreen)),
+                  onTap: () => ref.read(accountPauseProvider.notifier).load(),
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(color: DesignTokens.primaryGreen),
+                  ),
                 ),
               ],
             ),
@@ -241,6 +272,5 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
     );
   }
 
-  Widget _loader() =>
-      const SmPageLoader();
+  Widget _loader() => const SmPageLoader();
 }

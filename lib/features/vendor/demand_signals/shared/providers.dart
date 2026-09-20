@@ -29,4 +29,7 @@ final demandSignalsNotifierProvider =
     StateNotifierProvider.autoDispose<
       DemandSignalsNotifier,
       DemandSignalsState
-    >((ref) => DemandSignalsNotifier(ref.watch(demandSignalsRepositoryProvider)));
+    >(
+      (ref) =>
+          DemandSignalsNotifier(ref.watch(demandSignalsRepositoryProvider)),
+    );

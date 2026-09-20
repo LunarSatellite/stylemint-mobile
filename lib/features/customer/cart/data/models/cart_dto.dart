@@ -29,20 +29,22 @@ abstract class CartItemDto with _$CartItemDto {
       _$CartItemDtoFromJson(json);
 
   CartItem toDomain() => CartItem(
-        id: id,
-        productId: productId,
-        productName: productName,
-        productImageUrl: productImageUrl ?? '',
-        variantName: variantName ?? '',
-        quantity: quantity,
-        unitPrice: Money(
-            amount: unitPriceAmount.toDouble(), currency: unitPriceCurrency),
-        // The cart-line contract carries no per-line stock flag; treat as in
-        // stock (out-of-stock lines are auto-removed server-side; see Notices).
-        isInStock: true,
-        creatorHandle: creatorHandle,
-        commissionRate: commissionRate?.toDouble(),
-      );
+    id: id,
+    productId: productId,
+    productName: productName,
+    productImageUrl: productImageUrl ?? '',
+    variantName: variantName ?? '',
+    quantity: quantity,
+    unitPrice: Money(
+      amount: unitPriceAmount.toDouble(),
+      currency: unitPriceCurrency,
+    ),
+    // The cart-line contract carries no per-line stock flag; treat as in
+    // stock (out-of-stock lines are auto-removed server-side; see Notices).
+    isInStock: true,
+    creatorHandle: creatorHandle,
+    commissionRate: commissionRate?.toDouble(),
+  );
 }
 
 @freezed
@@ -74,9 +76,9 @@ class AppliedPromoCodeDto {
   final String discountCurrency;
 
   AppliedPromoCode toDomain() => AppliedPromoCode(
-        code: code,
-        discount: Money(amount: discountAmount, currency: discountCurrency),
-      );
+    code: code,
+    discount: Money(amount: discountAmount, currency: discountCurrency),
+  );
 }
 
 class SavedForLaterItemDto {
@@ -110,13 +112,13 @@ class SavedForLaterItemDto {
   final String unitPriceCurrency;
 
   SavedForLaterItem toDomain() => SavedForLaterItem(
-        id: id,
-        productName: productName,
-        variantName: variantName,
-        productImageUrl: productImageUrl,
-        quantity: quantity,
-        unitPrice: Money(amount: unitPriceAmount, currency: unitPriceCurrency),
-      );
+    id: id,
+    productName: productName,
+    variantName: variantName,
+    productImageUrl: productImageUrl,
+    quantity: quantity,
+    unitPrice: Money(amount: unitPriceAmount, currency: unitPriceCurrency),
+  );
 }
 
 AppliedPromoCodeDto? _promoFromJson(Map<String, dynamic>? json) =>
@@ -132,8 +134,9 @@ Map<String, dynamic>? _promoToJson(AppliedPromoCodeDto? promo) => promo == null
 
 List<SavedForLaterItemDto> _savedForLaterFromJson(List<dynamic>? json) =>
     json
-        ?.map((item) =>
-            SavedForLaterItemDto.fromJson(item as Map<String, dynamic>))
+        ?.map(
+          (item) => SavedForLaterItemDto.fromJson(item as Map<String, dynamic>),
+        )
         .toList(growable: false) ??
     const <SavedForLaterItemDto>[];
 
@@ -174,7 +177,8 @@ abstract class CartDto with _$CartDto {
     @JsonKey(fromJson: _promoFromJson, toJson: _promoToJson)
     AppliedPromoCodeDto? appliedPromoCode,
     @JsonKey(fromJson: _savedForLaterFromJson, toJson: _savedForLaterToJson)
-    @Default(<SavedForLaterItemDto>[]) List<SavedForLaterItemDto> savedForLater,
+    @Default(<SavedForLaterItemDto>[])
+    List<SavedForLaterItemDto> savedForLater,
   }) = _CartDto;
 
   const CartDto._();
@@ -183,21 +187,29 @@ abstract class CartDto with _$CartDto {
       _$CartDtoFromJson(json);
 
   Cart toDomain() => Cart(
-        id: id,
-        items: items.map((dto) => dto.toDomain()).toList(growable: false),
-        subtotal:
-            Money(amount: subtotalAmount.toDouble(), currency: subtotalCurrency),
-        shippingTotal: Money(
-            amount: shippingTotalAmount.toDouble(),
-            currency: shippingTotalCurrency),
-        taxTotal:
-            Money(amount: taxTotalAmount.toDouble(), currency: taxTotalCurrency),
-        total: Money(amount: totalAmount.toDouble(), currency: totalCurrency),
-        discount:
-            Money(amount: discountAmount.toDouble(), currency: discountCurrency),
-        supportedCreatorsCount: appreciation.supportedCreatorsCount,
-        appliedPromoCode: appliedPromoCode?.toDomain(),
-        savedForLater:
-            savedForLater.map((dto) => dto.toDomain()).toList(growable: false),
-      );
+    id: id,
+    items: items.map((dto) => dto.toDomain()).toList(growable: false),
+    subtotal: Money(
+      amount: subtotalAmount.toDouble(),
+      currency: subtotalCurrency,
+    ),
+    shippingTotal: Money(
+      amount: shippingTotalAmount.toDouble(),
+      currency: shippingTotalCurrency,
+    ),
+    taxTotal: Money(
+      amount: taxTotalAmount.toDouble(),
+      currency: taxTotalCurrency,
+    ),
+    total: Money(amount: totalAmount.toDouble(), currency: totalCurrency),
+    discount: Money(
+      amount: discountAmount.toDouble(),
+      currency: discountCurrency,
+    ),
+    supportedCreatorsCount: appreciation.supportedCreatorsCount,
+    appliedPromoCode: appliedPromoCode?.toDomain(),
+    savedForLater: savedForLater
+        .map((dto) => dto.toDomain())
+        .toList(growable: false),
+  );
 }

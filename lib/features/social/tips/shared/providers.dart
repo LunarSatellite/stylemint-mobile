@@ -21,10 +21,10 @@ final tipsRepositoryProvider = Provider<TipsRepository>(
 
 final tipsNotifierProvider =
     StateNotifierProvider<TipsNotifier, TipHistoryState>(
-  (ref) => TipsNotifier(ref.watch(tipsRepositoryProvider)),
-);
+      (ref) => TipsNotifier(ref.watch(tipsRepositoryProvider)),
+    );
 
 final tipBalanceNotifierProvider =
     StateNotifierProvider<TipBalanceNotifier, TipBalanceState>(
-  (ref) => TipBalanceNotifier(ref.watch(tipsRepositoryProvider)),
-);
+      (ref) => TipBalanceNotifier(ref.watch(tipsRepositoryProvider)),
+    );

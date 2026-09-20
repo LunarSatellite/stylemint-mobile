@@ -105,8 +105,10 @@ class ProductInStoreCodesScreen extends ConsumerWidget {
                 ref.read(vendorStoresNotifierProvider.notifier).load(),
               ),
             ),
-            VendorStoresLoaded(:final stores) when stores.isEmpty =>
-              const Text(noStores, style: DesignTokens.mediumRegular),
+            VendorStoresLoaded(:final stores) when stores.isEmpty => const Text(
+              noStores,
+              style: DesignTokens.mediumRegular,
+            ),
             VendorStoresLoaded(:final stores) => Column(
               children: [
                 for (final store in stores) ...[

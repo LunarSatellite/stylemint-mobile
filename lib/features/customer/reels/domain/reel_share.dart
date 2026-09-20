@@ -41,10 +41,9 @@ abstract final class ReelShare {
   /// The caption's first line ([ReelCaption.parse]) without hashtags or links
   /// (a platform caption can carry its own URLs), shortened if very long.
   static String hookLine(String caption) {
-    final hook = ReelCaption.parse(caption).hook
-        .replaceAll(_link, '')
-        .replaceAll(_whitespace, ' ')
-        .trim();
+    final hook = ReelCaption.parse(
+      caption,
+    ).hook.replaceAll(_link, '').replaceAll(_whitespace, ' ').trim();
     final runes = hook.runes;
     if (runes.length <= _hookMaxLength) return hook;
     final cut = String.fromCharCodes(runes.take(_hookMaxLength - 1));

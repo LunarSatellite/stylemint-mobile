@@ -472,4 +472,3 @@ String? _nonEmpty(Object? raw) {
   final value = raw is String ? raw.trim() : null;
   return (value == null || value.isEmpty) ? null : value;
 }
-

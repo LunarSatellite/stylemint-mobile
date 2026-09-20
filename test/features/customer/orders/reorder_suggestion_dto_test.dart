@@ -7,7 +7,8 @@ Map<String, dynamic> _json({bool withConfidence = true}) => {
   'productName': 'Aloe Face Wash',
   'thumbnailUrl': null,
   'suggestedQuantity': 2,
-  'reason': "Based on your typical 30-day restock cycle — you're likely "
+  'reason':
+      "Based on your typical 30-day restock cycle — you're likely "
       'running low',
   'price': 450.0,
   'currency': 'NPR',

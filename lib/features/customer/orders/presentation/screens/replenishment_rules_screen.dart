@@ -103,7 +103,8 @@ class _RulesFormState extends ConsumerState<_RulesForm> {
   }
 
   void _seed(ReplenishmentPreferenceDto preference) {
-    final stamp = '${preference.updatedUtc}|${preference.automationLevel}|'
+    final stamp =
+        '${preference.updatedUtc}|${preference.automationLevel}|'
         '${preference.steadiness}|${preference.leadTimeDays}|'
         '${preference.minDaysBetweenPlans}|${preference.maxPlanAmount}|'
         '${preference.maxPlanCurrency}|${preference.allowSubstitutions}';
@@ -267,8 +268,7 @@ class _RulesFormState extends ConsumerState<_RulesForm> {
         // ── Frequency limit ─────────────────────────────────────────────────
         _RuleSection(
           title: 'How often at most',
-          note:
-              'We leave at least this long between one basket and the next.',
+          note: 'We leave at least this long between one basket and the next.',
           child: _DaysSlider(
             sliderKey: const ValueKey('rule-frequency'),
             label: 'Days between baskets',

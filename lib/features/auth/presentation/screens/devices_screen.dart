@@ -36,18 +36,22 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
 
   Future<void> _trustDevice(String deviceId) async {
     if (_accountId == null) return;
-    ref.read(deviceActionProvider.notifier).trustDevice(
-      accountId: _accountId!,
-      deviceId: deviceId,
-    );
+    ref
+        .read(deviceActionProvider.notifier)
+        .trustDevice(
+          accountId: _accountId!,
+          deviceId: deviceId,
+        );
   }
 
   Future<void> _untrustDevice(String deviceId) async {
     if (_accountId == null) return;
-    ref.read(deviceActionProvider.notifier).untrustDevice(
-      accountId: _accountId!,
-      deviceId: deviceId,
-    );
+    ref
+        .read(deviceActionProvider.notifier)
+        .untrustDevice(
+          accountId: _accountId!,
+          deviceId: deviceId,
+        );
   }
 
   Future<void> _revokeDevice(String deviceId) async {
@@ -56,8 +60,10 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DesignTokens.bgAppBody,
-        title: const Text('Revoke Device',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Revoke Device',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
         content: const Text(
           'Are you sure you want to revoke this device? It will be signed out.',
           style: TextStyle(color: DesignTokens.textLight),
@@ -65,20 +71,28 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: DesignTokens.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: DesignTokens.textMuted),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Revoke', style: TextStyle(color: DesignTokens.colorError)),
+            child: const Text(
+              'Revoke',
+              style: TextStyle(color: DesignTokens.colorError),
+            ),
           ),
         ],
       ),
     );
     if (confirmed == true) {
-      ref.read(deviceActionProvider.notifier).revokeDevice(
-        accountId: _accountId!,
-        deviceId: deviceId,
-      );
+      ref
+          .read(deviceActionProvider.notifier)
+          .revokeDevice(
+            accountId: _accountId!,
+            deviceId: deviceId,
+          );
     }
   }
 
@@ -88,8 +102,10 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DesignTokens.bgAppBody,
-        title: const Text('Rename Device',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Rename Device',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
         content: TextField(
           controller: controller,
           style: DesignTokens.bodyText,
@@ -98,18 +114,26 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: DesignTokens.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: DesignTokens.textMuted),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              ref.read(deviceActionProvider.notifier).renameDevice(
-                accountId: _accountId!,
-                deviceId: deviceId,
-                nickname: controller.text.trim(),
-              );
+              ref
+                  .read(deviceActionProvider.notifier)
+                  .renameDevice(
+                    accountId: _accountId!,
+                    deviceId: deviceId,
+                    nickname: controller.text.trim(),
+                  );
             },
-            child: const Text('Save', style: TextStyle(color: DesignTokens.primaryGreen)),
+            child: const Text(
+              'Save',
+              style: TextStyle(color: DesignTokens.primaryGreen),
+            ),
           ),
         ],
       ),
@@ -136,12 +160,17 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded,
-              color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            color: DesignTokens.textWhite,
+            size: DesignTokens.iconMedium,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Devices',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Devices',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
       ),
       body: SafeArea(
         child: devicesState.when(
@@ -150,14 +179,17 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
           loadSuccess: (devices) {
             if (devices.isEmpty) {
               return const Center(
-                child: Text('No devices registered',
-                    style: TextStyle(color: DesignTokens.textMuted)),
+                child: Text(
+                  'No devices registered',
+                  style: TextStyle(color: DesignTokens.textMuted),
+                ),
               );
             }
             return ListView.separated(
               padding: const EdgeInsets.all(DesignTokens.s16),
               itemCount: devices.length,
-              separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s8),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: DesignTokens.s8),
               itemBuilder: (context, index) {
                 final device = devices[index];
                 return _DeviceTile(
@@ -165,8 +197,8 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
                   onTrust: () => _trustDevice(device.id),
                   onUntrust: () => _untrustDevice(device.id),
                   onRevoke: () => _revokeDevice(device.id),
-                  onRename: () => _showRenameDialog(
-                      device.id, device.nickname ?? ''),
+                  onRename: () =>
+                      _showRenameDialog(device.id, device.nickname ?? ''),
                 );
               },
             );
@@ -175,15 +207,20 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: DesignTokens.colorError, size: 48),
+                const Icon(
+                  Icons.error_outline,
+                  color: DesignTokens.colorError,
+                  size: 48,
+                ),
                 const SizedBox(height: DesignTokens.s16),
                 Text('Failed to load devices', style: DesignTokens.bodyText),
                 const SizedBox(height: DesignTokens.s16),
                 GestureDetector(
                   onTap: _load,
-                  child: Text('Retry',
-                      style: TextStyle(color: DesignTokens.primaryGreen)),
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(color: DesignTokens.primaryGreen),
+                  ),
                 ),
               ],
             ),
@@ -193,8 +230,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     );
   }
 
-  Widget _loader() =>
-      const SmPageLoader();
+  Widget _loader() => const SmPageLoader();
 }
 
 class _DeviceTile extends StatelessWidget {
@@ -222,7 +258,9 @@ class _DeviceTile extends StatelessWidget {
         color: DesignTokens.bgAppBody,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
         border: Border.all(
-          color: isRevoked ? DesignTokens.colorError : DesignTokens.borderDefault,
+          color: isRevoked
+              ? DesignTokens.colorError
+              : DesignTokens.borderDefault,
         ),
       ),
       child: Column(
@@ -239,14 +277,21 @@ class _DeviceTile extends StatelessWidget {
               if (isRevoked)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+                    horizontal: DesignTokens.s8,
+                    vertical: DesignTokens.s4,
+                  ),
                   decoration: BoxDecoration(
                     color: DesignTokens.colorError.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.chipRadius,
+                    ),
                   ),
-                  child: Text('Revoked',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.colorError)),
+                  child: Text(
+                    'Revoked',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.colorError,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -273,30 +318,42 @@ class _DeviceTile extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: onRename,
-                  child: Text('Rename',
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.primaryGreen)),
+                  child: Text(
+                    'Rename',
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: DesignTokens.s16),
                 GestureDetector(
                   onTap: onUntrust,
-                  child: Text('Untrust',
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.secondaryYellow)),
+                  child: Text(
+                    'Untrust',
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.secondaryYellow,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: DesignTokens.s16),
                 GestureDetector(
                   onTap: onTrust,
-                  child: Text('Trust',
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.primaryGreen)),
+                  child: Text(
+                    'Trust',
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: DesignTokens.s16),
                 GestureDetector(
                   onTap: onRevoke,
-                  child: Text('Revoke',
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.colorError)),
+                  child: Text(
+                    'Revoke',
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.colorError,
+                    ),
+                  ),
                 ),
               ],
             ),

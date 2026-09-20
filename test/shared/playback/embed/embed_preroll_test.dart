@@ -110,11 +110,19 @@ void main() {
     expect(next.slot.prerolls, isFalse);
   });
 
-  test('the host page keeps a pre-rolling reel muted until it is on screen', () {
-    final html = embedHostHtml(origin: 'https://app.test');
+  test(
+    'the host page keeps a pre-rolling reel muted until it is on screen',
+    () {
+      final html = embedHostHtml(origin: 'https://app.test');
 
-    expect(html, contains('cur.preroll = !!preroll && !cur.wantPlay;'));
-    expect(html, contains('if (cur.muted || !cur.wantPlay) yt.mute(); else yt.unMute();'));
-    expect(html, contains('if (event.data === 1 && !cur.wantPlay)'));
-  });
+      expect(html, contains('cur.preroll = !!preroll && !cur.wantPlay;'));
+      expect(
+        html,
+        contains(
+          'if (cur.muted || !cur.wantPlay) yt.mute(); else yt.unMute();',
+        ),
+      );
+      expect(html, contains('if (event.data === 1 && !cur.wantPlay)'));
+    },
+  );
 }

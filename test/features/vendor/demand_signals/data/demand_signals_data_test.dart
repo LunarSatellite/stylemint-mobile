@@ -41,38 +41,41 @@ class _Network implements NetworkInfoConnectivity {
 
 void main() {
   group('DemandSignalsRemoteDataSource.getDemandSignals', () {
-    test('calls the api-prefixed Discovery route with days and limit', () async {
-      final api = _GetApiClient(<String, dynamic>{
-        'windowDays': 30,
-        'generatedUtc': '2026-09-13T06:00:00Z',
-        'topSearches': [
-          {'query': 'linen shirt', 'count': 1240},
-          {'query': 'running shoes', 'count': 310},
-        ],
-        'unmetSearches': [
-          {'query': 'hemp tote bag', 'count': 42},
-        ],
-      });
+    test(
+      'calls the api-prefixed Discovery route with days and limit',
+      () async {
+        final api = _GetApiClient(<String, dynamic>{
+          'windowDays': 30,
+          'generatedUtc': '2026-09-13T06:00:00Z',
+          'topSearches': [
+            {'query': 'linen shirt', 'count': 1240},
+            {'query': 'running shoes', 'count': 310},
+          ],
+          'unmetSearches': [
+            {'query': 'hemp tote bag', 'count': 42},
+          ],
+        });
 
-      final dto = await DemandSignalsRemoteDataSource(
-        apiClient: api,
-      ).getDemandSignals(days: 30, limit: 20);
+        final dto = await DemandSignalsRemoteDataSource(
+          apiClient: api,
+        ).getDemandSignals(days: 30, limit: 20);
 
-      expect(api.getUri, '/api/v1/vendor/demand-signals');
-      expect(api.query, {'days': 30, 'limit': 20});
+        expect(api.getUri, '/api/v1/vendor/demand-signals');
+        expect(api.query, {'days': 30, 'limit': 20});
 
-      final signals = dto.toDomain();
-      expect(signals.windowDays, 30);
-      expect(signals.generatedUtc, DateTime.utc(2026, 9, 13, 6));
-      expect(signals.topSearches.map((q) => q.query), [
-        'linen shirt',
-        'running shoes',
-      ]);
-      expect(signals.topSearches.map((q) => q.count), [1240, 310]);
-      expect(signals.unmetSearches.single.query, 'hemp tote bag');
-      expect(signals.unmetSearches.single.count, 42);
-      expect(signals.isEmpty, isFalse);
-    });
+        final signals = dto.toDomain();
+        expect(signals.windowDays, 30);
+        expect(signals.generatedUtc, DateTime.utc(2026, 9, 13, 6));
+        expect(signals.topSearches.map((q) => q.query), [
+          'linen shirt',
+          'running shoes',
+        ]);
+        expect(signals.topSearches.map((q) => q.count), [1240, 310]);
+        expect(signals.unmetSearches.single.query, 'hemp tote bag');
+        expect(signals.unmetSearches.single.count, 42);
+        expect(signals.isEmpty, isFalse);
+      },
+    );
 
     test('missing lists read as empty and blank queries are dropped', () {
       final signals = DemandSignalsDto.fromJson(<String, dynamic>{
@@ -131,22 +134,24 @@ void main() {
       expect(result.isLeft(), isTrue);
     });
 
-    test('returns noInternetConnection without calling the API when offline',
-        () async {
-      final result = await repo(
-        connected: false,
-      ).getDemandSignals(days: 7, limit: 20);
+    test(
+      'returns noInternetConnection without calling the API when offline',
+      () async {
+        final result = await repo(
+          connected: false,
+        ).getDemandSignals(days: 7, limit: 20);
 
-      expect(
-        result.getLeft().toNullable(),
-        const NetworkExceptions.noInternetConnection(),
-      );
-      verifyNever(
-        () => remote.getDemandSignals(
-          days: any(named: 'days'),
-          limit: any(named: 'limit'),
-        ),
-      );
-    });
+        expect(
+          result.getLeft().toNullable(),
+          const NetworkExceptions.noInternetConnection(),
+        );
+        verifyNever(
+          () => remote.getDemandSignals(
+            days: any(named: 'days'),
+            limit: any(named: 'limit'),
+          ),
+        );
+      },
+    );
   });
 }

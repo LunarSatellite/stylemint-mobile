@@ -40,8 +40,7 @@ class ScreenshotDecodeException implements Exception {
 }
 
 /// Turns arbitrary incoming bytes into a [ScreenshotImage].
-typedef ScreenshotNormalizer =
-    Future<ScreenshotImage> Function(Uint8List raw);
+typedef ScreenshotNormalizer = Future<ScreenshotImage> Function(Uint8List raw);
 
 /// The longest edge a screenshot is reduced to before it leaves the device.
 ///

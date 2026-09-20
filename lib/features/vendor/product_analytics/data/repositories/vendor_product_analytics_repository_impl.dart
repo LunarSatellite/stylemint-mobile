@@ -17,7 +17,8 @@ class VendorProductAnalyticsRepositoryImpl
   final NetworkInfoConnectivity networkInfo;
 
   @override
-  Future<Either<NetworkExceptions, VendorProductAnalytics>> getProductAnalytics({
+  Future<Either<NetworkExceptions, VendorProductAnalytics>>
+  getProductAnalytics({
     required String productId,
     DateTime? fromUtc,
     DateTime? toUtc,

@@ -57,10 +57,16 @@ void main() {
 
     final toggled = notifier.toggle('reel-1', fallback: _unseeded);
 
-    expect(notifier.state['reel-1'], const ReelLikeState(liked: true, count: 129));
+    expect(
+      notifier.state['reel-1'],
+      const ReelLikeState(liked: true, count: 129),
+    );
     pending.complete(right(const ReelLikeResult(liked: true, likeCount: 140)));
     expect(await toggled, isNull);
-    expect(notifier.state['reel-1'], const ReelLikeState(liked: true, count: 140));
+    expect(
+      notifier.state['reel-1'],
+      const ReelLikeState(liked: true, count: 140),
+    );
     expect(repository.likeCalls, ['reel-1']);
     expect(repository.unlikeCalls, isEmpty);
   });
@@ -72,7 +78,10 @@ void main() {
     final failure = await notifier.toggle('reel-1', fallback: _unseeded);
 
     expect(failure, isNotNull);
-    expect(notifier.state['reel-1'], const ReelLikeState(liked: false, count: 5));
+    expect(
+      notifier.state['reel-1'],
+      const ReelLikeState(liked: false, count: 5),
+    );
   });
 
   test('an unlike removes the like and keeps the optimistic count when the '
@@ -83,16 +92,23 @@ void main() {
 
     expect(failure, isNull);
     expect(repository.unlikeCalls, ['reel-1']);
-    expect(notifier.state['reel-1'], const ReelLikeState(liked: false, count: 9));
+    expect(
+      notifier.state['reel-1'],
+      const ReelLikeState(liked: false, count: 9),
+    );
   });
 
   test('a failed unlike restores the like', () async {
-    repository.respond = (_) => left(const NetworkExceptions.noInternetConnection());
+    repository.respond = (_) =>
+        left(const NetworkExceptions.noInternetConnection());
     notifier.seed('reel-1', liked: true, count: 1);
 
     await notifier.toggle('reel-1', fallback: _unseeded);
 
-    expect(notifier.state['reel-1'], const ReelLikeState(liked: true, count: 1));
+    expect(
+      notifier.state['reel-1'],
+      const ReelLikeState(liked: true, count: 1),
+    );
   });
 
   test('starts from the fallback when the reel was never seeded', () async {
@@ -101,7 +117,10 @@ void main() {
       fallback: const ReelLikeState(liked: false, count: 3),
     );
 
-    expect(notifier.state['reel-2'], const ReelLikeState(liked: true, count: 4));
+    expect(
+      notifier.state['reel-2'],
+      const ReelLikeState(liked: true, count: 4),
+    );
   });
 
   test('a server snapshot never overrides the viewer\'s toggle', () async {
@@ -110,7 +129,10 @@ void main() {
 
     notifier.seed('reel-1', liked: false, count: 7);
 
-    expect(notifier.state['reel-1'], const ReelLikeState(liked: true, count: 8));
+    expect(
+      notifier.state['reel-1'],
+      const ReelLikeState(liked: true, count: 8),
+    );
   });
 
   test('a fresher snapshot updates a reel the viewer has not touched', () {
@@ -118,7 +140,10 @@ void main() {
       ..seed('reel-1', liked: false, count: 7)
       ..seed('reel-1', liked: true, count: 9);
 
-    expect(notifier.state['reel-1'], const ReelLikeState(liked: true, count: 9));
+    expect(
+      notifier.state['reel-1'],
+      const ReelLikeState(liked: true, count: 9),
+    );
   });
 
   test('ignores a tap while the previous request is still running', () async {
@@ -132,7 +157,10 @@ void main() {
 
     expect(second, isNull);
     expect(repository.likeCalls, ['reel-1']);
-    expect(notifier.state['reel-1'], const ReelLikeState(liked: true, count: 2));
+    expect(
+      notifier.state['reel-1'],
+      const ReelLikeState(liked: true, count: 2),
+    );
   });
 
   test('never counts below zero', () async {
@@ -140,6 +168,9 @@ void main() {
 
     await notifier.toggle('reel-1', fallback: _unseeded);
 
-    expect(notifier.state['reel-1'], const ReelLikeState(liked: false, count: 0));
+    expect(
+      notifier.state['reel-1'],
+      const ReelLikeState(liked: false, count: 0),
+    );
   });
 }

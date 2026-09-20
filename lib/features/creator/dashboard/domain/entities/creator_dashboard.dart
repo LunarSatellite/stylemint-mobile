@@ -65,8 +65,17 @@ class CreatorReel {
       other.sales == sales;
 
   @override
-  int get hashCode =>
-      Object.hash(id, title, thumbnailUrl, publishedAt, views, likes, comments, shares, sales);
+  int get hashCode => Object.hash(
+    id,
+    title,
+    thumbnailUrl,
+    publishedAt,
+    views,
+    likes,
+    comments,
+    shares,
+    sales,
+  );
 }
 
 /// Mirrors the `GET /v1/creator/analytics/dashboard` payload. Only the fields

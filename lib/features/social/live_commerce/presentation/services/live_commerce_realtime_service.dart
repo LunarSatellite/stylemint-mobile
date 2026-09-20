@@ -50,32 +50,40 @@ class LiveCommerceRealtimeService {
     });
     conn.on('ProductPinned', (args) {
       final map = _asMap(args?.firstOrNull);
-      final productId = map?['ProductId'] as String? ?? map?['productId'] as String?;
+      final productId =
+          map?['ProductId'] as String? ?? map?['productId'] as String?;
       if (productId != null) _eventController.add(ProductPinned(productId));
     });
     conn.on('ProductReserved', (args) {
       final map = _asMap(args?.firstOrNull);
       if (map == null) return;
-      final reservationId = map['ReservationId'] as String? ?? map['reservationId'] as String?;
-      final productId = map['ProductId'] as String? ?? map['productId'] as String?;
+      final reservationId =
+          map['ReservationId'] as String? ?? map['reservationId'] as String?;
+      final productId =
+          map['ProductId'] as String? ?? map['productId'] as String?;
       final expiresIn = map['ExpiresIn'] ?? map['expiresIn'];
       if (reservationId != null && productId != null) {
-        _eventController.add(ProductReserved(
-          reservationId,
-          productId,
-          expiresIn is int ? expiresIn : 0,
-        ));
+        _eventController.add(
+          ProductReserved(
+            reservationId,
+            productId,
+            expiresIn is int ? expiresIn : 0,
+          ),
+        );
       }
     });
     conn.on('ReserveFailed', (args) {
       final map = _asMap(args?.firstOrNull);
-      final productId = map?['ProductId'] as String? ?? map?['productId'] as String?;
+      final productId =
+          map?['ProductId'] as String? ?? map?['productId'] as String?;
       if (productId != null) _eventController.add(ReserveFailed(productId));
     });
     conn.on('PurchaseConfirmed', (args) {
       final map = _asMap(args?.firstOrNull);
-      final reservationId = map?['ReservationId'] as String? ?? map?['reservationId'] as String?;
-      if (reservationId != null) _eventController.add(PurchaseConfirmed(reservationId));
+      final reservationId =
+          map?['ReservationId'] as String? ?? map?['reservationId'] as String?;
+      if (reservationId != null)
+        _eventController.add(PurchaseConfirmed(reservationId));
     });
     conn.on('PurchaseFailed', (args) {
       final reason = args?.firstOrNull;
@@ -161,7 +169,8 @@ class LiveCommerceRealtimeService {
 
   int? _asInt(Object? v) => v is int ? v : (v is num ? v.toInt() : null);
 
-  Map<String, dynamic>? _asMap(Object? v) => v is Map ? v.cast<String, dynamic>() : null;
+  Map<String, dynamic>? _asMap(Object? v) =>
+      v is Map ? v.cast<String, dynamic>() : null;
 }
 
 extension _FirstOrNull<T> on List<T> {

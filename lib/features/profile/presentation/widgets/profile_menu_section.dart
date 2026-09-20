@@ -67,8 +67,9 @@ class _MenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        item.isDestructive ? DesignTokens.colorError : DesignTokens.textWhite;
+    final color = item.isDestructive
+        ? DesignTokens.colorError
+        : DesignTokens.textWhite;
     final hasToggle = item.toggleValue != null;
 
     return InkWell(
@@ -101,16 +102,17 @@ class _MenuTile extends StatelessWidget {
               Switch(
                 value: item.toggleValue!,
                 onChanged: item.onToggle,
-                thumbColor: WidgetStateProperty.resolveWith((states) =>
-                    states.contains(WidgetState.selected)
-                        ? Colors.white
-                        : DesignTokens.textMuted),
-                trackColor: WidgetStateProperty.resolveWith((states) =>
-                    states.contains(WidgetState.selected)
-                        ? DesignTokens.primaryGreen
-                        : DesignTokens.bgAppBodyLight),
-                trackOutlineColor:
-                    WidgetStateProperty.all(Colors.transparent),
+                thumbColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? Colors.white
+                      : DesignTokens.textMuted,
+                ),
+                trackColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? DesignTokens.primaryGreen
+                      : DesignTokens.bgAppBodyLight,
+                ),
+                trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
               )
             else if (!item.isDestructive)
               const Icon(

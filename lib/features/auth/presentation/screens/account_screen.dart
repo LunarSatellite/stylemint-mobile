@@ -30,8 +30,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   String? get _accountId {
-    final session =
-        ref.read(sessionControllerProvider);
+    final session = ref.read(sessionControllerProvider);
     return session.maybeWhen(authenticated: (id) => id, orElse: () => null);
   }
 
@@ -70,28 +69,27 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Future<void> _handlePause() async {
     final days = await showDialog<int>(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            backgroundColor: DesignTokens.bgAppBody,
-            title: Text(
-              'Pause Account',
-              style: DesignTokens.sectionInnerTitle,
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [7, 14, 30].map((d) {
-                return ListTile(
-                  title: Text(
-                    '$d days',
-                    style: DesignTokens.mediumRegular.copyWith(
-                      color: DesignTokens.textWhite,
-                    ),
-                  ),
-                  onTap: () => Navigator.pop(ctx, d),
-                );
-              }).toList(),
-            ),
-          ),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DesignTokens.bgAppBody,
+        title: Text(
+          'Pause Account',
+          style: DesignTokens.sectionInnerTitle,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [7, 14, 30].map((d) {
+            return ListTile(
+              title: Text(
+                '$d days',
+                style: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+              onTap: () => Navigator.pop(ctx, d),
+            );
+          }).toList(),
+        ),
+      ),
     );
 
     if (days == null || _accountId == null) return;
@@ -126,39 +124,38 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Future<void> _handleDelete() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            backgroundColor: DesignTokens.bgAppBody,
-            title: Text(
-              'Delete Account',
-              style: DesignTokens.sectionInnerTitle,
-            ),
-            content: Text(
-              'This action is permanent and cannot be undone. '
-              'All your data will be permanently deleted.',
-              style: DesignTokens.bodyText,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(
-                  'Cancel',
-                  style: DesignTokens.mediumSemibold.copyWith(
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DesignTokens.bgAppBody,
+        title: Text(
+          'Delete Account',
+          style: DesignTokens.sectionInnerTitle,
+        ),
+        content: Text(
+          'This action is permanent and cannot be undone. '
+          'All your data will be permanently deleted.',
+          style: DesignTokens.bodyText,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.textMuted,
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: Text(
-                  'Delete',
-                  style: DesignTokens.mediumSemibold.copyWith(
-                    color: DesignTokens.colorError,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Delete',
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.colorError,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
 
     if (confirmed != true || _accountId == null) return;
@@ -199,8 +196,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       body: _isLoading
           ? const SmPageLoader()
           : _error != null
-              ? Center(child: Text(_error!, style: DesignTokens.bodyText))
-              : _buildContent(),
+          ? Center(child: Text(_error!, style: DesignTokens.bodyText))
+          : _buildContent(),
     );
   }
 
@@ -362,7 +359,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         padding: const EdgeInsets.symmetric(vertical: DesignTokens.s12),
         child: Row(
           children: [
-            Icon(icon, color: DesignTokens.textLight, size: DesignTokens.iconSmall),
+            Icon(
+              icon,
+              color: DesignTokens.textLight,
+              size: DesignTokens.iconSmall,
+            ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
               child: Text(title, style: DesignTokens.mediumRegular),

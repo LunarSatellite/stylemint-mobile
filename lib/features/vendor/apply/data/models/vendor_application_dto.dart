@@ -66,14 +66,13 @@ class KYCDocumentDto {
     this.originalFilename,
   });
 
-  factory KYCDocumentDto.fromJson(Map<String, dynamic> json) =>
-      KYCDocumentDto(
-        id: json['id'] as String,
-        documentType: json['documentType'] as int,
-        status: json['status'] as int,
-        uploadedUtc: DateTime.parse(json['uploadedUtc'] as String),
-        originalFilename: json['originalFilename'] as String?,
-      );
+  factory KYCDocumentDto.fromJson(Map<String, dynamic> json) => KYCDocumentDto(
+    id: json['id'] as String,
+    documentType: json['documentType'] as int,
+    status: json['status'] as int,
+    uploadedUtc: DateTime.parse(json['uploadedUtc'] as String),
+    originalFilename: json['originalFilename'] as String?,
+  );
 
   final String id;
   final int documentType;

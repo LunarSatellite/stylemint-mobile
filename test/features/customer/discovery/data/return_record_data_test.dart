@@ -229,8 +229,10 @@ void main() {
 
       test('is null when a count is missing rather than assumed zero', () {
         expect(
-          parseSplit(const {'classifiedReturns': 10, 'fitToResell': 7})
-              .returnedUnits,
+          parseSplit(const {
+            'classifiedReturns': 10,
+            'fitToResell': 7,
+          }).returnedUnits,
           isNull,
         );
       });

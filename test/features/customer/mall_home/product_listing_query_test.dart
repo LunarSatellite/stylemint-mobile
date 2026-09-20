@@ -53,17 +53,18 @@ void main() {
   });
 
   test('withFilters trims, and keeps scope and sort', () {
-    final query = ProductListingQuery.fromQueryParameters(const {
-      'sort': 'rating',
-      'categorySlug': 'fashion',
-      'q': 'linen',
-    }).withFilters(
-      inStock: true,
-      onSale: false,
-      size: '  L  ',
-      color: '',
-      optionValueIds: const ['aa01'],
-    );
+    final query =
+        ProductListingQuery.fromQueryParameters(const {
+          'sort': 'rating',
+          'categorySlug': 'fashion',
+          'q': 'linen',
+        }).withFilters(
+          inStock: true,
+          onSale: false,
+          size: '  L  ',
+          color: '',
+          optionValueIds: const ['aa01'],
+        );
 
     expect(query.size, 'L');
     expect(query.color, isNull);

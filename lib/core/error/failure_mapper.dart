@@ -22,8 +22,9 @@ Failure mapExceptionToFailure(Object exception) {
 
   final status = response.statusCode ?? 0;
   final data = response.data;
-  final code =
-      data is Map<String, dynamic> ? data['errorCode'] as String? : null;
+  final code = data is Map<String, dynamic>
+      ? data['errorCode'] as String?
+      : null;
 
   return switch (status) {
     400 => Failure.validation(code: code ?? 'INVALID_REQUEST'),

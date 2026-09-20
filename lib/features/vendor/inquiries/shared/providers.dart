@@ -11,8 +11,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation
 export 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/notifiers/inquiries_notifier.dart';
 
 final inquiriesRemoteDataSourceProvider = Provider<InquiriesRemoteDataSource>(
-  (ref) =>
-      InquiriesRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+  (ref) => InquiriesRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
 );
 
 final inquiriesRepositoryProvider = Provider<InquiriesRepository>(
@@ -24,5 +23,5 @@ final inquiriesRepositoryProvider = Provider<InquiriesRepository>(
 
 final inquiriesNotifierProvider =
     StateNotifierProvider.autoDispose<InquiriesNotifier, InquiriesState>(
-  (ref) => InquiriesNotifier(ref.watch(inquiriesRepositoryProvider)),
-);
+      (ref) => InquiriesNotifier(ref.watch(inquiriesRepositoryProvider)),
+    );

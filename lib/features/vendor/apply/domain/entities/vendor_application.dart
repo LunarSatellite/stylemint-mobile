@@ -51,7 +51,8 @@ class VendorApplication {
       other.updatedAt == updatedAt;
 
   @override
-  int get hashCode => Object.hash(id, status, rejectionReason, submittedAt, updatedAt);
+  int get hashCode =>
+      Object.hash(id, status, rejectionReason, submittedAt, updatedAt);
 }
 
 /// Legal form of the vendor entity — wire values are confirmed against the
@@ -257,5 +258,6 @@ class KYCDocument {
       other.uploadedAt == uploadedAt;
 
   @override
-  int get hashCode => Object.hash(id, type, fileName, fileUrl, status, uploadedAt);
+  int get hashCode =>
+      Object.hash(id, type, fileName, fileUrl, status, uploadedAt);
 }

@@ -32,8 +32,7 @@ class _Online implements NetworkInfoConnectivity {
   Future<bool> get isConnected async => true;
 }
 
-const String _urgencyPath =
-    '/api/v1/customer/discover/products/p-1/urgency';
+const String _urgencyPath = '/api/v1/customer/discover/products/p-1/urgency';
 const String _socialProofPath =
     '/api/v1/customer/discover/products/social-proof';
 
@@ -54,8 +53,7 @@ Future<ProductSocialProof?> _socialProof(Map<String, dynamic> proof) async {
   final result = await _repo({
     _socialProofPath: {'p-1': proof},
   }).getSocialProof(['p-1']);
-  final byId =
-      result.getOrElse((_) => throw StateError('social proof failed'));
+  final byId = result.getOrElse((_) => throw StateError('social proof failed'));
   return byId['p-1'];
 }
 
@@ -145,12 +143,14 @@ void main() {
       expect(npr.flashSalePrice?.amount, usd.flashSalePrice?.amount);
     });
 
-    test('a sale price with no currency is dropped rather than guessed',
-        () async {
-      final urgency = await _urgency(const {'flashSalePrice': 2499});
+    test(
+      'a sale price with no currency is dropped rather than guessed',
+      () async {
+        final urgency = await _urgency(const {'flashSalePrice': 2499});
 
-      expect(urgency.flashSalePrice, isNull);
-    });
+        expect(urgency.flashSalePrice, isNull);
+      },
+    );
   });
 
   group('social proof payload', () {
@@ -209,8 +209,10 @@ void main() {
       expect(find.byType(MallSignalLine), findsNothing);
       expect(find.textContaining('0'), findsNothing);
       expect(find.textContaining('sold'), findsNothing);
-      expect(find.textContaining(RegExp('left', caseSensitive: false)),
-          findsNothing);
+      expect(
+        find.textContaining(RegExp('left', caseSensitive: false)),
+        findsNothing,
+      );
       expectNoLayoutErrors(tester);
     });
 
@@ -235,8 +237,10 @@ void main() {
       expect(find.byIcon(Icons.star), findsNothing);
       expect(find.byIcon(Icons.star_outline), findsNothing);
       expect(find.text('0.0'), findsNothing);
-      expect(find.textContaining(RegExp('star', caseSensitive: false)),
-          findsNothing);
+      expect(
+        find.textContaining(RegExp('star', caseSensitive: false)),
+        findsNothing,
+      );
     });
 
     testWidgets('measured units sold are stated plainly', (tester) async {
@@ -252,8 +256,12 @@ void main() {
 
       expect(find.text('128 sold in the last 30 days'), findsOneWidget);
       // No velocity theatre bolted onto the measured figure.
-      expect(find.textContaining(RegExp('fast|hurry|trending|selling',
-          caseSensitive: false)), findsNothing);
+      expect(
+        find.textContaining(
+          RegExp('fast|hurry|trending|selling', caseSensitive: false),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('low stock is stated without a number', (tester) async {
@@ -268,8 +276,11 @@ void main() {
       // Whatever the copy says, it may not contain a count.
       final lines = tester.widgetList<Text>(find.byType(Text));
       for (final line in lines) {
-        expect(line.data ?? '', isNot(matches(RegExp(r'\d'))),
-            reason: 'the stock signal must carry no figure');
+        expect(
+          line.data ?? '',
+          isNot(matches(RegExp(r'\d'))),
+          reason: 'the stock signal must carry no figure',
+        );
       }
     });
 
@@ -297,8 +308,12 @@ void main() {
       );
 
       expect(find.byType(MallSignalLine), findsNothing);
-      expect(find.textContaining(RegExp('viewing|watching|shopper',
-          caseSensitive: false)), findsNothing);
+      expect(
+        find.textContaining(
+          RegExp('viewing|watching|shopper', caseSensitive: false),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('a measured viewer count is shown', (tester) async {
@@ -365,12 +380,14 @@ void main() {
         }
       });
 
-      expect(offenders, isEmpty,
-          reason: 'a removed field is still referenced in code');
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'a removed field is still referenced in code',
+      );
     });
 
-    test('nothing reconstructs an exact stock figure or an "only N left"',
-        () {
+    test('nothing reconstructs an exact stock figure or an "only N left"', () {
       // "Only a few left" is fine — it carries no count. A digit, an
       // interpolation or a plural noun next to "left" is not.
       final banned = [
@@ -391,8 +408,11 @@ void main() {
         }
       });
 
-      expect(offenders, isEmpty,
-          reason: 'an exact stock figure has been reconstructed');
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'an exact stock figure has been reconstructed',
+      );
     });
 
     test('the DO NOT RESTORE note still points at the real backend file', () {

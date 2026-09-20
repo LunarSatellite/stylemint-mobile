@@ -62,8 +62,14 @@ class _EntryIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (IconData icon, Color color) = switch (type) {
-      LedgerEntryType.commission => (Icons.shopping_bag, DesignTokens.primaryGreen),
-      LedgerEntryType.payout => (Icons.account_balance_wallet, DesignTokens.warning500),
+      LedgerEntryType.commission => (
+        Icons.shopping_bag,
+        DesignTokens.primaryGreen,
+      ),
+      LedgerEntryType.payout => (
+        Icons.account_balance_wallet,
+        DesignTokens.warning500,
+      ),
       LedgerEntryType.bonus => (Icons.stars, DesignTokens.colorInfo),
       LedgerEntryType.adjustment => (Icons.tune, DesignTokens.textMuted),
     };

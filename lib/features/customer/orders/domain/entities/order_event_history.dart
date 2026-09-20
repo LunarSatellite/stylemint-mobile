@@ -37,8 +37,7 @@ enum OrderEventSourceStatus {
   };
 
   /// True when this source leaves the history less than fully trustworthy.
-  bool get needsTelling =>
-      this == unavailable || this == unverified;
+  bool get needsTelling => this == unavailable || this == unverified;
 }
 
 class OrderEventSource {
@@ -138,8 +137,7 @@ class OrderEventHistory {
 
   /// True when [source] is one whose entries must render flagged.
   bool isSourceUnverified(String source) => sources.any(
-    (s) =>
-        s.name == source && s.status == OrderEventSourceStatus.unverified,
+    (s) => s.name == source && s.status == OrderEventSourceStatus.unverified,
   );
 
   /// True when every source was read and simply had nothing to add. Only then

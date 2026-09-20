@@ -19,13 +19,14 @@ final reviewsRepositoryProvider = Provider<ReviewsRepository>(
   ),
 );
 
-final reviewsNotifierProvider =
-    StateNotifierProvider.autoDispose.family<ReviewsNotifier, ReviewsState, String>(
-  (ref, productId) => ReviewsNotifier(ref.watch(reviewsRepositoryProvider))
-    ..loadReviews(productId),
-);
+final reviewsNotifierProvider = StateNotifierProvider.autoDispose
+    .family<ReviewsNotifier, ReviewsState, String>(
+      (ref, productId) =>
+          ReviewsNotifier(ref.watch(reviewsRepositoryProvider))
+            ..loadReviews(productId),
+    );
 
 final submitReviewNotifierProvider =
     StateNotifierProvider<SubmitReviewNotifier, SubmitReviewState>(
-  (ref) => SubmitReviewNotifier(ref.watch(reviewsRepositoryProvider)),
-);
+      (ref) => SubmitReviewNotifier(ref.watch(reviewsRepositoryProvider)),
+    );

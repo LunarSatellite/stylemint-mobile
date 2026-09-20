@@ -44,8 +44,9 @@ class ProfilePromptSheet extends StatelessWidget {
             Text(
               'Complete these before continuing.',
               textAlign: TextAlign.center,
-              style: DesignTokens.mediumRegular
-                  .copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
             const SizedBox(height: DesignTokens.s24),
             for (final field in missing) ...[
@@ -56,8 +57,9 @@ class ProfilePromptSheet extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Maybe later',
-                style: DesignTokens.mediumRegular
-                    .copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ),
           ],
@@ -92,8 +94,9 @@ class _ProfileFieldRow extends StatelessWidget {
           child: Center(
             child: Text(
               'Add ${field.label}',
-              style: DesignTokens.oneLinerSemibold
-                  .copyWith(color: DesignTokens.buttonPrimaryText),
+              style: DesignTokens.oneLinerSemibold.copyWith(
+                color: DesignTokens.buttonPrimaryText,
+              ),
             ),
           ),
         ),
@@ -104,18 +107,18 @@ class _ProfileFieldRow extends StatelessWidget {
   // ponytail: kyc has no customer-facing verification screen yet — the row
   // still lists it as missing but isn't actionable until one exists.
   String? _routeFor(ProfileField field) => switch (field) {
-        ProfileField.email => RouteNames.profileEdit,
-        ProfileField.phone => RouteNames.profileEdit,
-        ProfileField.shippingAddress => RouteNames.shippingAddEdit,
-        ProfileField.kyc => null,
-      };
+    ProfileField.email => RouteNames.profileEdit,
+    ProfileField.phone => RouteNames.profileEdit,
+    ProfileField.shippingAddress => RouteNames.shippingAddEdit,
+    ProfileField.kyc => null,
+  };
 }
 
 extension ProfileFieldLabel on ProfileField {
   String get label => switch (this) {
-        ProfileField.email => 'email address',
-        ProfileField.phone => 'phone number',
-        ProfileField.shippingAddress => 'shipping address',
-        ProfileField.kyc => 'identity verification',
-      };
+    ProfileField.email => 'email address',
+    ProfileField.phone => 'phone number',
+    ProfileField.shippingAddress => 'shipping address',
+    ProfileField.kyc => 'identity verification',
+  };
 }

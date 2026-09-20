@@ -37,8 +37,9 @@ abstract class CreatorAnalyticsOverviewDto with _$CreatorAnalyticsOverviewDto {
     conversionRate: conversionRate.toPercentDomain(),
     totalViews: totalViews.toDomain(),
     pendingBalance: pendingBalance.toDomain(),
-    earningsTrend:
-        earningsTrend.map((e) => e.toDomain()).toList(growable: false),
+    earningsTrend: earningsTrend
+        .map((e) => e.toDomain())
+        .toList(growable: false),
     topReels: topReels.map((e) => e.toDomain()).toList(growable: false),
     topProducts: topProducts.map((e) => e.toDomain()).toList(growable: false),
   );

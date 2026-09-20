@@ -31,7 +31,8 @@ class SmAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: elevation,
       scrolledUnderElevation: 0.5,
       centerTitle: centerTitle,
-      leading: leading ??
+      leading:
+          leading ??
           (Navigator.canPop(context)
               ? IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new, size: 18),
@@ -39,7 +40,8 @@ class SmAppBar extends StatelessWidget implements PreferredSizeWidget {
                   onPressed: () => Navigator.pop(context),
                 )
               : null),
-      title: titleWidget ??
+      title:
+          titleWidget ??
           (title != null
               ? Text(
                   title!,

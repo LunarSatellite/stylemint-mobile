@@ -27,8 +27,7 @@ Future<Uint8List> _png(int width, int height) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('a large screenshot is downscaled before it can be uploaded',
-      () async {
+  test('a large screenshot is downscaled before it can be uploaded', () async {
     final raw = await _png(2400, 1080);
     final normalized = await normalizeScreenshot(raw);
 
@@ -47,8 +46,7 @@ void main() {
     expect(normalized.height, 320);
   });
 
-  test('the result is a freshly encoded PNG, so nothing rides along',
-      () async {
+  test('the result is a freshly encoded PNG, so nothing rides along', () async {
     // A JPEG's EXIF block — where a phone writes GPS, the capture time and
     // the device name — cannot survive a decode to pixels and a re-encode.
     // This asserts the mechanism: the output is PNG regardless of input, so

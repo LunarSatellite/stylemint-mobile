@@ -42,7 +42,11 @@ class ProductPinned extends LiveRoomEvent {
 }
 
 class ProductReserved extends LiveRoomEvent {
-  const ProductReserved(this.reservationId, this.productId, this.expiresInSeconds);
+  const ProductReserved(
+    this.reservationId,
+    this.productId,
+    this.expiresInSeconds,
+  );
   final String reservationId;
   final String productId;
   final int expiresInSeconds;

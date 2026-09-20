@@ -19,7 +19,8 @@ abstract class InterestsState with _$InterestsState {
     required List<InterestDto> available,
     required Set<String> selectedIds,
   }) = _InterestsSuccess;
-  const factory InterestsState.loadFailure(NetworkExceptions failure) = _InterestsNetworkExceptions;
+  const factory InterestsState.loadFailure(NetworkExceptions failure) =
+      _InterestsNetworkExceptions;
 
   bool get isLoading =>
       maybeWhen(loadInProgress: () => true, orElse: () => false);
@@ -27,7 +28,7 @@ abstract class InterestsState with _$InterestsState {
 
 class InterestsNotifier extends StateNotifier<InterestsState> {
   InterestsNotifier({required this.authRepository})
-      : super(const InterestsState.initial());
+    : super(const InterestsState.initial());
 
   final AuthRepository authRepository;
 
@@ -38,8 +39,10 @@ class InterestsNotifier extends StateNotifier<InterestsState> {
       authRepository.listInterests(accountId),
     ]);
 
-    final availableResult = results[0] as Either<NetworkExceptions, List<InterestDto>>;
-    final selectedResult = results[1] as Either<NetworkExceptions, List<InterestDto>>;
+    final availableResult =
+        results[0] as Either<NetworkExceptions, List<InterestDto>>;
+    final selectedResult =
+        results[1] as Either<NetworkExceptions, List<InterestDto>>;
 
     // If the catalog fails there is nothing to show — surface the error.
     // If only the user's selections fail (e.g. new account returns 404/empty),
@@ -96,5 +99,6 @@ class InterestsNotifier extends StateNotifier<InterestsState> {
 
 final interestsProvider =
     StateNotifierProvider<InterestsNotifier, InterestsState>(
-  (ref) => InterestsNotifier(authRepository: ref.watch(authRepositoryProvider)),
-);
+      (ref) =>
+          InterestsNotifier(authRepository: ref.watch(authRepositoryProvider)),
+    );

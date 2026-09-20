@@ -149,8 +149,7 @@ class FakeInboundShareSource implements InboundShareSource {
   final StreamController<InboundShare> _controller =
       StreamController<InboundShare>.broadcast();
 
-  void share(Uint8List bytes) =>
-      _controller.add(InboundShare(bytes: bytes));
+  void share(Uint8List bytes) => _controller.add(InboundShare(bytes: bytes));
 
   Future<void> close() => _controller.close();
 

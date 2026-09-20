@@ -8,13 +8,14 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 
 final registrationNotifierProvider =
     StateNotifierProvider<RegistrationNotifier, RegistrationState>((ref) {
-  return RegistrationNotifier(
-    authRepository: ref.watch(authRepositoryProvider),
-  );
-});
+      return RegistrationNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      );
+    });
 
-final roleNotifierProvider =
-    StateNotifierProvider<RoleNotifier, RolesState>((ref) {
+final roleNotifierProvider = StateNotifierProvider<RoleNotifier, RolesState>((
+  ref,
+) {
   return RoleNotifier(authRepository: ref.watch(authRepositoryProvider));
 });
 
@@ -28,5 +29,5 @@ final profileTabVisitedProvider = StateProvider<int>((ref) => 0);
 
 final accountNotifierProvider =
     StateNotifierProvider<AccountNotifier, AccountState>((ref) {
-  return AccountNotifier(authRepository: ref.watch(authRepositoryProvider));
-});
+      return AccountNotifier(authRepository: ref.watch(authRepositoryProvider));
+    });

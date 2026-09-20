@@ -88,7 +88,9 @@ class _CommissionChip extends StatelessWidget {
         if (parts.isEmpty) return const SizedBox.shrink();
         final label = parts.join(' · ');
         return Semantics(
-          label: '$label, from your partnership with ' 'this brand',
+          label:
+              '$label, from your partnership with '
+              'this brand',
           excludeSemantics: true,
           child: Container(
             padding: const EdgeInsets.symmetric(
@@ -854,7 +856,7 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
                           ),
                         )
                         .asData
-        ?.value;
+                        ?.value;
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(
                         horizontal: DesignTokens.s12,

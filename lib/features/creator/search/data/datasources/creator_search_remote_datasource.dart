@@ -33,7 +33,10 @@ class CreatorSearchRemoteDataSource {
     return _listOf(m, 'creators', SearchCreatorResultDto.fromJson);
   }
 
-  Future<Map<String, dynamic>> _search(String query, CreatorSearchType type) async {
+  Future<Map<String, dynamic>> _search(
+    String query,
+    CreatorSearchType type,
+  ) async {
     final response = await apiClient.get(
       '/api/v1/customer/search',
       queryParameters: {
@@ -49,9 +52,8 @@ class CreatorSearchRemoteDataSource {
     Map<String, dynamic> envelope,
     String key,
     T Function(Map<String, dynamic>) fromJson,
-  ) =>
-      (envelope[key] as List<dynamic>? ?? const <dynamic>[])
-          .whereType<Map<String, dynamic>>()
-          .map(fromJson)
-          .toList(growable: false);
+  ) => (envelope[key] as List<dynamic>? ?? const <dynamic>[])
+      .whereType<Map<String, dynamic>>()
+      .map(fromJson)
+      .toList(growable: false);
 }

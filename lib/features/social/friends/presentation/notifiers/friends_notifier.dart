@@ -28,7 +28,8 @@ abstract class FriendsListState with _$FriendsListState {
 @freezed
 abstract class RequestsListState with _$RequestsListState {
   const factory RequestsListState.initial() = _RequestsListInitial;
-  const factory RequestsListState.loadInProgress() = _RequestsListLoadInProgress;
+  const factory RequestsListState.loadInProgress() =
+      _RequestsListLoadInProgress;
   const factory RequestsListState.loadSuccess(List<FriendRequest> requests) =
       _RequestsListLoadSuccess;
   const factory RequestsListState.loadFailure(NetworkExceptions failure) =
@@ -65,7 +66,11 @@ class FriendsNotifier extends StateNotifier<FriendsViewState> {
 
   final FriendsRepository _repository;
 
-  Future<void> loadFriends({String? search, int limit = 20, String? cursor}) async {
+  Future<void> loadFriends({
+    String? search,
+    int limit = 20,
+    String? cursor,
+  }) async {
     state = state.copyWith(
       friendsState: const FriendsListState.loadInProgress(),
     );

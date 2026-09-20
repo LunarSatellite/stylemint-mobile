@@ -56,13 +56,14 @@ final partnershipsListNotifierProvider =
 /// Family keyed by brief id — drives lock/fork/retire/recompute-roi for one
 /// brief (Vendor §3.1). A fresh notifier per id keeps concurrently open
 /// brief detail screens independent.
-final campaignDetailNotifierProvider = StateNotifierProvider.family<
-  CampaignDetailNotifier,
-  CampaignDetailState,
-  String
->(
-  (ref, briefId) => CampaignDetailNotifier(
-    ref.watch(vendorPartnershipsRepositoryProvider),
-    briefId,
-  ),
-);
+final campaignDetailNotifierProvider =
+    StateNotifierProvider.family<
+      CampaignDetailNotifier,
+      CampaignDetailState,
+      String
+    >(
+      (ref, briefId) => CampaignDetailNotifier(
+        ref.watch(vendorPartnershipsRepositoryProvider),
+        briefId,
+      ),
+    );

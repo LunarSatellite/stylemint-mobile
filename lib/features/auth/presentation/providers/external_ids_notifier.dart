@@ -26,7 +26,7 @@ abstract class ExternalIdsState with _$ExternalIdsState {
 
 class ExternalIdsNotifier extends StateNotifier<ExternalIdsState> {
   ExternalIdsNotifier({required this.authRepository})
-      : super(const ExternalIdsState.initial());
+    : super(const ExternalIdsState.initial());
 
   final AuthRepository authRepository;
 
@@ -55,6 +55,7 @@ class ExternalIdsNotifier extends StateNotifier<ExternalIdsState> {
 
 final externalIdsProvider =
     StateNotifierProvider<ExternalIdsNotifier, ExternalIdsState>(
-  (ref) =>
-      ExternalIdsNotifier(authRepository: ref.watch(authRepositoryProvider)),
-);
+      (ref) => ExternalIdsNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );

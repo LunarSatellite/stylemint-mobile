@@ -15,7 +15,8 @@ abstract class DiscoverState with _$DiscoverState {
   const factory DiscoverState.initial() = _Initial;
   const factory DiscoverState.loadInProgress() = _LoadInProgress;
   const factory DiscoverState.loadSuccess(DiscoverData data) = _LoadSuccess;
-  const factory DiscoverState.loadFailure(NetworkExceptions failure) = _LoadFailure;
+  const factory DiscoverState.loadFailure(NetworkExceptions failure) =
+      _LoadFailure;
 }
 
 class DiscoverNotifier extends StateNotifier<DiscoverState> {

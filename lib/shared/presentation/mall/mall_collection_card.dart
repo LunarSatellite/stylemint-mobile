@@ -84,71 +84,71 @@ class MallCollectionCard extends StatelessWidget {
     ].join(', ');
 
     final card = DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: radius,
-          boxShadow: DesignTokens.shadowCard,
-        ),
-        child: ClipRRect(
-          borderRadius: radius,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ExcludeSemantics(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    MallNetworkImage(url: item.coverUrl),
-                    const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: DesignTokens.imageScrim,
-                      ),
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: DesignTokens.shadowCard,
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ExcludeSemantics(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  MallNetworkImage(url: item.coverUrl),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: DesignTokens.imageScrim,
                     ),
-                    PositionedDirectional(
-                      start: inset,
-                      end: inset,
-                      bottom: inset,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (eyebrow != null) ...[
-                            MallEyebrow(eyebrow, color: DesignTokens.textLight),
-                            const SizedBox(height: DesignTokens.s6),
-                          ],
-                          Text(
-                            item.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: compact ? _compactTitleStyle : _titleStyle,
-                          ),
-                          if (previews.isNotEmpty) ...[
-                            const SizedBox(height: DesignTokens.s12),
-                            _PreviewStrip(urls: previews),
-                          ],
-                          if (count != null) ...[
-                            const SizedBox(height: DesignTokens.s8),
-                            Text(
-                              strings.itemCount(count),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: _countStyle,
-                            ),
-                          ],
+                  ),
+                  PositionedDirectional(
+                    start: inset,
+                    end: inset,
+                    bottom: inset,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (eyebrow != null) ...[
+                          MallEyebrow(eyebrow, color: DesignTokens.textLight),
+                          const SizedBox(height: DesignTokens.s6),
                         ],
-                      ),
+                        Text(
+                          item.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: compact ? _compactTitleStyle : _titleStyle,
+                        ),
+                        if (previews.isNotEmpty) ...[
+                          const SizedBox(height: DesignTokens.s12),
+                          _PreviewStrip(urls: previews),
+                        ],
+                        if (count != null) ...[
+                          const SizedBox(height: DesignTokens.s8),
+                          Text(
+                            strings.itemCount(count),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _countStyle,
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              MallTapOverlay(
-                semanticLabel: label,
-                onTap: onTap,
-                borderRadius: radius,
-              ),
-            ],
-          ),
+            ),
+            MallTapOverlay(
+              semanticLabel: label,
+              onTap: onTap,
+              borderRadius: radius,
+            ),
+          ],
         ),
-      );
+      ),
+    );
 
     return fill ? card : AspectRatio(aspectRatio: aspectRatio, child: card);
   }

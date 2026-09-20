@@ -25,14 +25,17 @@ abstract class HandleListState with _$HandleListState {
 
 class HandleListNotifier extends StateNotifier<HandleListState> {
   HandleListNotifier({required this.authRepository})
-      : super(const HandleListState.initial());
+    : super(const HandleListState.initial());
 
   final AuthRepository authRepository;
 
   Future<void> load(String accountId) async {
     state = const HandleListState.loadInProgress();
     final result = await authRepository.listHandles(accountId);
-    state = result.fold(HandleListState.loadFailure, HandleListState.loadSuccess);
+    state = result.fold(
+      HandleListState.loadFailure,
+      HandleListState.loadSuccess,
+    );
   }
 }
 
@@ -53,7 +56,7 @@ abstract class HandleActionState with _$HandleActionState {
 
 class HandleActionNotifier extends StateNotifier<HandleActionState> {
   HandleActionNotifier({required this.authRepository})
-      : super(const HandleActionState.initial());
+    : super(const HandleActionState.initial());
 
   final AuthRepository authRepository;
 
@@ -107,11 +110,13 @@ class HandleActionNotifier extends StateNotifier<HandleActionState> {
 
 final handleListProvider =
     StateNotifierProvider<HandleListNotifier, HandleListState>(
-  (ref) => HandleListNotifier(authRepository: ref.watch(authRepositoryProvider)),
-);
+      (ref) =>
+          HandleListNotifier(authRepository: ref.watch(authRepositoryProvider)),
+    );
 
 final handleActionProvider =
     StateNotifierProvider<HandleActionNotifier, HandleActionState>(
-  (ref) =>
-      HandleActionNotifier(authRepository: ref.watch(authRepositoryProvider)),
-);
+      (ref) => HandleActionNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );

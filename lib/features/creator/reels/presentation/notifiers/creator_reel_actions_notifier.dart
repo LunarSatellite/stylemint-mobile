@@ -31,45 +31,44 @@ class CreatorReelActionFailed extends CreatorReelActionState {
 /// and product tagging for a single reel.
 class CreatorReelActionsNotifier extends StateNotifier<CreatorReelActionState> {
   CreatorReelActionsNotifier(this._repository)
-      : super(const CreatorReelActionIdle());
+    : super(const CreatorReelActionIdle());
 
   final CreatorReelsRepository _repository;
 
   Future<bool> publish(String reelId) => _run(
-        () => _repository.publishReel(reelId),
-        'Reel published.',
-      );
+    () => _repository.publishReel(reelId),
+    'Reel published.',
+  );
 
   Future<bool> unpublish(String reelId) => _run(
-        () => _repository.unpublishReel(reelId),
-        'Reel unpublished.',
-      );
+    () => _repository.unpublishReel(reelId),
+    'Reel unpublished.',
+  );
 
   Future<bool> updateCaption(String reelId, String? caption) => _run(
-        () => _repository.updateCaption(reelId, caption),
-        'Caption updated.',
-      );
+    () => _repository.updateCaption(reelId, caption),
+    'Caption updated.',
+  );
 
   Future<bool> tagProduct(
     String reelId, {
     required String productId,
     double overlayPositionX = 0.5,
     double overlayPositionY = 0.5,
-  }) =>
-      _run(
-        () => _repository.tagProduct(
-          reelId,
-          productId: productId,
-          overlayPositionX: overlayPositionX,
-          overlayPositionY: overlayPositionY,
-        ),
-        'Product tagged.',
-      );
+  }) => _run(
+    () => _repository.tagProduct(
+      reelId,
+      productId: productId,
+      overlayPositionX: overlayPositionX,
+      overlayPositionY: overlayPositionY,
+    ),
+    'Product tagged.',
+  );
 
   Future<bool> untagProduct(String reelId, String taggedProductId) => _run(
-        () => _repository.untagProduct(reelId, taggedProductId),
-        'Product removed.',
-      );
+    () => _repository.untagProduct(reelId, taggedProductId),
+    'Product removed.',
+  );
 
   /// Returns whether the call succeeded so the caller can refresh the
   /// dependent read providers only on success.

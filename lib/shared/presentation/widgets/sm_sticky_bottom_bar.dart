@@ -34,7 +34,8 @@ class SmStickyBottomBar extends StatelessWidget {
         color: DesignTokens.bgAppFoundation,
         border: showTopDivider
             ? const Border(
-                top: BorderSide(color: DesignTokens.borderDefault, width: 1))
+                top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+              )
             : null,
       ),
       // SafeArea (not just padding) so the system nav bar — 3-button or
@@ -43,7 +44,11 @@ class SmStickyBottomBar extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16, DesignTokens.s24, DesignTokens.s16, DesignTokens.s24),
+            DesignTokens.s16,
+            DesignTokens.s24,
+            DesignTokens.s16,
+            DesignTokens.s24,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -99,12 +104,16 @@ class _Pill extends StatelessWidget {
         borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.s32, vertical: DesignTokens.s16),
+            horizontal: DesignTokens.s32,
+            vertical: DesignTokens.s16,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(label,
-                  style: DesignTokens.oneLinerSemibold.copyWith(color: textColor)),
+              Text(
+                label,
+                style: DesignTokens.oneLinerSemibold.copyWith(color: textColor),
+              ),
               if (trailing != null) ...[
                 const SizedBox(width: DesignTokens.s8),
                 trailing!,

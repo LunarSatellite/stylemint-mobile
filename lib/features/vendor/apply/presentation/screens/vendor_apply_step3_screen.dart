@@ -21,7 +21,11 @@ class VendorApplyStep3Screen extends ConsumerStatefulWidget {
 enum _DocStatus { success, failed }
 
 class _DocFile {
-  _DocFile({required this.name, required this.size, this.status = _DocStatus.success});
+  _DocFile({
+    required this.name,
+    required this.size,
+    this.status = _DocStatus.success,
+  });
   final String name;
   final String size;
   final _DocStatus status;
@@ -69,11 +73,15 @@ class _VendorApplyStep3ScreenState
       setState(() => files.add(_DocFile(name: picked.name, size: sizeStr)));
     } catch (_) {
       if (!mounted) return;
-      setState(() => files.add(_DocFile(
+      setState(
+        () => files.add(
+          _DocFile(
             name: picked.name,
             size: '—',
             status: _DocStatus.failed,
-          )));
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setLoading(false);
@@ -159,10 +167,13 @@ class _VendorApplyStep3ScreenState
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.canPop()
-                  ? context.popOrHome()
-                  : context.go(RouteNames.vendorApplyStep2),
+              ? context.popOrHome()
+              : context.go(RouteNames.vendorApplyStep2),
         ),
       ),
       body: SafeArea(
@@ -259,15 +270,19 @@ class _VendorApplyStep3ScreenState
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('• ',
+                        Text(
+                          '• ',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.infoTextLight,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            tip,
                             style: DesignTokens.smallRegular.copyWith(
                               color: DesignTokens.infoTextLight,
-                            )),
-                        Expanded(
-                          child: Text(tip,
-                              style: DesignTokens.smallRegular.copyWith(
-                                color: DesignTokens.infoTextLight,
-                              )),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -520,7 +535,9 @@ class _VendorApplyStep3ScreenState
                 foregroundColor: DesignTokens.textWhite,
                 padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
                 minimumSize: const Size(0, DesignTokens.buttonHeight),
                 elevation: 0,

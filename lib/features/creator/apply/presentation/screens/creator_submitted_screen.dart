@@ -31,8 +31,18 @@ class _CreatorSubmittedScreenState
 
   String get _formattedDate {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final h = _submittedAt.hour.toString().padLeft(2, '0');
     final m = _submittedAt.minute.toString().padLeft(2, '0');
@@ -54,8 +64,10 @@ class _CreatorSubmittedScreenState
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16, DesignTokens.s40,
-                  DesignTokens.s16, DesignTokens.s32,
+                  DesignTokens.s16,
+                  DesignTokens.s40,
+                  DesignTokens.s16,
+                  DesignTokens.s32,
                 ),
                 child: Column(
                   children: [
@@ -79,14 +91,14 @@ class _CreatorSubmittedScreenState
                     Text(
                       'Thank you for applying to become a creator on StyleMint. We\'re reviewing your application',
                       textAlign: TextAlign.center,
-                      style: DesignTokens.mediumRegular
-                          .copyWith(color: DesignTokens.textLight),
+                      style: DesignTokens.mediumRegular.copyWith(
+                        color: DesignTokens.textLight,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s28),
 
                     // Status card
-                    _StatusCard(
-                        appId: _appId, submittedAt: _formattedDate),
+                    _StatusCard(appId: _appId, submittedAt: _formattedDate),
                     const SizedBox(height: DesignTokens.s16),
 
                     // What happens next
@@ -131,8 +143,10 @@ class _CreatorSubmittedScreenState
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16, DesignTokens.s16,
-                DesignTokens.s16, DesignTokens.s32,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s32,
               ),
               child: SafeArea(
                 top: false,
@@ -143,15 +157,18 @@ class _CreatorSubmittedScreenState
                       children: [
                         Text(
                           'Need Help?  ',
-                          style: DesignTokens.mediumRegular
-                              .copyWith(color: DesignTokens.textLight),
+                          style: DesignTokens.mediumRegular.copyWith(
+                            color: DesignTokens.textLight,
+                          ),
                         ),
                         GestureDetector(
-                          onTap: () => context.push(RouteNames.creatorSupportContact),
+                          onTap: () =>
+                              context.push(RouteNames.creatorSupportContact),
                           child: Text(
                             'Contact Support',
-                            style: DesignTokens.mediumSemibold
-                                .copyWith(color: DesignTokens.primaryGreen),
+                            style: DesignTokens.mediumSemibold.copyWith(
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
                         ),
                       ],
@@ -161,8 +178,9 @@ class _CreatorSubmittedScreenState
                       width: double.infinity,
                       child: Material(
                         color: DesignTokens.primaryGreen,
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.buttonRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
                         child: InkWell(
                           onTap: () {
                             ref.read(creatorFormProvider.notifier).reset();
@@ -174,23 +192,27 @@ class _CreatorSubmittedScreenState
                             }
                             context.go(RouteNames.home);
                           },
-                          borderRadius:
-                              BorderRadius.circular(DesignTokens.buttonRadius),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.buttonRadius,
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                                vertical: DesignTokens.s16),
+                              vertical: DesignTokens.s16,
+                            ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.home_rounded,
-                                    size: DesignTokens.iconSmall,
-                                    color: DesignTokens.buttonPrimaryText),
+                                const Icon(
+                                  Icons.home_rounded,
+                                  size: DesignTokens.iconSmall,
+                                  color: DesignTokens.buttonPrimaryText,
+                                ),
                                 const SizedBox(width: DesignTokens.s8),
                                 Text(
                                   'Return to Home',
-                                  style: DesignTokens.oneLinerSemibold
-                                      .copyWith(
-                                          color: DesignTokens.buttonPrimaryText),
+                                  style: DesignTokens.oneLinerSemibold.copyWith(
+                                    color: DesignTokens.buttonPrimaryText,
+                                  ),
                                 ),
                               ],
                             ),
@@ -229,7 +251,11 @@ class _StatusCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset('assets/images/vendordashboard/badge_under_review.png', width: 36, height: 36),
+          Image.asset(
+            'assets/images/vendordashboard/badge_under_review.png',
+            width: 36,
+            height: 36,
+          ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
             child: Column(
@@ -257,19 +283,26 @@ class _StatusCard extends StatelessWidget {
                 // Under Review chip
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s8, vertical: 4),
+                    horizontal: DesignTokens.s8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: DesignTokens.warningFillDark,
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.chipRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.chipRadius,
+                    ),
                     border: Border.all(
-                        color: DesignTokens.colorWarning.withOpacity(0.4)),
+                      color: DesignTokens.colorWarning.withOpacity(0.4),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.hourglass_top_rounded,
-                          size: 12, color: DesignTokens.colorWarning),
+                      const Icon(
+                        Icons.hourglass_top_rounded,
+                        size: 12,
+                        color: DesignTokens.colorWarning,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Under Review',
@@ -346,11 +379,14 @@ class _InfoCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('• ',
-                      style: TextStyle(
-                          color: titleColor,
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 14)),
+                  Text(
+                    '• ',
+                    style: TextStyle(
+                      color: titleColor,
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                    ),
+                  ),
                   Expanded(
                     child: Text(
                       item,

@@ -26,9 +26,10 @@ class CarbonImpact {
   /// the share rounds down to zero.
   int? get percentSaved {
     if (comparedToTraditionalKg <= 0 || kgCo2Saved <= 0) return null;
-    final percent = (kgCo2Saved / comparedToTraditionalKg * 100)
-        .round()
-        .clamp(0, 100);
+    final percent = (kgCo2Saved / comparedToTraditionalKg * 100).round().clamp(
+      0,
+      100,
+    );
     return percent == 0 ? null : percent;
   }
 }

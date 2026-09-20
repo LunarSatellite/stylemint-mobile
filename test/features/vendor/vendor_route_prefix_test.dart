@@ -25,10 +25,11 @@ void main() {
   test('these vendor paths are never called with the CRM prefix', () {
     final offenders = <String>[];
 
-    for (final file in Directory('lib')
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'))) {
+    for (final file
+        in Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))) {
       final lines = file.readAsLinesSync();
       for (var i = 0; i < lines.length; i++) {
         for (final w in wrong) {
@@ -42,7 +43,8 @@ void main() {
     expect(
       offenders,
       isEmpty,
-      reason: 'these map only under the commerce prefix; the CRM prefix 404s:\n'
+      reason:
+          'these map only under the commerce prefix; the CRM prefix 404s:\n'
           '${offenders.join('\n')}',
     );
   });

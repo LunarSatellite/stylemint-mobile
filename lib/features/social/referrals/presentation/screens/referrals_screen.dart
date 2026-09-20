@@ -40,7 +40,8 @@ class ReferralsScreen extends ConsumerWidget {
         loadSuccess: (link, redemptions) {
           return RefreshIndicator(
             color: DesignTokens.primaryGreen,
-            onRefresh: () => ref.read(referralsNotifierProvider.notifier).load(),
+            onRefresh: () =>
+                ref.read(referralsNotifierProvider.notifier).load(),
             child: ListView(
               padding: const EdgeInsets.all(DesignTokens.s16),
               children: [
@@ -82,8 +83,12 @@ class ReferralsScreen extends ConsumerWidget {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.copy, color: DesignTokens.primaryGreen),
-                              onPressed: () => _copyLink(context, link.shareUrl),
+                              icon: const Icon(
+                                Icons.copy,
+                                color: DesignTokens.primaryGreen,
+                              ),
+                              onPressed: () =>
+                                  _copyLink(context, link.shareUrl),
                             ),
                           ],
                         ),
@@ -105,7 +110,10 @@ class ReferralsScreen extends ConsumerWidget {
                         const SizedBox(height: DesignTokens.s8),
                         const Text(
                           'This link has expired or reached its redemption limit.',
-                          style: TextStyle(color: DesignTokens.colorError, fontSize: 12),
+                          style: TextStyle(
+                            color: DesignTokens.colorError,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ],
@@ -119,7 +127,8 @@ class ReferralsScreen extends ConsumerWidget {
                 const SizedBox(height: DesignTokens.s8),
                 if (redemptions.isEmpty)
                   const SmEmptyState(
-                    message: 'No one has used your invite link yet — share it to start earning credit.',
+                    message:
+                        'No one has used your invite link yet — share it to start earning credit.',
                     icon: Icons.group_add_outlined,
                   )
                 else
@@ -130,7 +139,10 @@ class ReferralsScreen extends ConsumerWidget {
                       decoration: DesignTokens.cardDecoration(),
                       child: Row(
                         children: [
-                          const Icon(Icons.person_outline, color: DesignTokens.textMuted),
+                          const Icon(
+                            Icons.person_outline,
+                            color: DesignTokens.textMuted,
+                          ),
                           const SizedBox(width: DesignTokens.s8),
                           Expanded(
                             child: Text(
@@ -138,7 +150,11 @@ class ReferralsScreen extends ConsumerWidget {
                               style: DesignTokens.smallRegular,
                             ),
                           ),
-                          const Icon(Icons.check_circle, size: 16, color: DesignTokens.primaryGreen),
+                          const Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: DesignTokens.primaryGreen,
+                          ),
                         ],
                       ),
                     ),

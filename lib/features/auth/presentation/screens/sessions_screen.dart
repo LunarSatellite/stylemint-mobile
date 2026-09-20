@@ -29,8 +29,7 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
   }
 
   Future<void> _loadSessions() async {
-    final session =
-        ref.read(sessionControllerProvider);
+    final session = ref.read(sessionControllerProvider);
     final accountId = session.maybeWhen(
       authenticated: (id) => id,
       orElse: () => '',
@@ -61,8 +60,7 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
   }
 
   Future<void> _revokeSession(UserSessionDto s) async {
-    final sessionState =
-        ref.read(sessionControllerProvider);
+    final sessionState = ref.read(sessionControllerProvider);
     final accountId = sessionState.maybeWhen(
       authenticated: (id) => id,
       orElse: () => '',
@@ -86,8 +84,7 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
   }
 
   Future<void> _revokeAllOthers() async {
-    final sessionState =
-        ref.read(sessionControllerProvider);
+    final sessionState = ref.read(sessionControllerProvider);
     final accountId = sessionState.maybeWhen(
       authenticated: (id) => id,
       orElse: () => '',
@@ -194,7 +191,9 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                     borderRadius: BorderRadius.circular(DesignTokens.s8),
                   ),
                   child: Icon(
-                    isActive ? Icons.phone_android_rounded : Icons.phone_android_rounded,
+                    isActive
+                        ? Icons.phone_android_rounded
+                        : Icons.phone_android_rounded,
                     color: isActive
                         ? DesignTokens.primaryGreen
                         : DesignTokens.textMuted,

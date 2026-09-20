@@ -23,7 +23,11 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 class FollowBrandsScreen extends ConsumerWidget {
   const FollowBrandsScreen({super.key});
 
-  Future<void> _toggle(WidgetRef ref, BuildContext context, String vendorAccountId) async {
+  Future<void> _toggle(
+    WidgetRef ref,
+    BuildContext context,
+    String vendorAccountId,
+  ) async {
     try {
       await ref.read(followNotifierProvider.notifier).toggle(vendorAccountId);
     } catch (_) {
@@ -46,7 +50,11 @@ class FollowBrandsScreen extends ConsumerWidget {
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(
-                  DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, 0),
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                0,
+              ),
               child: _Header(),
             ),
             const SizedBox(height: DesignTokens.s24),
@@ -54,17 +62,22 @@ class FollowBrandsScreen extends ConsumerWidget {
               child: async.when(
                 loading: () => const SmPageLoader(),
                 error: (_, _e) => Center(
-                  child: Text("Couldn't load brands.",
-                      style: DesignTokens.bodyText),
+                  child: Text(
+                    "Couldn't load brands.",
+                    style: DesignTokens.bodyText,
+                  ),
                 ),
                 data: (brands) => brands.isEmpty
                     ? Center(
-                        child: Text('No approved brands yet — check back soon.',
-                            style: DesignTokens.bodyText),
+                        child: Text(
+                          'No approved brands yet — check back soon.',
+                          style: DesignTokens.bodyText,
+                        ),
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s16),
+                          horizontal: DesignTokens.s16,
+                        ),
                         itemCount: brands.length,
                         separatorBuilder: (_, _i) =>
                             const SizedBox(height: DesignTokens.s20),
@@ -156,15 +169,24 @@ class _BrandCard extends StatelessWidget {
                   child: (logo == null || logo.isEmpty)
                       ? const ColoredBox(
                           color: DesignTokens.bgAppBodyLight,
-                          child: Icon(Icons.storefront_rounded,
-                              color: DesignTokens.textMuted, size: 22),
+                          child: Icon(
+                            Icons.storefront_rounded,
+                            color: DesignTokens.textMuted,
+                            size: 22,
+                          ),
                         )
-                      : Image.network(logo,
+                      : Image.network(
+                          logo,
                           fit: BoxFit.cover,
                           errorBuilder: (_, _e, _s) => const ColoredBox(
-                              color: DesignTokens.bgAppBodyLight,
-                              child: Icon(Icons.storefront_rounded,
-                                  color: DesignTokens.textMuted, size: 22))),
+                            color: DesignTokens.bgAppBodyLight,
+                            child: Icon(
+                              Icons.storefront_rounded,
+                              color: DesignTokens.textMuted,
+                              size: 22,
+                            ),
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: DesignTokens.s8),
@@ -183,13 +205,17 @@ class _BrandCard extends StatelessWidget {
           const SizedBox(height: DesignTokens.s12),
           Row(
             children: [
-              const Icon(Icons.percent_rounded,
-                  size: 14, color: DesignTokens.textMuted),
+              const Icon(
+                Icons.percent_rounded,
+                size: 14,
+                color: DesignTokens.textMuted,
+              ),
               const SizedBox(width: 4),
               Text(
                 '${brand.commissionRangeLabel} commission for creators',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textLight),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
               ),
             ],
           ),
@@ -212,7 +238,9 @@ class _FollowButton extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s12, vertical: DesignTokens.s8),
+          horizontal: DesignTokens.s12,
+          vertical: DesignTokens.s8,
+        ),
         decoration: BoxDecoration(
           color: following ? Colors.transparent : DesignTokens.primaryGreen,
           borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
@@ -225,7 +253,9 @@ class _FollowButton extends StatelessWidget {
         child: Text(
           following ? 'Following' : 'Follow',
           style: DesignTokens.smallRegular.copyWith(
-            color: following ? DesignTokens.textLight : DesignTokens.bgAppFoundation,
+            color: following
+                ? DesignTokens.textLight
+                : DesignTokens.bgAppFoundation,
             fontWeight: FontWeight.w600,
           ),
         ),

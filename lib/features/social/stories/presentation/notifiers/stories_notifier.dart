@@ -17,7 +17,8 @@ sealed class StoriesState with _$StoriesState {
   const factory StoriesState.loadInProgress() = _StoriesLoadInProgress;
   const factory StoriesState.loadSuccess(List<StoryGroup> groups) =
       _StoriesLoadSuccess;
-  const factory StoriesState.loadFailure(NetworkExceptions failure) = _StoriesLoadFailure;
+  const factory StoriesState.loadFailure(NetworkExceptions failure) =
+      _StoriesLoadFailure;
 }
 
 class StoriesNotifier extends StateNotifier<StoriesState> {
@@ -36,7 +37,9 @@ class StoriesNotifier extends StateNotifier<StoriesState> {
     );
   }
 
-  Future<Either<NetworkExceptions, List<Story>>> loadStories(String userId) async {
+  Future<Either<NetworkExceptions, List<Story>>> loadStories(
+    String userId,
+  ) async {
     return _repository.getStories(userId);
   }
 

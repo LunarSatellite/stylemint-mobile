@@ -141,19 +141,21 @@ void main() {
     expect(repository.relatedCalls, [null]);
   });
 
-  test('a page of reels already shown fetches the next one straight away',
-      () async {
-    repository.related
-      ..[''] = _page(['landed'], next: 'c1')
-      ..['c1'] = _page(['landed'], next: 'c2')
-      ..['c2'] = _page(['r9']);
+  test(
+    'a page of reels already shown fetches the next one straight away',
+    () async {
+      repository.related
+        ..[''] = _page(['landed'], next: 'c1')
+        ..['c1'] = _page(['landed'], next: 'c2')
+        ..['c2'] = _page(['r9']);
 
-    final notifier = land();
-    await _settle();
+      final notifier = land();
+      await _settle();
 
-    expect(_ids(notifier.state), ['landed', 'r9']);
-    expect(repository.relatedCalls, [null, 'c1', 'c2']);
-  });
+      expect(_ids(notifier.state), ['landed', 'r9']);
+      expect(repository.relatedCalls, [null, 'c1', 'c2']);
+    },
+  );
 
   test('a failed related page stops the paging quietly and keeps the landed '
       'reel', () async {
@@ -169,22 +171,24 @@ void main() {
     expect(repository.feedCalls, isEmpty);
   });
 
-  test('a reel that is gone fails as not found, and a retry can land it',
-      () async {
-    repository.detail = left(const NetworkExceptions.notFound());
+  test(
+    'a reel that is gone fails as not found, and a retry can land it',
+    () async {
+      repository.detail = left(const NetworkExceptions.notFound());
 
-    final notifier = land();
-    await _settle();
-    final state = notifier.state;
-    expect(state, isA<ReelLandingFailure>());
-    expect((state as ReelLandingFailure).failure.isNotFound, isTrue);
-    expect(repository.relatedCalls, isEmpty);
+      final notifier = land();
+      await _settle();
+      final state = notifier.state;
+      expect(state, isA<ReelLandingFailure>());
+      expect((state as ReelLandingFailure).failure.isNotFound, isTrue);
+      expect(repository.relatedCalls, isEmpty);
 
-    repository.detail = right(_reel('landed'));
-    await notifier.load();
-    await _settle();
-    expect(_ids(notifier.state), ['landed']);
-  });
+      repository.detail = right(_reel('landed'));
+      await notifier.load();
+      await _settle();
+      expect(_ids(notifier.state), ['landed']);
+    },
+  );
 
   test('asks for one page at a time', () async {
     final gate = repository.relatedGate = Completer<void>();

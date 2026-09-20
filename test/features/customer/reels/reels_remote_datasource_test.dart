@@ -110,21 +110,24 @@ void main() {
       return (await datasource.getReelsFeed(limit: 10)).reels;
     }
 
-    test('parses the PascalCase YouTubeShorts wire value and keeps externalId',
-        () async {
-      final reels = await mapCards([
-        _card(
-          reelId: 'r1',
-          sourcePlatform: 'YouTubeShorts',
-          externalId: '39bix0Z0NOQ',
-          externalUrl: 'https://youtube.com/shorts/39bix0Z0NOQ?feature=shared',
-        ),
-      ]);
+    test(
+      'parses the PascalCase YouTubeShorts wire value and keeps externalId',
+      () async {
+        final reels = await mapCards([
+          _card(
+            reelId: 'r1',
+            sourcePlatform: 'YouTubeShorts',
+            externalId: '39bix0Z0NOQ',
+            externalUrl:
+                'https://youtube.com/shorts/39bix0Z0NOQ?feature=shared',
+          ),
+        ]);
 
-      expect(reels.single.platform, SocialPlatform.youtube);
-      expect(reels.single.externalId, '39bix0Z0NOQ');
-      expect(reels.single.platformVideoId, '39bix0Z0NOQ');
-    });
+        expect(reels.single.platform, SocialPlatform.youtube);
+        expect(reels.single.externalId, '39bix0Z0NOQ');
+        expect(reels.single.platformVideoId, '39bix0Z0NOQ');
+      },
+    );
 
     test('uses externalId as the video id for non-YouTube platforms', () async {
       final reels = await mapCards([
@@ -132,7 +135,8 @@ void main() {
           reelId: 'r2',
           sourcePlatform: 'TikTok',
           externalId: '6718335390845095173',
-          externalUrl: 'https://www.tiktok.com/@scout2015/video/6718335390845095173',
+          externalUrl:
+              'https://www.tiktok.com/@scout2015/video/6718335390845095173',
         ),
       ]);
 
@@ -140,21 +144,23 @@ void main() {
       expect(reels.single.platformVideoId, '6718335390845095173');
     });
 
-    test('falls back to URL parsing when the backend omits externalId',
-        () async {
-      final reels = await mapCards([
-        _card(
-          reelId: 'r3',
-          sourcePlatform: 3,
-          externalId: '',
-          externalUrl: 'https://www.youtube.com/watch?v=I1bYtU4F2AQ',
-        ),
-      ]);
+    test(
+      'falls back to URL parsing when the backend omits externalId',
+      () async {
+        final reels = await mapCards([
+          _card(
+            reelId: 'r3',
+            sourcePlatform: 3,
+            externalId: '',
+            externalUrl: 'https://www.youtube.com/watch?v=I1bYtU4F2AQ',
+          ),
+        ]);
 
-      expect(reels.single.platform, SocialPlatform.youtube);
-      expect(reels.single.externalId, isNull);
-      expect(reels.single.platformVideoId, 'I1bYtU4F2AQ');
-    });
+        expect(reels.single.platform, SocialPlatform.youtube);
+        expect(reels.single.externalId, isNull);
+        expect(reels.single.platformVideoId, 'I1bYtU4F2AQ');
+      },
+    );
 
     test('defaults an unrecognised platform to Instagram', () async {
       final reels = await mapCards([
@@ -164,28 +170,30 @@ void main() {
       expect(reels.single.platform, SocialPlatform.instagram);
     });
 
-    test('maps creatorAvatarUrls in order and keeps creatorAvatarUrl',
-        () async {
-      final reels = await mapCards([
-        _card(
-          reelId: 'r5',
-          sourcePlatform: 'Instagram',
-          creatorAvatarUrl: 'https://tt.example/avatar.jpg',
-          creatorAvatarUrls: [
-            'https://ig.example/avatar.jpg',
-            '',
-            null,
-            'https://tt.example/avatar.jpg',
-          ],
-        ),
-      ]);
+    test(
+      'maps creatorAvatarUrls in order and keeps creatorAvatarUrl',
+      () async {
+        final reels = await mapCards([
+          _card(
+            reelId: 'r5',
+            sourcePlatform: 'Instagram',
+            creatorAvatarUrl: 'https://tt.example/avatar.jpg',
+            creatorAvatarUrls: [
+              'https://ig.example/avatar.jpg',
+              '',
+              null,
+              'https://tt.example/avatar.jpg',
+            ],
+          ),
+        ]);
 
-      expect(reels.single.creatorAvatarUrl, 'https://tt.example/avatar.jpg');
-      expect(reels.single.creatorAvatarUrls, [
-        'https://ig.example/avatar.jpg',
-        'https://tt.example/avatar.jpg',
-      ]);
-    });
+        expect(reels.single.creatorAvatarUrl, 'https://tt.example/avatar.jpg');
+        expect(reels.single.creatorAvatarUrls, [
+          'https://ig.example/avatar.jpg',
+          'https://tt.example/avatar.jpg',
+        ]);
+      },
+    );
 
     test('a card without creatorAvatarUrls maps to an empty list', () async {
       final reels = await mapCards([
@@ -217,10 +225,9 @@ void main() {
   });
 
   group('reel detail mapping', () {
-    Future<Reel> mapDetail(Map<String, dynamic> body) =>
-        ReelsRemoteDataSource(
-          apiClient: _FeedApiClient(body),
-        ).getReelDetail('requested-id');
+    Future<Reel> mapDetail(Map<String, dynamic> body) => ReelsRemoteDataSource(
+      apiClient: _FeedApiClient(body),
+    ).getReelDetail('requested-id');
 
     test('reads the public ReelDto shape', () async {
       final reel = await mapDetail({
@@ -257,61 +264,65 @@ void main() {
       expect(reel.taggedProducts.single.price.amount, 1800);
     });
 
-    test('prefers the combined likeCount and falls back to the requested id',
-        () async {
-      final reel = await mapDetail({
-        'sourcePlatform': 'TikTok',
-        'likeCount': 20,
-        'likesSnapshot': 12,
-      });
+    test(
+      'prefers the combined likeCount and falls back to the requested id',
+      () async {
+        final reel = await mapDetail({
+          'sourcePlatform': 'TikTok',
+          'likeCount': 20,
+          'likesSnapshot': 12,
+        });
 
-      expect(reel.id, 'requested-id');
-      expect(reel.likeCount, 20);
-      expect(reel.isLikedByMe, isNull);
-    });
+        expect(reel.id, 'requested-id');
+        expect(reel.likeCount, 20);
+        expect(reel.isLikedByMe, isNull);
+      },
+    );
   });
 
   group('related reels', () {
-    test('pages GET /v1/public/reels/{id}/related and maps its ReelDto items',
-        () async {
-      final api = _RecordingGetApiClient({
-        'items': [
-          {
-            'id': 'r1',
-            'sourcePlatform': 'TikTok',
-            'externalId': '7000000000000000001',
-            'sourceUrl':
-                'https://www.tiktok.com/@maker/video/7000000000000000001',
-            'creatorDisplayName': 'Maker',
-            'likeCount': 7,
-            'isLikedByMe': true,
-            'caption': 'Packing light #AIgenerated',
-          },
-          // No id: nothing to show or to dedupe by.
-          {'sourcePlatform': 'TikTok'},
-        ],
-        'totalCount': 12,
-        'nextCursor': 'next-1',
-        'previousCursor': null,
-        'pageSize': 10,
-      });
+    test(
+      'pages GET /v1/public/reels/{id}/related and maps its ReelDto items',
+      () async {
+        final api = _RecordingGetApiClient({
+          'items': [
+            {
+              'id': 'r1',
+              'sourcePlatform': 'TikTok',
+              'externalId': '7000000000000000001',
+              'sourceUrl':
+                  'https://www.tiktok.com/@maker/video/7000000000000000001',
+              'creatorDisplayName': 'Maker',
+              'likeCount': 7,
+              'isLikedByMe': true,
+              'caption': 'Packing light #AIgenerated',
+            },
+            // No id: nothing to show or to dedupe by.
+            {'sourcePlatform': 'TikTok'},
+          ],
+          'totalCount': 12,
+          'nextCursor': 'next-1',
+          'previousCursor': null,
+          'pageSize': 10,
+        });
 
-      final page = await ReelsRemoteDataSource(
-        apiClient: api,
-      ).getRelatedReels('landed', limit: 10, cursor: 'c-1');
+        final page = await ReelsRemoteDataSource(
+          apiClient: api,
+        ).getRelatedReels('landed', limit: 10, cursor: 'c-1');
 
-      expect(api.uri, '/v1/public/reels/landed/related');
-      expect(api.queryParameters, {'pageSize': 10, 'cursor': 'c-1'});
-      expect(page.nextCursor, 'next-1');
-      expect(page.reels.map((r) => r.id), ['r1']);
-      final reel = page.reels.single;
-      expect(reel.platform, SocialPlatform.tiktok);
-      expect(reel.platformVideoId, '7000000000000000001');
-      expect(reel.creatorName, 'Maker');
-      expect(reel.likeCount, 7);
-      expect(reel.isLikedByMe, isTrue);
-      expect(reel.caption, 'Packing light #AIgenerated');
-    });
+        expect(api.uri, '/v1/public/reels/landed/related');
+        expect(api.queryParameters, {'pageSize': 10, 'cursor': 'c-1'});
+        expect(page.nextCursor, 'next-1');
+        expect(page.reels.map((r) => r.id), ['r1']);
+        final reel = page.reels.single;
+        expect(reel.platform, SocialPlatform.tiktok);
+        expect(reel.platformVideoId, '7000000000000000001');
+        expect(reel.creatorName, 'Maker');
+        expect(reel.likeCount, 7);
+        expect(reel.isLikedByMe, isTrue);
+        expect(reel.caption, 'Packing light #AIgenerated');
+      },
+    );
 
     test('asks for the first page without a cursor', () async {
       final api = _RecordingGetApiClient({'items': <dynamic>[]});

@@ -6,7 +6,12 @@ import '../../../core/utils/size_config.dart';
 class BaseWidget extends StatelessWidget {
   const BaseWidget({super.key, required this.builder});
 
-  final Widget Function(BuildContext context, SizeConfig config, ThemeData theme) builder;
+  final Widget Function(
+    BuildContext context,
+    SizeConfig config,
+    ThemeData theme,
+  )
+  builder;
 
   @override
   Widget build(BuildContext context) =>
@@ -17,7 +22,12 @@ class BaseWidget extends StatelessWidget {
 class HookBaseWidget extends HookWidget {
   const HookBaseWidget({super.key, required this.builder});
 
-  final Widget Function(BuildContext context, SizeConfig config, ThemeData theme) builder;
+  final Widget Function(
+    BuildContext context,
+    SizeConfig config,
+    ThemeData theme,
+  )
+  builder;
 
   @override
   Widget build(BuildContext context) =>

@@ -64,20 +64,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // per request outcome — never on a plain rebuild.
     ref.listen<OtpRequestState>(otpRequestProvider, (previous, next) {
       next.maybeWhen(
-        loadSuccess:
-            (otp) => context.push(
-              RouteNames.otp,
-              extra: {
-                'phone': _submittedPhone,
-                'otpId': otp.otpId,
-                'identifierType': 'phone',
-              },
-            ),
-        loadFailure:
-            (_) => SmSnackbar.error(
-              context,
-              'Failed to send OTP. Please try again',
-            ),
+        loadSuccess: (otp) => context.push(
+          RouteNames.otp,
+          extra: {
+            'phone': _submittedPhone,
+            'otpId': otp.otpId,
+            'identifierType': 'phone',
+          },
+        ),
+        loadFailure: (_) => SmSnackbar.error(
+          context,
+          'Failed to send OTP. Please try again',
+        ),
         orElse: () {},
       );
     });

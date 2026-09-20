@@ -419,8 +419,10 @@ void main() {
       await pumpCard(tester);
 
       final texts = _textsIn(tester, _option(_viewedId));
-      expect(texts.any((t) => t.contains('than others in this category')),
-          isFalse);
+      expect(
+        texts.any((t) => t.contains('than others in this category')),
+        isFalse,
+      );
       expect(texts.any((t) => t.contains('about as often')), isFalse);
       // The basis says plainly why, in the server's own words.
       expect(
@@ -437,8 +439,10 @@ void main() {
 
       expect(tester.takeException(), isNull);
       final texts = _textsIn(tester, _option(_viewedId));
-      expect(texts.any((t) => t.contains('than others in this category')),
-          isFalse);
+      expect(
+        texts.any((t) => t.contains('than others in this category')),
+        isFalse,
+      );
       expect(texts, contains('12 returns per 100 sold'));
       expect(categoryComparisonLabel(CategoryComparison.unknown), isNull);
       expect(categoryComparisonLabel(CategoryComparison.notEnoughData), isNull);
@@ -497,9 +501,10 @@ void main() {
 
         await pumpCard(tester);
 
-        final offenders = _textsIn(tester, find.byType(ReturnRecordCard))
-            .where(_judgementWords.hasMatch)
-            .toList();
+        final offenders = _textsIn(
+          tester,
+          find.byType(ReturnRecordCard),
+        ).where(_judgementWords.hasMatch).toList();
         expect(offenders, isEmpty, reason: 'judgement wording on screen');
       }
     });

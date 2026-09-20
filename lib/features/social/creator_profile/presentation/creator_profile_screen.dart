@@ -152,7 +152,8 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                     _topBar(effectiveAccountId, loadedProfile),
                     const SizedBox(height: DesignTokens.s12),
                     _avatarSection(
-                      isOwnProfile: sessionId.isNotEmpty &&
+                      isOwnProfile:
+                          sessionId.isNotEmpty &&
                           effectiveAccountId == sessionId,
                       accountId: effectiveAccountId,
                     ),

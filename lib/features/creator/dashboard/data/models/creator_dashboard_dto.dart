@@ -122,7 +122,8 @@ abstract class CreatorDashboardDto with _$CreatorDashboardDto {
       _$CreatorDashboardDtoFromJson(json);
 
   CreatorDashboard toDomain() => CreatorDashboard(
-    earnings: totalEarnings?.current?.toDomain() ??
+    earnings:
+        totalEarnings?.current?.toDomain() ??
         const Money(amount: 0, currency: 'NPR'),
     earningsDeltaPercent: totalEarnings?.deltaPercent,
     pendingBalance:

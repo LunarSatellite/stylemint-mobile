@@ -41,10 +41,9 @@ class CodeDto {
 
   /// The `items` of a `PagedResult<CodeVm>`. Entries without a valid code
   /// can't be shown or printed, so they are dropped.
-  static List<CodeDto> listFromPage(Object? raw) => readPagedItems(raw)
-      .map(CodeDto.fromJson)
-      .where((dto) => dto.isValid)
-      .toList(growable: false);
+  static List<CodeDto> listFromPage(Object? raw) => readPagedItems(
+    raw,
+  ).map(CodeDto.fromJson).where((dto) => dto.isValid).toList(growable: false);
 
   final String code;
   final CodeKind kind;

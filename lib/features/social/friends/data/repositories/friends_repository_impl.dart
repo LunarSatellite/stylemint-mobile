@@ -57,7 +57,8 @@ class FriendsRepositoryImpl implements FriendsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, List<FriendRequest>>> getFriendRequests() async {
+  Future<Either<NetworkExceptions, List<FriendRequest>>>
+  getFriendRequests() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getFriendRequests();
@@ -77,7 +78,9 @@ class FriendsRepositoryImpl implements FriendsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> sendFriendRequest(String userId) async {
+  Future<Either<NetworkExceptions, Unit>> sendFriendRequest(
+    String userId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.sendFriendRequest(userId, _uuid.v4());
@@ -97,7 +100,9 @@ class FriendsRepositoryImpl implements FriendsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> acceptRequest(String requestId) async {
+  Future<Either<NetworkExceptions, Unit>> acceptRequest(
+    String requestId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.acceptRequest(requestId, _uuid.v4());
@@ -117,7 +122,9 @@ class FriendsRepositoryImpl implements FriendsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> declineRequest(String requestId) async {
+  Future<Either<NetworkExceptions, Unit>> declineRequest(
+    String requestId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.declineRequest(requestId, _uuid.v4());
@@ -162,7 +169,10 @@ class FriendsRepositoryImpl implements FriendsRepository {
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dtos = await remoteDataSource.importContacts(contacts, _uuid.v4());
+        final dtos = await remoteDataSource.importContacts(
+          contacts,
+          _uuid.v4(),
+        );
         return right(dtos.map((d) => d.toDomain()).toList(growable: false));
       } catch (e) {
         if (e is DioException) {

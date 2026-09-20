@@ -24,7 +24,7 @@ abstract class CreatorProfileState with _$CreatorProfileState {
 
 class CreatorProfileNotifier extends StateNotifier<CreatorProfileState> {
   CreatorProfileNotifier(this._repository, this._accountId)
-      : super(const CreatorProfileState.initial()) {
+    : super(const CreatorProfileState.initial()) {
     unawaited(load());
   }
 
@@ -58,7 +58,7 @@ abstract class UpdateCreatorProfileState with _$UpdateCreatorProfileState {
 class UpdateCreatorProfileNotifier
     extends StateNotifier<UpdateCreatorProfileState> {
   UpdateCreatorProfileNotifier(this._repository)
-      : super(const UpdateCreatorProfileState.initial());
+    : super(const UpdateCreatorProfileState.initial());
 
   final CreatorProfileRepository _repository;
 

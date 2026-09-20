@@ -44,23 +44,23 @@ class MessageThreadDto {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'scope': scope,
-        'participantAId': participantAId,
-        'participantBId': participantBId,
-        if (contextId != null) 'contextId': contextId,
-        if (lastMessageUtc != null)
-          'lastMessageUtc': lastMessageUtc!.toIso8601String(),
-        'createdUtc': createdUtc.toIso8601String(),
-      };
+    'id': id,
+    'scope': scope,
+    'participantAId': participantAId,
+    'participantBId': participantBId,
+    if (contextId != null) 'contextId': contextId,
+    if (lastMessageUtc != null)
+      'lastMessageUtc': lastMessageUtc!.toIso8601String(),
+    'createdUtc': createdUtc.toIso8601String(),
+  };
 
   MessageThread toDomain() => MessageThread(
-        id: id,
-        scope: MessageThreadScope.fromInt(scope),
-        participantAId: participantAId,
-        participantBId: participantBId,
-        contextId: contextId,
-        lastMessageUtc: lastMessageUtc,
-        createdUtc: createdUtc,
-      );
+    id: id,
+    scope: MessageThreadScope.fromInt(scope),
+    participantAId: participantAId,
+    participantBId: participantBId,
+    contextId: contextId,
+    lastMessageUtc: lastMessageUtc,
+    createdUtc: createdUtc,
+  );
 }

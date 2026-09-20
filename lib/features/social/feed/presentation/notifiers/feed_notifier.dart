@@ -21,7 +21,8 @@ sealed class FeedState with _$FeedState {
     required bool hasMore,
     String? nextCursor,
   }) = _FeedLoadSuccess;
-  const factory FeedState.loadFailure(NetworkExceptions failure) = _FeedLoadFailure;
+  const factory FeedState.loadFailure(NetworkExceptions failure) =
+      _FeedLoadFailure;
 }
 
 @freezed
@@ -64,7 +65,10 @@ class FeedNotifier extends StateNotifier<FeedState> {
     );
   }
 
-  Future<void> _loadMoreInternal(List<FeedPost> existing, String? cursor) async {
+  Future<void> _loadMoreInternal(
+    List<FeedPost> existing,
+    String? cursor,
+  ) async {
     final either = await _repository.getFeed(cursor: cursor);
     state = either.fold(
       FeedState.loadFailure,

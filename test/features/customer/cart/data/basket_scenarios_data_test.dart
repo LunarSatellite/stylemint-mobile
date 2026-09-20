@@ -114,69 +114,72 @@ void main() {
   setUpAll(() => registerFallbackValue(<String>[]));
 
   group('CartRemoteDataSource.getScenarios', () {
-    test('sends the budget and repeated keep/exclude values, then maps', () async {
-      final api = _GetApiClient(_payload);
+    test(
+      'sends the budget and repeated keep/exclude values, then maps',
+      () async {
+        final api = _GetApiClient(_payload);
 
-      final result = (await CartRemoteDataSource(apiClient: api).getScenarios(
-        budget: 5000,
-        keepLineIds: ['line-1', 'line-2'],
-        excludeProductIds: ['prod-7'],
-      )).toDomain();
+        final result = (await CartRemoteDataSource(apiClient: api).getScenarios(
+          budget: 5000,
+          keepLineIds: ['line-1', 'line-2'],
+          excludeProductIds: ['prod-7'],
+        )).toDomain();
 
-      expect(api.getUri, '/v1/cart/scenarios');
-      expect(api.query, {
-        'budget': 5000.0,
-        'keep': ['line-1', 'line-2'],
-        'exclude': ['prod-7'],
-      });
-      expect(api.sentOptions?.listFormat, ListFormat.multi);
-      expect(api.sentOptions?.headers?['requiresToken'], isTrue);
+        expect(api.getUri, '/v1/cart/scenarios');
+        expect(api.query, {
+          'budget': 5000.0,
+          'keep': ['line-1', 'line-2'],
+          'exclude': ['prod-7'],
+        });
+        expect(api.sentOptions?.listFormat, ListFormat.multi);
+        expect(api.sentOptions?.headers?['requiresToken'], isTrue);
 
-      expect(result.currency, 'NPR');
-      expect(result.budget, 5000);
-      expect(result.scenarios.map((s) => s.kind), [
-        BasketScenarioKind.asItIs,
-        BasketScenarioKind.lowerCost,
-      ]);
+        expect(result.currency, 'NPR');
+        expect(result.budget, 5000);
+        expect(result.scenarios.map((s) => s.kind), [
+          BasketScenarioKind.asItIs,
+          BasketScenarioKind.lowerCost,
+        ]);
 
-      final asItIs = result.scenarios.first;
-      expect(asItIs.title, 'Your cart as it is');
-      expect(asItIs.feasible, isTrue);
-      expect(asItIs.summary, 'Everything you picked.');
-      expect(asItIs.changes, isEmpty);
-      expect(asItIs.subtotal, const Money(amount: 5000, currency: 'NPR'));
-      expect(asItIs.tax.amount, 650);
-      expect(asItIs.grandTotal.amount, 5650);
-      expect(asItIs.difference.amount, 0);
-      expect(asItIs.sellerCount, 2);
-      expect(asItIs.dispatchDays, 3);
-      expect(asItIs.itemsAtStockRisk, 0);
+        final asItIs = result.scenarios.first;
+        expect(asItIs.title, 'Your cart as it is');
+        expect(asItIs.feasible, isTrue);
+        expect(asItIs.summary, 'Everything you picked.');
+        expect(asItIs.changes, isEmpty);
+        expect(asItIs.subtotal, const Money(amount: 5000, currency: 'NPR'));
+        expect(asItIs.tax.amount, 650);
+        expect(asItIs.grandTotal.amount, 5650);
+        expect(asItIs.difference.amount, 0);
+        expect(asItIs.sellerCount, 2);
+        expect(asItIs.dispatchDays, 3);
+        expect(asItIs.itemsAtStockRisk, 0);
 
-      final kept = asItIs.lines.single;
-      expect(kept.cartLineId, 'line-1');
-      expect(kept.productId, 'prod-1');
-      expect(kept.productVariantId, 'var-1');
-      expect(kept.title, 'Linen shirt');
-      expect(kept.quantity, 2);
-      expect(kept.unitPrice, const Money(amount: 2500, currency: 'NPR'));
-      expect(kept.kept, isTrue);
-      expect(kept.change, BasketLineChange.unchanged);
+        final kept = asItIs.lines.single;
+        expect(kept.cartLineId, 'line-1');
+        expect(kept.productId, 'prod-1');
+        expect(kept.productVariantId, 'var-1');
+        expect(kept.title, 'Linen shirt');
+        expect(kept.quantity, 2);
+        expect(kept.unitPrice, const Money(amount: 2500, currency: 'NPR'));
+        expect(kept.kept, isTrue);
+        expect(kept.change, BasketLineChange.unchanged);
 
-      final cheaper = result.scenarios.last;
-      expect(
-        cheaper.difference,
-        const Money(amount: -1128.87, currency: 'NPR'),
-      );
-      expect(cheaper.grandTotal.amount, 4521.13);
-      expect(cheaper.itemsAtStockRisk, 1);
-      expect(cheaper.changes, ['Linen shirt swapped for Cotton shirt']);
+        final cheaper = result.scenarios.last;
+        expect(
+          cheaper.difference,
+          const Money(amount: -1128.87, currency: 'NPR'),
+        );
+        expect(cheaper.grandTotal.amount, 4521.13);
+        expect(cheaper.itemsAtStockRisk, 1);
+        expect(cheaper.changes, ['Linen shirt swapped for Cotton shirt']);
 
-      final swapped = cheaper.lines.single;
-      expect(swapped.cartLineId, isNull);
-      expect(swapped.unitPrice.amount, 2000.5);
-      expect(swapped.kept, isFalse);
-      expect(swapped.change, BasketLineChange.swapped);
-    });
+        final swapped = cheaper.lines.single;
+        expect(swapped.cartLineId, isNull);
+        expect(swapped.unitPrice.amount, 2000.5);
+        expect(swapped.kept, isFalse);
+        expect(swapped.change, BasketLineChange.swapped);
+      },
+    );
 
     test('sends no query values when nothing is constrained', () async {
       final api = _GetApiClient(<String, dynamic>{

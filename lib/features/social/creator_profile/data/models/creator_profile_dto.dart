@@ -27,17 +27,17 @@ abstract class CreatorProfileDto with _$CreatorProfileDto {
       _$CreatorProfileDtoFromJson(json);
 
   CreatorProfile toDomain() => CreatorProfile(
-        id: id,
-        displayName: displayName,
-        handle: handle,
-        bio: bio,
-        tags: List<String>.unmodifiable(tags),
-        niches: List<String>.unmodifiable(niches),
-        followersCount: followersCount,
-        partnershipsCount: partnershipsCount,
-        reelsCount: reelsCount,
-        likesCount: likesCount,
-        rowVersion: rowVersion,
-        avatarUrl: avatarUrl,
-      );
+    id: id,
+    displayName: displayName,
+    handle: handle,
+    bio: bio,
+    tags: List<String>.unmodifiable(tags),
+    niches: List<String>.unmodifiable(niches),
+    followersCount: followersCount,
+    partnershipsCount: partnershipsCount,
+    reelsCount: reelsCount,
+    likesCount: likesCount,
+    rowVersion: rowVersion,
+    avatarUrl: avatarUrl,
+  );
 }

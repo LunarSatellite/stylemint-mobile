@@ -208,7 +208,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, PasswordResetRequestedDto>>
-      requestPasswordReset({
+  requestPasswordReset({
     required String email,
   }) async {
     if (await networkInfo.isConnected) {
@@ -497,7 +497,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, RegistrationStartResponseDto>>
-      startRegistration({
+  startRegistration({
     required String displayName,
     required String locale,
     required String timezone,
@@ -620,7 +620,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, RegistrationCompletionDto>>
-      acceptRegistrationTerms(
+  acceptRegistrationTerms(
     String accountId, {
     required String consentVersion,
     String? ipAddress,
@@ -921,7 +921,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, PasskeyChallengeDto>>
-      beginPasskeyRegistration({
+  beginPasskeyRegistration({
     required String accountId,
     String? nickname,
   }) async {
@@ -948,7 +948,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, PasskeyCredentialDto>>
-      completePasskeyRegistration({
+  completePasskeyRegistration({
     required String accountId,
     required String challengeBase64Url,
     required String clientResponseJson,
@@ -979,7 +979,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, PasskeyChallengeDto>>
-      beginPasskeyAuthentication(
+  beginPasskeyAuthentication(
     String accountId,
   ) async {
     if (await networkInfo.isConnected) {
@@ -1004,7 +1004,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, AuthResponseDto>>
-      completePasskeyAuthentication({
+  completePasskeyAuthentication({
     required String accountId,
     required String challengeBase64Url,
     required String clientResponseJson,
@@ -1068,11 +1068,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, PasskeyChallengeDto>>
-      beginUsernamelessPasskeyAuthentication() async {
+  beginUsernamelessPasskeyAuthentication() async {
     if (await networkInfo.isConnected) {
       try {
-        final response =
-            await remoteDataSource.beginUsernamelessPasskeyAuthentication();
+        final response = await remoteDataSource
+            .beginUsernamelessPasskeyAuthentication();
         return right(response);
       } catch (e) {
         if (e is DioException) {
@@ -1090,7 +1090,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, AuthResponseDto>>
-      completeUsernamelessPasskeyAuthentication({
+  completeUsernamelessPasskeyAuthentication({
     required String challengeBase64Url,
     required String clientResponseJson,
     required String deviceFingerprint,
@@ -1099,15 +1099,16 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final body =
-            await remoteDataSource.completeUsernamelessPasskeyAuthentication(
-          challengeBase64Url: challengeBase64Url,
-          clientResponseJson: clientResponseJson,
-          deviceFingerprint: deviceFingerprint,
-          devicePlatform: devicePlatform,
-          deviceOsVersion: deviceOsVersion,
-        );
-        if (body == null) return left(const NetworkExceptions.formatException());
+        final body = await remoteDataSource
+            .completeUsernamelessPasskeyAuthentication(
+              challengeBase64Url: challengeBase64Url,
+              clientResponseJson: clientResponseJson,
+              deviceFingerprint: deviceFingerprint,
+              devicePlatform: devicePlatform,
+              deviceOsVersion: deviceOsVersion,
+            );
+        if (body == null)
+          return left(const NetworkExceptions.formatException());
         final auth = AuthResponseDto.fromJson(body);
         await _persist(auth);
         return right(auth);
@@ -1174,7 +1175,8 @@ class AuthRepositoryImpl implements AuthRepository {
           deviceOsVersion: deviceOsVersion,
           nickname: nickname,
         );
-        if (body == null) return left(const NetworkExceptions.formatException());
+        if (body == null)
+          return left(const NetworkExceptions.formatException());
         final auth = AuthResponseDto.fromJson(body);
         await _persist(auth);
         return right(auth);
@@ -1380,8 +1382,9 @@ class AuthRepositoryImpl implements AuthRepository {
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final response =
-            await remoteDataSource.getCreatorSpecializations(accountId);
+        final response = await remoteDataSource.getCreatorSpecializations(
+          accountId,
+        );
         return right(response);
       } catch (e) {
         if (e is DioException) {
@@ -1502,7 +1505,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, List<InterestDto>>> listPublicInterests() async {
+  Future<Either<NetworkExceptions, List<InterestDto>>>
+  listPublicInterests() async {
     if (await networkInfo.isConnected) {
       try {
         final response = await remoteDataSource.listPublicInterests();
@@ -1737,7 +1741,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, List<MarketingConsentDto>>>
-      listMarketingConsents(
+  listMarketingConsents(
     String accountId,
   ) async {
     if (await networkInfo.isConnected) {
@@ -1762,7 +1766,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkExceptions, List<MarketingConsentDto>>>
-      getCurrentMarketingConsents(
+  getCurrentMarketingConsents(
     String accountId,
   ) async {
     if (await networkInfo.isConnected) {

@@ -17,11 +17,13 @@ abstract class PaymentMethodsState with _$PaymentMethodsState {
   const factory PaymentMethodsState.loadSuccess(
     List<PaymentMethod> methods,
   ) = _LoadSuccess;
-  const factory PaymentMethodsState.loadFailure(NetworkExceptions failure) = _LoadFailure;
+  const factory PaymentMethodsState.loadFailure(NetworkExceptions failure) =
+      _LoadFailure;
 }
 
 class PaymentNotifier extends StateNotifier<PaymentMethodsState> {
-  PaymentNotifier(this._repository) : super(const PaymentMethodsState.initial()) {
+  PaymentNotifier(this._repository)
+    : super(const PaymentMethodsState.initial()) {
     unawaited(load());
   }
 

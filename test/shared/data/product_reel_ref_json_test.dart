@@ -54,26 +54,34 @@ void main() {
     expect(readProductReelRef(const {'reelId': 'r'})!.isAiGenerated, isFalse);
     // A truthy-looking string is not `true`: the disclosure is never guessed.
     expect(
-      readProductReelRef(const {'reelId': 'r', 'isAiGenerated': 'true'})!
-          .isAiGenerated,
+      readProductReelRef(const {
+        'reelId': 'r',
+        'isAiGenerated': 'true',
+      })!.isAiGenerated,
       isFalse,
     );
   });
 
   test('odd numbers and strings never break a product card', () {
     expect(
-      readProductReelRef(const {'reelId': 'r', 'durationSeconds': -4})!
-          .durationSeconds,
+      readProductReelRef(const {
+        'reelId': 'r',
+        'durationSeconds': -4,
+      })!.durationSeconds,
       0,
     );
     expect(
-      readProductReelRef(const {'reelId': 'r', 'durationSeconds': 11.6})!
-          .durationSeconds,
+      readProductReelRef(const {
+        'reelId': 'r',
+        'durationSeconds': 11.6,
+      })!.durationSeconds,
       12,
     );
     expect(
-      readProductReelRef(const {'reelId': 'r', 'durationSeconds': '30'})!
-          .durationSeconds,
+      readProductReelRef(const {
+        'reelId': 'r',
+        'durationSeconds': '30',
+      })!.durationSeconds,
       30,
     );
     // The platform arrives as an int on one endpoint and PascalCase on
@@ -86,8 +94,10 @@ void main() {
       SocialPlatform.youtube,
     );
     expect(
-      readProductReelRef(const {'reelId': 'r', 'sourcePlatform': 'Myspace'})!
-          .platform,
+      readProductReelRef(const {
+        'reelId': 'r',
+        'sourcePlatform': 'Myspace',
+      })!.platform,
       isNull,
     );
   });

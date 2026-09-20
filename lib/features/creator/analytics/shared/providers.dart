@@ -25,28 +25,33 @@ final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
 
 final creatorDashboardNotifierProvider =
     StateNotifierProvider<CreatorDashboardNotifier, CreatorDashboardState>(
-  (ref) => CreatorDashboardNotifier(ref.watch(analyticsRepositoryProvider)),
-);
+      (ref) => CreatorDashboardNotifier(ref.watch(analyticsRepositoryProvider)),
+    );
 
 final creatorOverviewNotifierProvider =
     StateNotifierProvider<CreatorOverviewNotifier, CreatorOverviewState>(
-  (ref) => CreatorOverviewNotifier(ref.watch(analyticsRepositoryProvider)),
-);
+      (ref) => CreatorOverviewNotifier(ref.watch(analyticsRepositoryProvider)),
+    );
 
 final creatorFullReportNotifierProvider =
     StateNotifierProvider<CreatorFullReportNotifier, CreatorFullReportState>(
-  (ref) => CreatorFullReportNotifier(ref.watch(analyticsRepositoryProvider)),
-);
+      (ref) =>
+          CreatorFullReportNotifier(ref.watch(analyticsRepositoryProvider)),
+    );
 
 final creatorTopReelsNotifierProvider =
     StateNotifierProvider<CreatorTopReelsNotifier, CreatorTopReelsState>(
-  (ref) => CreatorTopReelsNotifier(ref.watch(analyticsRepositoryProvider)),
-);
+      (ref) => CreatorTopReelsNotifier(ref.watch(analyticsRepositoryProvider)),
+    );
 
-final creatorReelAnalyticsNotifierProvider = StateNotifierProvider.family<
-    CreatorReelAnalyticsNotifier, CreatorReelAnalyticsState, String>(
-  (ref, reelId) => CreatorReelAnalyticsNotifier(
-    ref.watch(analyticsRepositoryProvider),
-    reelId,
-  ),
-);
+final creatorReelAnalyticsNotifierProvider =
+    StateNotifierProvider.family<
+      CreatorReelAnalyticsNotifier,
+      CreatorReelAnalyticsState,
+      String
+    >(
+      (ref, reelId) => CreatorReelAnalyticsNotifier(
+        ref.watch(analyticsRepositoryProvider),
+        reelId,
+      ),
+    );

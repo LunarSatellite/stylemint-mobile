@@ -17,15 +17,18 @@ class ReferralsRepositoryImpl implements ReferralsRepository {
   final NetworkInfoConnectivity networkInfo;
 
   @override
-  Future<Either<NetworkExceptions, InviteLink>> getOrCreateMyLink() => _call(() async {
-    final page = await remoteDataSource.listMyLinks(pageSize: 1);
-    final items = page['items'] as List<dynamic>? ?? const <dynamic>[];
-    if (items.isNotEmpty) {
-      return InviteLinkDto.fromJson(items.first as Map<String, dynamic>).toDomain();
-    }
-    final created = await remoteDataSource.createLink();
-    return InviteLinkDto.fromJson(created).toDomain();
-  });
+  Future<Either<NetworkExceptions, InviteLink>> getOrCreateMyLink() =>
+      _call(() async {
+        final page = await remoteDataSource.listMyLinks(pageSize: 1);
+        final items = page['items'] as List<dynamic>? ?? const <dynamic>[];
+        if (items.isNotEmpty) {
+          return InviteLinkDto.fromJson(
+            items.first as Map<String, dynamic>,
+          ).toDomain();
+        }
+        final created = await remoteDataSource.createLink();
+        return InviteLinkDto.fromJson(created).toDomain();
+      });
 
   @override
   Future<Either<NetworkExceptions, List<InviteRedemption>>> getRedemptions(
@@ -34,17 +37,24 @@ class ReferralsRepositoryImpl implements ReferralsRepository {
     final page = await remoteDataSource.listRedemptions(linkId, pageSize: 50);
     final items = page['items'] as List<dynamic>? ?? const <dynamic>[];
     return items
-        .map((e) => InviteRedemptionDto.fromJson(e as Map<String, dynamic>).toDomain())
+        .map(
+          (e) => InviteRedemptionDto.fromJson(
+            e as Map<String, dynamic>,
+          ).toDomain(),
+        )
         .toList(growable: false);
   });
 
   @override
-  Future<Either<NetworkExceptions, Unit>> redeem(String code) => _call(() async {
-    await remoteDataSource.redeem(code);
-    return unit;
-  });
+  Future<Either<NetworkExceptions, Unit>> redeem(String code) =>
+      _call(() async {
+        await remoteDataSource.redeem(code);
+        return unit;
+      });
 
-  Future<Either<NetworkExceptions, T>> _call<T>(Future<T> Function() body) async {
+  Future<Either<NetworkExceptions, T>> _call<T>(
+    Future<T> Function() body,
+  ) async {
     if (!await networkInfo.isConnected) {
       return left(NetworkExceptions.noInternetConnection());
     }

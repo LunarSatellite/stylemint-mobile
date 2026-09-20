@@ -39,19 +39,18 @@ class CreatorProfile {
     int? likesCount,
     String? rowVersion,
     String? avatarUrl,
-  }) =>
-      CreatorProfile(
-        id: id,
-        displayName: displayName ?? this.displayName,
-        handle: handle ?? this.handle,
-        bio: bio ?? this.bio,
-        tags: tags ?? this.tags,
-        niches: niches ?? this.niches,
-        followersCount: followersCount ?? this.followersCount,
-        partnershipsCount: partnershipsCount ?? this.partnershipsCount,
-        reelsCount: reelsCount ?? this.reelsCount,
-        likesCount: likesCount ?? this.likesCount,
-        rowVersion: rowVersion ?? this.rowVersion,
-        avatarUrl: avatarUrl ?? this.avatarUrl,
-      );
+  }) => CreatorProfile(
+    id: id,
+    displayName: displayName ?? this.displayName,
+    handle: handle ?? this.handle,
+    bio: bio ?? this.bio,
+    tags: tags ?? this.tags,
+    niches: niches ?? this.niches,
+    followersCount: followersCount ?? this.followersCount,
+    partnershipsCount: partnershipsCount ?? this.partnershipsCount,
+    reelsCount: reelsCount ?? this.reelsCount,
+    likesCount: likesCount ?? this.likesCount,
+    rowVersion: rowVersion ?? this.rowVersion,
+    avatarUrl: avatarUrl ?? this.avatarUrl,
+  );
 }

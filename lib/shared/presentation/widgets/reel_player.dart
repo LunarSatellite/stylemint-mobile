@@ -495,8 +495,7 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
             )
           else
             ReelPoster(reel: widget.reel),
-          if (!_initialized)
-            const SmPageLoader(),
+          if (!_initialized) const SmPageLoader(),
           if (_manuallyPaused && _initialized)
             const Center(child: ReelPlayIndicator()),
         ],

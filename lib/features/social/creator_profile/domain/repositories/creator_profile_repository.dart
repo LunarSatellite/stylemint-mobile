@@ -5,7 +5,8 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain
 abstract class CreatorProfileRepository {
   Future<NetworkEither<List<BadgeAward>>> listMyBadges();
   Future<NetworkEither<List<BadgeAward>>> updateBadgeShowcase(
-      List<String> awardIdsInOrder);
+    List<String> awardIdsInOrder,
+  );
   Future<NetworkEither<CreatorProfile>> getCreatorProfile(String accountId);
 
   Future<NetworkEither<CreatorProfile>> updateCreatorProfile({
@@ -19,17 +20,25 @@ abstract class CreatorProfileRepository {
   });
 
   Future<NetworkEither<List<String>>> listSpecializationCategoryIds(
-      String accountId);
+    String accountId,
+  );
 
   Future<NetworkEither<void>> addSpecialization(
-      String accountId, String categoryId);
+    String accountId,
+    String categoryId,
+  );
 
   Future<NetworkEither<void>> removeSpecialization(
-      String accountId, String categoryId);
+    String accountId,
+    String categoryId,
+  );
 
   Future<NetworkEither<Map<String, bool>>> listSpecializationsWithPrimary(
-      String accountId);
+    String accountId,
+  );
 
   Future<NetworkEither<void>> setPrimarySpecialization(
-      String accountId, String categoryId);
+    String accountId,
+    String categoryId,
+  );
 }

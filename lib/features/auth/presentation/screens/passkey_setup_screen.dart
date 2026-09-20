@@ -28,17 +28,15 @@ class PasskeySetupScreen extends ConsumerStatefulWidget {
 }
 
 class _PasskeySetupScreenState extends ConsumerState<PasskeySetupScreen> {
-  String get _subtitle =>
-      widget.type == PasskeyType.face
-          ? 'Sign in with just your face. Password-less, secure and works '
-              'across all devices'
-          : 'Sign in with just your finger print. Password-less, secure and works '
-              'across all devices';
+  String get _subtitle => widget.type == PasskeyType.face
+      ? 'Sign in with just your face. Password-less, secure and works '
+            'across all devices'
+      : 'Sign in with just your finger print. Password-less, secure and works '
+            'across all devices';
 
-  String get _illustrationAsset =>
-      widget.type == PasskeyType.face
-          ? 'assets/images/auth/auth_passkey_face.png'
-          : 'assets/images/auth/auth_passkey_fingerprint.png';
+  String get _illustrationAsset => widget.type == PasskeyType.face
+      ? 'assets/images/auth/auth_passkey_face.png'
+      : 'assets/images/auth/auth_passkey_fingerprint.png';
 
   Future<void> _onSetup() async {
     final accountId = await ref.read(tokenStorageProvider).accountId;
@@ -52,21 +50,20 @@ class _PasskeySetupScreenState extends ConsumerState<PasskeySetupScreen> {
   }
 
   String _errorMessage(NetworkExceptions failure) => failure.maybeWhen(
-        validation: (code, _, __, ___) => switch (code) {
-          'PASSKEY_DEVICE_NOT_SUPPORTED' =>
-            'Passkeys are not supported on this device',
-          'PASSKEY_NO_CREDENTIALS' => 'No passkey credentials found',
-          'PASSKEY_OPTIONS_INVALID' =>
-            'Server returned invalid passkey options',
-          'PASSKEY_TIMEOUT' =>
-            'Passkey setup timed out. Your device may not support this — '
-                'try another sign-in method',
-          _ => 'Passkey setup failed. Please try again',
-        },
-        auth: () => 'Passkey setup was cancelled',
-        noInternetConnection: () => 'Network error. Please check your connection',
-        orElse: () => 'Passkey setup failed. Please try again',
-      );
+    validation: (code, _, __, ___) => switch (code) {
+      'PASSKEY_DEVICE_NOT_SUPPORTED' =>
+        'Passkeys are not supported on this device',
+      'PASSKEY_NO_CREDENTIALS' => 'No passkey credentials found',
+      'PASSKEY_OPTIONS_INVALID' => 'Server returned invalid passkey options',
+      'PASSKEY_TIMEOUT' =>
+        'Passkey setup timed out. Your device may not support this — '
+            'try another sign-in method',
+      _ => 'Passkey setup failed. Please try again',
+    },
+    auth: () => 'Passkey setup was cancelled',
+    noInternetConnection: () => 'Network error. Please check your connection',
+    orElse: () => 'Passkey setup failed. Please try again',
+  );
 
   @override
   Widget build(BuildContext context) {

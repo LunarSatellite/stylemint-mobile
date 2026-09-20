@@ -779,7 +779,8 @@ class _InfoRow extends StatelessWidget {
         Flexible(
           child: Align(
             alignment: AlignmentDirectional.centerEnd,
-            child: trailing ??
+            child:
+                trailing ??
                 (trailingText == null
                     ? const SizedBox.shrink()
                     : Text(
@@ -896,7 +897,8 @@ class _DeclineSheetState extends State<_DeclineSheet> {
   @override
   Widget build(BuildContext context) {
     final req = widget.request;
-    final bottom = MediaQuery.of(context).viewInsets.bottom +
+    final bottom =
+        MediaQuery.of(context).viewInsets.bottom +
         MediaQuery.of(context).padding.bottom;
 
     return Container(
@@ -1133,7 +1135,8 @@ class _AcceptSheetState extends State<_AcceptSheet> {
   @override
   Widget build(BuildContext context) {
     final req = widget.request;
-    final bottom = MediaQuery.of(context).viewInsets.bottom +
+    final bottom =
+        MediaQuery.of(context).viewInsets.bottom +
         MediaQuery.of(context).padding.bottom;
 
     return Container(

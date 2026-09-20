@@ -65,11 +65,13 @@ class _PasswordLoginScreenState extends ConsumerState<PasswordLoginScreen> {
           _phoneFieldKey.currentState?.getFullPhoneNumber() ?? '';
     }
 
-    await ref.read(loginProvider.notifier).loginWithPassword(
-      identifierType: _activeTab == _LoginTab.email ? 'email' : 'phone',
-      identifier: _submittedIdentifier,
-      password: password,
-    );
+    await ref
+        .read(loginProvider.notifier)
+        .loginWithPassword(
+          identifierType: _activeTab == _LoginTab.email ? 'email' : 'phone',
+          identifier: _submittedIdentifier,
+          password: password,
+        );
   }
 
   Country get _defaultCountry => CountryParser.parseCountryCode('NP');
@@ -83,11 +85,10 @@ class _PasswordLoginScreenState extends ConsumerState<PasswordLoginScreen> {
         loadSuccess: (auth) => context.go(
           '${RouteNames.userTypeSelection}?new=${auth.isNewAccount}',
         ),
-        loadFailure:
-            (_) => SmSnackbar.error(
-              context,
-              'Invalid credentials. Please try again',
-            ),
+        loadFailure: (_) => SmSnackbar.error(
+          context,
+          'Invalid credentials. Please try again',
+        ),
         orElse: () {},
       );
     });
@@ -132,10 +133,9 @@ class _PasswordLoginScreenState extends ConsumerState<PasswordLoginScreen> {
 
                     _TabToggle(
                       activeTab: _activeTab,
-                      onChanged:
-                          (tab) => setState(() {
-                            _activeTab = tab;
-                          }),
+                      onChanged: (tab) => setState(() {
+                        _activeTab = tab;
+                      }),
                     ),
                     const SizedBox(height: DesignTokens.s24),
 
@@ -160,10 +160,9 @@ class _PasswordLoginScreenState extends ConsumerState<PasswordLoginScreen> {
                       controller: _passwordController,
                       obscure: _obscurePassword,
                       enabled: !isLoading,
-                      onToggleObscure:
-                          () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                          ),
+                      onToggleObscure: () => setState(
+                        () => _obscurePassword = !_obscurePassword,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s16),
 
@@ -234,19 +233,17 @@ class _TabToggle extends StatelessWidget {
               child: Container(
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color:
-                      activeTab == _LoginTab.email
-                          ? DesignTokens.primaryGreen
-                          : Colors.transparent,
+                  color: activeTab == _LoginTab.email
+                      ? DesignTokens.primaryGreen
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
                 ),
                 child: Text(
                   'Email',
                   style: DesignTokens.mediumSemibold.copyWith(
-                    color:
-                        activeTab == _LoginTab.email
-                            ? DesignTokens.buttonPrimaryText
-                            : DesignTokens.textMuted,
+                    color: activeTab == _LoginTab.email
+                        ? DesignTokens.buttonPrimaryText
+                        : DesignTokens.textMuted,
                   ),
                 ),
               ),
@@ -258,19 +255,17 @@ class _TabToggle extends StatelessWidget {
               child: Container(
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color:
-                      activeTab == _LoginTab.phone
-                          ? DesignTokens.primaryGreen
-                          : Colors.transparent,
+                  color: activeTab == _LoginTab.phone
+                      ? DesignTokens.primaryGreen
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
                 ),
                 child: Text(
                   'Phone',
                   style: DesignTokens.mediumSemibold.copyWith(
-                    color:
-                        activeTab == _LoginTab.phone
-                            ? DesignTokens.buttonPrimaryText
-                            : DesignTokens.textMuted,
+                    color: activeTab == _LoginTab.phone
+                        ? DesignTokens.buttonPrimaryText
+                        : DesignTokens.textMuted,
                   ),
                 ),
               ),

@@ -49,8 +49,10 @@ void main() {
 
     test('a numeric string value is read', () {
       // System.Text.Json can be configured to write decimals as strings.
-      expect(SimulatedFigure.tryParse(figureJson(simulatedValue: '48.25'))!
-          .value, 48.25);
+      expect(
+        SimulatedFigure.tryParse(figureJson(simulatedValue: '48.25'))!.value,
+        48.25,
+      );
     });
   });
 

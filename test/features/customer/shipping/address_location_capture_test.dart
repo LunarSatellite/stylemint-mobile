@@ -1243,8 +1243,10 @@ void main() {
       await _tapSave(tester);
       expect(repository.writeCalls, 1);
       expect(repository.lastWritten!.receiverName, 'Sita Rai');
-      expect(repository.lastWritten!.locationNote,
-          'Blue gate opposite the pharmacy');
+      expect(
+        repository.lastWritten!.locationNote,
+        'Blue gate opposite the pharmacy',
+      );
       // The newer point won.
       expect(repository.lastWritten!.latitude, 27.68);
 
@@ -1288,7 +1290,8 @@ void main() {
           code: 'validation.out_of_range',
           field: 'locationAccuracyMetres',
           // What the mapper now pulls out of problem-details `detail`.
-          message: 'Your location is only accurate to about 140 m — we need '
+          message:
+              'Your location is only accurate to about 140 m — we need '
               '100 m or better. Step outside and try again, or drag the pin.',
         );
       await _pumpAddEdit(
@@ -1434,7 +1437,8 @@ void main() {
     testWidgets('an error below the fold is scrolled into view', (
       tester,
     ) async {
-      const message = 'Tell us which gate — "second floor" alone is not '
+      const message =
+          'Tell us which gate — "second floor" alone is not '
           'enough for a rider who has never been here.';
       final repository = _FakeShippingRepository()
         ..writeFailure = const NetworkExceptions.validation(
@@ -1552,8 +1556,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Jhamsikhel Road 12, Lalitpur, Bagmati, 44700'),
-          findsOneWidget);
+      expect(
+        find.text('Jhamsikhel Road 12, Lalitpur, Bagmati, 44700'),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('legacy_address_hint')), findsOneWidget);
       expect(find.textContaining('null'), findsNothing);
     });
@@ -1571,8 +1577,10 @@ void main() {
 
       expect(find.byKey(const Key('legacy_view_notice')), findsOneWidget);
       expect(find.textContaining('null'), findsNothing);
-      expect(find.text('Jhamsikhel Road 12, Lalitpur, Bagmati, 44700'),
-          findsOneWidget);
+      expect(
+        find.text('Jhamsikhel Road 12, Lalitpur, Bagmati, 44700'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('opens for editing and says a location is needed first', (

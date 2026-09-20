@@ -80,7 +80,7 @@ class VendorReturnCard extends StatelessWidget {
           Text(
             '${request.orderNumber} · Qty ${request.quantity}'
             '${request.variantLabelSnapshot == null ? '' : ' · '
-                '${request.variantLabelSnapshot}'}',
+                      '${request.variantLabelSnapshot}'}',
             style: DesignTokens.smallRegular.copyWith(
               color: DesignTokens.textMuted,
             ),

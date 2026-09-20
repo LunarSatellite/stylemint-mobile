@@ -44,7 +44,8 @@ class LiveSessionsScreen extends ConsumerWidget {
           }
           return RefreshIndicator(
             color: DesignTokens.primaryGreen,
-            onRefresh: () => ref.read(liveSessionsNotifierProvider.notifier).load(),
+            onRefresh: () =>
+                ref.read(liveSessionsNotifierProvider.notifier).load(),
             child: ListView(
               padding: const EdgeInsets.all(DesignTokens.s16),
               children: [
@@ -55,9 +56,14 @@ class LiveSessionsScreen extends ConsumerWidget {
                   const SizedBox(height: DesignTokens.s24),
                 ],
                 if (upcoming.isNotEmpty) ...[
-                  const Text('Coming Up', style: DesignTokens.sectionInnerTitle),
+                  const Text(
+                    'Coming Up',
+                    style: DesignTokens.sectionInnerTitle,
+                  ),
                   const SizedBox(height: DesignTokens.s8),
-                  ...upcoming.map((s) => _SessionCard(session: s, isLive: false)),
+                  ...upcoming.map(
+                    (s) => _SessionCard(session: s, isLive: false),
+                  ),
                 ],
               ],
             ),
@@ -113,7 +119,9 @@ class _SessionCard extends StatelessWidget {
                       ? '${session.currentViewerCount} watching now'
                       : 'Starts ${_formatTime(session.scheduledStartUtc)}',
                   style: DesignTokens.smallRegular.copyWith(
-                    color: isLive ? DesignTokens.colorError : DesignTokens.textMuted,
+                    color: isLive
+                        ? DesignTokens.colorError
+                        : DesignTokens.textMuted,
                   ),
                 ),
               ],

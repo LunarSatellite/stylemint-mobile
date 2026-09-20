@@ -60,7 +60,9 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
 
   void _hydrateFromState() {
     if (!mounted) return;
-    final fs = ref.read(addProductNotifierProvider).maybeWhen(
+    final fs = ref
+        .read(addProductNotifierProvider)
+        .maybeWhen(
           loadSuccess: (s) => s,
           orElse: () => null,
         );
@@ -68,8 +70,9 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
     if (shipping == null) return;
     final options = shipping.shippingOptions;
     setState(() {
-      _weightController.text =
-          shipping.weight > 0 ? shipping.weight.toString() : '';
+      _weightController.text = shipping.weight > 0
+          ? shipping.weight.toString()
+          : '';
       _lengthController.text = shipping.dimensionsLength > 0
           ? shipping.dimensionsLength.toString()
           : '';
@@ -100,18 +103,18 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
   }
 
   int get _processingTimeDays => switch (_processingTime) {
-        '2-3 business days' => 2,
-        '3-5 business days' => 3,
-        '5-7 business days' => 5,
-        _ => 1,
-      };
+    '2-3 business days' => 2,
+    '3-5 business days' => 3,
+    '5-7 business days' => 5,
+    _ => 1,
+  };
 
   static String _processingLabelFor(int days) => switch (days) {
-        >= 5 => '5-7 business days',
-        >= 3 => '3-5 business days',
-        >= 2 => '2-3 business days',
-        _ => '1 business day',
-      };
+    >= 5 => '5-7 business days',
+    >= 3 => '3-5 business days',
+    >= 2 => '2-3 business days',
+    _ => '1 business day',
+  };
 
   ShippingAddress? _selectedAddress(List<ShippingAddress> addresses) {
     if (addresses.isEmpty) return null;
@@ -147,18 +150,18 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
     final minDays = options.isEmpty
         ? 0
         : options
-            .map((option) => option.estimatedDaysMin)
-            .reduce((a, b) => a < b ? a : b);
+              .map((option) => option.estimatedDaysMin)
+              .reduce((a, b) => a < b ? a : b);
     final maxDays = options.isEmpty
         ? 0
         : options
-            .map((option) => option.estimatedDaysMax)
-            .reduce((a, b) => a > b ? a : b);
+              .map((option) => option.estimatedDaysMax)
+              .reduce((a, b) => a > b ? a : b);
     final highestFee = options.isEmpty
         ? null
         : options
-            .map((option) => option.fee)
-            .reduce((a, b) => a.amount >= b.amount ? a : b);
+              .map((option) => option.fee)
+              .reduce((a, b) => a.amount >= b.amount ? a : b);
 
     return ShippingInfo(
       weight: double.tryParse(_weightController.text) ?? 0,
@@ -308,16 +311,14 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
                   _ShippingOptionRow(
                     label: 'Standard (5-7 days) - FREE',
                     value: _standard,
-                    onChanged: (v) =>
-                        setState(() => _standard = v ?? false),
+                    onChanged: (v) => setState(() => _standard = v ?? false),
                   ),
                   const SizedBox(height: DesignTokens.s16),
 
                   _ShippingOptionRow(
                     label: 'Express (2-3 days) - Rs 500',
                     value: _express,
-                    onChanged: (v) =>
-                        setState(() => _express = v ?? false),
+                    onChanged: (v) => setState(() => _express = v ?? false),
                   ),
                   const SizedBox(height: DesignTokens.s20),
 
@@ -351,8 +352,7 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
                     label: 'Processing Time',
                     value: _processingTime,
                     options: _processingTimeOptions,
-                    onChanged: (v) =>
-                        setState(() => _processingTime = v),
+                    onChanged: (v) => setState(() => _processingTime = v),
                   ),
                 ],
               ),
@@ -364,92 +364,93 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
         SafeArea(
           top: false,
           child: Container(
-          padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16,
-            DesignTokens.s24,
-            DesignTokens.s16,
-            DesignTokens.s16,
-          ),
-          decoration: const BoxDecoration(
-            color: DesignTokens.bgAppFoundation,
-            border: Border(
-              top: BorderSide(color: DesignTokens.borderDefault),
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s24,
+              DesignTokens.s16,
+              DesignTokens.s16,
             ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: DesignTokens.buttonHeight,
-                  child: ElevatedButton(
-                    onPressed: notifier.prevStep,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DesignTokens.bgAppBodyLight,
-                      foregroundColor: DesignTokens.textWhite,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                            DesignTokens.buttonRadius),
+            decoration: const BoxDecoration(
+              color: DesignTokens.bgAppFoundation,
+              border: Border(
+                top: BorderSide(color: DesignTokens.borderDefault),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: DesignTokens.buttonHeight,
+                    child: ElevatedButton(
+                      onPressed: notifier.prevStep,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DesignTokens.bgAppBodyLight,
+                        foregroundColor: DesignTokens.textWhite,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.buttonRadius,
+                          ),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.arrow_back, size: 16),
+                          SizedBox(width: DesignTokens.s8),
+                          Text(
+                            'Previous',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.arrow_back, size: 16),
-                        SizedBox(width: DesignTokens.s8),
-                        Text(
-                          'Previous',
-                          style: TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: DesignTokens.s16),
-              Expanded(
-                child: SizedBox(
-                  height: DesignTokens.buttonHeight,
-                  child: ElevatedButton(
-                    onPressed: widget.saving
-                        ? null
-                        : () => _onProceed(addresses),
-                    style: DesignTokens.primaryButtonStyle(),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          widget.saving
-                              ? 'Saving...'
-                              : widget.isFinalStep
-                              ? 'Save Changes'
-                              : 'Proceed',
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                const SizedBox(width: DesignTokens.s16),
+                Expanded(
+                  child: SizedBox(
+                    height: DesignTokens.buttonHeight,
+                    child: ElevatedButton(
+                      onPressed: widget.saving
+                          ? null
+                          : () => _onProceed(addresses),
+                      style: DesignTokens.primaryButtonStyle(),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            widget.saving
+                                ? 'Saving...'
+                                : widget.isFinalStep
+                                ? 'Save Changes'
+                                : 'Proceed',
+                            style: const TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: DesignTokens.buttonPrimaryText,
+                            ),
+                          ),
+                          const SizedBox(width: DesignTokens.s8),
+                          Icon(
+                            widget.isFinalStep
+                                ? Icons.save_outlined
+                                : Icons.arrow_forward,
+                            size: 16,
                             color: DesignTokens.buttonPrimaryText,
                           ),
-                        ),
-                        const SizedBox(width: DesignTokens.s8),
-                        Icon(
-                          widget.isFinalStep
-                              ? Icons.save_outlined
-                              : Icons.arrow_forward,
-                          size: 16,
-                          color: DesignTokens.buttonPrimaryText,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           ),
         ),
       ],
@@ -538,31 +539,31 @@ class _MissingDispatchAddress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(DesignTokens.s16),
-        decoration: BoxDecoration(
-          color: DesignTokens.inputFieldFill,
-          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-          border: Border.all(color: DesignTokens.inputFieldBorder),
+    width: double.infinity,
+    padding: const EdgeInsets.all(DesignTokens.s16),
+    decoration: BoxDecoration(
+      color: DesignTokens.inputFieldFill,
+      borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+      border: Border.all(color: DesignTokens.inputFieldBorder),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          loadFailed
+              ? 'Dispatch addresses could not be loaded.'
+              : 'No dispatch address is saved yet.',
+          style: DesignTokens.bodyText,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              loadFailed
-                  ? 'Dispatch addresses could not be loaded.'
-                  : 'No dispatch address is saved yet.',
-              style: DesignTokens.bodyText,
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            TextButton.icon(
-              onPressed: onManage,
-              icon: const Icon(Icons.add_location_alt_outlined),
-              label: Text(loadFailed ? 'Retry or manage addresses' : 'Add address'),
-            ),
-          ],
+        const SizedBox(height: DesignTokens.s8),
+        TextButton.icon(
+          onPressed: onManage,
+          icon: const Icon(Icons.add_location_alt_outlined),
+          label: Text(loadFailed ? 'Retry or manage addresses' : 'Add address'),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 class _AddressDropdownField extends StatelessWidget {
@@ -578,40 +579,41 @@ class _AddressDropdownField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: DesignTokens.inputFieldFill,
-          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-          border: Border.all(color: DesignTokens.inputFieldBorder),
+    decoration: BoxDecoration(
+      color: DesignTokens.inputFieldFill,
+      borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+      border: Border.all(color: DesignTokens.inputFieldBorder),
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+    child: DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: value,
+        hint: const Text('Ships From'),
+        isExpanded: true,
+        dropdownColor: DesignTokens.bgAppBodyLight,
+        icon: const Icon(
+          Icons.keyboard_arrow_down,
+          size: 16,
+          color: Color(0xFF71717B),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: value,
-            hint: const Text('Ships From'),
-            isExpanded: true,
-            dropdownColor: DesignTokens.bgAppBodyLight,
-            icon: const Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: Color(0xFF71717B),
-            ),
-            style: DesignTokens.bodyText,
-            items: addresses
-                .map(
-                  (address) => DropdownMenuItem(
-                    value: address.id,
-                    child: Text(
-                      '${address.label} — ${address.summaryLine}',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: onChanged,
-          ),
-        ),
-      );
+        style: DesignTokens.bodyText,
+        items: addresses
+            .map(
+              (address) => DropdownMenuItem(
+                value: address.id,
+                child: Text(
+                  '${address.label} — ${address.summaryLine}',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+            .toList(growable: false),
+        onChanged: onChanged,
+      ),
+    ),
+  );
 }
+
 class _DropdownField extends StatelessWidget {
   const _DropdownField({
     required this.label,
@@ -630,12 +632,10 @@ class _DropdownField extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: DesignTokens.inputFieldFill,
-        borderRadius:
-            BorderRadius.circular(DesignTokens.inputRadius),
+        borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
         border: Border.all(color: DesignTokens.inputFieldBorder),
       ),
-      padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16),
+      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,

@@ -18,7 +18,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
   final NetworkInfoConnectivity networkInfo;
 
   @override
-  Future<Either<NetworkExceptions, NotificationPreferences>> getNotificationPreferences() async {
+  Future<Either<NetworkExceptions, NotificationPreferences>>
+  getNotificationPreferences() async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getNotificationPreferences();
@@ -38,13 +39,16 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, NotificationPreferences>> updateNotificationPreferences(
+  Future<Either<NetworkExceptions, NotificationPreferences>>
+  updateNotificationPreferences(
     NotificationPreferences prefs,
   ) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = NotificationPreferencesDto.fromDomain(prefs);
-        final result = await remoteDataSource.updateNotificationPreferences(dto);
+        final result = await remoteDataSource.updateNotificationPreferences(
+          dto,
+        );
         return right(result.toDomain());
       } catch (e) {
         if (e is DioException) {
@@ -106,7 +110,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> setLanguage(String languageCode) async {
+  Future<Either<NetworkExceptions, Unit>> setLanguage(
+    String languageCode,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.setLanguage(languageCode);
@@ -126,7 +132,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> deleteAccount(String idempotencyKey, String reason) async {
+  Future<Either<NetworkExceptions, Unit>> deleteAccount(
+    String idempotencyKey,
+    String reason,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.deleteAccount(idempotencyKey, reason);
@@ -146,7 +155,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, DeletionRequest?>> getPendingDeletion() async {
+  Future<Either<NetworkExceptions, DeletionRequest?>>
+  getPendingDeletion() async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getPendingDeletion();
@@ -166,7 +176,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> cancelDeletion(String requestId) async {
+  Future<Either<NetworkExceptions, Unit>> cancelDeletion(
+    String requestId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.cancelDeletion(requestId);

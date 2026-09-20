@@ -62,7 +62,10 @@ class PasskeyService {
     );
     if (challengeResult.isLeft()) {
       return Left<NetworkExceptions, PasskeyCredentialDto>(
-        challengeResult.fold((l) => l, (_) => const NetworkExceptions.unexpectedError()),
+        challengeResult.fold(
+          (l) => l,
+          (_) => const NetworkExceptions.unexpectedError(),
+        ),
       );
     }
     final challenge = challengeResult.getOrElse((_) => throw StateError(''));
@@ -70,9 +73,13 @@ class PasskeyService {
     // Step 2 — parse options
     final RegisterRequestType platformRequest;
     try {
-      platformRequest = RegisterRequestType.fromJsonString(challenge.optionsJson);
+      platformRequest = RegisterRequestType.fromJsonString(
+        challenge.optionsJson,
+      );
     } catch (_) {
-      return const Left(NetworkExceptions.validation(code: 'PASSKEY_OPTIONS_INVALID'));
+      return const Left(
+        NetworkExceptions.validation(code: 'PASSKEY_OPTIONS_INVALID'),
+      );
     }
 
     // Step 3 — platform authenticator
@@ -106,11 +113,15 @@ class PasskeyService {
     String accountId,
   ) async {
     // Step 1 — challenge
-    final challengeResult =
-        await authRepository.beginPasskeyAuthentication(accountId);
+    final challengeResult = await authRepository.beginPasskeyAuthentication(
+      accountId,
+    );
     if (challengeResult.isLeft()) {
       return Left<NetworkExceptions, AuthResponseDto>(
-        challengeResult.fold((l) => l, (_) => const NetworkExceptions.unexpectedError()),
+        challengeResult.fold(
+          (l) => l,
+          (_) => const NetworkExceptions.unexpectedError(),
+        ),
       );
     }
     final challenge = challengeResult.getOrElse((_) => throw StateError(''));
@@ -118,10 +129,13 @@ class PasskeyService {
     // Step 2 — parse options
     final AuthenticateRequestType platformRequest;
     try {
-      platformRequest =
-          AuthenticateRequestType.fromJsonString(challenge.optionsJson);
+      platformRequest = AuthenticateRequestType.fromJsonString(
+        challenge.optionsJson,
+      );
     } catch (_) {
-      return const Left(NetworkExceptions.validation(code: 'PASSKEY_OPTIONS_INVALID'));
+      return const Left(
+        NetworkExceptions.validation(code: 'PASSKEY_OPTIONS_INVALID'),
+      );
     }
 
     // Step 3 — platform authenticator
@@ -151,22 +165,28 @@ class PasskeyService {
   /// PIN), and the server resolves the account from the credential and issues a
   /// session — binding it to this device's stable fingerprint.
   Future<Either<NetworkExceptions, AuthResponseDto>>
-      authenticateUsernameless() async {
-    final challengeResult =
-        await authRepository.beginUsernamelessPasskeyAuthentication();
+  authenticateUsernameless() async {
+    final challengeResult = await authRepository
+        .beginUsernamelessPasskeyAuthentication();
     if (challengeResult.isLeft()) {
       return Left<NetworkExceptions, AuthResponseDto>(
-        challengeResult.fold((l) => l, (_) => const NetworkExceptions.unexpectedError()),
+        challengeResult.fold(
+          (l) => l,
+          (_) => const NetworkExceptions.unexpectedError(),
+        ),
       );
     }
     final challenge = challengeResult.getOrElse((_) => throw StateError(''));
 
     final AuthenticateRequestType platformRequest;
     try {
-      platformRequest =
-          AuthenticateRequestType.fromJsonString(challenge.optionsJson);
+      platformRequest = AuthenticateRequestType.fromJsonString(
+        challenge.optionsJson,
+      );
     } catch (_) {
-      return const Left(NetworkExceptions.validation(code: 'PASSKEY_OPTIONS_INVALID'));
+      return const Left(
+        NetworkExceptions.validation(code: 'PASSKEY_OPTIONS_INVALID'),
+      );
     }
 
     final AuthenticateResponseType platformResponse;
@@ -198,21 +218,28 @@ class PasskeyService {
   Future<Either<NetworkExceptions, AuthResponseDto>> bootstrapSignup({
     required String displayName,
   }) async {
-    final bootstrapResult =
-        await authRepository.beginPasskeyBootstrap(displayName: displayName);
+    final bootstrapResult = await authRepository.beginPasskeyBootstrap(
+      displayName: displayName,
+    );
     if (bootstrapResult.isLeft()) {
       return Left<NetworkExceptions, AuthResponseDto>(
-        bootstrapResult.fold((l) => l, (_) => const NetworkExceptions.unexpectedError()),
+        bootstrapResult.fold(
+          (l) => l,
+          (_) => const NetworkExceptions.unexpectedError(),
+        ),
       );
     }
     final bootstrap = bootstrapResult.getOrElse((_) => throw StateError(''));
 
     final RegisterRequestType platformRequest;
     try {
-      platformRequest =
-          RegisterRequestType.fromJsonString(bootstrap.optionsJson);
+      platformRequest = RegisterRequestType.fromJsonString(
+        bootstrap.optionsJson,
+      );
     } catch (_) {
-      return const Left(NetworkExceptions.validation(code: 'PASSKEY_OPTIONS_INVALID'));
+      return const Left(
+        NetworkExceptions.validation(code: 'PASSKEY_OPTIONS_INVALID'),
+      );
     }
 
     final RegisterResponseType platformResponse;
@@ -254,16 +281,24 @@ class PasskeyService {
       return const NetworkExceptions.validation(code: 'PASSKEY_NO_CREDENTIALS');
     }
     if (e is MissingGoogleSignInException) {
-      return const NetworkExceptions.validation(code: 'PASSKEY_NO_GOOGLE_ACCOUNT');
+      return const NetworkExceptions.validation(
+        code: 'PASSKEY_NO_GOOGLE_ACCOUNT',
+      );
     }
     if (e is SyncAccountNotAvailableException) {
-      return const NetworkExceptions.validation(code: 'PASSKEY_SYNC_UNAVAILABLE');
+      return const NetworkExceptions.validation(
+        code: 'PASSKEY_SYNC_UNAVAILABLE',
+      );
     }
     if (e is DeviceNotSupportedException || e is NoCreateOptionException) {
-      return const NetworkExceptions.validation(code: 'PASSKEY_DEVICE_NOT_SUPPORTED');
+      return const NetworkExceptions.validation(
+        code: 'PASSKEY_DEVICE_NOT_SUPPORTED',
+      );
     }
     if (e is DomainNotAssociatedException) {
-      return const NetworkExceptions.validation(code: 'PASSKEY_DOMAIN_NOT_ASSOCIATED');
+      return const NetworkExceptions.validation(
+        code: 'PASSKEY_DOMAIN_NOT_ASSOCIATED',
+      );
     }
     return const NetworkExceptions.unexpectedError();
   }

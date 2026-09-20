@@ -71,8 +71,9 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: DesignTokens.bgAppBody,
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: DesignTokens.s24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.s24,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
           ),
@@ -108,12 +109,12 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                       const TextSpan(text: 'We sent a sign-in link to '),
                       TextSpan(
                         text: email,
-                        style: DesignTokens.mediumSemibold
-                            .copyWith(color: DesignTokens.textWhite),
+                        style: DesignTokens.mediumSemibold.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
                       ),
                       const TextSpan(
-                        text:
-                            '. Open it on this device to finish signing in.',
+                        text: '. Open it on this device to finish signing in.',
                       ),
                     ],
                   ),
@@ -133,21 +134,22 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                 ),
                 const SizedBox(height: DesignTokens.s8),
                 TextButton(
-                  onPressed: () => ref
-                      .read(magicLinkProvider.notifier)
-                      .requestLink(email),
+                  onPressed: () =>
+                      ref.read(magicLinkProvider.notifier).requestLink(email),
                   child: Text.rich(
                     TextSpan(
                       children: [
                         TextSpan(
                           text: 'Did not receive it? ',
-                          style: DesignTokens.mediumRegular
-                              .copyWith(color: DesignTokens.textLight),
+                          style: DesignTokens.mediumRegular.copyWith(
+                            color: DesignTokens.textLight,
+                          ),
                         ),
                         TextSpan(
                           text: 'Resend link',
-                          style: DesignTokens.mediumSemibold
-                              .copyWith(color: DesignTokens.primaryGreen),
+                          style: DesignTokens.mediumSemibold.copyWith(
+                            color: DesignTokens.primaryGreen,
+                          ),
                         ),
                       ],
                     ),
@@ -194,50 +196,47 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(otpRequestProvider).isLoading ||
+    final isLoading =
+        ref.watch(otpRequestProvider).isLoading ||
         ref.watch(magicLinkProvider).isLoading;
 
     // Side-effects react to the request outcome (see SKILL §3.8).
-    ref..listen<OtpRequestState>(otpRequestProvider, (previous, next) {
-      next.maybeWhen(
-        loadSuccess:
-            (otp) => context.push(
-              RouteNames.otp,
-              extra: {
-                'phone':
-                    _submittedEmail, // OtpScreen uses this as the identifier
-                'otpId': otp.otpId,
-                'identifierType': 'email',
-              },
-            ),
-        loadFailure:
-            (_) => SmSnackbar.error(
-              context,
-              'Failed to send OTP. Please try again',
-            ),
-        orElse: () {},
-      );
-    })
-
-    ..listen<MagicLinkRequestState>(magicLinkProvider, (previous, next) {
-      next.maybeWhen(
-        loadSuccess: (_) {
-          // If the dialog is already open, this is a resend — confirm in place
-          // rather than stacking a second dialog.
-          if (_emailDialogOpen) {
-            SmSnackbar.success(context, 'Link resent to $_submittedEmail');
-          } else {
-            _showCheckEmailDialog(_submittedEmail);
-          }
-        },
-        loadFailure:
-            (_) => SmSnackbar.error(
-              context,
-              'Failed to send magic link. Please try again',
-            ),
-        orElse: () {},
-      );
-    });
+    ref
+      ..listen<OtpRequestState>(otpRequestProvider, (previous, next) {
+        next.maybeWhen(
+          loadSuccess: (otp) => context.push(
+            RouteNames.otp,
+            extra: {
+              'phone': _submittedEmail, // OtpScreen uses this as the identifier
+              'otpId': otp.otpId,
+              'identifierType': 'email',
+            },
+          ),
+          loadFailure: (_) => SmSnackbar.error(
+            context,
+            'Failed to send OTP. Please try again',
+          ),
+          orElse: () {},
+        );
+      })
+      ..listen<MagicLinkRequestState>(magicLinkProvider, (previous, next) {
+        next.maybeWhen(
+          loadSuccess: (_) {
+            // If the dialog is already open, this is a resend — confirm in place
+            // rather than stacking a second dialog.
+            if (_emailDialogOpen) {
+              SmSnackbar.success(context, 'Link resent to $_submittedEmail');
+            } else {
+              _showCheckEmailDialog(_submittedEmail);
+            }
+          },
+          loadFailure: (_) => SmSnackbar.error(
+            context,
+            'Failed to send magic link. Please try again',
+          ),
+          orElse: () {},
+        );
+      });
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -326,11 +325,9 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                         description: 'We will send you an OTP for verification',
                         selected:
                             _verificationType == EmailVerificationType.otp,
-                        onTap:
-                            () => setState(
-                              () =>
-                                  _verificationType = EmailVerificationType.otp,
-                            ),
+                        onTap: () => setState(
+                          () => _verificationType = EmailVerificationType.otp,
+                        ),
                       ),
                       const SizedBox(height: DesignTokens.s12),
                       _RadioListItem(
@@ -339,12 +336,10 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                         selected:
                             _verificationType ==
                             EmailVerificationType.magicLink,
-                        onTap:
-                            () => setState(
-                              () =>
-                                  _verificationType =
-                                      EmailVerificationType.magicLink,
-                            ),
+                        onTap: () => setState(
+                          () => _verificationType =
+                              EmailVerificationType.magicLink,
+                        ),
                       ),
                     ],
                   ),
@@ -436,10 +431,9 @@ class _RadioListItem extends StatelessWidget {
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked,
               size: 20,
-              color:
-                  selected
-                      ? DesignTokens.radioIconChecked
-                      : DesignTokens.radioIconDefault,
+              color: selected
+                  ? DesignTokens.radioIconChecked
+                  : DesignTokens.radioIconDefault,
             ),
           ],
         ),

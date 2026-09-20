@@ -17,11 +17,11 @@ class AddProductRemoteDataSource {
   final ApiClient apiClient;
 
   Options _idempotent(String idempotencyKey) => Options(
-        headers: {
-          'requiresToken': true,
-          'Idempotency-Key': idempotencyKey,
-        },
-      );
+    headers: {
+      'requiresToken': true,
+      'Idempotency-Key': idempotencyKey,
+    },
+  );
 
   Options _authed() => Options(headers: {'requiresToken': true});
 
@@ -47,21 +47,17 @@ class AddProductRemoteDataSource {
     return _readId(response);
   }
 
-  Future<void> patchStep1(String id, Map<String, dynamic> body) =>
-      apiClient.patch('/v1/vendor/products/$id/step-1',
-          data: body, options: _authed());
+  Future<void> patchStep1(String id, Map<String, dynamic> body) => apiClient
+      .patch('/v1/vendor/products/$id/step-1', data: body, options: _authed());
 
-  Future<void> patchStep2(String id, Map<String, dynamic> body) =>
-      apiClient.patch('/v1/vendor/products/$id/step-2',
-          data: body, options: _authed());
+  Future<void> patchStep2(String id, Map<String, dynamic> body) => apiClient
+      .patch('/v1/vendor/products/$id/step-2', data: body, options: _authed());
 
-  Future<void> patchStep3(String id, Map<String, dynamic> body) =>
-      apiClient.patch('/v1/vendor/products/$id/step-3',
-          data: body, options: _authed());
+  Future<void> patchStep3(String id, Map<String, dynamic> body) => apiClient
+      .patch('/v1/vendor/products/$id/step-3', data: body, options: _authed());
 
-  Future<void> patchStep4(String id, Map<String, dynamic> body) =>
-      apiClient.patch('/v1/vendor/products/$id/step-4',
-          data: body, options: _authed());
+  Future<void> patchStep4(String id, Map<String, dynamic> body) => apiClient
+      .patch('/v1/vendor/products/$id/step-4', data: body, options: _authed());
 
   /// POST /v1/vendor/products/images (SM-BG-3) — multipart upload, returns
   /// the CDN URL to submit via `PATCH .../step-2`'s `ImageInputVm.CdnUrl`.
@@ -88,13 +84,15 @@ class AddProductRemoteDataSource {
       options: _authed(),
     );
     final data = response as Map<String, dynamic>;
-    final images = (data['images'] as List<dynamic>? ?? const [])
-        .map((e) => e as Map<String, dynamic>)
-        .toList()
-      ..sort(
-        (a, b) => (a['sortOrder'] as int? ?? 0)
-            .compareTo(b['sortOrder'] as int? ?? 0),
-      );
+    final images =
+        (data['images'] as List<dynamic>? ?? const [])
+            .map((e) => e as Map<String, dynamic>)
+            .toList()
+          ..sort(
+            (a, b) => (a['sortOrder'] as int? ?? 0).compareTo(
+              b['sortOrder'] as int? ?? 0,
+            ),
+          );
     return images.map((e) => e['cdnUrl'] as String).toList(growable: false);
   }
 
@@ -121,16 +119,25 @@ class AddProductRemoteDataSource {
   /// The 3 "already-published" siblings of patchStep1/3/4 — same body
   /// shape, but allowed on Active/OutOfStock products, not just Draft.
   Future<void> updateBasicInfo(String id, Map<String, dynamic> body) =>
-      apiClient.patch('/v1/vendor/products/$id/details/basic',
-          data: body, options: _authed());
+      apiClient.patch(
+        '/v1/vendor/products/$id/details/basic',
+        data: body,
+        options: _authed(),
+      );
 
   Future<void> updatePricing(String id, Map<String, dynamic> body) =>
-      apiClient.patch('/v1/vendor/products/$id/details/pricing',
-          data: body, options: _authed());
+      apiClient.patch(
+        '/v1/vendor/products/$id/details/pricing',
+        data: body,
+        options: _authed(),
+      );
 
   Future<void> updateShipping(String id, Map<String, dynamic> body) =>
-      apiClient.patch('/v1/vendor/products/$id/details/shipping',
-          data: body, options: _authed());
+      apiClient.patch(
+        '/v1/vendor/products/$id/details/shipping',
+        data: body,
+        options: _authed(),
+      );
 
   Future<String> publishProduct(String draftId, String idempotencyKey) async {
     final response = await apiClient.post(

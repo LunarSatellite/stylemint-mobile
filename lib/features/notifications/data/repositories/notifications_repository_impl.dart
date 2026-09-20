@@ -15,7 +15,9 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
     int pageSize = 20,
   }) async {
     try {
-      final items = await remoteDataSource.getCreatorActivity(pageSize: pageSize);
+      final items = await remoteDataSource.getCreatorActivity(
+        pageSize: pageSize,
+      );
       return right(items);
     } on DioException catch (e) {
       return left(NetworkExceptions.server(e.message.toString()));

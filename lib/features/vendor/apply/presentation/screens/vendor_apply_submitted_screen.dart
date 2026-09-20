@@ -110,18 +110,27 @@ class VendorApplySubmittedScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: DesignTokens.s8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: DesignTokens.warningFillDark,
-                    borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.chipRadius,
+                    ),
                     border: Border.all(
-                        color: DesignTokens.colorWarning.withValues(alpha: 0.4)),
+                      color: DesignTokens.colorWarning.withValues(alpha: 0.4),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.hourglass_top_rounded,
-                          size: 12, color: DesignTokens.colorWarning),
+                      const Icon(
+                        Icons.hourglass_top_rounded,
+                        size: 12,
+                        color: DesignTokens.colorWarning,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Under Review',
@@ -345,4 +354,3 @@ class VendorApplySubmittedScreen extends StatelessWidget {
     );
   }
 }
-

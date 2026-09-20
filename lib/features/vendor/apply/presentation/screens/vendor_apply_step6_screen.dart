@@ -287,11 +287,11 @@ class _VendorApplyStep6ScreenState
   }
 
   Widget _placeholder(String text) => Text(
-        text,
-        style: DesignTokens.smallRegular.copyWith(
-          color: DesignTokens.textMuted,
-        ),
-      );
+    text,
+    style: DesignTokens.smallRegular.copyWith(
+      color: DesignTokens.textMuted,
+    ),
+  );
 
   Widget _buildBusinessInfo(VendorApplyDraft? draft) {
     if (draft == null) return _placeholder('Not filled — tap Edit');
@@ -358,29 +358,31 @@ class _VendorApplyStep6ScreenState
     if (docs.isEmpty) return _placeholder('No documents uploaded');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: docs.map((doc) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: DesignTokens.s6),
-          child: Row(
-            children: [
-              Text(
-                '•  ',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textMuted,
-                ),
+      children: docs
+          .map((doc) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: DesignTokens.s6),
+              child: Row(
+                children: [
+                  Text(
+                    '•  ',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                  Text(
+                    doc,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                      decoration: TextDecoration.underline,
+                      decorationColor: DesignTokens.primaryGreen,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                doc,
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.primaryGreen,
-                  decoration: TextDecoration.underline,
-                  decorationColor: DesignTokens.primaryGreen,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(growable: false),
+            );
+          })
+          .toList(growable: false),
     );
   }
 
@@ -410,7 +412,8 @@ class _VendorApplyStep6ScreenState
 
   Widget _buildProductInfo(VendorApplyDraft? draft) {
     final categories = draft?.productCategories ?? const [];
-    final hasData = categories.isNotEmpty ||
+    final hasData =
+        categories.isNotEmpty ||
         draft?.catalogSize != null ||
         draft?.commissionMinRate != null;
 
@@ -430,26 +433,28 @@ class _VendorApplyStep6ScreenState
           Wrap(
             spacing: DesignTokens.s8,
             runSpacing: DesignTokens.s8,
-            children: categories.map((cat) {
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s12,
-                  vertical: DesignTokens.s6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3F3F46),
-                  borderRadius: BorderRadius.circular(
-                    DesignTokens.chipRadius,
-                  ),
-                ),
-                child: Text(
-                  cat,
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-              );
-            }).toList(growable: false),
+            children: categories
+                .map((cat) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s12,
+                      vertical: DesignTokens.s6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3F3F46),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.chipRadius,
+                      ),
+                    ),
+                    child: Text(
+                      cat,
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
+                  );
+                })
+                .toList(growable: false),
           ),
           const SizedBox(height: DesignTokens.s12),
         ],
@@ -563,8 +568,7 @@ class _VendorApplyStep6ScreenState
               margin: const EdgeInsets.only(top: 1),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color:
-                    value ? DesignTokens.primaryGreen : Colors.transparent,
+                color: value ? DesignTokens.primaryGreen : Colors.transparent,
                 border: Border.all(
                   color: value
                       ? DesignTokens.primaryGreen

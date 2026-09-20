@@ -19,12 +19,13 @@ abstract class SavedItemsState with _$SavedItemsState {
     required bool hasMore,
     String? nextCursor,
   }) = _SavedLoadSuccess;
-  const factory SavedItemsState.loadFailure(NetworkExceptions failure) = _SavedLoadFailure;
+  const factory SavedItemsState.loadFailure(NetworkExceptions failure) =
+      _SavedLoadFailure;
 }
 
 class SavedItemsNotifier extends StateNotifier<SavedItemsState> {
   SavedItemsNotifier(this._repository)
-      : super(const SavedItemsState.initial()) {
+    : super(const SavedItemsState.initial()) {
     unawaited(load());
   }
 
@@ -44,7 +45,10 @@ class SavedItemsNotifier extends StateNotifier<SavedItemsState> {
   }
 
   Future<void> _fetchPage({int limit = 20, bool append = false}) async {
-    final either = await _repository.getSavedItems(limit: limit, cursor: _nextCursor);
+    final either = await _repository.getSavedItems(
+      limit: limit,
+      cursor: _nextCursor,
+    );
 
     either.fold(
       (failure) {

@@ -95,16 +95,17 @@ class ReelCaptionText extends StatefulWidget {
 
   /// The styled span for [parsed]. [collapsed] keeps only the hook and the
   /// first product line of a standard caption.
-  static TextSpan buildSpan(ParsedReelCaption parsed, {bool collapsed = false}) {
+  static TextSpan buildSpan(
+    ParsedReelCaption parsed, {
+    bool collapsed = false,
+  }) {
     if (!parsed.isStandard) {
       return TextSpan(
         style: baseStyle,
         children: _withHashtags(parsed.raw.trim()),
       );
     }
-    final lines = collapsed
-        ? parsed.productLines.take(1)
-        : parsed.productLines;
+    final lines = collapsed ? parsed.productLines.take(1) : parsed.productLines;
     return TextSpan(
       style: baseStyle,
       children: [

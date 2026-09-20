@@ -177,15 +177,21 @@ class _CaptionEditorState extends State<CaptionEditor> {
                     style: DesignTokens.mediumRegular.copyWith(
                       color: DesignTokens.textWhite,
                     ),
-                    decoration: DesignTokens.inputDecoration(
-                      hintText: CaptionEditor.tagHint,
-                      prefixIcon: const Padding(
-                        padding: EdgeInsets.only(left: DesignTokens.s12),
-                        child: Text('#', style: ReelCaptionText.hashtagStyle),
-                      ),
-                    ).copyWith(
-                      prefixIconConstraints: const BoxConstraints(minWidth: 24),
-                    ),
+                    decoration:
+                        DesignTokens.inputDecoration(
+                          hintText: CaptionEditor.tagHint,
+                          prefixIcon: const Padding(
+                            padding: EdgeInsets.only(left: DesignTokens.s12),
+                            child: Text(
+                              '#',
+                              style: ReelCaptionText.hashtagStyle,
+                            ),
+                          ),
+                        ).copyWith(
+                          prefixIconConstraints: const BoxConstraints(
+                            minWidth: 24,
+                          ),
+                        ),
                     onSubmitted: (_) => _addTag(),
                   ),
                 ),
@@ -253,7 +259,9 @@ class _Label extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: DesignTokens.s6),
       child: Text(
         text,
-        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+        style: DesignTokens.smallRegular.copyWith(
+          color: DesignTokens.textLight,
+        ),
       ),
     );
   }

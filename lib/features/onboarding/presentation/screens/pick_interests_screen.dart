@@ -30,32 +30,40 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
 
   void _load() {
     if (!mounted) return;
-    final accountId = ref.read(sessionControllerProvider).maybeWhen(
-      authenticated: (id) => id,
-      orElse: () => null,
-    );
+    final accountId = ref
+        .read(sessionControllerProvider)
+        .maybeWhen(
+          authenticated: (id) => id,
+          orElse: () => null,
+        );
     if (accountId == null) return;
-    final needsLoad = ref.read(interestsProvider).maybeWhen(
-      initial: () => true,
-      loadFailure: (_) => true,
-      orElse: () => false,
-    );
+    final needsLoad = ref
+        .read(interestsProvider)
+        .maybeWhen(
+          initial: () => true,
+          loadFailure: (_) => true,
+          orElse: () => false,
+        );
     if (needsLoad) {
       ref.read(interestsProvider.notifier).load(accountId: accountId);
     }
   }
 
   void _toggleInterest(String categoryId, bool isSelected) {
-    final accountId = ref.read(sessionControllerProvider).maybeWhen(
-      authenticated: (id) => id,
-      orElse: () => null,
-    );
+    final accountId = ref
+        .read(sessionControllerProvider)
+        .maybeWhen(
+          authenticated: (id) => id,
+          orElse: () => null,
+        );
     if (accountId == null) return;
-    ref.read(interestsProvider.notifier).toggleInterest(
-      accountId: accountId,
-      categoryId: categoryId,
-      isSelected: isSelected,
-    );
+    ref
+        .read(interestsProvider.notifier)
+        .toggleInterest(
+          accountId: accountId,
+          categoryId: categoryId,
+          isSelected: isSelected,
+        );
   }
 
   @override
@@ -77,12 +85,15 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
             final filtered = _query.isEmpty
                 ? available
                 : available
-                    .where((i) =>
-                        i.name.toLowerCase().contains(_query.toLowerCase()))
-                    .toList();
+                      .where(
+                        (i) =>
+                            i.name.toLowerCase().contains(_query.toLowerCase()),
+                      )
+                      .toList();
 
-            final progress =
-                (selectedIds.length / _minPicks).clamp(0.0, 1.0).toDouble();
+            final progress = (selectedIds.length / _minPicks)
+                .clamp(0.0, 1.0)
+                .toDouble();
             final canProceed = selectedIds.length >= _minPicks;
 
             return Column(
@@ -90,12 +101,18 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
-                      DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, 0),
+                    DesignTokens.s16,
+                    DesignTokens.s16,
+                    DesignTokens.s16,
+                    0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Pick Your Interests',
-                          style: DesignTokens.titleMedium),
+                      Text(
+                        'Pick Your Interests',
+                        style: DesignTokens.titleMedium,
+                      ),
                       const SizedBox(height: DesignTokens.s8),
                       Text(
                         "Select at least $_minPicks interests — we'll use it to personalize your feed",
@@ -104,8 +121,9 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                       const SizedBox(height: DesignTokens.s24),
                       Text(
                         '${selectedIds.length}/$_minPicks Picked',
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textLight),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textLight,
+                        ),
                       ),
                       const SizedBox(height: DesignTokens.s8),
                       ClipRRect(
@@ -115,7 +133,8 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                           minHeight: 4,
                           backgroundColor: DesignTokens.bgAppBodyLight,
                           valueColor: const AlwaysStoppedAnimation(
-                              DesignTokens.primaryGreen),
+                            DesignTokens.primaryGreen,
+                          ),
                         ),
                       ),
                       const SizedBox(height: DesignTokens.s16),
@@ -129,8 +148,11 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                         cursorColor: DesignTokens.primaryGreen,
                         decoration: DesignTokens.inputDecoration(
                           hintText: 'Search Interest',
-                          prefixIcon: const Icon(Icons.search,
-                              color: Color(0xFF71717B), size: 16),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Color(0xFF71717B),
+                            size: 16,
+                          ),
                         ),
                       ),
                       const SizedBox(height: DesignTokens.s24),
@@ -140,14 +162,16 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                 Expanded(
                   child: GridView.count(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.s16),
+                      horizontal: DesignTokens.s16,
+                    ),
                     crossAxisCount: 4,
                     crossAxisSpacing: DesignTokens.s12,
                     mainAxisSpacing: DesignTokens.s12,
                     childAspectRatio: 83.5 / 84,
                     children: filtered.map((interest) {
-                      final selected =
-                          selectedIds.contains(interest.categoryId);
+                      final selected = selectedIds.contains(
+                        interest.categoryId,
+                      );
                       return _RadioCard(
                         label: interest.name,
                         code: interest.code,
@@ -164,32 +188,42 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                     color: DesignTokens.bgAppFoundation,
                     border: Border(
                       top: BorderSide(
-                          color: DesignTokens.borderDefault, width: 1),
+                        color: DesignTokens.borderDefault,
+                        width: 1,
+                      ),
                     ),
                   ),
-                  padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
-                      DesignTokens.s24, DesignTokens.s16, DesignTokens.s24),
+                  padding: const EdgeInsets.fromLTRB(
+                    DesignTokens.s16,
+                    DesignTokens.s24,
+                    DesignTokens.s16,
+                    DesignTokens.s24,
+                  ),
                   child: Opacity(
                     opacity: canProceed ? 1 : 0.5,
                     child: Material(
                       color: DesignTokens.primaryGreen,
-                      borderRadius:
-                          BorderRadius.circular(DesignTokens.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.buttonRadius,
+                      ),
                       child: InkWell(
                         onTap: canProceed
                             ? () => context.go(RouteNames.followCreators)
                             : null,
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.buttonRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: DesignTokens.s32,
-                              vertical: DesignTokens.s16),
+                            horizontal: DesignTokens.s32,
+                            vertical: DesignTokens.s16,
+                          ),
                           child: Center(
                             child: Text(
                               'Proceed',
                               style: DesignTokens.oneLinerSemibold.copyWith(
-                                  color: DesignTokens.buttonPrimaryText),
+                                color: DesignTokens.buttonPrimaryText,
+                              ),
                             ),
                           ),
                         ),
@@ -204,15 +238,20 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: DesignTokens.colorError, size: 48),
+                const Icon(
+                  Icons.error_outline,
+                  color: DesignTokens.colorError,
+                  size: 48,
+                ),
                 const SizedBox(height: DesignTokens.s16),
                 Text('Failed to load interests', style: DesignTokens.bodyText),
                 const SizedBox(height: DesignTokens.s16),
                 GestureDetector(
                   onTap: _load,
-                  child: Text('Retry',
-                      style: TextStyle(color: DesignTokens.primaryGreen)),
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(color: DesignTokens.primaryGreen),
+                  ),
                 ),
               ],
             ),
@@ -430,7 +469,9 @@ class _RadioCard extends StatelessWidget {
                 filter: ImageFilter.blur(sigmaX: 5.7, sigmaY: 5.7),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s8, vertical: DesignTokens.s8),
+                    horizontal: DesignTokens.s8,
+                    vertical: DesignTokens.s8,
+                  ),
                   decoration: BoxDecoration(
                     color: selected
                         ? DesignTokens.primaryGreen.withOpacity(0.12)

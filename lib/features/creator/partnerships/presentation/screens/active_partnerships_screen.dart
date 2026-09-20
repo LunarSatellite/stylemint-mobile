@@ -816,7 +816,8 @@ class _PartnershipCard extends StatelessWidget {
                     // endpoint returns it, so it is not drawn at all.
                     // The commission rate is real and stays.
                     Semantics(
-                      label: '$commissionPct percent commission '
+                      label:
+                          '$commissionPct percent commission '
                           'on this partnership',
                       excludeSemantics: true,
                       child: Text(

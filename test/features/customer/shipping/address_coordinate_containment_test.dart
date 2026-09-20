@@ -16,8 +16,7 @@ void main() {
       .whereType<File>()
       .where((f) => f.path.endsWith('.dart'))
       .where(
-        (f) =>
-            !f.path.endsWith('.g.dart') && !f.path.endsWith('.freezed.dart'),
+        (f) => !f.path.endsWith('.g.dart') && !f.path.endsWith('.freezed.dart'),
       );
 
   bool isComment(String line) {

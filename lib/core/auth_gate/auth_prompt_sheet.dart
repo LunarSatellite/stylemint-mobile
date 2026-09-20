@@ -45,18 +45,25 @@ class AuthPromptSheet extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: DesignTokens.chipsSelectedFill,
               ),
-              child: const Icon(Icons.key_rounded,
-                  color: DesignTokens.primaryGreen, size: 40),
+              child: const Icon(
+                Icons.key_rounded,
+                color: DesignTokens.primaryGreen,
+                size: 40,
+              ),
             ),
             const SizedBox(height: DesignTokens.s16),
-            Text(reason.prompt,
-                textAlign: TextAlign.center, style: DesignTokens.titleMedium),
+            Text(
+              reason.prompt,
+              textAlign: TextAlign.center,
+              style: DesignTokens.titleMedium,
+            ),
             const SizedBox(height: DesignTokens.s8),
             Text(
               'Use your device passkey — Face, fingerprint or PIN. No passwords.',
               textAlign: TextAlign.center,
-              style: DesignTokens.mediumRegular
-                  .copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
             const SizedBox(height: DesignTokens.s24),
             SizedBox(
@@ -74,13 +81,18 @@ class AuthPromptSheet extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.key_rounded,
-                          color: DesignTokens.buttonPrimaryText,
-                          size: DesignTokens.iconMedium),
+                      const Icon(
+                        Icons.key_rounded,
+                        color: DesignTokens.buttonPrimaryText,
+                        size: DesignTokens.iconMedium,
+                      ),
                       const SizedBox(width: DesignTokens.s8),
-                      Text('Continue with Passkey',
-                          style: DesignTokens.oneLinerSemibold.copyWith(
-                              color: DesignTokens.buttonPrimaryText)),
+                      Text(
+                        'Continue with Passkey',
+                        style: DesignTokens.oneLinerSemibold.copyWith(
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -89,9 +101,12 @@ class AuthPromptSheet extends StatelessWidget {
             const SizedBox(height: DesignTokens.s12),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Maybe later',
-                  style: DesignTokens.mediumRegular
-                      .copyWith(color: DesignTokens.textMuted)),
+              child: Text(
+                'Maybe later',
+                style: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
             ),
           ],
         ),

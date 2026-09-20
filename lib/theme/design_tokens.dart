@@ -12,6 +12,8 @@
 // the bottom of each section so existing screens keep compiling.
 // ============================================================================
 
+import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
 
 class DesignTokens {
@@ -31,7 +33,9 @@ class DesignTokens {
   static const Color secondaryYellow = Color(0xFFF1C40F);
 
   // --- Backgrounds / Fills -------------------------------------------------
-  static const Color bgAppFoundation = Color(0xFF09090B); // Fill/App Foundation, Gray/950
+  static const Color bgAppFoundation = Color(
+    0xFF09090B,
+  ); // Fill/App Foundation, Gray/950
   static const Color bgAppBody = Color(0xFF18181B); // Text/Dark, Radio fill
   static const Color bgAppBodyLight = Color(0xFF27272A); // Fill/App Body Light
 
@@ -54,7 +58,9 @@ class DesignTokens {
   static const Color textLight = Color(0xFFD4D4D8); // Text/Light, Gray/300
   static const Color textMuted = Color(0xFF9F9FA9); // Text/Muted
   static const Color textDark = Color(0xFF18181B); // Text/Dark
-  static const Color textContentSecondary = Color(0xFF737373); // text-content-secondary
+  static const Color textContentSecondary = Color(
+    0xFF737373,
+  ); // text-content-secondary
 
   // --- Icons ---------------------------------------------------------------
   static const Color iconWhite = Color(0xFFFFFFFF); // Icon/White
@@ -70,21 +76,46 @@ class DesignTokens {
   static const Color warning500 = Color(0xFFF0B100); // Warning/500
   static const Color baseBlack = Color(0xFF000000); // Base/Black
 
+  // --- Payment brand marks -------------------------------------------------
+  // Not part of the palette: these are the provider's own colours and must
+  // stay exact, which is precisely why they belong here rather than inline.
+  static const Color brandVisa = Color(0xFF1A1F71);
+  static const Color brandPayPal = Color(0xFF009CDE);
+  static const Color brandESewa = Color(0xFF4CAF50);
+
+  /// Warm accent for affection/appreciation marks (cart thank-you stub).
+  /// Deliberately distinct from [colorError] so a heart never reads as a fault.
+  static const Color accentHeart = Color(0xFFE53935);
+
   // --- Borders & dividers --------------------------------------------------
-  static const Color borderDefault = Color(0xFF3F3F46); // Border/Default, Section/Base
+  static const Color borderDefault = Color(
+    0xFF3F3F46,
+  ); // Border/Default, Section/Base
   static const Color dotSeparator = Color(0xFF71717B);
   static const Color sectionOnBase = Color(0xFF52525C); // Section/On Base
   static const Color homeIndicator = Color(0xFF52525C); // Home Indicator
 
   // --- Input field (Figma: Input Field/*) ----------------------------------
-  static const Color inputFieldFill = Color(0xFF27272A); // Input Field/Fill/Default
-  static const Color inputFieldBorder = Color(0xFF52525C); // Input Field/Border/Default
-  static const Color inputFieldLabel = Color(0xFFFFFFFF); // Input Field/Text/Label
-  static const Color inputFieldData = Color(0xFFFFFFFF); // Input Field/Text/Data
-  static const Color inputFieldPlaceholder = Color(0xFF9F9FA9); // Text/Placeholder
+  static const Color inputFieldFill = Color(
+    0xFF27272A,
+  ); // Input Field/Fill/Default
+  static const Color inputFieldBorder = Color(
+    0xFF52525C,
+  ); // Input Field/Border/Default
+  static const Color inputFieldLabel = Color(
+    0xFFFFFFFF,
+  ); // Input Field/Text/Label
+  static const Color inputFieldData = Color(
+    0xFFFFFFFF,
+  ); // Input Field/Text/Data
+  static const Color inputFieldPlaceholder = Color(
+    0xFF9F9FA9,
+  ); // Text/Placeholder
   static const Color inputFieldAddOnText = Color(0xFFD4D4D8); // Text/Add On
   static const Color inputFieldAddOnBorder = Color(0xFF52525C); // Border/Add On
-  static const Color inputFieldDropdownIcon = Color(0xFF9F9FA9); // Icon/Dropdown
+  static const Color inputFieldDropdownIcon = Color(
+    0xFF9F9FA9,
+  ); // Icon/Dropdown
 
   // --- Radio list item (Figma: Radio/List Item/*) --------------------------
   static const Color radioFill = Color(0xFF18181B); // Radio/List Item/Fill
@@ -106,9 +137,15 @@ class DesignTokens {
   static const Color warningTextLight = Color(0xFFFDF6D8); // Text/Warning/Light
 
   // --- Buttons -------------------------------------------------------------
-  static const Color buttonPrimaryFill = Color(0xFF2ECC71); // Button/Primary/Solid/Default/Fill
-  static const Color buttonPrimaryText = Color(0xFF06190E); // Button/Primary/Text & Icon
-  static const Color buttonGrayFill = Color(0xFF3F3F46); // Button/Gray/Solid/Default/Fill
+  static const Color buttonPrimaryFill = Color(
+    0xFF2ECC71,
+  ); // Button/Primary/Solid/Default/Fill
+  static const Color buttonPrimaryText = Color(
+    0xFF06190E,
+  ); // Button/Primary/Text & Icon
+  static const Color buttonGrayFill = Color(
+    0xFF3F3F46,
+  ); // Button/Gray/Solid/Default/Fill
   static const Color buttonGrayText = Color(0xFFFFFFFF); // Button/Gray/Text
 
   // --- Chip & tag (PDF-sourced, no Figma var contradiction) ----------------
@@ -223,6 +260,56 @@ class DesignTokens {
     fontWeight: FontWeight.w400,
     height: 1.5,
     color: textMuted,
+  );
+
+  /// Editorial Body — 15 / 400 / 1.6. Collection and campaign prose, set a
+  /// step above UI body and looser, because it is read rather than scanned.
+  /// One line-height for every editorial paragraph — collection_screen
+  /// previously carried two near-identical styles at 1.45 and 1.6.
+  static const TextStyle editorialBody = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
+    height: 1.6,
+    color: textLight,
+  );
+
+  // --- Money ---------------------------------------------------------------
+  // Prices are the one thing a shopper scans for, so they get their own scale
+  // rather than borrowing a body style. Tabular figures keep columns of
+  // amounts aligned; the tight line-height keeps a price visually welded to
+  // the label above it.
+
+  /// Money / Large — 20 / 700 / 1.2. Grand totals and sticky-bar amounts.
+  static const TextStyle moneyLarge = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    height: 1.2,
+    letterSpacing: -0.2,
+    fontFeatures: [FontFeature.tabularFigures()],
+    color: textWhite,
+  );
+
+  /// Money / Medium — 16 / 700 / 1.2. Line-item and card prices.
+  static const TextStyle moneyMedium = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    height: 1.2,
+    letterSpacing: -0.1,
+    fontFeatures: [FontFeature.tabularFigures()],
+    color: textWhite,
+  );
+
+  /// Money / Small — 13 / 600 / 1.2. Struck-through and secondary amounts.
+  static const TextStyle moneySmall = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    height: 1.2,
+    fontFeatures: [FontFeature.tabularFigures()],
+    color: textLight,
   );
 
   // --- Backward-compat aliases (map old names to correct Figma styles) -----
@@ -350,6 +437,12 @@ class DesignTokens {
   static const double iconMedium = 24;
   static const double iconLarge = 32;
   static const double iconXLarge = 48;
+
+  // List thumbnails — product images in cart/order/search rows. One size so
+  // every list on the shopper journey aligns to the same left edge.
+  static const double thumbCompact = 64;
+  static const double thumbSmall = 72;
+  static const double thumbMedium = 88;
 
   // Avatars
   static const double avatarSmall = 32;
@@ -544,8 +637,9 @@ class DesignTokens {
     return BoxDecoration(
       color: backgroundColor ?? bgAppBody,
       borderRadius: BorderRadius.circular(cardRadius),
-      border:
-          borderColor != null ? Border.all(color: borderColor, width: 1) : null,
+      border: borderColor != null
+          ? Border.all(color: borderColor, width: 1)
+          : null,
       boxShadow: hasShadow
           ? [
               const BoxShadow(
@@ -575,12 +669,16 @@ class DesignTokens {
     );
   }
 
-  static BoxDecoration tagDecoration({Color? backgroundColor, Color? borderColor}) {
+  static BoxDecoration tagDecoration({
+    Color? backgroundColor,
+    Color? borderColor,
+  }) {
     return BoxDecoration(
       color: backgroundColor ?? tagInfoFill,
       borderRadius: BorderRadius.circular(9999),
-      border:
-          borderColor != null ? Border.all(color: borderColor, width: 1) : null,
+      border: borderColor != null
+          ? Border.all(color: borderColor, width: 1)
+          : null,
     );
   }
 }

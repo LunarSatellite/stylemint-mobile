@@ -9,7 +9,10 @@ class ReferralsRemoteDataSource {
 
   static const _uuid = Uuid();
 
-  Future<Map<String, dynamic>> listMyLinks({String? cursor, int pageSize = 20}) async {
+  Future<Map<String, dynamic>> listMyLinks({
+    String? cursor,
+    int pageSize = 20,
+  }) async {
     final response = await apiClient.get(
       '/v1/invite-links',
       queryParameters: {

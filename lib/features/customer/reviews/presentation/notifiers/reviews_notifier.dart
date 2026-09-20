@@ -22,7 +22,8 @@ abstract class ReviewsState with _$ReviewsState {
     required bool hasMore,
     String? nextCursor,
   }) = _ReviewsLoadSuccess;
-  const factory ReviewsState.loadFailure(NetworkExceptions failure) = _ReviewsLoadFailure;
+  const factory ReviewsState.loadFailure(NetworkExceptions failure) =
+      _ReviewsLoadFailure;
 }
 
 @freezed
@@ -32,7 +33,8 @@ abstract class SubmitReviewState with _$SubmitReviewState {
   const factory SubmitReviewState.initial() = _SubmitInitial;
   const factory SubmitReviewState.submitting() = _SubmitSubmitting;
   const factory SubmitReviewState.success(Review review) = _SubmitSuccess;
-  const factory SubmitReviewState.failure(NetworkExceptions failure) = _SubmitFailure;
+  const factory SubmitReviewState.failure(NetworkExceptions failure) =
+      _SubmitFailure;
 }
 
 class ReviewsNotifier extends StateNotifier<ReviewsState> {
@@ -76,12 +78,17 @@ class ReviewsNotifier extends StateNotifier<ReviewsState> {
       _repository.getProductReviews(productId, cursor: _nextCursor),
     ]);
 
-    final summaryEither = results[0] as Either<NetworkExceptions, ReviewSummary>;
-    final reviewsEither = results[1] as Either<NetworkExceptions, PagedResult<Review>>;
+    final summaryEither =
+        results[0] as Either<NetworkExceptions, ReviewSummary>;
+    final reviewsEither =
+        results[1] as Either<NetworkExceptions, PagedResult<Review>>;
 
     if (isRefresh && summaryEither.isRight() && reviewsEither.isRight()) {
-      final summary = (summaryEither as Right<NetworkExceptions, ReviewSummary>).value;
-      final paged = (reviewsEither as Right<NetworkExceptions, PagedResult<Review>>).value;
+      final summary =
+          (summaryEither as Right<NetworkExceptions, ReviewSummary>).value;
+      final paged =
+          (reviewsEither as Right<NetworkExceptions, PagedResult<Review>>)
+              .value;
       _nextCursor = paged.nextCursor;
       state = ReviewsState.loadSuccess(
         reviews: paged.items,
@@ -92,11 +99,20 @@ class ReviewsNotifier extends StateNotifier<ReviewsState> {
     } else if (!isRefresh) {
       final existingReviews = state.maybeWhen(
         loadSuccess: (reviews, summary, _, __) => (reviews, summary),
-        orElse: () => (<Review>[], ReviewSummary(averageRating: 0, totalReviews: 0, ratingDistribution: {})),
+        orElse: () => (
+          <Review>[],
+          ReviewSummary(
+            averageRating: 0,
+            totalReviews: 0,
+            ratingDistribution: {},
+          ),
+        ),
       );
 
       if (reviewsEither.isRight()) {
-        final paged = (reviewsEither as Right<NetworkExceptions, PagedResult<Review>>).value;
+        final paged =
+            (reviewsEither as Right<NetworkExceptions, PagedResult<Review>>)
+                .value;
         _nextCursor = paged.nextCursor;
         state = ReviewsState.loadSuccess(
           reviews: [...existingReviews.$1, ...paged.items],
@@ -106,7 +122,9 @@ class ReviewsNotifier extends StateNotifier<ReviewsState> {
         );
       }
     } else if (reviewsEither.isLeft()) {
-      state = ReviewsState.loadFailure((reviewsEither as Left<NetworkExceptions, PagedResult<Review>>).value);
+      state = ReviewsState.loadFailure(
+        (reviewsEither as Left<NetworkExceptions, PagedResult<Review>>).value,
+      );
     }
   }
 
@@ -118,7 +136,8 @@ class ReviewsNotifier extends StateNotifier<ReviewsState> {
 }
 
 class SubmitReviewNotifier extends StateNotifier<SubmitReviewState> {
-  SubmitReviewNotifier(this._repository) : super(const SubmitReviewState.initial());
+  SubmitReviewNotifier(this._repository)
+    : super(const SubmitReviewState.initial());
 
   final ReviewsRepository _repository;
 

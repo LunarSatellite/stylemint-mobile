@@ -12,14 +12,14 @@ enum AuthReason {
   general;
 
   String get prompt => switch (this) {
-        AuthReason.like => 'Sign in to like',
-        AuthReason.comment => 'Sign in to comment',
-        AuthReason.share => 'Sign in to share',
-        AuthReason.follow => 'Sign in to follow',
-        AuthReason.save => 'Sign in to save',
-        AuthReason.addToCart => 'Sign in to add to cart',
-        AuthReason.checkout => 'Sign in to check out',
-        AuthReason.tip => 'Sign in to send a tip',
-        AuthReason.general => 'Sign in to continue',
-      };
+    AuthReason.like => 'Sign in to like',
+    AuthReason.comment => 'Sign in to comment',
+    AuthReason.share => 'Sign in to share',
+    AuthReason.follow => 'Sign in to follow',
+    AuthReason.save => 'Sign in to save',
+    AuthReason.addToCart => 'Sign in to add to cart',
+    AuthReason.checkout => 'Sign in to check out',
+    AuthReason.tip => 'Sign in to send a tip',
+    AuthReason.general => 'Sign in to continue',
+  };
 }

@@ -37,10 +37,12 @@ class CreatorReelsRemoteDataSource {
     await apiClient.post(
       '/v1/creator/reels/$reelId/publish',
       data: <String, dynamic>{},
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -48,10 +50,12 @@ class CreatorReelsRemoteDataSource {
     await apiClient.post(
       '/v1/creator/reels/$reelId/unpublish',
       data: <String, dynamic>{},
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -64,10 +68,12 @@ class CreatorReelsRemoteDataSource {
     await apiClient.put(
       '/v1/creator/reels/$reelId/caption',
       data: <String, dynamic>{'caption': caption},
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -96,10 +102,12 @@ class CreatorReelsRemoteDataSource {
         'overlayPositionX': overlayPositionX,
         'overlayPositionY': overlayPositionY,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return ReelTagManagementDto.fromJson(response as Map<String, dynamic>);
   }
@@ -111,10 +119,12 @@ class CreatorReelsRemoteDataSource {
   ) async {
     await apiClient.authDelete(
       '/v1/creator/reels/$reelId/tagged-products/$taggedProductId',
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -122,10 +132,12 @@ class CreatorReelsRemoteDataSource {
   Future<void> deleteReel(String reelId, String idempotencyKey) async {
     await apiClient.authDelete(
       '/v1/creator/reels/$reelId',
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 

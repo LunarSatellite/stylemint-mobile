@@ -11,7 +11,8 @@ class SubscriptionRepository {
 
   final SubscriptionRemoteDataSource remote;
 
-  Future<Either<NetworkExceptions, List<SubscriptionPlanDto>>> listPlans() async {
+  Future<Either<NetworkExceptions, List<SubscriptionPlanDto>>>
+  listPlans() async {
     try {
       return Right(await remote.listPlans());
     } catch (e) {

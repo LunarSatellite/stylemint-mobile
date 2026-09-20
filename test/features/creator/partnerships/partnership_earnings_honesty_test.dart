@@ -180,8 +180,7 @@ class _FakeRepository implements PartnershipsRepository {
   ) async => networkRight(const []);
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// Routes the card can actually reach, so a tap is verifiable rather than
@@ -488,8 +487,9 @@ void main() {
       },
     );
 
-    testWidgets('the ended card carries no earnings row either',
-        (tester) async {
+    testWidgets('the ended card carries no earnings row either', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const ActivePartnershipsScreen(),
@@ -525,8 +525,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('ended tab does not overflow at 320dp and 1.3',
-        (tester) async {
+    testWidgets('ended tab does not overflow at 320dp and 1.3', (tester) async {
       await _pump(
         tester,
         const ActivePartnershipsScreen(),
@@ -539,8 +538,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('the earnings note is a labelled control that navigates',
-        (tester) async {
+    testWidgets('the earnings note is a labelled control that navigates', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const ActivePartnershipsScreen(),
@@ -572,8 +572,9 @@ void main() {
       expect(_lastRoute, RouteNames.creatorAnalytics);
     });
 
-    testWidgets('every tappable on the card carries a spoken name',
-        (tester) async {
+    testWidgets('every tappable on the card carries a spoken name', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const ActivePartnershipsScreen(),
@@ -594,8 +595,9 @@ void main() {
   // ── 5. The brand logo ──────────────────────────────────────────────────────
 
   group('brand logo', () {
-    testWidgets('a brand with a logo gets its logo, not a letter',
-        (tester) async {
+    testWidgets('a brand with a logo gets its logo, not a letter', (
+      tester,
+    ) async {
       const url = 'https://cdn.example.com/brands/hamro-pasal.png';
       await _pump(
         tester,

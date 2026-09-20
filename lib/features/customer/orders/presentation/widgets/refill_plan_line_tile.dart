@@ -253,9 +253,7 @@ class _PriceFact extends StatelessWidget {
         Text(
           value,
           style: DesignTokens.smallRegular.copyWith(
-            color: emphasised
-                ? DesignTokens.textWhite
-                : DesignTokens.textLight,
+            color: emphasised ? DesignTokens.textWhite : DesignTokens.textLight,
             fontWeight: emphasised ? FontWeight.w700 : FontWeight.w500,
           ),
         ),

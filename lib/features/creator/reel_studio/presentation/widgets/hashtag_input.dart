@@ -101,22 +101,23 @@ class _HashtagInputState extends State<HashtagInput> {
           Wrap(
             spacing: DesignTokens.s8,
             runSpacing: DesignTokens.s8,
-            children:
-                _hashtags
-                    .map(
-                      (tag) => InputChip(
-                        label: Text('#$tag', style: DesignTokens.smallRegular),
-                        deleteIcon: const Icon(Icons.close, size: 16),
-                        onDeleted: () => _removeHashtag(tag),
-                        backgroundColor: DesignTokens.chipsSelectedFill,
-                        deleteIconColor: DesignTokens.primaryGreen,
-                        labelStyle: const TextStyle(
-                          color: DesignTokens.primaryGreen,
-                        ),
-                        side: const BorderSide(color: DesignTokens.chipsSelectedBorder),
-                      ),
-                    )
-                    .toList(growable: false),
+            children: _hashtags
+                .map(
+                  (tag) => InputChip(
+                    label: Text('#$tag', style: DesignTokens.smallRegular),
+                    deleteIcon: const Icon(Icons.close, size: 16),
+                    onDeleted: () => _removeHashtag(tag),
+                    backgroundColor: DesignTokens.chipsSelectedFill,
+                    deleteIconColor: DesignTokens.primaryGreen,
+                    labelStyle: const TextStyle(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                    side: const BorderSide(
+                      color: DesignTokens.chipsSelectedBorder,
+                    ),
+                  ),
+                )
+                .toList(growable: false),
           ),
         ],
       ],

@@ -83,7 +83,11 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
         context.pop(true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(widget.isEditing ? 'Failed to update card' : 'Failed to add card')),
+          SnackBar(
+            content: Text(
+              widget.isEditing ? 'Failed to update card' : 'Failed to add card',
+            ),
+          ),
         );
       }
     }
@@ -172,9 +176,11 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
                   // Billing Address checkbox
                   _CheckboxRow(
                     label: 'Billing Address',
-                    subtitle: "Set your card's billing address same as your shipping address",
+                    subtitle:
+                        "Set your card's billing address same as your shipping address",
                     value: _billingSameAsShipping,
-                    onChanged: (v) => setState(() => _billingSameAsShipping = v ?? true),
+                    onChanged: (v) =>
+                        setState(() => _billingSameAsShipping = v ?? true),
                   ),
                   const SizedBox(height: DesignTokens.s16),
                   // Set as Default checkbox
@@ -182,7 +188,8 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
                     label: 'Set as Default Payment',
                     subtitle: 'Set this card as your default payment option',
                     value: _setAsDefault,
-                    onChanged: (v) => setState(() => _setAsDefault = v ?? false),
+                    onChanged: (v) =>
+                        setState(() => _setAsDefault = v ?? false),
                   ),
                   const SizedBox(height: DesignTokens.s16),
                 ],
@@ -204,13 +211,20 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SvgPicture.asset('assets/icons/SecureIcon.svg', width: 36, height: 36),
+                      SvgPicture.asset(
+                        'assets/icons/SecureIcon.svg',
+                        width: 36,
+                        height: 36,
+                      ),
                       const SizedBox(width: DesignTokens.s12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Secure & Encrypted', style: DesignTokens.mediumSemibold),
+                            Text(
+                              'Secure & Encrypted',
+                              style: DesignTokens.mediumSemibold,
+                            ),
                             const SizedBox(height: DesignTokens.s4),
                             Text(
                               "Don't worry about your card details, they are protected with high level encryption",
@@ -247,7 +261,9 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
                               ),
                             )
                           : Text(
-                              isEdit ? 'Update Card Details' : 'Add Card Details',
+                              isEdit
+                                  ? 'Update Card Details'
+                                  : 'Add Card Details',
                               style: DesignTokens.mediumSemibold.copyWith(
                                 color: DesignTokens.buttonPrimaryText,
                               ),
@@ -281,8 +297,13 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
       obscureText: obscureText,
       inputFormatters: inputFormatters,
       textCapitalization: textCapitalization,
-      style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.inputFieldData),
-      decoration: DesignTokens.inputDecoration(labelText: label, suffixIcon: suffixIcon),
+      style: DesignTokens.mediumRegular.copyWith(
+        color: DesignTokens.inputFieldData,
+      ),
+      decoration: DesignTokens.inputDecoration(
+        labelText: label,
+        suffixIcon: suffixIcon,
+      ),
       validator: validator,
     );
   }
@@ -313,8 +334,13 @@ class _CheckboxRow extends StatelessWidget {
             value: value,
             onChanged: onChanged,
             activeColor: DesignTokens.primaryGreen,
-            side: const BorderSide(color: DesignTokens.borderDefault, width: 1.5),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            side: const BorderSide(
+              color: DesignTokens.borderDefault,
+              width: 1.5,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
         ),
         const SizedBox(width: DesignTokens.s12),
@@ -326,7 +352,9 @@ class _CheckboxRow extends StatelessWidget {
               const SizedBox(height: DesignTokens.s4),
               Text(
                 subtitle,
-                style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ],
           ),

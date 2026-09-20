@@ -25,15 +25,19 @@ class VendorRepositoryImpl implements VendorRepository {
     if (status == 409) return const NetworkExceptions.conflict();
     if (status == 422) {
       final data = e.response?.data;
-      final code = data is Map ? (data['errorCode'] as String? ?? 'validation_error') : 'validation_error';
+      final code = data is Map
+          ? (data['errorCode'] as String? ?? 'validation_error')
+          : 'validation_error';
       return NetworkExceptions.validation(code: code);
     }
-    if (status != null && status >= 500) return const NetworkExceptions.serverUnavailable();
+    if (status != null && status >= 500)
+      return const NetworkExceptions.serverUnavailable();
     return NetworkExceptions.server(e.message ?? 'Unknown error');
   }
 
   @override
-  Future<Either<NetworkExceptions, VendorApplication>> getApplicationStatus() async {
+  Future<Either<NetworkExceptions, VendorApplication>>
+  getApplicationStatus() async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getApplicationStatus();
@@ -194,7 +198,10 @@ class VendorRepositoryImpl implements VendorRepository {
   Future<String> _ensureActiveKycSessionId(String accountId) async {
     final active = await remoteDataSource.getActiveKycSession(accountId);
     if (active != null) return active['id'] as String;
-    final started = await remoteDataSource.startKycSession(accountId, _uuid.v4());
+    final started = await remoteDataSource.startKycSession(
+      accountId,
+      _uuid.v4(),
+    );
     return started['id'] as String;
   }
 

@@ -152,12 +152,12 @@ class _MallReelPlaySlotState extends State<MallReelPlaySlot> {
   void didUpdateWidget(MallReelPlaySlot oldWidget) {
     super.didUpdateWidget(oldWidget);
     final changed =
-        oldWidget.id != widget.id ||
-        oldWidget.controller != widget.controller;
+        oldWidget.id != widget.id || oldWidget.controller != widget.controller;
     if (changed) {
       oldWidget.controller?.removeListener(_onSlotChanged);
-      (oldWidget.controller ?? MallReelPlaySlotController.instance)
-          .release(oldWidget.id);
+      (oldWidget.controller ?? MallReelPlaySlotController.instance).release(
+        oldWidget.id,
+      );
       _controller.addListener(_onSlotChanged);
       _scheduleMeasure();
     }

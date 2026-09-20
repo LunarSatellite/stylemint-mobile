@@ -19,7 +19,8 @@ abstract class MfaListState with _$MfaListState {
   const factory MfaListState.loadInProgress() = _MfaListInProgress;
   const factory MfaListState.loadSuccess(List<MfaMethodDto> methods) =
       _MfaListSuccess;
-  const factory MfaListState.loadFailure(NetworkExceptions failure) = _MfaListNetworkExceptions;
+  const factory MfaListState.loadFailure(NetworkExceptions failure) =
+      _MfaListNetworkExceptions;
 
   bool get isLoading =>
       maybeWhen(loadInProgress: () => true, orElse: () => false);
@@ -27,7 +28,7 @@ abstract class MfaListState with _$MfaListState {
 
 class MfaListNotifier extends StateNotifier<MfaListState> {
   MfaListNotifier({required this.authRepository})
-      : super(const MfaListState.initial());
+    : super(const MfaListState.initial());
 
   final AuthRepository authRepository;
 
@@ -45,7 +46,8 @@ abstract class MfaActionState with _$MfaActionState {
   const factory MfaActionState.initial() = _MfaActionInitial;
   const factory MfaActionState.loadInProgress() = _MfaActionInProgress;
   const factory MfaActionState.loadSuccess() = _MfaActionSuccess;
-  const factory MfaActionState.loadFailure(NetworkExceptions failure) = _MfaActionNetworkExceptions;
+  const factory MfaActionState.loadFailure(NetworkExceptions failure) =
+      _MfaActionNetworkExceptions;
 
   bool get isLoading =>
       maybeWhen(loadInProgress: () => true, orElse: () => false);
@@ -53,7 +55,7 @@ abstract class MfaActionState with _$MfaActionState {
 
 class MfaActionNotifier extends StateNotifier<MfaActionState> {
   MfaActionNotifier({required this.authRepository})
-      : super(const MfaActionState.initial());
+    : super(const MfaActionState.initial());
 
   final AuthRepository authRepository;
 
@@ -66,7 +68,10 @@ class MfaActionNotifier extends StateNotifier<MfaActionState> {
       accountId: accountId,
       methodId: methodId,
     );
-    state = result.fold(MfaActionState.loadFailure, (_) => const MfaActionState.loadSuccess());
+    state = result.fold(
+      MfaActionState.loadFailure,
+      (_) => const MfaActionState.loadSuccess(),
+    );
   }
 
   Future<void> setPrimary({
@@ -78,7 +83,10 @@ class MfaActionNotifier extends StateNotifier<MfaActionState> {
       accountId: accountId,
       methodId: methodId,
     );
-    state = result.fold(MfaActionState.loadFailure, (_) => const MfaActionState.loadSuccess());
+    state = result.fold(
+      MfaActionState.loadFailure,
+      (_) => const MfaActionState.loadSuccess(),
+    );
   }
 
   Future<void> renameLabel({
@@ -92,7 +100,10 @@ class MfaActionNotifier extends StateNotifier<MfaActionState> {
       methodId: methodId,
       label: label,
     );
-    state = result.fold(MfaActionState.loadFailure, (_) => const MfaActionState.loadSuccess());
+    state = result.fold(
+      MfaActionState.loadFailure,
+      (_) => const MfaActionState.loadSuccess(),
+    );
   }
 
   void reset() => state = const MfaActionState.initial();
@@ -115,7 +126,7 @@ abstract class TotpEnrollmentState with _$TotpEnrollmentState {
 
 class TotpEnrollmentNotifier extends StateNotifier<TotpEnrollmentState> {
   TotpEnrollmentNotifier({required this.authRepository})
-      : super(const TotpEnrollmentState.initial());
+    : super(const TotpEnrollmentState.initial());
 
   final AuthRepository authRepository;
 
@@ -154,11 +165,13 @@ final mfaListProvider = StateNotifierProvider<MfaListNotifier, MfaListState>(
 
 final mfaActionProvider =
     StateNotifierProvider<MfaActionNotifier, MfaActionState>(
-  (ref) => MfaActionNotifier(authRepository: ref.watch(authRepositoryProvider)),
-);
+      (ref) =>
+          MfaActionNotifier(authRepository: ref.watch(authRepositoryProvider)),
+    );
 
 final totpEnrollmentProvider =
     StateNotifierProvider<TotpEnrollmentNotifier, TotpEnrollmentState>(
-  (ref) =>
-      TotpEnrollmentNotifier(authRepository: ref.watch(authRepositoryProvider)),
-);
+      (ref) => TotpEnrollmentNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );

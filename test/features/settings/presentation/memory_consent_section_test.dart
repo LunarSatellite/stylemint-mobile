@@ -131,7 +131,8 @@ void main() {
       expect(
         find.text(MemoryPurposeCopy.explanationOf(purpose)),
         findsOneWidget,
-        reason: 'the text being agreed to must be on screen beside the '
+        reason:
+            'the text being agreed to must be on screen beside the '
             'choice, not folded away',
       );
     }
@@ -154,12 +155,14 @@ void main() {
     );
     await tester.pump();
 
-    final captured = verify(
-      () => repository.grantConsent(
-        purpose: purpose,
-        explanation: captureAny(named: 'explanation'),
-      ),
-    ).captured.single as String;
+    final captured =
+        verify(
+              () => repository.grantConsent(
+                purpose: purpose,
+                explanation: captureAny(named: 'explanation'),
+              ),
+            ).captured.single
+            as String;
 
     expect(captured, shown);
     expect(captured.codeUnits, shown.codeUnits);

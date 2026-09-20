@@ -26,8 +26,10 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16, DesignTokens.s40,
-                  DesignTokens.s16, DesignTokens.s32,
+                  DesignTokens.s16,
+                  DesignTokens.s40,
+                  DesignTokens.s16,
+                  DesignTokens.s32,
                 ),
                 child: Column(
                   children: [
@@ -109,8 +111,10 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16, DesignTokens.s16,
-                DesignTokens.s16, DesignTokens.s32,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s32,
               ),
               child: SafeArea(
                 top: false,
@@ -121,16 +125,18 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
                       children: [
                         Text(
                           'Need Help?  ',
-                          style: DesignTokens.mediumRegular
-                              .copyWith(color: DesignTokens.textLight),
+                          style: DesignTokens.mediumRegular.copyWith(
+                            color: DesignTokens.textLight,
+                          ),
                         ),
                         GestureDetector(
-                          onTap: () => context
-                              .push(RouteNames.creatorSupportContact),
+                          onTap: () =>
+                              context.push(RouteNames.creatorSupportContact),
                           child: Text(
                             'Contact Support',
-                            style: DesignTokens.mediumSemibold
-                                .copyWith(color: DesignTokens.primaryGreen),
+                            style: DesignTokens.mediumSemibold.copyWith(
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
                         ),
                       ],
@@ -140,8 +146,9 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
                       width: double.infinity,
                       child: Material(
                         color: DesignTokens.primaryGreen,
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.buttonRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
                         child: InkWell(
                           onTap: () {
                             ref.read(creatorFormProvider.notifier).reset();
@@ -153,24 +160,27 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
                             }
                             context.go(RouteNames.home);
                           },
-                          borderRadius:
-                              BorderRadius.circular(DesignTokens.buttonRadius),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.buttonRadius,
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                                vertical: DesignTokens.s16),
+                              vertical: DesignTokens.s16,
+                            ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.home_rounded,
-                                    size: DesignTokens.iconSmall,
-                                    color: DesignTokens.buttonPrimaryText),
+                                const Icon(
+                                  Icons.home_rounded,
+                                  size: DesignTokens.iconSmall,
+                                  color: DesignTokens.buttonPrimaryText,
+                                ),
                                 const SizedBox(width: DesignTokens.s8),
                                 Text(
                                   'Return to Home',
-                                  style: DesignTokens.oneLinerSemibold
-                                      .copyWith(
-                                          color:
-                                              DesignTokens.buttonPrimaryText),
+                                  style: DesignTokens.oneLinerSemibold.copyWith(
+                                    color: DesignTokens.buttonPrimaryText,
+                                  ),
                                 ),
                               ],
                             ),

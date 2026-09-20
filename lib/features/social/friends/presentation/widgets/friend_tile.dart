@@ -41,15 +41,15 @@ class FriendTile extends StatelessWidget {
       ),
       trailing: onUnfriend != null
           ? TextButton(
-            onPressed: onUnfriend,
-            style: TextButton.styleFrom(
-              foregroundColor: DesignTokens.colorError,
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s12,
+              onPressed: onUnfriend,
+              style: TextButton.styleFrom(
+                foregroundColor: DesignTokens.colorError,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s12,
+                ),
               ),
-            ),
-            child: const Text('Unfriend'),
-          )
+              child: const Text('Unfriend'),
+            )
           : null,
     );
   }

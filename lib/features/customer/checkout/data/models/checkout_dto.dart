@@ -44,21 +44,21 @@ abstract class ShippingAddressDto with _$ShippingAddressDto {
       _$ShippingAddressDtoFromJson(json);
 
   ShippingAddress toDomain() => ShippingAddress(
-        id: id,
-        label: label,
-        countryCode: country,
-        isDefault: isDefault,
-        locationNote: locationNote,
-        mapsLink: mapsLink,
-        latitude: latitude,
-        longitude: longitude,
-        line1: addressLine1,
-        line2: landmark,
-        city: city,
-        stateProvince: state,
-        postalCode: zipCode,
-        rowVersion: rowVersion,
-      );
+    id: id,
+    label: label,
+    countryCode: country,
+    isDefault: isDefault,
+    locationNote: locationNote,
+    mapsLink: mapsLink,
+    latitude: latitude,
+    longitude: longitude,
+    line1: addressLine1,
+    line2: landmark,
+    city: city,
+    stateProvince: state,
+    postalCode: zipCode,
+    rowVersion: rowVersion,
+  );
 }
 
 @freezed
@@ -77,12 +77,12 @@ abstract class PaymentMethodDto with _$PaymentMethodDto {
       _$PaymentMethodDtoFromJson(json);
 
   PaymentMethod toDomain() => PaymentMethod(
-        id: id,
-        type: _typeFromCode(type),
-        label: label,
-        lastFour: lastFour,
-        isDefault: isDefault,
-      );
+    id: id,
+    type: _typeFromCode(type),
+    label: label,
+    lastFour: lastFour,
+    isDefault: isDefault,
+  );
 
   static PaymentMethodType _typeFromCode(String code) {
     switch (code.toLowerCase()) {
@@ -121,13 +121,13 @@ abstract class CheckoutItemDto with _$CheckoutItemDto {
       _$CheckoutItemDtoFromJson(json);
 
   CheckoutItem toDomain() => CheckoutItem(
-        productId: productId,
-        productName: productTitleSnapshot,
-        imageUrl: thumbnailUrlSnapshot ?? '',
-        variantName: variantLabelSnapshot ?? '',
-        quantity: quantity,
-        unitPrice: Money(amount: unitPriceAmount, currency: unitPriceCurrency),
-      );
+    productId: productId,
+    productName: productTitleSnapshot,
+    imageUrl: thumbnailUrlSnapshot ?? '',
+    variantName: variantLabelSnapshot ?? '',
+    quantity: quantity,
+    unitPrice: Money(amount: unitPriceAmount, currency: unitPriceCurrency),
+  );
 }
 
 /// Maps `POST/GET /v1/checkout/sessions` (`CheckoutSessionDto` on the
@@ -164,25 +164,25 @@ abstract class CheckoutSummaryDto with _$CheckoutSummaryDto {
   /// [fallback] supplies subtotal/shipping/tax/total from the cart while the
   /// session's own totals are still null (Draft state).
   CheckoutSummary toDomain({required Cart fallback}) => CheckoutSummary(
-        shippingAddress: const ShippingAddress.empty(),
-        paymentMethod: const PaymentMethod.empty(),
-        items: items.map((dto) => dto.toDomain()).toList(growable: false),
-        subtotal: Money(
-          amount: subtotalAmount ?? fallback.subtotal.amount,
-          currency: subtotalCurrency,
-        ),
-        shipping: Money(
-          amount: shippingAmount ?? fallback.shippingTotal.amount,
-          currency: shippingCurrency,
-        ),
-        tax: Money(
-          amount: taxAmount ?? fallback.taxTotal.amount,
-          currency: taxCurrency,
-        ),
-        discount: Money(amount: discountAmount ?? 0, currency: discountCurrency),
-        total: Money(
-          amount: totalAmount ?? fallback.total.amount,
-          currency: totalCurrency,
-        ),
-      );
+    shippingAddress: const ShippingAddress.empty(),
+    paymentMethod: const PaymentMethod.empty(),
+    items: items.map((dto) => dto.toDomain()).toList(growable: false),
+    subtotal: Money(
+      amount: subtotalAmount ?? fallback.subtotal.amount,
+      currency: subtotalCurrency,
+    ),
+    shipping: Money(
+      amount: shippingAmount ?? fallback.shippingTotal.amount,
+      currency: shippingCurrency,
+    ),
+    tax: Money(
+      amount: taxAmount ?? fallback.taxTotal.amount,
+      currency: taxCurrency,
+    ),
+    discount: Money(amount: discountAmount ?? 0, currency: discountCurrency),
+    total: Money(
+      amount: totalAmount ?? fallback.total.amount,
+      currency: totalCurrency,
+    ),
+  );
 }

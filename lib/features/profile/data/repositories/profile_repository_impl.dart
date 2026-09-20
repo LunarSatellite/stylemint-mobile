@@ -179,7 +179,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
               ).toDomain(),
             )
             .where(
-              (u) => query == null ||
+              (u) =>
+                  query == null ||
                   query.isEmpty ||
                   u.displayName.toLowerCase().contains(query),
             )

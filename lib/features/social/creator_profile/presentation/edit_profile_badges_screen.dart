@@ -27,10 +27,7 @@ class _EditProfileBadgesScreenState
 
   void _initFromBadges(List<BadgeAward> badges) {
     if (_initialized) return;
-    _selectedIds = badges
-        .where((b) => b.isShowcased)
-        .map((b) => b.id)
-        .toSet();
+    _selectedIds = badges.where((b) => b.isShowcased).map((b) => b.id).toSet();
     _initialized = true;
   }
 
@@ -51,10 +48,10 @@ class _EditProfileBadgesScreenState
       ...allBadges
           .where((b) => b.isShowcased && _selectedIds.contains(b.id))
           .toList()
-        ..sort((a, b) =>
-            (a.showcasedOrder ?? 99).compareTo(b.showcasedOrder ?? 99)),
-      ...allBadges.where(
-          (b) => !b.isShowcased && _selectedIds.contains(b.id)),
+        ..sort(
+          (a, b) => (a.showcasedOrder ?? 99).compareTo(b.showcasedOrder ?? 99),
+        ),
+      ...allBadges.where((b) => !b.isShowcased && _selectedIds.contains(b.id)),
     ];
 
     await ref
@@ -82,8 +79,10 @@ class _EditProfileBadgesScreenState
   Widget build(BuildContext context) {
     final badgesState = ref.watch(badgesNotifierProvider);
     final updateState = ref.watch(updateShowcaseNotifierProvider);
-    final isSubmitting =
-        updateState.maybeWhen(submitting: () => true, orElse: () => false);
+    final isSubmitting = updateState.maybeWhen(
+      submitting: () => true,
+      orElse: () => false,
+    );
     final bottomPadding =
         MediaQuery.of(context).padding.bottom + DesignTokens.s16;
 
@@ -93,8 +92,11 @@ class _EditProfileBadgesScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
         title: const Text(
@@ -163,15 +165,16 @@ class _EditProfileBadgesScreenState
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s16),
+                    horizontal: DesignTokens.s16,
+                  ),
                   child: GridView.builder(
                     itemCount: badges.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: DesignTokens.s12,
-                      crossAxisSpacing: DesignTokens.s12,
-                    ),
+                          crossAxisCount: 4,
+                          mainAxisSpacing: DesignTokens.s12,
+                          crossAxisSpacing: DesignTokens.s12,
+                        ),
                     itemBuilder: (context, i) {
                       final badge = badges[i];
                       final isSelected = _selectedIds.contains(badge.id);
@@ -197,8 +200,9 @@ class _EditProfileBadgesScreenState
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed:
-                        isSubmitting ? null : () => unawaited(_submit(badges)),
+                    onPressed: isSubmitting
+                        ? null
+                        : () => unawaited(_submit(badges)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: DesignTokens.primaryGreen,
                       foregroundColor: DesignTokens.textWhite,
@@ -265,9 +269,7 @@ class _BadgeTile extends StatelessWidget {
           color: DesignTokens.bgAppBody,
           borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
           border: Border.all(
-            color: isSelected
-                ? DesignTokens.primaryGreen
-                : Colors.transparent,
+            color: isSelected ? DesignTokens.primaryGreen : Colors.transparent,
             width: 2,
           ),
         ),

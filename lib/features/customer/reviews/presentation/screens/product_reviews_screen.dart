@@ -28,10 +28,16 @@ class ProductReviewsScreen extends ConsumerWidget {
           backgroundColor: DesignTokens.bgAppFoundation,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: DesignTokens.textWhite,
+            ),
             onPressed: () => context.popOrHome(),
           ),
-          title: Text('Customer Reviews', style: DesignTokens.sectionInnerTitle),
+          title: Text(
+            'Customer Reviews',
+            style: DesignTokens.sectionInnerTitle,
+          ),
           centerTitle: true,
           bottom: const TabBar(
             labelStyle: TextStyle(
@@ -48,7 +54,10 @@ class ProductReviewsScreen extends ConsumerWidget {
             unselectedLabelColor: DesignTokens.textMuted,
             indicatorColor: DesignTokens.primaryGreen,
             indicatorSize: TabBarIndicatorSize.label,
-            tabs: [Tab(text: 'Reel Reviews'), Tab(text: 'Written Reviews')],
+            tabs: [
+              Tab(text: 'Reel Reviews'),
+              Tab(text: 'Written Reviews'),
+            ],
           ),
         ),
         body: TabBarView(
@@ -76,9 +85,11 @@ class _ReelReviewsTab extends ConsumerWidget {
     return state.maybeWhen(
       loadSuccess: (reviews, _, __, ___) {
         final reelReviews = reviews
-            .where((review) =>
-                review.kind == ReviewKind.reel &&
-                Uri.tryParse(review.reelSourceUrl ?? '') != null)
+            .where(
+              (review) =>
+                  review.kind == ReviewKind.reel &&
+                  Uri.tryParse(review.reelSourceUrl ?? '') != null,
+            )
             .toList(growable: false);
         if (reelReviews.isEmpty) {
           return const SmEmptyState(
@@ -100,7 +111,8 @@ class _ReelReviewsTab extends ConsumerWidget {
       },
       loadFailure: (_) => SmErrorView(
         message: 'Failed to load reviews.',
-        onRetry: () => ref.read(reviewsNotifierProvider(productId).notifier).refresh(),
+        onRetry: () =>
+            ref.read(reviewsNotifierProvider(productId).notifier).refresh(),
       ),
       orElse: () => const SmPageLoader(),
     );
@@ -120,7 +132,8 @@ class _WrittenReviewsTab extends ConsumerWidget {
 
     ref.listen<ReviewsState>(reviewsNotifierProvider(productId), (_, next) {
       next.maybeWhen(
-        loadFailure: (_) => SmSnackbar.error(context, 'Failed to load reviews.'),
+        loadFailure: (_) =>
+            SmSnackbar.error(context, 'Failed to load reviews.'),
         orElse: () {},
       );
     });
@@ -152,7 +165,8 @@ class _WrittenReviewsTab extends ConsumerWidget {
         }
         return RefreshIndicator(
           color: DesignTokens.primaryGreen,
-          onRefresh: () => ref.read(reviewsNotifierProvider(productId).notifier).refresh(),
+          onRefresh: () =>
+              ref.read(reviewsNotifierProvider(productId).notifier).refresh(),
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(
               horizontal: DesignTokens.s16,
@@ -163,13 +177,19 @@ class _WrittenReviewsTab extends ConsumerWidget {
             itemBuilder: (_, i) {
               if (i == writtenReviews.length) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: DesignTokens.s8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: DesignTokens.s8,
+                  ),
                   child: Center(
                     child: TextButton(
-                      onPressed: () => ref.read(reviewsNotifierProvider(productId).notifier).loadMore(),
+                      onPressed: () => ref
+                          .read(reviewsNotifierProvider(productId).notifier)
+                          .loadMore(),
                       child: Text(
                         'Load More',
-                        style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.primaryGreen),
+                        style: DesignTokens.mediumSemibold.copyWith(
+                          color: DesignTokens.primaryGreen,
+                        ),
                       ),
                     ),
                   ),
@@ -182,7 +202,8 @@ class _WrittenReviewsTab extends ConsumerWidget {
       },
       loadFailure: (_) => SmErrorView(
         message: 'Failed to load reviews.',
-        onRetry: () => ref.read(reviewsNotifierProvider(productId).notifier).refresh(),
+        onRetry: () =>
+            ref.read(reviewsNotifierProvider(productId).notifier).refresh(),
       ),
     );
   }
@@ -209,7 +230,9 @@ class _AddReviewBar extends StatelessWidget {
       ),
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppFoundation,
-        border: Border(top: BorderSide(color: DesignTokens.borderDefault, width: 0.5)),
+        border: Border(
+          top: BorderSide(color: DesignTokens.borderDefault, width: 0.5),
+        ),
       ),
       child: ElevatedButton(
         onPressed: () => showModalBottomSheet<void>(
@@ -217,14 +240,18 @@ class _AddReviewBar extends StatelessWidget {
           isScrollControlled: true,
           backgroundColor: DesignTokens.bgAppBody,
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(DesignTokens.cardRadius)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(DesignTokens.cardRadius),
+            ),
           ),
           builder: (_) => RateReviewSheet(productId: productId),
         ),
         style: DesignTokens.primaryButtonStyle(width: double.infinity),
         child: Text(
           'Add Review',
-          style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.buttonPrimaryText),
+          style: DesignTokens.mediumSemibold.copyWith(
+            color: DesignTokens.buttonPrimaryText,
+          ),
         ),
       ),
     );

@@ -10,7 +10,9 @@ abstract interface class ReviewsRepository {
     String? cursor,
   });
 
-  Future<Either<NetworkExceptions, ReviewSummary>> getReviewSummary(String productId);
+  Future<Either<NetworkExceptions, ReviewSummary>> getReviewSummary(
+    String productId,
+  );
 
   Future<Either<NetworkExceptions, Review>> submitReview(
     String productId,

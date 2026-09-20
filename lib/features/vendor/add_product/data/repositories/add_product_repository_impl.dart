@@ -267,10 +267,8 @@ class AddProductRepositoryImpl implements AddProductRepository {
                 amount: (option['feeAmount'] as num? ?? 0).toDouble(),
                 currency: option['feeCurrency'] as String? ?? 'NPR',
               ),
-              estimatedDaysMin:
-                  option['estimatedDaysMin'] as int? ?? 1,
-              estimatedDaysMax:
-                  option['estimatedDaysMax'] as int? ?? 3,
+              estimatedDaysMin: option['estimatedDaysMin'] as int? ?? 1,
+              estimatedDaysMax: option['estimatedDaysMax'] as int? ?? 3,
             ),
           )
           .toList(growable: false);

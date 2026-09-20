@@ -12,10 +12,9 @@ class BoostCampaignCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        campaign.budget.amount > 0
-            ? campaign.spentAmount.amount / campaign.budget.amount
-            : 0.0;
+    final progress = campaign.budget.amount > 0
+        ? campaign.spentAmount.amount / campaign.budget.amount
+        : 0.0;
 
     final Color statusColor = switch (campaign.status) {
       BoostStatus.active => DesignTokens.primaryGreen,
@@ -36,7 +35,11 @@ class BoostCampaignCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(campaign.platform.icon, color: campaign.platform.color, size: 20),
+              Icon(
+                campaign.platform.icon,
+                color: campaign.platform.color,
+                size: 20,
+              ),
               const SizedBox(width: DesignTokens.s8),
               Expanded(
                 child: Text(

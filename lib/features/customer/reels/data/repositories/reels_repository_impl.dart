@@ -152,7 +152,9 @@ class ReelsRepositoryImpl implements ReelsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> removeFromWishlist(String reelId) async {
+  Future<Either<NetworkExceptions, Unit>> removeFromWishlist(
+    String reelId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.removeFromWishlist(reelId, _uuid.v4());
@@ -172,7 +174,9 @@ class ReelsRepositoryImpl implements ReelsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> followCreator(String creatorId) async {
+  Future<Either<NetworkExceptions, Unit>> followCreator(
+    String creatorId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.followCreator(creatorId, _uuid.v4());
@@ -192,7 +196,9 @@ class ReelsRepositoryImpl implements ReelsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> unfollowCreator(String creatorId) async {
+  Future<Either<NetworkExceptions, Unit>> unfollowCreator(
+    String creatorId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.unfollowCreator(creatorId, _uuid.v4());

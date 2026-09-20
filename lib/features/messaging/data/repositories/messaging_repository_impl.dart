@@ -30,14 +30,16 @@ class MessagingRepositoryImpl implements MessagingRepository {
         cursor: cursor,
         pageSize: pageSize,
       );
-      return right(PagedResult<MessageThread>(
-        items: page.items.map((d) => d.toDomain()).toList(growable: false),
-        totalCount: page.totalCount,
-        pageSize: page.pageSize == 0 ? pageSize : page.pageSize,
-        nextCursor: page.nextCursor,
-        previousCursor: null,
-        hasMore: page.nextCursor != null,
-      ));
+      return right(
+        PagedResult<MessageThread>(
+          items: page.items.map((d) => d.toDomain()).toList(growable: false),
+          totalCount: page.totalCount,
+          pageSize: page.pageSize == 0 ? pageSize : page.pageSize,
+          nextCursor: page.nextCursor,
+          previousCursor: null,
+          hasMore: page.nextCursor != null,
+        ),
+      );
     } on DioException catch (e) {
       return left(NetworkExceptions.server(e.message.toString()));
     } on NetworkExceptions catch (e) {
@@ -62,14 +64,16 @@ class MessagingRepositoryImpl implements MessagingRepository {
         cursor: cursor,
         pageSize: pageSize,
       );
-      return right(PagedResult<DirectMessage>(
-        items: page.items.map((d) => d.toDomain()).toList(growable: false),
-        totalCount: page.totalCount,
-        pageSize: page.pageSize == 0 ? pageSize : page.pageSize,
-        nextCursor: page.nextCursor,
-        previousCursor: null,
-        hasMore: page.nextCursor != null,
-      ));
+      return right(
+        PagedResult<DirectMessage>(
+          items: page.items.map((d) => d.toDomain()).toList(growable: false),
+          totalCount: page.totalCount,
+          pageSize: page.pageSize == 0 ? pageSize : page.pageSize,
+          nextCursor: page.nextCursor,
+          previousCursor: null,
+          hasMore: page.nextCursor != null,
+        ),
+      );
     } on DioException catch (e) {
       return left(NetworkExceptions.server(e.message.toString()));
     } on NetworkExceptions catch (e) {

@@ -88,17 +88,19 @@ Map<String, dynamic> _item(String id, {required int duration}) => {
 
 void main() {
   group('content listing error codes', () {
-    test('RATE_LIMITED keeps its code instead of a generic server error',
-        () async {
-      final failure = await _failureFor(400, 'RATE_LIMITED');
+    test(
+      'RATE_LIMITED keeps its code instead of a generic server error',
+      () async {
+        final failure = await _failureFor(400, 'RATE_LIMITED');
 
-      expect(failure.validationCode, 'RATE_LIMITED');
-      expect(NetworkExceptions.getMessage(failure), 'Provider said no.');
-      expect(
-        ContentProviderIssue.fromCode(failure.validationCode),
-        ContentProviderIssue.rateLimited,
-      );
-    });
+        expect(failure.validationCode, 'RATE_LIMITED');
+        expect(NetworkExceptions.getMessage(failure), 'Provider said no.');
+        expect(
+          ContentProviderIssue.fromCode(failure.validationCode),
+          ContentProviderIssue.rateLimited,
+        );
+      },
+    );
 
     const expectations = {
       'PROVIDER_UNAVAILABLE': ContentProviderIssue.unavailable,
@@ -165,45 +167,50 @@ void main() {
   });
 
   group('content listing success', () {
-    test('maps freshness, forwards refresh and hides zero-duration posts',
-        () async {
-      final api = _ApiClient(
-        body: {
-          'items': [
-            _item('video', duration: 20),
-            _item('photo', duration: 0),
-          ],
-          'nextCursor': 'sm1.next',
-          'servedFromCache': true,
-          'fetchedUtc': '2026-09-14T15:10:00Z',
-          'staleSinceUtc': null,
-          'providerStatus': {
-            'code': 'PROVIDER_UNAVAILABLE',
-            'message': 'Instagram could not be reached right now.',
-            'retryAfterUtc': '2026-09-14T15:30:00Z',
+    test(
+      'maps freshness, forwards refresh and hides zero-duration posts',
+      () async {
+        final api = _ApiClient(
+          body: {
+            'items': [
+              _item('video', duration: 20),
+              _item('photo', duration: 0),
+            ],
+            'nextCursor': 'sm1.next',
+            'servedFromCache': true,
+            'fetchedUtc': '2026-09-14T15:10:00Z',
+            'staleSinceUtc': null,
+            'providerStatus': {
+              'code': 'PROVIDER_UNAVAILABLE',
+              'message': 'Instagram could not be reached right now.',
+              'retryAfterUtc': '2026-09-14T15:30:00Z',
+            },
           },
-        },
-      );
+        );
 
-      final result = await _repository(api).getImportableReels(
-        SocialPlatform.instagram,
-        refresh: true,
-      );
-      final page = result.fold<ImportableReelsResult?>((_) => null, (p) => p)!;
+        final result = await _repository(api).getImportableReels(
+          SocialPlatform.instagram,
+          refresh: true,
+        );
+        final page = result.fold<ImportableReelsResult?>(
+          (_) => null,
+          (p) => p,
+        )!;
 
-      expect(api.query, containsPair('refresh', true));
-      expect(page.reels.map((r) => r.platformPostId), ['video']);
-      expect(page.nextCursor, 'sm1.next');
-      expect(page.freshness.servedFromCache, isTrue);
-      expect(page.freshness.fetchedUtc, DateTime.utc(2026, 9, 14, 15, 10));
-      expect(
-        page.freshness.providerStatus,
-        ContentProviderStatus(
-          code: 'PROVIDER_UNAVAILABLE',
-          message: 'Instagram could not be reached right now.',
-          retryAfterUtc: DateTime.utc(2026, 9, 14, 15, 30),
-        ),
-      );
-    });
+        expect(api.query, containsPair('refresh', true));
+        expect(page.reels.map((r) => r.platformPostId), ['video']);
+        expect(page.nextCursor, 'sm1.next');
+        expect(page.freshness.servedFromCache, isTrue);
+        expect(page.freshness.fetchedUtc, DateTime.utc(2026, 9, 14, 15, 10));
+        expect(
+          page.freshness.providerStatus,
+          ContentProviderStatus(
+            code: 'PROVIDER_UNAVAILABLE',
+            message: 'Instagram could not be reached right now.',
+            retryAfterUtc: DateTime.utc(2026, 9, 14, 15, 30),
+          ),
+        );
+      },
+    );
   });
 }

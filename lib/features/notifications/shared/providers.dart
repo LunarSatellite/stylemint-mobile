@@ -7,10 +7,10 @@ import 'package:stylemint_mobile_frontend/features/notifications/domain/reposito
 
 final notificationsRemoteDataSourceProvider =
     Provider<NotificationsRemoteDataSource>(
-  (ref) => NotificationsRemoteDataSource(
-    apiClient: ref.watch(apiClientProvider),
-  ),
-);
+      (ref) => NotificationsRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
 
 final notificationsRepositoryProvider = Provider<NotificationsRepository>(
   (ref) => NotificationsRepositoryImpl(
@@ -22,9 +22,11 @@ final notificationsRepositoryProvider = Provider<NotificationsRepository>(
 /// empty list so the dashboard shows a clean "no activity" state rather than an
 /// error. (The backend inbox currently returns empty for real users due to a
 /// known auth-helper bug — this provider degrades gracefully until that lands.)
-final recentActivityProvider =
-    FutureProvider.autoDispose<List<ActivityItem>>((ref) async {
-  final either =
-      await ref.watch(notificationsRepositoryProvider).getRecentActivity();
+final recentActivityProvider = FutureProvider.autoDispose<List<ActivityItem>>((
+  ref,
+) async {
+  final either = await ref
+      .watch(notificationsRepositoryProvider)
+      .getRecentActivity();
   return either.fold((_) => const <ActivityItem>[], (items) => items);
 });

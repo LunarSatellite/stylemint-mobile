@@ -195,8 +195,7 @@ String? formatMallCountdown(Duration left) {
 /// Spoken form of [formatMallCountdown], e.g. "4 hours 12 minutes".
 String? spokenMallCountdown(Duration left) {
   if (left <= Duration.zero || left.inDays > 30) return null;
-  String unit(int value, String name) =>
-      '$value $name${value == 1 ? '' : 's'}';
+  String unit(int value, String name) => '$value $name${value == 1 ? '' : 's'}';
   if (left.inDays >= 1) {
     return '${unit(left.inDays, 'day')} ${unit(left.inHours % 24, 'hour')}';
   }
@@ -254,8 +253,7 @@ class MallCountdown extends StatefulWidget {
   final DateTime endsUtc;
 
   /// Called with the time left, or null once it has run out.
-  final Widget Function(BuildContext context, MallRemaining? remaining)
-  builder;
+  final Widget Function(BuildContext context, MallRemaining? remaining) builder;
 
   /// Clock behind the countdown; tests pin it.
   final DateTime Function()? now;

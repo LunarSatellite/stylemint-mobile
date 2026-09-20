@@ -94,9 +94,7 @@ class _FindingBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final restsOn = finding.sources
-        .map((s) => s.label)
-        .toList(growable: false);
+    final restsOn = finding.sources.map((s) => s.label).toList(growable: false);
     return Semantics(
       container: true,
       label: [

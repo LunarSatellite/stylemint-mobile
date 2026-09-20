@@ -22,11 +22,14 @@ class BusyController extends StateNotifier<int> {
   }
 }
 
-final busyControllerProvider =
-    StateNotifierProvider<BusyController, int>((ref) => BusyController());
+final busyControllerProvider = StateNotifierProvider<BusyController, int>(
+  (ref) => BusyController(),
+);
 
 /// True whenever at least one tracked operation is in flight.
-final isBusyProvider = Provider<bool>((ref) => ref.watch(busyControllerProvider) > 0);
+final isBusyProvider = Provider<bool>(
+  (ref) => ref.watch(busyControllerProvider) > 0,
+);
 
 /// Convenience: `await ref.runBusy(() => doThing())` shows the global indicator
 /// for the duration of any async action (use for non-Dio work, e.g. local_auth).

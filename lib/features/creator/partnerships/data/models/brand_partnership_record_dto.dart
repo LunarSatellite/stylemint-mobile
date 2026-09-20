@@ -72,8 +72,9 @@ class BrandPartnershipRecordDto {
       windowStartUtc: _utc(json['windowStartUtc']),
       windowEndUtc: _utc(json['windowEndUtc']),
       observedUtc: _utc(json['observedUtc']),
-      creatorRequestsAnswered:
-          MeasuredRateDto.tryFromJson(json['creatorRequestsAnswered']),
+      creatorRequestsAnswered: MeasuredRateDto.tryFromJson(
+        json['creatorRequestsAnswered'],
+      ),
       // A rate the server could not measure stays null even if a payload
       // carries one, so an unreadable messaging record can never surface as
       // a reply figure.
@@ -153,16 +154,19 @@ class BrandPartnershipCountsDto {
         startedInWindow: _nonNegativeInt(json['startedInWindow']),
         endedInWindow: _nonNegativeInt(json['endedInWindow']),
         endedByBrandInWindow: _nonNegativeInt(json['endedByBrandInWindow']),
-        endedByCreatorInWindow:
-            _nonNegativeInt(json['endedByCreatorInWindow']),
-        creatorRequestsReceivedInWindow:
-            _nonNegativeInt(json['creatorRequestsReceivedInWindow']),
-        creatorRequestsAnsweredInWindow:
-            _nonNegativeInt(json['creatorRequestsAnsweredInWindow']),
-        creatorChatsOpenedInWindow:
-            _nonNegativeInt(json['creatorChatsOpenedInWindow']),
-        creatorChatsRepliedInWindow:
-            _nonNegativeInt(json['creatorChatsRepliedInWindow']),
+        endedByCreatorInWindow: _nonNegativeInt(json['endedByCreatorInWindow']),
+        creatorRequestsReceivedInWindow: _nonNegativeInt(
+          json['creatorRequestsReceivedInWindow'],
+        ),
+        creatorRequestsAnsweredInWindow: _nonNegativeInt(
+          json['creatorRequestsAnsweredInWindow'],
+        ),
+        creatorChatsOpenedInWindow: _nonNegativeInt(
+          json['creatorChatsOpenedInWindow'],
+        ),
+        creatorChatsRepliedInWindow: _nonNegativeInt(
+          json['creatorChatsRepliedInWindow'],
+        ),
       );
 
   /// Every partnership row this brand has, in any state, since it joined.

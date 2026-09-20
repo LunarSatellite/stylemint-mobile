@@ -21,7 +21,9 @@ void main() {
   test('identifies the app to YouTube and keeps playback inline', () {
     expect(
       html,
-      contains('var ORIGIN = "https://app.stylemint.stylemint_mobile_frontend";'),
+      contains(
+        'var ORIGIN = "https://app.stylemint.stylemint_mobile_frontend";',
+      ),
     );
     expect(html, contains('origin: ORIGIN'));
     expect(html, contains('widget_referrer: ORIGIN'));
@@ -56,31 +58,33 @@ void main() {
   });
 
   group('TikTok start-up', () {
-    test('creates players with every documented hide parameter, no muted=1',
-        () {
-      final create = section('function ttAssign()', 'function ttReuse()');
-      const params = [
-        'controls=0',
-        'progress_bar=0',
-        'play_button=0',
-        'volume_control=0',
-        'fullscreen_button=0',
-        'timestamp=0',
-        'music_info=0',
-        'description=0',
-        'rel=0',
-        'native_context_menu=0',
-        'closed_caption=0',
-        'loop=1',
-        // Pre-loaded players never autoplay.
-        "autoplay=' + (cur.wantPlay ? 1 : 0)",
-      ];
-      for (final param in params) {
-        expect(create, contains(param), reason: param);
-      }
-      // muted=1 would lock the volume, so sound could never be turned on.
-      expect(create, isNot(contains('muted=')));
-    });
+    test(
+      'creates players with every documented hide parameter, no muted=1',
+      () {
+        final create = section('function ttAssign()', 'function ttReuse()');
+        const params = [
+          'controls=0',
+          'progress_bar=0',
+          'play_button=0',
+          'volume_control=0',
+          'fullscreen_button=0',
+          'timestamp=0',
+          'music_info=0',
+          'description=0',
+          'rel=0',
+          'native_context_menu=0',
+          'closed_caption=0',
+          'loop=1',
+          // Pre-loaded players never autoplay.
+          "autoplay=' + (cur.wantPlay ? 1 : 0)",
+        ];
+        for (final param in params) {
+          expect(create, contains(param), reason: param);
+        }
+        // muted=1 would lock the volume, so sound could never be turned on.
+        expect(create, isNot(contains('muted=')));
+      },
+    );
 
     test('maps every documented player state; -1 and 3 are still loading', () {
       expect(
@@ -177,8 +181,10 @@ void main() {
         playing.indexOf("emit('playing')"),
         lessThan(playing.indexOf('ttAskSound()')),
       );
-      expect(section('function ttAskSound()', 'function ttProgress()'),
-          contains("ttSend('unMute')"));
+      expect(
+        section('function ttAskSound()', 'function ttProgress()'),
+        contains("ttSend('unMute')"),
+      );
     });
 
     test('error 3002 carries on muted at once, in one step', () {
@@ -210,23 +216,25 @@ void main() {
       );
     });
 
-    test('holds a pre-rolled reel on its first frames without reporting play',
-        () {
-      final playing = section(
-        'if (data.value === 1) {',
-        '// Paused right after asking for sound',
-      );
-      final offScreen = playing.substring(
-        0,
-        playing.indexOf("emit('playing')"),
-      );
-      expect(offScreen, contains("ttSend('pause')"));
-      expect(offScreen, contains("emit('prerolled')"));
-      expect(
-        section('function ttApply()', 'function ttRetryStart()'),
-        contains('cur.preroll && !ttStarted'),
-      );
-    });
+    test(
+      'holds a pre-rolled reel on its first frames without reporting play',
+      () {
+        final playing = section(
+          'if (data.value === 1) {',
+          '// Paused right after asking for sound',
+        );
+        final offScreen = playing.substring(
+          0,
+          playing.indexOf("emit('playing')"),
+        );
+        expect(offScreen, contains("ttSend('pause')"));
+        expect(offScreen, contains("emit('prerolled')"));
+        expect(
+          section('function ttApply()', 'function ttRetryStart()'),
+          contains('cur.preroll && !ttStarted'),
+        );
+      },
+    );
 
     test('retries a stalled start muted when Dart asks', () {
       expect(
@@ -277,7 +285,11 @@ void main() {
       );
       expect(
         apply,
-        matches(RegExp(r'else if \(byViewer\) ytHold\(\);\s*else yt\.pauseVideo\(\);')),
+        matches(
+          RegExp(
+            r'else if \(byViewer\) ytHold\(\);\s*else yt\.pauseVideo\(\);',
+          ),
+        ),
       );
       expect(
         html,

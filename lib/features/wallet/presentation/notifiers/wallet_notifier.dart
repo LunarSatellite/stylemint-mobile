@@ -57,7 +57,8 @@ class WalletNotifier extends StateNotifier<WalletState> {
 
   Future<void> loadMore() async {
     final current = state;
-    if (current is! WalletLoaded || current.loadingMore || !current.hasMore) return;
+    if (current is! WalletLoaded || current.loadingMore || !current.hasMore)
+      return;
 
     state = current.copyWith(loadingMore: true);
     final last = current.transactions.lastOrNull;

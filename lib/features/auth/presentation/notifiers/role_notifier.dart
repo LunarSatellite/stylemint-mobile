@@ -14,7 +14,8 @@ abstract class RolesState with _$RolesState {
   const factory RolesState.loadInProgress() = _RolesInProgress;
   const factory RolesState.loadSuccess(List<RoleProfileDto> roles) =
       _RolesSuccess;
-  const factory RolesState.loadFailure(NetworkExceptions failure) = _RolesNetworkExceptions;
+  const factory RolesState.loadFailure(NetworkExceptions failure) =
+      _RolesNetworkExceptions;
 
   bool get isLoading =>
       maybeWhen(loadInProgress: () => true, orElse: () => false);
@@ -22,7 +23,7 @@ abstract class RolesState with _$RolesState {
 
 class RoleNotifier extends StateNotifier<RolesState> {
   RoleNotifier({required this.authRepository})
-      : super(const RolesState.initial());
+    : super(const RolesState.initial());
 
   final AuthRepository authRepository;
 

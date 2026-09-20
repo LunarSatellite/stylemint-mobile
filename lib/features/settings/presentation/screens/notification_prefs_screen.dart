@@ -156,8 +156,7 @@ class _NotificationPrefsScreenState
                       subtitle:
                           'Allow StyleMint to send you push notifications',
                       value: _prefs.pushEnabled,
-                      onChanged: (v) =>
-                          _apply(_prefs.copyWith(pushEnabled: v)),
+                      onChanged: (v) => _apply(_prefs.copyWith(pushEnabled: v)),
                     ),
                   ],
                 ),
@@ -274,8 +273,7 @@ class _NotificationPrefsScreenState
                     _ToggleItem(
                       icon: Icons.sms_outlined,
                       title: 'SMS Notifications',
-                      subtitle:
-                          "Notifications & Alerts to your phone's sms",
+                      subtitle: "Notifications & Alerts to your phone's sms",
                       value: _prefs.smsNotifications,
                       onChanged: (v) =>
                           _apply(_prefs.copyWith(smsNotifications: v)),
@@ -367,7 +365,9 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: DesignTokens.s8),
       child: Text(
         text,
-        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+        style: DesignTokens.smallRegular.copyWith(
+          color: DesignTokens.textMuted,
+        ),
       ),
     );
   }

@@ -16,9 +16,8 @@ class ReachRemoteDataSource {
       final jobId = job['id'] as String? ?? '';
       final scheduledUtc =
           DateTime.tryParse(job['scheduledUtc'] as String? ?? '') ??
-              DateTime.now();
-      final targets =
-          job['targets'] as List<dynamic>? ?? const <dynamic>[];
+          DateTime.now();
+      final targets = job['targets'] as List<dynamic>? ?? const <dynamic>[];
       for (final t in targets) {
         final target = t as Map<String, dynamic>;
         final platformInt = target['platform'] as int? ?? -1;
@@ -36,12 +35,14 @@ class ReachRemoteDataSource {
           4 || 5 => 'failed',
           _ => 'scheduled',
         };
-        result.add(PublishTargetDto(
-          id: '${jobId}_$platformInt',
-          platform: platformName,
-          scheduledAt: scheduledUtc,
-          status: status,
-        ));
+        result.add(
+          PublishTargetDto(
+            id: '${jobId}_$platformInt',
+            platform: platformName,
+            scheduledAt: scheduledUtc,
+            status: status,
+          ),
+        );
       }
     }
     return result;
@@ -60,10 +61,12 @@ class ReachRemoteDataSource {
         'platforms': platformNames,
         'scheduledAt': scheduledAt.toIso8601String(),
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -91,10 +94,12 @@ class ReachRemoteDataSource {
         'budget': {'amount': budgetAmount, 'currency': budgetCurrency},
         'durationDays': durationDays,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return BoostCampaignDto.fromJson(response as Map<String, dynamic>);
   }

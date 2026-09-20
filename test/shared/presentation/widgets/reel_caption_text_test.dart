@@ -115,8 +115,10 @@ void main() {
 
     expect(find.text(ReelCaptionText.moreLabel), findsNothing);
     final spans = _spans(tester);
-    expect(spans.firstWhere((s) => s.text == '#cake').style?.color,
-        DesignTokens.primaryGreen);
+    expect(
+      spans.firstWhere((s) => s.text == '#cake').style?.color,
+      DesignTokens.primaryGreen,
+    );
     expect(
       spans.firstWhere((s) => s.text == 'Cake day with friends ').style,
       isNull,
@@ -127,8 +129,10 @@ void main() {
   testWidgets('long non-standard caption shows "more" and expands on tap', (
     tester,
   ) async {
-    final long = List.filled(12, 'A long imported platform caption line.')
-        .join('\n');
+    final long = List.filled(
+      12,
+      'A long imported platform caption line.',
+    ).join('\n');
     await tester.pumpWidget(_host(ReelCaptionText(caption: long)));
 
     expect(find.text(ReelCaptionText.moreLabel), findsOneWidget);
@@ -146,7 +150,10 @@ void main() {
       _host(
         const Column(
           children: [
-            ReelCaptionText(caption: '  ', emptyText: 'No caption on this post'),
+            ReelCaptionText(
+              caption: '  ',
+              emptyText: 'No caption on this post',
+            ),
             ReelCaptionText(caption: null),
           ],
         ),

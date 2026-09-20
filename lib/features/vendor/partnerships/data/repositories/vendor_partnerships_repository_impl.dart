@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -56,8 +56,7 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
         // json_serializable includes null fields by default, but the
         // backend's VendorProfileId is a non-nullable Guid â€” a literal
         // `null` fails deserialization, so the key must be absent, not null.
-        final payload = vm.toJson()
-          ..removeWhere((_, value) => value == null);
+        final payload = vm.toJson()..removeWhere((_, value) => value == null);
         final created = await remoteDataSource.createCampaign(
           data: payload,
         );
@@ -141,8 +140,9 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
   @override
   Future<Either<NetworkExceptions, CampaignBrief>> retireCampaign(
     String id,
-  ) =>
-      _briefAction(() => remoteDataSource.retireCampaign(id, const Uuid().v4()));
+  ) => _briefAction(
+    () => remoteDataSource.retireCampaign(id, const Uuid().v4()),
+  );
 
   @override
   Future<Either<NetworkExceptions, RoiProjectionSummary>> recomputeRoi(
@@ -272,8 +272,7 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, int>>
-  getPendingCreatorRequestCount() async {
+  Future<Either<NetworkExceptions, int>> getPendingCreatorRequestCount() async {
     if (await networkInfo.isConnected) {
       try {
         final count = await remoteDataSource.getPendingCreatorRequestCount();

@@ -4,7 +4,8 @@ part 'registration_dto.freezed.dart';
 part 'registration_dto.g.dart';
 
 @freezed
-abstract class RegistrationStartResponseDto with _$RegistrationStartResponseDto {
+abstract class RegistrationStartResponseDto
+    with _$RegistrationStartResponseDto {
   const factory RegistrationStartResponseDto({
     required String accountId,
     required String emailId,

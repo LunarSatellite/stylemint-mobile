@@ -28,7 +28,8 @@ abstract class AccountPauseActionState with _$AccountPauseActionState {
   const AccountPauseActionState._();
 
   const factory AccountPauseActionState.initial() = _PauseActionInitial;
-  const factory AccountPauseActionState.loadInProgress() = _PauseActionInProgress;
+  const factory AccountPauseActionState.loadInProgress() =
+      _PauseActionInProgress;
   const factory AccountPauseActionState.loadSuccess() = _PauseActionSuccess;
   const factory AccountPauseActionState.loadFailure(NetworkExceptions failure) =
       _PauseActionNetworkExceptions;
@@ -39,22 +40,26 @@ abstract class AccountPauseActionState with _$AccountPauseActionState {
 
 class AccountPauseNotifier extends StateNotifier<AccountPauseState> {
   AccountPauseNotifier({required this.authRepository})
-      : super(const AccountPauseState.initial());
+    : super(const AccountPauseState.initial());
 
   final AuthRepository authRepository;
 
   Future<void> load() async {
     state = const AccountPauseState.loadInProgress();
     final result = await authRepository.getPause();
-    state = result.fold(AccountPauseState.loadFailure, AccountPauseState.loadSuccess);
+    state = result.fold(
+      AccountPauseState.loadFailure,
+      AccountPauseState.loadSuccess,
+    );
   }
 
   void reset() => state = const AccountPauseState.initial();
 }
 
-class AccountPauseActionNotifier extends StateNotifier<AccountPauseActionState> {
+class AccountPauseActionNotifier
+    extends StateNotifier<AccountPauseActionState> {
   AccountPauseActionNotifier({required this.authRepository})
-      : super(const AccountPauseActionState.initial());
+    : super(const AccountPauseActionState.initial());
 
   final AuthRepository authRepository;
 
@@ -81,13 +86,14 @@ class AccountPauseActionNotifier extends StateNotifier<AccountPauseActionState> 
 
 final accountPauseProvider =
     StateNotifierProvider<AccountPauseNotifier, AccountPauseState>(
-  (ref) =>
-      AccountPauseNotifier(authRepository: ref.watch(authRepositoryProvider)),
-);
+      (ref) => AccountPauseNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );
 
 final accountPauseActionProvider =
     StateNotifierProvider<AccountPauseActionNotifier, AccountPauseActionState>(
-  (ref) => AccountPauseActionNotifier(
-    authRepository: ref.watch(authRepositoryProvider),
-  ),
-);
+      (ref) => AccountPauseActionNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );

@@ -43,14 +43,20 @@ class _ActiveCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: DesignTokens.primaryGreen.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(DesignTokens.s8),
-        border: Border.all(color: DesignTokens.primaryGreen.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: DesignTokens.primaryGreen.withValues(alpha: 0.4),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.groups_rounded, size: 18, color: DesignTokens.primaryGreen),
+              const Icon(
+                Icons.groups_rounded,
+                size: 18,
+                color: DesignTokens.primaryGreen,
+              ),
               const SizedBox(width: DesignTokens.s8),
               Expanded(
                 child: Text(
@@ -71,7 +77,9 @@ class _ActiveCard extends ConsumerWidget {
               value: groupBuy.progress,
               minHeight: 6,
               backgroundColor: DesignTokens.bgAppBodyLight,
-              valueColor: const AlwaysStoppedAnimation(DesignTokens.primaryGreen),
+              valueColor: const AlwaysStoppedAnimation(
+                DesignTokens.primaryGreen,
+              ),
             ),
           ),
           const SizedBox(height: DesignTokens.s8),
@@ -81,7 +89,9 @@ class _ActiveCard extends ConsumerWidget {
                 child: Text(
                   '${groupBuy.commitCount}/${groupBuy.targetBuyerCount} joined · '
                   '${groupBuy.slotsRemaining} spots left',
-                  style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ),
               TextButton(
@@ -100,7 +110,10 @@ class _ActiveCard extends ConsumerWidget {
     if (!context.mounted) return;
     ref.invalidate(activeGroupBuysForProductProvider(groupBuy.productId));
     either.fold(
-      (_) => SmSnackbar.error(context, "Couldn't join this group buy. Please try again."),
+      (_) => SmSnackbar.error(
+        context,
+        "Couldn't join this group buy. Please try again.",
+      ),
       (_) => SmSnackbar.success(context, 'You joined the group buy!'),
     );
   }
@@ -126,7 +139,9 @@ class _StartCard extends ConsumerWidget {
   }
 
   Future<void> _start(BuildContext context, WidgetRef ref) async {
-    final either = await ref.read(groupBuyRepositoryProvider).start(
+    final either = await ref
+        .read(groupBuyRepositoryProvider)
+        .start(
           productId: productId,
           targetBuyerCount: 5,
           discountPercent: 10,
@@ -135,8 +150,14 @@ class _StartCard extends ConsumerWidget {
     if (!context.mounted) return;
     ref.invalidate(activeGroupBuysForProductProvider(productId));
     either.fold(
-      (_) => SmSnackbar.error(context, "Couldn't start a group buy. Please try again."),
-      (_) => SmSnackbar.success(context, 'Group buy started — share it with friends!'),
+      (_) => SmSnackbar.error(
+        context,
+        "Couldn't start a group buy. Please try again.",
+      ),
+      (_) => SmSnackbar.success(
+        context,
+        'Group buy started — share it with friends!',
+      ),
     );
   }
 }

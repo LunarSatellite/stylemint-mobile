@@ -355,12 +355,12 @@ String? _factFor(StorefrontModule module) {
   final n = module.evidence;
   if (n <= 0) return null;
   return switch (module.kind) {
-    StorefrontModuleKind.continueMission => n == 1
-        ? '1 item still on your list'
-        : '$n items still on your list',
-    StorefrontModuleKind.refill => n == 1
-        ? '1 item you buy regularly may be due'
-        : '$n items you buy regularly may be due',
+    StorefrontModuleKind.continueMission =>
+      n == 1 ? '1 item still on your list' : '$n items still on your list',
+    StorefrontModuleKind.refill =>
+      n == 1
+          ? '1 item you buy regularly may be due'
+          : '$n items you buy regularly may be due',
     _ => null,
   };
 }

@@ -7,10 +7,10 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/r
 
 final _subscriptionRemoteDataSourceProvider =
     Provider<SubscriptionRemoteDataSource>((ref) {
-  return SubscriptionRemoteDataSource(
-    apiClient: ref.watch(apiClientProvider),
-  );
-});
+      return SubscriptionRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      );
+    });
 
 final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
   return SubscriptionRepository(
@@ -20,8 +20,9 @@ final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
 
 /// Active subscription plans (Basic / Pro / Enterprise x monthly/yearly).
 /// Refresh on demand via `ref.invalidate(subscriptionPlansProvider)`.
-final subscriptionPlansProvider =
-    FutureProvider<List<SubscriptionPlanDto>>((ref) async {
+final subscriptionPlansProvider = FutureProvider<List<SubscriptionPlanDto>>((
+  ref,
+) async {
   final result = await ref.watch(subscriptionRepositoryProvider).listPlans();
   return result.fold(
     (err) => throw err,
@@ -34,8 +35,9 @@ final subscriptionPlansProvider =
 /// defaulting to Pro every time. Returns `null` for both "no subscription"
 /// and "request failed" so the screen can fall back to a sensible default
 /// rather than blocking on a transient 401/5xx.
-final currentSubscriptionProvider =
-    FutureProvider<AccountSubscriptionDto?>((ref) async {
+final currentSubscriptionProvider = FutureProvider<AccountSubscriptionDto?>((
+  ref,
+) async {
   final result = await ref.watch(subscriptionRepositoryProvider).getMine();
   return result.fold(
     (_) => null,

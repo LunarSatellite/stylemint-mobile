@@ -78,8 +78,10 @@ class CreatorProfileRemoteDataSource {
       });
     }
 
-    final response =
-        await apiClient.patch('/v1/accounts/$accountId', data: accountData);
+    final response = await apiClient.patch(
+      '/v1/accounts/$accountId',
+      data: accountData,
+    );
     return CreatorProfileDto.fromJson(response as Map<String, dynamic>);
   }
 
@@ -94,7 +96,8 @@ class CreatorProfileRemoteDataSource {
 
   /// PUT /v1/badges/me/showcase
   Future<List<BadgeAwardDto>> updateBadgeShowcase(
-      List<String> awardIdsInOrder) async {
+    List<String> awardIdsInOrder,
+  ) async {
     final response = await apiClient.put(
       '/v1/badges/me/showcase',
       data: {'awardIdsInOrder': awardIdsInOrder},
@@ -127,8 +130,7 @@ class CreatorProfileRemoteDataSource {
   }
 
   /// DELETE /v1/accounts/{accountId}/creator-specializations/{categoryId}
-  Future<void> removeSpecialization(
-      String accountId, String categoryId) async {
+  Future<void> removeSpecialization(String accountId, String categoryId) async {
     await apiClient.authDelete(
       '/v1/accounts/$accountId/creator-specializations/$categoryId',
     );
@@ -137,7 +139,8 @@ class CreatorProfileRemoteDataSource {
   /// GET /v1/accounts/{accountId}/creator-specializations
   /// Returns {categoryId → isPrimary} for all active specializations.
   Future<Map<String, bool>> listSpecializationsWithPrimary(
-      String accountId) async {
+    String accountId,
+  ) async {
     final response = await apiClient.get(
       '/v1/accounts/$accountId/creator-specializations',
     );
@@ -155,7 +158,9 @@ class CreatorProfileRemoteDataSource {
 
   /// POST /v1/accounts/{accountId}/creator-specializations/{categoryId}/primary
   Future<void> setPrimarySpecialization(
-      String accountId, String categoryId) async {
+    String accountId,
+    String categoryId,
+  ) async {
     await apiClient.post(
       '/v1/accounts/$accountId/creator-specializations/$categoryId/primary',
     );

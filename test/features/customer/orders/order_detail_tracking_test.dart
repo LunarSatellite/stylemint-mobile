@@ -280,4 +280,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('order detail draws no uncached network image', (tester) async {
+    tester.view
+      ..physicalSize = const Size(320, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      _screen(
+        _repositoryFor(_order(status: OrderTrackStatus.outForDelivery)),
+        textScale: 1.3,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Raw Image.network gave no placeholder, so a grey box arrived late and
+    // shifted the row it sat in. Every thumbnail on this screen now goes
+    // through MallNetworkImage, which holds its box from the first frame.
+    expect(
+      find.byType(Image),
+      findsNothing,
+      reason: 'an uncached Image.network crept back into order detail',
+    );
+    expect(tester.takeException(), isNull);
+  });
 }

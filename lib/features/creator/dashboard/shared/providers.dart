@@ -21,13 +21,12 @@ final creatorDashboardRemoteDataSourceProvider =
       ),
     );
 
-final creatorDashboardRepositoryProvider =
-    Provider<CreatorDashboardRepository>(
-      (ref) => CreatorDashboardRepositoryImpl(
-        remoteDataSource: ref.watch(creatorDashboardRemoteDataSourceProvider),
-        networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
-      ),
-    );
+final creatorDashboardRepositoryProvider = Provider<CreatorDashboardRepository>(
+  (ref) => CreatorDashboardRepositoryImpl(
+    remoteDataSource: ref.watch(creatorDashboardRemoteDataSourceProvider),
+    networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+  ),
+);
 
 final creatorDashboardNotifierProvider =
     StateNotifierProvider<CreatorDashboardNotifier, DashboardState>(

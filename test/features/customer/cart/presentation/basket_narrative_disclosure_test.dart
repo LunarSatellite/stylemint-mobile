@@ -195,8 +195,10 @@ void main() {
       await pumpCart(tester);
 
       expect(find.byType(BasketFindingCard), findsOneWidget);
-      expect(find.textContaining('Source: cart.line.unitPriceAtAdd'),
-          findsOneWidget);
+      expect(
+        find.textContaining('Source: cart.line.unitPriceAtAdd'),
+        findsOneWidget,
+      );
       expect(find.text('What we noticed'), findsOneWidget);
     });
   });
@@ -230,8 +232,10 @@ void main() {
       await pumpCart(tester);
 
       expect(find.byType(BasketFindingCard), findsOneWidget);
-      expect(find.textContaining('Source: cart.line.unitPriceAtAdd'),
-          findsOneWidget);
+      expect(
+        find.textContaining('Source: cart.line.unitPriceAtAdd'),
+        findsOneWidget,
+      );
     });
   });
 

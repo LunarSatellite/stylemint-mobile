@@ -46,12 +46,12 @@ class _FakeRepository implements CreatorSearchRepository {
 }
 
 SearchBrandResult _brand() => const SearchBrandResult(
-      brandId: 'b1',
-      name: 'Brand One',
-      averageRating: 4.5,
-      productCount: 12,
-      commissionRange: '5-10%',
-    );
+  brandId: 'b1',
+  name: 'Brand One',
+  averageRating: 4.5,
+  productCount: 12,
+  commissionRange: '5-10%',
+);
 
 void main() {
   group('CreatorSearchNotifier', () {
@@ -70,7 +70,10 @@ void main() {
       await Future<void>.delayed(_pastDebounce);
 
       expect(notifier.state, isA<CreatorSearchBrandsLoaded>());
-      expect((notifier.state as CreatorSearchBrandsLoaded).results, hasLength(1));
+      expect(
+        (notifier.state as CreatorSearchBrandsLoaded).results,
+        hasLength(1),
+      );
       expect(repo.brandQueries.single, 'shoes');
     });
 
@@ -100,36 +103,40 @@ void main() {
       expect(repo.brandCalls, 0);
     });
 
-    test('surfaces the repository message rather than a generic prompt',
-        () async {
-      final repo = _FakeRepository(
-        brands: networkLeft(const NetworkExceptions.noInternetConnection()),
-      );
-      final notifier = CreatorSearchNotifier(repo);
+    test(
+      'surfaces the repository message rather than a generic prompt',
+      () async {
+        final repo = _FakeRepository(
+          brands: networkLeft(const NetworkExceptions.noInternetConnection()),
+        );
+        final notifier = CreatorSearchNotifier(repo);
 
-      notifier.onQueryChanged('shoes');
-      await Future<void>.delayed(_pastDebounce);
+        notifier.onQueryChanged('shoes');
+        await Future<void>.delayed(_pastDebounce);
 
-      expect(notifier.state, isA<CreatorSearchFailed>());
-      expect(
-        (notifier.state as CreatorSearchFailed).message,
-        'No internet connection.',
-      );
-    });
+        expect(notifier.state, isA<CreatorSearchFailed>());
+        expect(
+          (notifier.state as CreatorSearchFailed).message,
+          'No internet connection.',
+        );
+      },
+    );
 
-    test('switching tabs re-runs the current query against the new type',
-        () async {
-      final repo = _FakeRepository();
-      final notifier = CreatorSearchNotifier(repo);
+    test(
+      'switching tabs re-runs the current query against the new type',
+      () async {
+        final repo = _FakeRepository();
+        final notifier = CreatorSearchNotifier(repo);
 
-      notifier.onQueryChanged('shoes');
-      await Future<void>.delayed(_pastDebounce);
-      notifier.setType(CreatorSearchType.creators);
-      await Future<void>.delayed(_pastDebounce);
+        notifier.onQueryChanged('shoes');
+        await Future<void>.delayed(_pastDebounce);
+        notifier.setType(CreatorSearchType.creators);
+        await Future<void>.delayed(_pastDebounce);
 
-      expect(repo.creatorCalls, 1);
-      expect(notifier.state, isA<CreatorSearchCreatorsLoaded>());
-    });
+        expect(repo.creatorCalls, 1);
+        expect(notifier.state, isA<CreatorSearchCreatorsLoaded>());
+      },
+    );
 
     test('switching tabs with no query stays idle', () async {
       final repo = _FakeRepository();

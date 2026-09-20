@@ -68,6 +68,7 @@ class OrderDetail {
   final Money shipping;
   final Money tax;
   final Money total;
+
   /// The ship-to line. **Empty on a collection order**, because checkout
   /// recorded no address for one — the buyer is going to the counter. Empty
   /// means absent and the screen omits the block rather than filling it.

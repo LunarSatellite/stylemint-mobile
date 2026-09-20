@@ -39,7 +39,9 @@ class _EditCategoryNicheScreenState
   @override
   void initState() {
     super.initState();
-    _accountId = ref.read(sessionControllerProvider).maybeWhen(
+    _accountId = ref
+        .read(sessionControllerProvider)
+        .maybeWhen(
           authenticated: (id) => id,
           orElse: () => '',
         );
@@ -53,8 +55,10 @@ class _EditCategoryNicheScreenState
         setState(() {
           _originalIds = Set<String>.from(specs.keys);
           _selectedIds = Set<String>.from(specs.keys);
-          _originalPrimaryId =
-              specs.entries.where((e) => e.value).map((e) => e.key).firstOrNull;
+          _originalPrimaryId = specs.entries
+              .where((e) => e.value)
+              .map((e) => e.key)
+              .firstOrNull;
           _primaryId = _originalPrimaryId;
         });
       }
@@ -72,7 +76,8 @@ class _EditCategoryNicheScreenState
 
     final toAdd = _selectedIds.difference(_originalIds);
     final toRemove = _originalIds.difference(_selectedIds);
-    final primaryChanged = _primaryId != null &&
+    final primaryChanged =
+        _primaryId != null &&
         _primaryId != _originalPrimaryId &&
         _selectedIds.contains(_primaryId!);
 
@@ -110,7 +115,8 @@ class _EditCategoryNicheScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Something went wrong. Please try again.')),
+            content: Text('Something went wrong. Please try again.'),
+          ),
         );
       }
     } finally {
@@ -121,8 +127,9 @@ class _EditCategoryNicheScreenState
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(productCategoriesProvider);
-    final specializationsAsync =
-        ref.watch(creatorSpecializationsWithPrimaryProvider(_accountId));
+    final specializationsAsync = ref.watch(
+      creatorSpecializationsWithPrimaryProvider(_accountId),
+    );
 
     specializationsAsync.whenData(_initFromLoaded);
 
@@ -135,8 +142,11 @@ class _EditCategoryNicheScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
         title: const Text(
@@ -178,17 +188,23 @@ class _EditCategoryNicheScreenState
               if (_selectedIds.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
+                    horizontal: DesignTokens.s16,
+                    vertical: DesignTokens.s8,
+                  ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline_rounded,
-                          size: 14, color: DesignTokens.textMuted),
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        size: 14,
+                        color: DesignTokens.textMuted,
+                      ),
                       const SizedBox(width: DesignTokens.s4),
                       Expanded(
                         child: Text(
                           'Long press a selected niche to mark it as primary',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textMuted),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
                       ),
                     ],
@@ -199,7 +215,8 @@ class _EditCategoryNicheScreenState
                     ? const SmPageLoader()
                     : SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s16),
+                          horizontal: DesignTokens.s16,
+                        ),
                         child: Wrap(
                           spacing: DesignTokens.s8,
                           runSpacing: DesignTokens.s8,
@@ -220,8 +237,8 @@ class _EditCategoryNicheScreenState
                                     }
                                   }),
                                   onLongPress: _selectedIds.contains(cat.id)
-                                      ? () => setState(
-                                          () => _primaryId = cat.id)
+                                      ? () =>
+                                            setState(() => _primaryId = cat.id)
                                       : null,
                                 ),
                               )
@@ -312,8 +329,11 @@ class _SearchBar extends StatelessWidget {
             fontSize: 14,
             color: DesignTokens.textMuted,
           ),
-          suffixIcon: Icon(Icons.search_rounded,
-              size: 20, color: DesignTokens.textMuted),
+          suffixIcon: Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: DesignTokens.textMuted,
+          ),
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(
             horizontal: DesignTokens.s16,
@@ -362,8 +382,11 @@ class _CategoryChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isPrimary) ...[
-              const Icon(Icons.star_rounded,
-                  size: 13, color: DesignTokens.secondaryYellow),
+              const Icon(
+                Icons.star_rounded,
+                size: 13,
+                color: DesignTokens.secondaryYellow,
+              ),
               const SizedBox(width: 4),
             ],
             Text(

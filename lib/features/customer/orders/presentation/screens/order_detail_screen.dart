@@ -34,6 +34,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_status_pill.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -462,7 +463,7 @@ class _TrackSummaryCard extends StatelessWidget {
                       ),
                     ),
                     if (order.trackingNumber != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: DesignTokens.s4),
                       Text(
                         'Tracking ID ${order.trackingNumber}',
                         maxLines: 1,
@@ -688,7 +689,7 @@ class _DeliveryRiskBannerState extends ConsumerState<_DeliveryRiskBanner> {
                       ),
                     ),
                     if (risk.recommendedAction != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: DesignTokens.s4),
                       Text(
                         risk.recommendedAction!,
                         style: DesignTokens.smallRegular.copyWith(
@@ -778,21 +779,10 @@ class _PackageSealCard extends ConsumerWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(DesignTokens.s4),
-                child: Image.network(
-                  seal.sealPhotoUrl,
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    width: 40,
-                    height: 40,
-                    color: DesignTokens.bgAppBodyLight,
-                    child: const Icon(
-                      Icons.verified_user_outlined,
-                      size: 18,
-                      color: DesignTokens.textMuted,
-                    ),
-                  ),
+                child: SizedBox(
+                  width: DesignTokens.avatarMedium,
+                  height: DesignTokens.avatarMedium,
+                  child: MallNetworkImage(url: seal.sealPhotoUrl),
                 ),
               ),
               const SizedBox(width: DesignTokens.s8),
@@ -833,7 +823,7 @@ class _PackageSealCard extends ConsumerWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(DesignTokens.s12),
-              child: Image.network(url, fit: BoxFit.contain),
+              child: MallNetworkImage(url: url, fit: BoxFit.contain),
             ),
             IconButton(
               icon: const Icon(Icons.close, color: DesignTokens.iconWhite),
@@ -869,21 +859,10 @@ class _SealBadge extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(DesignTokens.s4),
-              child: Image.network(
-                photoUrl!,
-                width: 40,
-                height: 40,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Container(
-                  width: 40,
-                  height: 40,
-                  color: DesignTokens.bgAppBodyLight,
-                  child: const Icon(
-                    Icons.verified_user_outlined,
-                    size: 18,
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
+              child: SizedBox(
+                width: DesignTokens.avatarMedium,
+                height: DesignTokens.avatarMedium,
+                child: MallNetworkImage(url: photoUrl!),
               ),
             ),
             const SizedBox(width: DesignTokens.s8),
@@ -909,7 +888,7 @@ class _SealBadge extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(DesignTokens.s12),
-              child: Image.network(url, fit: BoxFit.contain),
+              child: MallNetworkImage(url: url, fit: BoxFit.contain),
             ),
             IconButton(
               icon: const Icon(Icons.close, color: DesignTokens.iconWhite),
@@ -1379,44 +1358,46 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s12,
+        ),
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: DesignTokens.minTouchTarget,
+              height: DesignTokens.minTouchTarget,
               decoration: BoxDecoration(
                 color: iconBg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(
+                  DesignTokens.radiusMedium,
+                ),
               ),
               alignment: Alignment.center,
-              child: Icon(iconData, color: iconColor, size: 20),
+              child: Icon(
+                iconData,
+                color: iconColor,
+                size: DesignTokens.iconMedium,
+              ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: DesignTokens.s12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: DesignTokens.mediumSemibold.copyWith(
-                      color: DesignTokens.textWhite,
-                      fontSize: 14,
-                    ),
+                    style: DesignTokens.mediumSemibold,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: DesignTokens.s4),
                   Text(
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textMuted,
-                      fontSize: 12,
-                    ),
+                    style: DesignTokens.smallRegular,
                   ),
                 ],
               ),
@@ -1719,11 +1700,10 @@ class _ReturnRequestDialogState extends State<_ReturnRequestDialog> {
                       const SizedBox(width: DesignTokens.s8),
                   itemBuilder: (_, i) => ClipRRect(
                     borderRadius: BorderRadius.circular(DesignTokens.s8),
-                    child: Image.network(
-                      _photoUrls[i],
-                      width: 64,
-                      height: 64,
-                      fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: DesignTokens.thumbCompact,
+                      height: DesignTokens.thumbCompact,
+                      child: MallNetworkImage(url: _photoUrls[i]),
                     ),
                   ),
                 ),
@@ -1926,21 +1906,10 @@ class _ReviewableItemsSection extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(DesignTokens.s8),
-                  child: Image.network(
-                    item.imageUrl,
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 48,
-                      height: 48,
-                      color: DesignTokens.bgAppBodyLight,
-                      child: const Icon(
-                        Icons.image,
-                        size: 18,
-                        color: DesignTokens.textMuted,
-                      ),
-                    ),
+                  child: SizedBox(
+                    width: DesignTokens.iconXLarge,
+                    height: DesignTokens.iconXLarge,
+                    child: MallNetworkImage(url: item.imageUrl),
                   ),
                 ),
                 const SizedBox(width: DesignTokens.s12),
@@ -2004,17 +1973,10 @@ class _OrderItemTile extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(DesignTokens.s8),
-            child: Image.network(
-              item.imageUrl,
-              width: 64,
-              height: 64,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 64,
-                height: 64,
-                color: DesignTokens.bgAppBodyLight,
-                child: const Icon(Icons.image, color: DesignTokens.textMuted),
-              ),
+            child: SizedBox(
+              width: DesignTokens.thumbCompact,
+              height: DesignTokens.thumbCompact,
+              child: MallNetworkImage(url: item.imageUrl),
             ),
           ),
           const SizedBox(width: DesignTokens.s12),
@@ -2111,7 +2073,9 @@ class _ShippingAddressSheet extends StatelessWidget {
       child: Container(
         decoration: const BoxDecoration(
           color: DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(DesignTokens.radiusLarge),
+          ),
         ),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
         child: Column(
@@ -2124,7 +2088,7 @@ class _ShippingAddressSheet extends StatelessWidget {
                 height: 4,
                 decoration: BoxDecoration(
                   color: DesignTokens.borderDefault,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(DesignTokens.s4),
                 ),
               ),
             ),
@@ -2200,23 +2164,33 @@ class _OrderSummarySheet extends StatelessWidget {
         child: Container(
           decoration: const BoxDecoration(
             color: DesignTokens.bgAppBody,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(DesignTokens.radiusLarge),
+            ),
           ),
           child: Column(
             children: [
               Center(
                 child: Container(
-                  margin: const EdgeInsets.only(top: 10, bottom: 14),
+                  margin: const EdgeInsets.only(
+                    top: DesignTokens.s12,
+                    bottom: DesignTokens.s16,
+                  ),
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
                     color: DesignTokens.borderDefault,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(DesignTokens.s4),
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s20,
+                  0,
+                  DesignTokens.s20,
+                  DesignTokens.s16,
+                ),
                 child: Row(
                   children: [
                     Text(
@@ -2297,29 +2271,18 @@ class _SummaryItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: DesignTokens.s12),
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              item.imageUrl,
-              width: 52,
-              height: 52,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 52,
-                height: 52,
-                color: DesignTokens.bgAppBodyLight,
-                child: const Icon(
-                  Icons.image,
-                  size: 20,
-                  color: DesignTokens.textMuted,
-                ),
-              ),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
+            child: SizedBox(
+              width: DesignTokens.avatarLarge,
+              height: DesignTokens.avatarLarge,
+              child: MallNetworkImage(url: item.imageUrl),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: DesignTokens.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2328,12 +2291,9 @@ class _SummaryItemRow extends StatelessWidget {
                   item.productName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: DesignTokens.mediumSemibold.copyWith(
-                    color: DesignTokens.textWhite,
-                    fontSize: 13,
-                  ),
+                  style: DesignTokens.mediumSemibold,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: DesignTokens.s4),
                 Text(
                   '${item.variantName} · Qty ${item.qty}',
                   style: DesignTokens.smallRegular.copyWith(
@@ -2343,13 +2303,17 @@ class _SummaryItemRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          Text(
-            formatMoney(item.unitPrice),
-            style: DesignTokens.mediumSemibold.copyWith(
-              color: DesignTokens.primaryGreen,
-              fontSize: 13,
-              fontFeatures: mallTabularFigures,
+          const SizedBox(width: DesignTokens.s8),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                formatMoney(item.unitPrice),
+                style: DesignTokens.moneyMedium.copyWith(
+                  color: DesignTokens.primaryGreen,
+                ),
+              ),
             ),
           ),
         ],

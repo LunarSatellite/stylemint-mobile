@@ -289,9 +289,7 @@ class _PlanBody extends ConsumerWidget {
               width: double.infinity,
               child: OutlinedButton(
                 key: const ValueKey('plan-cancel-button'),
-                onPressed: busy
-                    ? null
-                    : () => unawaited(_cancel(context, ref)),
+                onPressed: busy ? null : () => unawaited(_cancel(context, ref)),
                 style: DesignTokens.outlinedButtonStyle(),
                 child: const Text(ExecutionPlanCopy.cancelPlanLabel),
               ),

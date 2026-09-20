@@ -257,7 +257,8 @@ class Step5ReviewScreen extends ConsumerWidget {
                     ),
                     _DataRow(
                       label: 'Processing Time',
-                      value: '${shipping.processingTimeDays} business '
+                      value:
+                          '${shipping.processingTimeDays} business '
                           'day${shipping.processingTimeDays == 1 ? '' : 's'}',
                     ),
                   ],

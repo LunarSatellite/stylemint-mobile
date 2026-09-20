@@ -23,7 +23,9 @@ class VendorOrderDetailDto {
     final lines = (json['lines'] as List<dynamic>? ?? const <dynamic>[])
         .cast<Map<String, dynamic>>();
     final state = (json['state'] as num?)?.toInt() ?? 1;
-    final channel = OrderFulfillmentChannel.fromWire(json['fulfillmentChannel']);
+    final channel = OrderFulfillmentChannel.fromWire(
+      json['fulfillmentChannel'],
+    );
 
     return VendorOrder(
       id: json['id'] as String? ?? '',

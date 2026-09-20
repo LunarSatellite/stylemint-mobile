@@ -235,7 +235,7 @@ class _CreatorRow extends StatelessWidget {
                   followers == null
                       ? '${creator.reelCount} reels'
                       : '${_compact(followers)} followers • '
-                          '${creator.reelCount} reels',
+                            '${creator.reelCount} reels',
                   style: DesignTokens.smallRegular.copyWith(
                     color: DesignTokens.textMuted,
                   ),

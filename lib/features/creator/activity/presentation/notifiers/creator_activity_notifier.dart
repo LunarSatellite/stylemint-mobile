@@ -22,7 +22,7 @@ abstract class CreatorActivityState with _$CreatorActivityState {
 
 class CreatorActivityNotifier extends StateNotifier<CreatorActivityState> {
   CreatorActivityNotifier(this._repository, {this.pageSize = 25})
-      : super(const CreatorActivityState.initial()) {
+    : super(const CreatorActivityState.initial()) {
     unawaited(load());
   }
 

@@ -43,13 +43,13 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
 
   @override
   Future<NetworkEither<List<BadgeAward>>> updateBadgeShowcase(
-      List<String> awardIdsInOrder) async {
+    List<String> awardIdsInOrder,
+  ) async {
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
     }
     try {
-      final dtos =
-          await remoteDataSource.updateBadgeShowcase(awardIdsInOrder);
+      final dtos = await remoteDataSource.updateBadgeShowcase(awardIdsInOrder);
       return right(dtos.map((d) => d.toDomain()).toList(growable: false));
     } on DioException catch (e) {
       return left(NetworkExceptions.server(e.message ?? 'Server error'));
@@ -122,13 +122,15 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
 
   @override
   Future<NetworkEither<List<String>>> listSpecializationCategoryIds(
-      String accountId) async {
+    String accountId,
+  ) async {
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
     }
     try {
-      final ids =
-          await remoteDataSource.listSpecializationCategoryIds(accountId);
+      final ids = await remoteDataSource.listSpecializationCategoryIds(
+        accountId,
+      );
       return right(ids);
     } on DioException catch (e) {
       return left(NetworkExceptions.server(e.message ?? 'Server error'));
@@ -141,7 +143,9 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
 
   @override
   Future<NetworkEither<void>> addSpecialization(
-      String accountId, String categoryId) async {
+    String accountId,
+    String categoryId,
+  ) async {
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
     }
@@ -159,7 +163,9 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
 
   @override
   Future<NetworkEither<void>> removeSpecialization(
-      String accountId, String categoryId) async {
+    String accountId,
+    String categoryId,
+  ) async {
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
     }
@@ -177,13 +183,15 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
 
   @override
   Future<NetworkEither<Map<String, bool>>> listSpecializationsWithPrimary(
-      String accountId) async {
+    String accountId,
+  ) async {
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
     }
     try {
-      final map =
-          await remoteDataSource.listSpecializationsWithPrimary(accountId);
+      final map = await remoteDataSource.listSpecializationsWithPrimary(
+        accountId,
+      );
       return right(map);
     } on DioException catch (e) {
       return left(NetworkExceptions.server(e.message ?? 'Server error'));
@@ -196,7 +204,9 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
 
   @override
   Future<NetworkEither<void>> setPrimarySpecialization(
-      String accountId, String categoryId) async {
+    String accountId,
+    String categoryId,
+  ) async {
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
     }

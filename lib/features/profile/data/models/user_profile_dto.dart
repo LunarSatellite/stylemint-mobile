@@ -40,7 +40,8 @@ abstract class UserProfileDto with _$UserProfileDto {
     gender: gender,
     dateOfBirth: dateOfBirth,
     language: locale,
-    dateJoined: createdUtc ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+    dateJoined:
+        createdUtc ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
     rowVersion: rowVersion,
   );
 }

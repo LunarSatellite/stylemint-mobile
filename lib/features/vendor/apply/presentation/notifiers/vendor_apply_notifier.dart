@@ -12,8 +12,10 @@ abstract class ApplicationState with _$ApplicationState {
 
   const factory ApplicationState.initial() = _AppInitial;
   const factory ApplicationState.loadInProgress() = _AppLoadInProgress;
-  const factory ApplicationState.loadSuccess(VendorApplication application) = _AppLoadSuccess;
-  const factory ApplicationState.loadFailure(NetworkExceptions failure) = _AppLoadFailure;
+  const factory ApplicationState.loadSuccess(VendorApplication application) =
+      _AppLoadSuccess;
+  const factory ApplicationState.loadFailure(NetworkExceptions failure) =
+      _AppLoadFailure;
 }
 
 @freezed
@@ -22,7 +24,8 @@ abstract class SubmitState with _$SubmitState {
 
   const factory SubmitState.initial() = _SubmitInitial;
   const factory SubmitState.submitting() = _Submitting;
-  const factory SubmitState.success(VendorApplication application) = _SubmitSuccess;
+  const factory SubmitState.success(VendorApplication application) =
+      _SubmitSuccess;
   const factory SubmitState.failure(NetworkExceptions failure) = _SubmitFailure;
 }
 
@@ -32,8 +35,10 @@ abstract class KYCDocumentsState with _$KYCDocumentsState {
 
   const factory KYCDocumentsState.initial() = _KycDocsInitial;
   const factory KYCDocumentsState.loadInProgress() = _KycDocsLoadInProgress;
-  const factory KYCDocumentsState.loadSuccess(List<KYCDocument> documents) = _KycDocsLoadSuccess;
-  const factory KYCDocumentsState.loadFailure(NetworkExceptions failure) = _KycDocsLoadFailure;
+  const factory KYCDocumentsState.loadSuccess(List<KYCDocument> documents) =
+      _KycDocsLoadSuccess;
+  const factory KYCDocumentsState.loadFailure(NetworkExceptions failure) =
+      _KycDocsLoadFailure;
 }
 
 class VendorApplyNotifier extends StateNotifier<ApplicationState> {
@@ -131,10 +136,12 @@ class VendorApplyNotifier extends StateNotifier<ApplicationState> {
           accountId: accountId,
           sessionId: sessionId,
         );
-        _updateKycDocsState(either.fold(
-          KYCDocumentsState.loadFailure,
-          KYCDocumentsState.loadSuccess,
-        ));
+        _updateKycDocsState(
+          either.fold(
+            KYCDocumentsState.loadFailure,
+            KYCDocumentsState.loadSuccess,
+          ),
+        );
       },
     );
   }

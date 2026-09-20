@@ -192,8 +192,8 @@ Future<void> pumpDiscover(
     visualSearchProbeProvider.overrideWith(
       (ref) =>
           () async => visualSearchAvailable
-              ? SearchInputStatus.ready
-              : SearchInputStatus.unsupported,
+          ? SearchInputStatus.ready
+          : SearchInputStatus.unsupported,
     ),
     mallViewerSignedInProvider.overrideWithValue(signedIn),
     discoverAuthGateProvider.overrideWithValue((_, _) async => signedIn),

@@ -39,7 +39,8 @@ abstract interface class AuthRepository {
   });
 
   // --- Password reset ---
-  Future<Either<NetworkExceptions, PasswordResetRequestedDto>> requestPasswordReset({
+  Future<Either<NetworkExceptions, PasswordResetRequestedDto>>
+  requestPasswordReset({
     required String email,
   });
 
@@ -49,7 +50,9 @@ abstract interface class AuthRepository {
   });
 
   // --- Token lifecycle ---
-  Future<Either<NetworkExceptions, AuthResponseDto>> refresh({required String refreshToken});
+  Future<Either<NetworkExceptions, AuthResponseDto>> refresh({
+    required String refreshToken,
+  });
 
   Future<Either<NetworkExceptions, Unit>> logout({bool allSessions});
 
@@ -90,7 +93,9 @@ abstract interface class AuthRepository {
   });
 
   // --- Sessions ---
-  Future<Either<NetworkExceptions, List<UserSessionDto>>> listSessions(String accountId);
+  Future<Either<NetworkExceptions, List<UserSessionDto>>> listSessions(
+    String accountId,
+  );
 
   Future<Either<NetworkExceptions, Unit>> revokeSession({
     required String accountId,
@@ -101,7 +106,9 @@ abstract interface class AuthRepository {
   Future<Either<NetworkExceptions, int>> revokeAllSessions(String accountId);
 
   // --- Devices ---
-  Future<Either<NetworkExceptions, List<DeviceDto>>> listDevices(String accountId);
+  Future<Either<NetworkExceptions, List<DeviceDto>>> listDevices(
+    String accountId,
+  );
 
   Future<Either<NetworkExceptions, DeviceDto>> registerDevice({
     required String accountId,
@@ -114,25 +121,31 @@ abstract interface class AuthRepository {
   });
 
   // --- Passkeys ---
-  Future<Either<NetworkExceptions, List<PasskeyCredentialDto>>> listPasskeys(String accountId);
+  Future<Either<NetworkExceptions, List<PasskeyCredentialDto>>> listPasskeys(
+    String accountId,
+  );
 
-  Future<Either<NetworkExceptions, PasskeyChallengeDto>> beginPasskeyRegistration({
+  Future<Either<NetworkExceptions, PasskeyChallengeDto>>
+  beginPasskeyRegistration({
     required String accountId,
     String? nickname,
   });
 
-  Future<Either<NetworkExceptions, PasskeyCredentialDto>> completePasskeyRegistration({
+  Future<Either<NetworkExceptions, PasskeyCredentialDto>>
+  completePasskeyRegistration({
     required String accountId,
     required String challengeBase64Url,
     required String clientResponseJson,
     String? nickname,
   });
 
-  Future<Either<NetworkExceptions, PasskeyChallengeDto>> beginPasskeyAuthentication(
+  Future<Either<NetworkExceptions, PasskeyChallengeDto>>
+  beginPasskeyAuthentication(
     String accountId,
   );
 
-  Future<Either<NetworkExceptions, AuthResponseDto>> completePasskeyAuthentication({
+  Future<Either<NetworkExceptions, AuthResponseDto>>
+  completePasskeyAuthentication({
     required String accountId,
     required String challengeBase64Url,
     required String clientResponseJson,
@@ -145,10 +158,10 @@ abstract interface class AuthRepository {
 
   // --- Usernameless passkey login (discoverable credential, no accountId) ---
   Future<Either<NetworkExceptions, PasskeyChallengeDto>>
-      beginUsernamelessPasskeyAuthentication();
+  beginUsernamelessPasskeyAuthentication();
 
   Future<Either<NetworkExceptions, AuthResponseDto>>
-      completeUsernamelessPasskeyAuthentication({
+  completeUsernamelessPasskeyAuthentication({
     required String challengeBase64Url,
     required String clientResponseJson,
     required String deviceFingerprint,
@@ -174,7 +187,8 @@ abstract interface class AuthRepository {
   });
 
   // --- Registration ---
-  Future<Either<NetworkExceptions, RegistrationStartResponseDto>> startRegistration({
+  Future<Either<NetworkExceptions, RegistrationStartResponseDto>>
+  startRegistration({
     required String displayName,
     required String locale,
     required String timezone,
@@ -200,7 +214,8 @@ abstract interface class AuthRepository {
     String password,
   );
 
-  Future<Either<NetworkExceptions, RegistrationCompletionDto>> acceptRegistrationTerms(
+  Future<Either<NetworkExceptions, RegistrationCompletionDto>>
+  acceptRegistrationTerms(
     String accountId, {
     required String consentVersion,
     String? ipAddress,
@@ -230,7 +245,9 @@ abstract interface class AuthRepository {
   });
 
   // --- MFA / TOTP ---
-  Future<Either<NetworkExceptions, List<MfaMethodDto>>> listMfaMethods(String accountId);
+  Future<Either<NetworkExceptions, List<MfaMethodDto>>> listMfaMethods(
+    String accountId,
+  );
 
   Future<Either<NetworkExceptions, TotpEnrollmentDto>> beginTotpEnrollment(
     String accountId,
@@ -259,7 +276,9 @@ abstract interface class AuthRepository {
   });
 
   // --- Handles ---
-  Future<Either<NetworkExceptions, List<HandleDto>>> listHandles(String accountId);
+  Future<Either<NetworkExceptions, List<HandleDto>>> listHandles(
+    String accountId,
+  );
 
   /// AI-derived creator specialization names
   /// (`GET /v1/accounts/{accountId}/creator-specializations`).
@@ -283,7 +302,9 @@ abstract interface class AuthRepository {
   });
 
   // --- Interests (account-level) ---
-  Future<Either<NetworkExceptions, List<InterestDto>>> listInterests(String accountId);
+  Future<Either<NetworkExceptions, List<InterestDto>>> listInterests(
+    String accountId,
+  );
 
   Future<Either<NetworkExceptions, List<InterestDto>>> listPublicInterests();
 
@@ -329,11 +350,13 @@ abstract interface class AuthRepository {
   });
 
   // --- Marketing consents ---
-  Future<Either<NetworkExceptions, List<MarketingConsentDto>>> listMarketingConsents(
+  Future<Either<NetworkExceptions, List<MarketingConsentDto>>>
+  listMarketingConsents(
     String accountId,
   );
 
-  Future<Either<NetworkExceptions, List<MarketingConsentDto>>> getCurrentMarketingConsents(
+  Future<Either<NetworkExceptions, List<MarketingConsentDto>>>
+  getCurrentMarketingConsents(
     String accountId,
   );
 
@@ -351,14 +374,19 @@ abstract interface class AuthRepository {
   Future<Either<NetworkExceptions, Unit>> resume();
 
   // --- Roles ---
-  Future<Either<NetworkExceptions, List<RoleProfileDto>>> getRoles(String accountId);
+  Future<Either<NetworkExceptions, List<RoleProfileDto>>> getRoles(
+    String accountId,
+  );
 
   Future<Either<NetworkExceptions, RoleProfileDto>> requestRole(
     String accountId,
     int role,
   );
 
-  Future<Either<NetworkExceptions, Unit>> activateRole(String accountId, int role);
+  Future<Either<NetworkExceptions, Unit>> activateRole(
+    String accountId,
+    int role,
+  );
 
   // --- Password management ---
   Future<Either<NetworkExceptions, Unit>> changePassword({

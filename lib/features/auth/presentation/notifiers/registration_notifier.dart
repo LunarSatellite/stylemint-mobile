@@ -17,44 +17,49 @@ abstract class RegistrationState with _$RegistrationState {
   const factory RegistrationState.step1LoadSuccess(
     RegistrationStartResponseDto response,
   ) = _Step1LoadSuccess;
-  const factory RegistrationState.step1LoadNetworkExceptions(NetworkExceptions failure) =
-      _Step1LoadNetworkExceptions;
+  const factory RegistrationState.step1LoadNetworkExceptions(
+    NetworkExceptions failure,
+  ) = _Step1LoadNetworkExceptions;
 
   const factory RegistrationState.step2Sending() = _Step2Sending;
   const factory RegistrationState.step2Success() = _Step2Success;
-  const factory RegistrationState.step2NetworkExceptions(NetworkExceptions failure) =
-      _Step2NetworkExceptions;
+  const factory RegistrationState.step2NetworkExceptions(
+    NetworkExceptions failure,
+  ) = _Step2NetworkExceptions;
 
   const factory RegistrationState.step3Sending() = _Step3Sending;
   const factory RegistrationState.step3Success() = _Step3Success;
-  const factory RegistrationState.step3NetworkExceptions(NetworkExceptions failure) =
-      _Step3NetworkExceptions;
+  const factory RegistrationState.step3NetworkExceptions(
+    NetworkExceptions failure,
+  ) = _Step3NetworkExceptions;
 
   const factory RegistrationState.step4Sending() = _Step4Sending;
   const factory RegistrationState.step4Success() = _Step4Success;
-  const factory RegistrationState.step4NetworkExceptions(NetworkExceptions failure) =
-      _Step4NetworkExceptions;
+  const factory RegistrationState.step4NetworkExceptions(
+    NetworkExceptions failure,
+  ) = _Step4NetworkExceptions;
 
   const factory RegistrationState.step5Sending() = _Step5Sending;
   const factory RegistrationState.step5Success(
     RegistrationCompletionDto completion,
   ) = _Step5Success;
-  const factory RegistrationState.step5NetworkExceptions(NetworkExceptions failure) =
-      _Step5NetworkExceptions;
+  const factory RegistrationState.step5NetworkExceptions(
+    NetworkExceptions failure,
+  ) = _Step5NetworkExceptions;
 
   bool get isLoading => maybeWhen(
-        step1Sending: () => true,
-        step2Sending: () => true,
-        step3Sending: () => true,
-        step4Sending: () => true,
-        step5Sending: () => true,
-        orElse: () => false,
-      );
+    step1Sending: () => true,
+    step2Sending: () => true,
+    step3Sending: () => true,
+    step4Sending: () => true,
+    step5Sending: () => true,
+    orElse: () => false,
+  );
 }
 
 class RegistrationNotifier extends StateNotifier<RegistrationState> {
   RegistrationNotifier({required this.authRepository})
-      : super(const RegistrationState.initial());
+    : super(const RegistrationState.initial());
 
   final AuthRepository authRepository;
 

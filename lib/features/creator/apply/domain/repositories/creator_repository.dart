@@ -4,7 +4,7 @@ import 'package:stylemint_mobile_frontend/features/creator/apply/domain/entities
 
 abstract class CreatorRepository {
   Future<Either<NetworkExceptions, List<CreatorContentCategory>>>
-      getContentCategories();
+  getContentCategories();
 
   Future<Either<NetworkExceptions, Unit>> activate({
     String? bio,

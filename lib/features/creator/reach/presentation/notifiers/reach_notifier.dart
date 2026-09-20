@@ -20,7 +20,8 @@ abstract class ReachState with _$ReachState {
     required List<BoostCampaign> campaigns,
     required ReachAnalytics analytics,
   }) = _ReachLoadSuccess;
-  const factory ReachState.loadFailure(NetworkExceptions failure) = _ReachLoadFailure;
+  const factory ReachState.loadFailure(NetworkExceptions failure) =
+      _ReachLoadFailure;
 }
 
 @freezed
@@ -78,39 +79,36 @@ class CreateBoostNotifier extends StateNotifier<CreateBoostState> {
 
   void setBudget(double budget) {
     state = state.maybeWhen(
-      editing:
-          (reelId, _, durationDays, platform) => CreateBoostState.editing(
-            reelId: reelId,
-            budget: budget,
-            durationDays: durationDays,
-            platform: platform,
-          ),
+      editing: (reelId, _, durationDays, platform) => CreateBoostState.editing(
+        reelId: reelId,
+        budget: budget,
+        durationDays: durationDays,
+        platform: platform,
+      ),
       orElse: () => state,
     );
   }
 
   void setDuration(int days) {
     state = state.maybeWhen(
-      editing:
-          (reelId, budget, _, platform) => CreateBoostState.editing(
-            reelId: reelId,
-            budget: budget,
-            durationDays: days,
-            platform: platform,
-          ),
+      editing: (reelId, budget, _, platform) => CreateBoostState.editing(
+        reelId: reelId,
+        budget: budget,
+        durationDays: days,
+        platform: platform,
+      ),
       orElse: () => state,
     );
   }
 
   void setPlatform(String platform) {
     state = state.maybeWhen(
-      editing:
-          (reelId, budget, durationDays, _) => CreateBoostState.editing(
-            reelId: reelId,
-            budget: budget,
-            durationDays: durationDays,
-            platform: platform,
-          ),
+      editing: (reelId, budget, durationDays, _) => CreateBoostState.editing(
+        reelId: reelId,
+        budget: budget,
+        durationDays: durationDays,
+        platform: platform,
+      ),
       orElse: () => state,
     );
   }

@@ -46,7 +46,10 @@ class InviteCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(invite.vendorName, style: DesignTokens.oneLinerSemibold),
+                    Text(
+                      invite.vendorName,
+                      style: DesignTokens.oneLinerSemibold,
+                    ),
                     Text(
                       '${(invite.commissionRate * 100).toStringAsFixed(0)}% commission',
                       style: DesignTokens.smallRegular.copyWith(
@@ -66,7 +69,9 @@ class InviteCard extends StatelessWidget {
           Text(
             'Expires ${_formatDate(invite.expiresAt)}',
             style: DesignTokens.tiny.copyWith(
-              color: isExpired ? DesignTokens.colorError : DesignTokens.textMuted,
+              color: isExpired
+                  ? DesignTokens.colorError
+                  : DesignTokens.textMuted,
             ),
           ),
           if (isPending && !isExpired) ...[
@@ -120,7 +125,10 @@ class _StatusBadge extends StatelessWidget {
       return _badge('Expired', DesignTokens.colorError);
     }
     return switch (status) {
-      PartnershipStatus.accepted => _badge('Accepted', DesignTokens.primaryGreen),
+      PartnershipStatus.accepted => _badge(
+        'Accepted',
+        DesignTokens.primaryGreen,
+      ),
       PartnershipStatus.declined => _badge('Declined', DesignTokens.textMuted),
       PartnershipStatus.active => _badge('Active', DesignTokens.primaryGreen),
       _ => const SizedBox.shrink(),

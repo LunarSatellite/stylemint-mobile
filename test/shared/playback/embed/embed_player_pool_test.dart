@@ -78,52 +78,65 @@ void main() {
   final b = _youTube('bbbbbbbbbbb');
   final c = _youTube('ccccccccccc');
 
-  test('plays the reel on screen and cues the next one in another slot', () async {
-    final (pool, d) = await _pool();
+  test(
+    'plays the reel on screen and cues the next one in another slot',
+    () async {
+      final (pool, d) = await _pool();
 
-    pool.setWindow(active: a, neighbours: [b]);
-    expect(d[0].hosts, ['https://app.test']);
-    expect(d[1].hosts, ['https://app.test']);
-    expect(d[0].scripts, isEmpty, reason: 'nothing runs before the page loads');
+      pool.setWindow(active: a, neighbours: [b]);
+      expect(d[0].hosts, ['https://app.test']);
+      expect(d[1].hosts, ['https://app.test']);
+      expect(
+        d[0].scripts,
+        isEmpty,
+        reason: 'nothing runs before the page loads',
+      );
 
-    d[0].finishLoad();
-    d[1].finishLoad();
-    expect(d[0].assigns.single, contains('"youtube","aaaaaaaaaaa"'));
-    // wantPlay, muted, preroll: the next reel pre-rolls.
-    expect(d[0].assigns.single, endsWith(',true,false,false)'));
-    expect(d[1].assigns.single, contains('"bbbbbbbbbbb"'));
-    expect(d[1].assigns.single, endsWith(',false,false,true)'));
-  });
+      d[0].finishLoad();
+      d[1].finishLoad();
+      expect(d[0].assigns.single, contains('"youtube","aaaaaaaaaaa"'));
+      // wantPlay, muted, preroll: the next reel pre-rolls.
+      expect(d[0].assigns.single, endsWith(',true,false,false)'));
+      expect(d[1].assigns.single, contains('"bbbbbbbbbbb"'));
+      expect(d[1].assigns.single, endsWith(',false,false,true)'));
+    },
+  );
 
-  test('a swipe plays the cued reel in place and recycles the old slot', () async {
-    final (pool, d) = await _pool();
-    pool.setWindow(active: a, neighbours: [b]);
-    d[0].finishLoad();
-    d[1].finishLoad();
+  test(
+    'a swipe plays the cued reel in place and recycles the old slot',
+    () async {
+      final (pool, d) = await _pool();
+      pool.setWindow(active: a, neighbours: [b]);
+      d[0].finishLoad();
+      d[1].finishLoad();
 
-    pool.setWindow(active: b, neighbours: [c, a]);
+      pool.setWindow(active: b, neighbours: [c, a]);
 
-    expect(d[1].assigns, hasLength(1), reason: 'b was already cued');
-    expect(d[1].scripts.last, 'smPlayer.play()');
-    expect(d[0].scripts, contains('smPlayer.pause()'));
-    expect(d[0].assigns.last, contains('"ccccccccccc"'));
-    expect(d[0].hosts, hasLength(1), reason: 'same origin, no reload');
-  });
+      expect(d[1].assigns, hasLength(1), reason: 'b was already cued');
+      expect(d[1].scripts.last, 'smPlayer.play()');
+      expect(d[0].scripts, contains('smPlayer.pause()'));
+      expect(d[0].assigns.last, contains('"ccccccccccc"'));
+      expect(d[0].hosts, hasLength(1), reason: 'same origin, no reload');
+    },
+  );
 
-  test('loads TikTok under the web origin and YouTube under the app origin', () async {
-    final (pool, d) = await _pool(slots: 1);
+  test(
+    'loads TikTok under the web origin and YouTube under the app origin',
+    () async {
+      final (pool, d) = await _pool(slots: 1);
 
-    pool.setWindow(active: _tikTok('7000000000000000001'));
-    expect(d[0].hosts, ['https://web.test']);
-    d[0].finishLoad();
-    expect(d[0].assigns.single, contains('"tiktok","7000000000000000001"'));
+      pool.setWindow(active: _tikTok('7000000000000000001'));
+      expect(d[0].hosts, ['https://web.test']);
+      d[0].finishLoad();
+      expect(d[0].assigns.single, contains('"tiktok","7000000000000000001"'));
 
-    pool.setWindow(active: a);
-    expect(d[0].hosts, ['https://web.test', 'https://app.test']);
-    expect(d[0].assigns, hasLength(1), reason: 'queued until the page loads');
-    d[0].finishLoad();
-    expect(d[0].assigns.last, contains('"youtube","aaaaaaaaaaa"'));
-  });
+      pool.setWindow(active: a);
+      expect(d[0].hosts, ['https://web.test', 'https://app.test']);
+      expect(d[0].assigns, hasLength(1), reason: 'queued until the page loads');
+      d[0].finishLoad();
+      expect(d[0].assigns.last, contains('"youtube","aaaaaaaaaaa"'));
+    },
+  );
 
   test('ignores events from a reel the slot has moved on from', () async {
     final (pool, d) = await _pool(slots: 1);
@@ -141,17 +154,20 @@ void main() {
     expect(slot.hasStarted, isTrue);
   });
 
-  test('pauses while the feed is hidden and resumes when it is shown', () async {
-    final (pool, d) = await _pool(slots: 1);
-    pool.setWindow(active: a);
-    d[0].finishLoad();
+  test(
+    'pauses while the feed is hidden and resumes when it is shown',
+    () async {
+      final (pool, d) = await _pool(slots: 1);
+      pool.setWindow(active: a);
+      d[0].finishLoad();
 
-    pool.setHostActive(false);
-    expect(d[0].scripts.last, 'smPlayer.pause()');
+      pool.setHostActive(false);
+      expect(d[0].scripts.last, 'smPlayer.pause()');
 
-    pool.setHostActive(true);
-    expect(d[0].scripts.last, 'smPlayer.play()');
-  });
+      pool.setHostActive(true);
+      expect(d[0].scripts.last, 'smPlayer.play()');
+    },
+  );
 
   test('retries an embed that timed out once, then gives up', () async {
     final (pool, d) = await _pool(
@@ -187,21 +203,24 @@ void main() {
     expect(d[0].assigns, hasLength(1));
   });
 
-  test('reports a reel muted by an autoplay block and unmutes on request', () async {
-    final (pool, d) = await _pool(slots: 1);
-    pool.setWindow(active: a);
-    d[0].finishLoad();
+  test(
+    'reports a reel muted by an autoplay block and unmutes on request',
+    () async {
+      final (pool, d) = await _pool(slots: 1);
+      pool.setWindow(active: a);
+      d[0].finishLoad();
 
-    pool.slots.single.handleEvent({
-      'type': 'autoplayBlocked',
-      'token': d[0].lastToken,
-    });
-    expect(pool.muted, isTrue);
+      pool.slots.single.handleEvent({
+        'type': 'autoplayBlocked',
+        'token': d[0].lastToken,
+      });
+      expect(pool.muted, isTrue);
 
-    pool.setMuted(false);
-    expect(pool.muted, isFalse);
-    expect(d[0].scripts.last, 'smPlayer.setMuted(false)');
-  });
+      pool.setMuted(false);
+      expect(pool.muted, isFalse);
+      expect(d[0].scripts.last, 'smPlayer.setMuted(false)');
+    },
+  );
 
   test('trim frees cued neighbours and stops cueing new ones', () async {
     final (pool, d) = await _pool();
@@ -292,33 +311,41 @@ void main() {
       },
     );
 
-    test('beside a native reel a two-slot pool keeps the previous reel too',
-        () async {
-      final (pool, d) = await _pool();
+    test(
+      'beside a native reel a two-slot pool keeps the previous reel too',
+      () async {
+        final (pool, d) = await _pool();
 
-      pool.setWindow(active: null, neighbours: [t2, t1]);
-      d[0].finishLoad();
-      d[1].finishLoad();
+        pool.setWindow(active: null, neighbours: [t2, t1]);
+        d[0].finishLoad();
+        d[1].finishLoad();
 
-      expect(pool.slotFor(t2.key)?.prerolls, isTrue);
-      expect(pool.slotFor(t1.key)?.prerolls, isFalse);
-    });
+        expect(pool.slotFor(t2.key)?.prerolls, isTrue);
+        expect(pool.slotFor(t1.key)?.prerolls, isFalse);
+      },
+    );
 
-    test("recycles a slot whose page is already on the reel's origin",
-        () async {
-      final (pool, d) = await _pool(slots: 3);
-      pool.setWindow(active: a, neighbours: [t1, b]);
-      for (final driver in d) {
-        driver.finishLoad();
-      }
-      final tikTokSlot = pool.slotFor(t1.key)!;
+    test(
+      "recycles a slot whose page is already on the reel's origin",
+      () async {
+        final (pool, d) = await _pool(slots: 3);
+        pool.setWindow(active: a, neighbours: [t1, b]);
+        for (final driver in d) {
+          driver.finishLoad();
+        }
+        final tikTokSlot = pool.slotFor(t1.key)!;
 
-      pool.setWindow(active: t2);
+        pool.setWindow(active: t2);
 
-      expect(pool.slotFor(t2.key), same(tikTokSlot));
-      expect(d[tikTokSlot.index].hosts, hasLength(1), reason: 'no page reload');
-      expect(pool.slotFor(a.key), isNotNull);
-    });
+        expect(pool.slotFor(t2.key), same(tikTokSlot));
+        expect(
+          d[tikTokSlot.index].hosts,
+          hasLength(1),
+          reason: 'no page reload',
+        );
+        expect(pool.slotFor(a.key), isNotNull);
+      },
+    );
 
     test(
       'warms TikTok player hosts when a TikTok reel is two pages away, at '
@@ -379,21 +406,23 @@ void main() {
       return (pool, d);
     }
 
-    test('holds the reel on screen, keeps its frames, and play resumes it',
-        () async {
-      final (pool, d) = await playing();
-      final slot = pool.slots.single;
+    test(
+      'holds the reel on screen, keeps its frames, and play resumes it',
+      () async {
+        final (pool, d) = await playing();
+        final slot = pool.slots.single;
 
-      pool.togglePause();
-      expect(d[0].scripts.last, 'smPlayer.pause(true)');
-      slot.handleEvent({'type': 'cued', 'token': d[0].lastToken});
-      expect(slot.state, EmbedPlayerState.cued);
-      expect(slot.hasStarted, isTrue, reason: 'no poster over a held reel');
+        pool.togglePause();
+        expect(d[0].scripts.last, 'smPlayer.pause(true)');
+        slot.handleEvent({'type': 'cued', 'token': d[0].lastToken});
+        expect(slot.state, EmbedPlayerState.cued);
+        expect(slot.hasStarted, isTrue, reason: 'no poster over a held reel');
 
-      pool.togglePause();
-      expect(d[0].scripts.last, 'smPlayer.play()');
-      expect(d[0].assigns, hasLength(1), reason: 'resumed in place');
-    });
+        pool.togglePause();
+        expect(d[0].scripts.last, 'smPlayer.play()');
+        expect(d[0].assigns, hasLength(1), reason: 'resumed in place');
+      },
+    );
 
     test('a hidden feed pauses without holding, and never resumes a reel the '
         'viewer paused', () async {

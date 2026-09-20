@@ -10,13 +10,12 @@ import 'package:stylemint_mobile_frontend/features/creator/activity/presentation
 
 final creatorActivityRemoteDataSourceProvider =
     Provider<CreatorActivityRemoteDataSource>(
-  (ref) => CreatorActivityRemoteDataSource(
-    apiClient: ref.watch(apiClientProvider),
-  ),
-);
+      (ref) => CreatorActivityRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
 
-final creatorActivityRepositoryProvider =
-    Provider<CreatorActivityRepository>(
+final creatorActivityRepositoryProvider = Provider<CreatorActivityRepository>(
   (ref) => CreatorActivityRepositoryImpl(
     remoteDataSource: ref.watch(creatorActivityRemoteDataSourceProvider),
     networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
@@ -24,8 +23,10 @@ final creatorActivityRepositoryProvider =
 );
 
 final creatorActivityNotifierProvider =
-    StateNotifierProvider.autoDispose<CreatorActivityNotifier,
-        CreatorActivityState>(
-  (ref) =>
-      CreatorActivityNotifier(ref.watch(creatorActivityRepositoryProvider)),
-);
+    StateNotifierProvider.autoDispose<
+      CreatorActivityNotifier,
+      CreatorActivityState
+    >(
+      (ref) =>
+          CreatorActivityNotifier(ref.watch(creatorActivityRepositoryProvider)),
+    );

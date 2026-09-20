@@ -16,7 +16,8 @@ abstract class ProductDetailState with _$ProductDetailState {
   const factory ProductDetailState.loadInProgress() = _LoadInProgress;
   const factory ProductDetailState.loadSuccess(ProductDetail product) =
       _LoadSuccess;
-  const factory ProductDetailState.loadFailure(NetworkExceptions failure) = _LoadFailure;
+  const factory ProductDetailState.loadFailure(NetworkExceptions failure) =
+      _LoadFailure;
 }
 
 class ProductDetailNotifier extends StateNotifier<ProductDetailState> {
@@ -66,7 +67,10 @@ class ProductDetailNotifier extends StateNotifier<ProductDetailState> {
     final variantId = state.whenOrNull(
       loadSuccess: (product) => product.defaultVariantId,
     );
-    final either = await _repository.toggleSaved(productId, variantId: variantId);
+    final either = await _repository.toggleSaved(
+      productId,
+      variantId: variantId,
+    );
     return either.fold(
       (_) => false,
       (isSaved) {
@@ -86,8 +90,12 @@ class ProductDetailNotifier extends StateNotifier<ProductDetailState> {
   }
 
   void _updateSavedState(bool isSaved) {
-    state.whenOrNull(loadSuccess: (product) {
-      state = ProductDetailState.loadSuccess(product.copyWith(isSaved: isSaved));
-    });
+    state.whenOrNull(
+      loadSuccess: (product) {
+        state = ProductDetailState.loadSuccess(
+          product.copyWith(isSaved: isSaved),
+        );
+      },
+    );
   }
 }

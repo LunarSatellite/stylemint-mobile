@@ -27,30 +27,31 @@ class VariantSelector extends StatelessWidget {
         Wrap(
           spacing: DesignTokens.s8,
           runSpacing: DesignTokens.s8,
-          children: variant.values.map((value) {
-            final isSelected = value == selectedValue;
-            return GestureDetector(
-              onTap: () => onSelected(value),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16,
-                  vertical: DesignTokens.s8,
-                ),
-                decoration: isSelected
-                    ? DesignTokens.chipDecorationSelected()
-                    : DesignTokens.chipDecorationDefault(),
-                child: Text(
-                  value,
-                  style: DesignTokens.mediumRegular.copyWith(
-                    color:
-                        isSelected
+          children: variant.values
+              .map((value) {
+                final isSelected = value == selectedValue;
+                return GestureDetector(
+                  onTap: () => onSelected(value),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s16,
+                      vertical: DesignTokens.s8,
+                    ),
+                    decoration: isSelected
+                        ? DesignTokens.chipDecorationSelected()
+                        : DesignTokens.chipDecorationDefault(),
+                    child: Text(
+                      value,
+                      style: DesignTokens.mediumRegular.copyWith(
+                        color: isSelected
                             ? DesignTokens.textWhite
                             : DesignTokens.chipsDefaultText,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          }).toList(growable: false),
+                );
+              })
+              .toList(growable: false),
         ),
       ],
     );

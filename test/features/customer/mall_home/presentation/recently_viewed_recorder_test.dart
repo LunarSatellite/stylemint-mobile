@@ -59,9 +59,11 @@ class _FakeVaultRepository implements MemoryVaultRepository {
   }) : consents = consentsUnreadable
            ? null
            : (consents ??
-                 [MemoryConsent.grantedFor(
-                   MemoryPurpose.storefrontPersonalisation,
-                 )]);
+                 [
+                   MemoryConsent.grantedFor(
+                     MemoryPurpose.storefrontPersonalisation,
+                   ),
+                 ]);
 
   bool paused;
   bool pauseUnreadable;

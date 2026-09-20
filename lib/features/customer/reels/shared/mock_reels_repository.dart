@@ -49,10 +49,13 @@ class MockReelsRepository implements ReelsRepository {
   Future<Either<NetworkExceptions, ReelLikeResult>> likeReel(
     String reelId,
   ) async {
-    _toggle(reelId, (r) => r.copyWith(
-      isLikedByMe: true,
-      likeCount: r.likeCount + 1,
-    ));
+    _toggle(
+      reelId,
+      (r) => r.copyWith(
+        isLikedByMe: true,
+        likeCount: r.likeCount + 1,
+      ),
+    );
     return right(_likeResult(reelId, liked: true));
   }
 
@@ -60,10 +63,13 @@ class MockReelsRepository implements ReelsRepository {
   Future<Either<NetworkExceptions, ReelLikeResult>> unlikeReel(
     String reelId,
   ) async {
-    _toggle(reelId, (r) => r.copyWith(
-      isLikedByMe: false,
-      likeCount: r.likeCount > 0 ? r.likeCount - 1 : 0,
-    ));
+    _toggle(
+      reelId,
+      (r) => r.copyWith(
+        isLikedByMe: false,
+        likeCount: r.likeCount > 0 ? r.likeCount - 1 : 0,
+      ),
+    );
     return right(_likeResult(reelId, liked: false));
   }
 

@@ -20,7 +20,10 @@ void main() {
     });
 
     test('parses the PascalCase strings sent by the Discovery feed', () {
-      expect(SocialPlatform.tryParseWire('Instagram'), SocialPlatform.instagram);
+      expect(
+        SocialPlatform.tryParseWire('Instagram'),
+        SocialPlatform.instagram,
+      );
       expect(SocialPlatform.tryParseWire('TikTok'), SocialPlatform.tiktok);
       expect(SocialPlatform.tryParseWire('Facebook'), SocialPlatform.facebook);
     });

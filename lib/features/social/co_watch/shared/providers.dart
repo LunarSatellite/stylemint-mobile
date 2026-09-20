@@ -21,13 +21,17 @@ final coWatchRepositoryProvider = Provider<CoWatchRepository>(
 
 final coWatchSessionsNotifierProvider =
     StateNotifierProvider<CoWatchNotifier, CoWatchSessionsState>(
-  (ref) => CoWatchNotifier(ref.watch(coWatchRepositoryProvider)),
-);
+      (ref) => CoWatchNotifier(ref.watch(coWatchRepositoryProvider)),
+    );
 
-final coWatchSessionDetailNotifierProvider = StateNotifierProvider.family<
-    CoWatchSessionDetailNotifier, CoWatchSessionDetailState, String>(
-  (ref, sessionId) => CoWatchSessionDetailNotifier(
-    ref.watch(coWatchRepositoryProvider),
-    sessionId,
-  ),
-);
+final coWatchSessionDetailNotifierProvider =
+    StateNotifierProvider.family<
+      CoWatchSessionDetailNotifier,
+      CoWatchSessionDetailState,
+      String
+    >(
+      (ref, sessionId) => CoWatchSessionDetailNotifier(
+        ref.watch(coWatchRepositoryProvider),
+        sessionId,
+      ),
+    );

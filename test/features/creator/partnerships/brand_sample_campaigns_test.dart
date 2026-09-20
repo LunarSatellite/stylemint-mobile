@@ -138,7 +138,10 @@ Future<void> _pumpScreen(
 
   final router = GoRouter(
     routes: [
-      GoRoute(path: '/', builder: (_, _) => BrandInfoScreen(data: seed)),
+      GoRoute(
+        path: '/',
+        builder: (_, _) => BrandInfoScreen(data: seed),
+      ),
       GoRoute(
         path: '/creator/partnerships/:partnershipId/apply',
         builder: (_, _) => const Scaffold(body: Text('apply screen')),

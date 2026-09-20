@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/prov
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
@@ -247,7 +248,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       isScrollControlled: true,
       backgroundColor: DesignTokens.bgAppBody,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.radiusLarge),
+        ),
       ),
       builder: (_) => _CartItemsSheet(summary: summary),
     );
@@ -263,7 +266,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       isScrollControlled: true,
       backgroundColor: DesignTokens.bgAppBody,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.radiusLarge),
+        ),
       ),
       builder: (_) => _PickAddressSheet(
         addresses: addresses,
@@ -448,7 +453,7 @@ class _NoAddressCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(DesignTokens.s8),
             decoration: BoxDecoration(
-              color: const Color(0xFF3A2F03),
+              color: DesignTokens.warningFillDark,
               borderRadius: BorderRadius.circular(DesignTokens.s8),
             ),
             child: const Icon(
@@ -464,20 +469,12 @@ class _NoAddressCard extends StatelessWidget {
               children: [
                 Text(
                   'Shipping Address',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textWhite,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+                  style: DesignTokens.mediumSemibold,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: DesignTokens.s4),
                 Text(
                   "You're almost there! Add a shipping address to continue.",
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
-                    fontSize: 11,
-                    height: 1.4,
-                  ),
+                  style: DesignTokens.smallDescription,
                 ),
               ],
             ),
@@ -520,7 +517,7 @@ class _BillTicketCard extends StatelessWidget {
   static const _scallopsRadius = 9.0;
   static const _cardRadius = 16.0;
   static const _topColor = DesignTokens.bgAppBody;
-  static const _stubColor = Color(0xFF2A2A2A);
+  static const _stubColor = DesignTokens.bgAppBodyLight;
 
   @override
   Widget build(BuildContext context) {
@@ -581,7 +578,7 @@ class _BillTicketCard extends StatelessWidget {
                     icon: Icons.local_offer_outlined,
                     label: 'Promo Code Discount',
                     value: '-${formatMoney(summary.discount)}',
-                    valueColor: const Color(0xFFFF6467),
+                    valueColor: DesignTokens.colorError,
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -611,12 +608,7 @@ class _BillTicketCard extends StatelessWidget {
                     ),
                     Text(
                       formatMoney(summary.total),
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: DesignTokens.textWhite,
-                      ),
+                      style: DesignTokens.moneyLarge,
                     ),
                   ],
                 ),
@@ -655,8 +647,10 @@ class _BillTicketCard extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE53935),
-                    borderRadius: BorderRadius.circular(10),
+                    color: DesignTokens.accentHeart,
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.radiusMedium,
+                    ),
                   ),
                   child: const Icon(
                     Icons.favorite,
@@ -671,19 +665,13 @@ class _BillTicketCard extends StatelessWidget {
                     children: [
                       Text(
                         'You are appreciated',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textWhite,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
+                        style: DesignTokens.mediumSemibold,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: DesignTokens.s4),
                       Text(
                         'Thank you so much! you are supporting the creators with this order',
-                        style: DesignTokens.smallRegular.copyWith(
+                        style: DesignTokens.smallDescription.copyWith(
                           color: DesignTokens.textLight,
-                          fontSize: 11,
-                          height: 1.5,
                         ),
                       ),
                     ],
@@ -739,7 +727,7 @@ class _BillRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: DesignTokens.tagInfoFill,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
             ),
             child: Text(
               valueBadge!,
@@ -787,7 +775,8 @@ class _PaymentIcon extends StatelessWidget {
         return const Text(
           'VISA',
           style: TextStyle(
-            color: Color(0xFF1A1F71),
+            color: DesignTokens.brandVisa,
+            fontFamily: DesignTokens.fontFamily,
             fontWeight: FontWeight.w900,
             fontSize: 13,
             fontStyle: FontStyle.italic,
@@ -799,14 +788,15 @@ class _PaymentIcon extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: const Color(0xFF4CAF50),
+            color: DesignTokens.brandESewa,
             borderRadius: BorderRadius.circular(DesignTokens.s8),
           ),
           alignment: Alignment.center,
           child: const Text(
             'e-',
             style: TextStyle(
-              color: Colors.white,
+              color: DesignTokens.textWhite,
+              fontFamily: DesignTokens.fontFamily,
               fontWeight: FontWeight.w800,
               fontSize: 18,
             ),
@@ -817,7 +807,8 @@ class _PaymentIcon extends StatelessWidget {
           'Pay\nPal',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Color(0xFF009CDE),
+            color: DesignTokens.brandPayPal,
+            fontFamily: DesignTokens.fontFamily,
             fontWeight: FontWeight.w900,
             fontSize: 11,
             height: 1.1,
@@ -826,7 +817,7 @@ class _PaymentIcon extends StatelessWidget {
       case PaymentMethodType.cod:
         return const Icon(
           Icons.payments_outlined,
-          color: Color(0xFF4CAF50),
+          color: DesignTokens.brandESewa,
           size: 24,
         );
     }
@@ -961,7 +952,7 @@ class _DeliveryChoiceCard extends StatelessWidget {
       padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLarge),
         border: Border.all(color: DesignTokens.borderDefault),
       ),
       child: Column(
@@ -974,12 +965,12 @@ class _DeliveryChoiceCard extends StatelessWidget {
           const SizedBox(height: DesignTokens.s4),
           const Text(
             'Choose the handoff that fits this basket.',
-            style: TextStyle(color: DesignTokens.textMuted, fontSize: 13),
+            style: DesignTokens.mediumRegular,
           ),
           const SizedBox(height: DesignTokens.s12),
           for (final choice in choices) ...[
             InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
               onTap: () => onSelect(choice),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
@@ -988,7 +979,7 @@ class _DeliveryChoiceCard extends StatelessWidget {
                   color: choice.selected
                       ? DesignTokens.primaryGreen.withValues(alpha: 0.10)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
                   border: Border.all(
                     color: choice.selected
                         ? DesignTokens.primaryGreen
@@ -1011,48 +1002,46 @@ class _DeliveryChoiceCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          // Wrap, not Row: at 320dp x 1.3 the chip no longer
+                          // fits beside a long option title and drops onto
+                          // its own line instead of overflowing the card.
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: DesignTokens.s8,
+                            runSpacing: DesignTokens.s4,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  choice.title,
-                                  style: const TextStyle(
-                                    color: DesignTokens.textWhite,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                              Text(
+                                choice.title,
+                                style: DesignTokens.mediumSemibold,
                               ),
                               if (choice.recommended)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
+                                    horizontal: DesignTokens.s8,
+                                    vertical: DesignTokens.s4,
                                   ),
                                   decoration: BoxDecoration(
                                     color: DesignTokens.primaryGreen.withValues(
                                       alpha: 0.16,
                                     ),
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(
+                                      DesignTokens.radiusLarge,
+                                    ),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Recommended',
-                                    style: TextStyle(
+                                    style: DesignTokens.tiny.copyWith(
                                       color: DesignTokens.primaryGreen,
-                                      fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: DesignTokens.s4),
                           Text(
                             choice.detail,
-                            style: const TextStyle(
-                              color: DesignTokens.textMuted,
-                              fontSize: 12,
-                              height: 1.35,
-                            ),
+                            style: DesignTokens.smallDescription,
                           ),
                           if (choice.distance case final distance?) ...[
                             const SizedBox(height: DesignTokens.s8),
@@ -1084,7 +1073,7 @@ class _DeliveryChoiceCard extends StatelessWidget {
               padding: const EdgeInsets.all(DesignTokens.s12),
               decoration: BoxDecoration(
                 color: DesignTokens.textWhite.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
               ),
               child: Row(
                 children: [
@@ -1101,19 +1090,11 @@ class _DeliveryChoiceCard extends StatelessWidget {
                         Text(
                           '${consolidation!.sellerPackages} seller '
                           '${consolidation!.sellerPackages == 1 ? 'package' : 'packages'}',
-                          style: const TextStyle(
-                            color: DesignTokens.textWhite,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
+                          style: DesignTokens.mediumSemibold,
                         ),
                         Text(
                           consolidation!.explanation,
-                          style: const TextStyle(
-                            color: DesignTokens.textMuted,
-                            fontSize: 11,
-                            height: 1.35,
-                          ),
+                          style: DesignTokens.smallDescription,
                         ),
                       ],
                     ),
@@ -1126,11 +1107,7 @@ class _DeliveryChoiceCard extends StatelessWidget {
           const Divider(height: 24, color: DesignTokens.borderDefault),
           const Text(
             'Delivery preferences',
-            style: TextStyle(
-              color: DesignTokens.textWhite,
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-            ),
+            style: DesignTokens.mediumSemibold,
           ),
           // Both preference tiles sit inside the card's DecoratedBox, so the
           // nearest Material is below the background and the framework
@@ -1141,13 +1118,15 @@ class _DeliveryChoiceCard extends StatelessWidget {
             child: SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               dense: true,
-              title: const Text(
+              title: Text(
                 'Prefer fewer deliveries',
-                style: TextStyle(color: DesignTokens.textWhite, fontSize: 13),
+                style: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
               ),
               subtitle: const Text(
                 'Group items from the same seller when possible',
-                style: TextStyle(color: DesignTokens.textMuted, fontSize: 11),
+                style: DesignTokens.smallRegular,
               ),
               value: preferences.preferFewerDeliveries,
               activeTrackColor: DesignTokens.primaryGreen,
@@ -1161,13 +1140,15 @@ class _DeliveryChoiceCard extends StatelessWidget {
             child: SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               dense: true,
-              title: const Text(
+              title: Text(
                 'Prefer pickup',
-                style: TextStyle(color: DesignTokens.textWhite, fontSize: 13),
+                style: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
               ),
               subtitle: const Text(
                 'Recommend seller pickup when it is available',
-                style: TextStyle(color: DesignTokens.textMuted, fontSize: 11),
+                style: DesignTokens.smallRegular,
               ),
               value: preferences.preferPickup,
               activeTrackColor: DesignTokens.primaryGreen,
@@ -1179,7 +1160,7 @@ class _DeliveryChoiceCard extends StatelessWidget {
           const SizedBox(height: DesignTokens.s4),
           const Text(
             'Extra wait allowed for grouping',
-            style: TextStyle(color: DesignTokens.textMuted, fontSize: 11),
+            style: DesignTokens.smallRegular,
           ),
           const SizedBox(height: DesignTokens.s8),
           Wrap(
@@ -1200,10 +1181,7 @@ class _DeliveryChoiceCard extends StatelessWidget {
           if (pickupNote != null && pickupNote!.isNotEmpty)
             Text(
               pickupNote!,
-              style: const TextStyle(
-                color: DesignTokens.textMuted,
-                fontSize: 11,
-              ),
+              style: DesignTokens.smallRegular,
             ),
         ],
       ),
@@ -1260,7 +1238,7 @@ class _PickupCounterPicker extends StatelessWidget {
       padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLarge),
         border: Border.all(color: DesignTokens.borderDefault),
       ),
       child: Column(
@@ -1275,10 +1253,7 @@ class _PickupCounterPicker extends StatelessWidget {
             chosen
                 ? 'You’ll collect from the counter below.'
                 : 'Pick a counter, or place the order without one.',
-            style: const TextStyle(
-              color: DesignTokens.textMuted,
-              fontSize: 13,
-            ),
+            style: DesignTokens.mediumRegular,
           ),
           const SizedBox(height: DesignTokens.s12),
           for (final location in locations) ...[
@@ -1292,10 +1267,7 @@ class _PickupCounterPicker extends StatelessWidget {
             const SizedBox(height: DesignTokens.s4),
             Text(
               note!,
-              style: const TextStyle(
-                color: DesignTokens.textMuted,
-                fontSize: 11,
-              ),
+              style: DesignTokens.smallRegular,
             ),
           ],
         ],
@@ -1314,7 +1286,7 @@ class _PickupCounterTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final selected = location.selected;
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
@@ -1323,7 +1295,7 @@ class _PickupCounterTile extends StatelessWidget {
           color: selected
               ? DesignTokens.primaryGreen.withValues(alpha: 0.10)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
           border: Border.all(
             color: selected
                 ? DesignTokens.primaryGreen
@@ -1334,9 +1306,7 @@ class _PickupCounterTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              selected
-                  ? Icons.check_circle_rounded
-                  : Icons.circle_outlined,
+              selected ? Icons.check_circle_rounded : Icons.circle_outlined,
               size: 20,
               color: selected
                   ? DesignTokens.primaryGreen
@@ -1376,12 +1346,11 @@ class _PickupCounterTile extends StatelessWidget {
         // say that, rather than render a blank tappable row that looks like a
         // rendering bug.
         if (location.hasNoRecordedDetails)
-          const Text(
+          Text(
             'This counter’s details aren’t recorded',
-            style: TextStyle(
+            style: DesignTokens.mediumRegular.copyWith(
               color: DesignTokens.textMuted,
               fontStyle: FontStyle.italic,
-              fontSize: 13,
             ),
           ),
         // A missing address is no line at all — never an empty one.
@@ -1389,20 +1358,14 @@ class _PickupCounterTile extends StatelessWidget {
           if (name != null) const SizedBox(height: DesignTokens.s4),
           Text(
             address,
-            style: const TextStyle(
-              color: DesignTokens.textMuted,
-              fontSize: 13,
-            ),
+            style: DesignTokens.mediumRegular,
           ),
         ],
         if (city != null) ...[
           const SizedBox(height: DesignTokens.s4),
           Text(
             city,
-            style: const TextStyle(
-              color: DesignTokens.textMuted,
-              fontSize: 13,
-            ),
+            style: DesignTokens.mediumRegular,
           ),
         ],
         // Repeated exactly as the seller typed it. "As listed" is doing real
@@ -1412,10 +1375,7 @@ class _PickupCounterTile extends StatelessWidget {
           const SizedBox(height: DesignTokens.s8),
           Text(
             'Hours as listed by the seller: $hours',
-            style: const TextStyle(
-              color: DesignTokens.textMuted,
-              fontSize: 12,
-            ),
+            style: DesignTokens.smallRegular,
           ),
         ],
         // The server's own sentence about how fresh this record is, carried
@@ -1424,10 +1384,7 @@ class _PickupCounterTile extends StatelessWidget {
           const SizedBox(height: DesignTokens.s4),
           Text(
             confirmationNote,
-            style: const TextStyle(
-              color: DesignTokens.textMuted,
-              fontSize: 11,
-            ),
+            style: DesignTokens.smallRegular,
           ),
         ],
       ],
@@ -1487,7 +1444,7 @@ class _BottomBar extends StatelessWidget {
             elevation: 0,
             minimumSize: const Size(0, DesignTokens.buttonHeight),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(26),
+              borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
             ),
           ),
           onPressed: onAddAddress,
@@ -1499,12 +1456,7 @@ class _BottomBar extends StatelessWidget {
                 child: Text(
                   'Add Shipping Address',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.buttonPrimaryText,
-                  ),
+                  style: DesignTokens.oneLinerSemibold,
                 ),
               ),
               SizedBox(width: 6),
@@ -1538,11 +1490,7 @@ class _BottomBar extends StatelessWidget {
               )
             : const Text(
                 'Place Order',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: DesignTokens.oneLinerSemibold,
               ),
       ),
     );
@@ -1640,22 +1588,16 @@ class _CartItemRow extends StatelessWidget {
         children: [
           // Product image
           ClipRRect(
-            borderRadius: BorderRadius.circular(DesignTokens.s8),
-            child: Image.network(
-              item.imageUrl,
-              width: 64,
-              height: 64,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 64,
-                height: 64,
-                color: DesignTokens.bgAppBodyLight,
-                child: const Icon(
-                  Icons.image_not_supported_outlined,
-                  color: DesignTokens.iconLight,
-                  size: 22,
-                ),
-              ),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+            child: SizedBox(
+              // One thumbnail size across the shopper journey, with the
+              // branded placeholder holding the box so the row never reflows
+              // as the bitmap arrives.
+              // The compact size: this row sits inside a sheet, not the
+              // full-width cart list.
+              width: DesignTokens.thumbCompact,
+              height: DesignTokens.thumbCompact,
+              child: MallNetworkImage(url: item.imageUrl),
             ),
           ),
           const SizedBox(width: DesignTokens.s12),
@@ -1669,28 +1611,16 @@ class _CartItemRow extends StatelessWidget {
                   item.productName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: DesignTokens.mediumSemibold.copyWith(
-                    color: DesignTokens.textWhite,
-                    fontSize: 14,
-                  ),
+                  style: DesignTokens.mediumSemibold,
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  item.variantName,
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 3),
+                const SizedBox(height: DesignTokens.s4),
+                Text(item.variantName, style: DesignTokens.smallRegular),
+                const SizedBox(height: DesignTokens.s4),
                 // "From: @handle (commission%)" — derived from variantName
                 // In real app this comes from item.sellerHandle etc.
                 Text(
                   'From: ${item.variantName}',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
-                    fontSize: 11,
-                  ),
+                  style: DesignTokens.smallRegular,
                 ),
               ],
             ),
@@ -1710,30 +1640,28 @@ class _CartItemRow extends StatelessWidget {
                 // Qty pill badge
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
+                    horizontal: DesignTokens.s12,
+                    vertical: DesignTokens.s4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A3A5C),
-                    borderRadius: BorderRadius.circular(999),
+                    color: DesignTokens.infoFillDark,
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                   child: Text(
                     'Qty: ${item.quantity}',
-                    style: const TextStyle(
-                      color: Color(0xFF4FC3F7),
-                      fontSize: 12,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.colorInfo,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: DesignTokens.s8),
                 Text(
                   formatMoney(item.unitPrice),
                   textAlign: TextAlign.end,
-                  style: DesignTokens.oneLinerSemibold.copyWith(
-                    color: DesignTokens.textWhite,
-                    fontSize: 13,
-                  ),
+                  style: DesignTokens.moneyMedium,
                 ),
               ],
             ),
@@ -1821,7 +1749,9 @@ class _PickAddressSheet extends StatelessWidget {
                     elevation: 0,
                     minimumSize: const Size(0, DesignTokens.buttonHeight),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.buttonRadius,
+                      ),
                     ),
                   ),
                   onPressed: onAddNew,
@@ -1833,12 +1763,7 @@ class _PickAddressSheet extends StatelessWidget {
                         child: Text(
                           'Add New Shipping Address',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: DesignTokens.buttonPrimaryText,
-                          ),
+                          style: DesignTokens.oneLinerSemibold,
                         ),
                       ),
                       SizedBox(width: 6),
@@ -1918,15 +1843,17 @@ class _AddressPickerRow extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A3A5C),
-                          borderRadius: BorderRadius.circular(999),
+                          color: DesignTokens.infoFillDark,
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.buttonRadius,
+                          ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Selected',
-                          style: TextStyle(
-                            fontSize: 11,
+                          style: DesignTokens.eyebrow.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF4FC3F7),
+                            letterSpacing: 0,
+                            color: DesignTokens.colorInfo,
                           ),
                         ),
                       ),
@@ -1936,11 +1863,7 @@ class _AddressPickerRow extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   line.toString(),
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
+                  style: DesignTokens.smallDescription,
                 ),
               ],
             ),

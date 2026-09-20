@@ -217,7 +217,8 @@ class _RateBlock extends StatelessWidget {
       pillIcon = Icons.straighten_rounded;
     } else if (unavailable) {
       figure = '--';
-      note = unavailableNote ??
+      note =
+          unavailableNote ??
           'StyleMint could not read this record, so it is unknown rather '
               'than zero.';
       pillLabel = 'Not recorded';
@@ -226,9 +227,9 @@ class _RateBlock extends StatelessWidget {
       figure = '--';
       note = minimumObservations > 0
           ? '$observations $observationsNoun, in $window. A rate needs at '
-              'least $minimumObservations, so only the count is shown.'
+                'least $minimumObservations, so only the count is shown.'
           : '$observations $observationsNoun, in $window. There is not enough '
-              'recorded to work out a rate, so only the count is shown.';
+                'recorded to work out a rate, so only the count is shown.';
       pillLabel = 'Too few to rate';
       pillIcon = Icons.more_horiz_rounded;
     }
@@ -363,13 +364,16 @@ class _MethodDisclosure extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const counted = 'Every figure is a count of rows StyleMint wrote when a '
+    const counted =
+        'Every figure is a count of rows StyleMint wrote when a '
         'partnership was invited, requested, answered or ended. Nothing is '
         'estimated.';
-    final minimum = 'A rate is shown only where there are at least '
+    final minimum =
+        'A rate is shown only where there are at least '
         '${record.minimumObservations} observations to divide by. Below '
         'that you see the count on its own.';
-    const admin = 'An ending an administrator made is counted in the total '
+    const admin =
+        'An ending an administrator made is counted in the total '
         'and attributed to neither side, so the two lines beneath it need '
         'not add up to it.';
     final windowEnd = record.windowEndUtc;
@@ -377,7 +381,7 @@ class _MethodDisclosure extends StatelessWidget {
     final windowLine = windowEnd == null
         ? null
         : 'The window is the ${record.windowDays} days to '
-            '${_isoDay(windowEnd)}.';
+              '${_isoDay(windowEnd)}.';
 
     final lines = <String>[
       counted,

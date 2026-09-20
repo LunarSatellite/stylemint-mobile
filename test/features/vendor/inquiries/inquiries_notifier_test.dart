@@ -19,13 +19,15 @@ void main() {
 
   setUp(() {
     repository = _MockInquiriesRepository();
-    when(() => repository.listVendor(pageSize: any(named: 'pageSize')))
-        .thenAnswer((_) async => right(const []));
+    when(
+      () => repository.listVendor(pageSize: any(named: 'pageSize')),
+    ).thenAnswer((_) async => right(const []));
   });
 
   test('load() populates items on success', () async {
-    when(() => repository.listVendor(pageSize: any(named: 'pageSize')))
-        .thenAnswer((_) async => right([inquiry]));
+    when(
+      () => repository.listVendor(pageSize: any(named: 'pageSize')),
+    ).thenAnswer((_) async => right([inquiry]));
 
     final controller = InquiriesNotifier(repository);
     await controller.load();
@@ -36,8 +38,9 @@ void main() {
   });
 
   test('load() sets errorMessage on failure', () async {
-    when(() => repository.listVendor(pageSize: any(named: 'pageSize')))
-        .thenAnswer(
+    when(
+      () => repository.listVendor(pageSize: any(named: 'pageSize')),
+    ).thenAnswer(
       (_) async => left(const NetworkExceptions.serverUnavailable()),
     );
 
@@ -60,14 +63,16 @@ void main() {
   });
 
   test('reply() replaces the matching item on success', () async {
-    when(() => repository.listVendor(pageSize: any(named: 'pageSize')))
-        .thenAnswer((_) async => right([inquiry]));
+    when(
+      () => repository.listVendor(pageSize: any(named: 'pageSize')),
+    ).thenAnswer((_) async => right([inquiry]));
     final replied = inquiry.copyWith(
       status: InquiryStatus.replied,
       reply: 'Yes, size M is in stock.',
     );
-    when(() => repository.reply(inquiry.id, 'Yes, size M is in stock.'))
-        .thenAnswer((_) async => right(replied));
+    when(
+      () => repository.reply(inquiry.id, 'Yes, size M is in stock.'),
+    ).thenAnswer((_) async => right(replied));
 
     final controller = InquiriesNotifier(repository);
     await controller.load();
@@ -80,8 +85,9 @@ void main() {
   });
 
   test('reply() surfaces an error message on failure', () async {
-    when(() => repository.listVendor(pageSize: any(named: 'pageSize')))
-        .thenAnswer((_) async => right([inquiry]));
+    when(
+      () => repository.listVendor(pageSize: any(named: 'pageSize')),
+    ).thenAnswer((_) async => right([inquiry]));
     when(() => repository.reply(any(), any())).thenAnswer(
       (_) async => left(const NetworkExceptions.serverUnavailable()),
     );

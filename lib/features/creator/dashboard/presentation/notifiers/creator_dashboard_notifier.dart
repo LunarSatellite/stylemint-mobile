@@ -14,8 +14,10 @@ abstract class DashboardState with _$DashboardState {
 
   const factory DashboardState.initial() = _DashboardInitial;
   const factory DashboardState.loadInProgress() = _DashboardLoadInProgress;
-  const factory DashboardState.loadSuccess(CreatorDashboard dashboard) = _DashboardLoadSuccess;
-  const factory DashboardState.loadFailure(NetworkExceptions failure) = _DashboardLoadFailure;
+  const factory DashboardState.loadSuccess(CreatorDashboard dashboard) =
+      _DashboardLoadSuccess;
+  const factory DashboardState.loadFailure(NetworkExceptions failure) =
+      _DashboardLoadFailure;
 }
 
 class CreatorDashboardNotifier extends StateNotifier<DashboardState> {

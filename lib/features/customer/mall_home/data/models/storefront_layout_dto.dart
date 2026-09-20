@@ -149,17 +149,16 @@ List<StorefrontSignal> _signalsFrom(Object? raw) {
 /// The wire sends names; an int enum would also arrive as a name through
 /// `JsonStringEnumConverter`, so only names are matched and anything else is
 /// [StorefrontLayoutStatus.unknown] — which renders as the ordinary page.
-StorefrontLayoutStatus _statusFrom(String raw) =>
-    switch (raw.toLowerCase()) {
-      'personalized' || 'personalised' => StorefrontLayoutStatus.personalized,
-      'nohistory' => StorefrontLayoutStatus.noHistory,
-      'unavailable' => StorefrontLayoutStatus.unavailable,
-      'personalizationpaused' ||
-      'personalisationpaused' => StorefrontLayoutStatus.personalizationPaused,
-      // Absent is the old contract, which only ever meant "personalized".
-      '' => StorefrontLayoutStatus.personalized,
-      _ => StorefrontLayoutStatus.unknown,
-    };
+StorefrontLayoutStatus _statusFrom(String raw) => switch (raw.toLowerCase()) {
+  'personalized' || 'personalised' => StorefrontLayoutStatus.personalized,
+  'nohistory' => StorefrontLayoutStatus.noHistory,
+  'unavailable' => StorefrontLayoutStatus.unavailable,
+  'personalizationpaused' ||
+  'personalisationpaused' => StorefrontLayoutStatus.personalizationPaused,
+  // Absent is the old contract, which only ever meant "personalized".
+  '' => StorefrontLayoutStatus.personalized,
+  _ => StorefrontLayoutStatus.unknown,
+};
 
 StorefrontModuleKind _kindFrom(String raw) => switch (raw.toLowerCase()) {
   'continuemission' => StorefrontModuleKind.continueMission,

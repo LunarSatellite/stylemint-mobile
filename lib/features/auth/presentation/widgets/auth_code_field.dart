@@ -94,10 +94,12 @@ class AuthCodeFieldState extends State<AuthCodeField> {
   @override
   Widget build(BuildContext context) {
     // In an error state every box (idle / enabled / focused) shows red.
-    final restingBorderColor =
-        widget.hasError ? DesignTokens.colorError : DesignTokens.inputFieldBorder;
-    final focusedBorderColor =
-        widget.hasError ? DesignTokens.colorError : DesignTokens.primaryGreen;
+    final restingBorderColor = widget.hasError
+        ? DesignTokens.colorError
+        : DesignTokens.inputFieldBorder;
+    final focusedBorderColor = widget.hasError
+        ? DesignTokens.colorError
+        : DesignTokens.primaryGreen;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

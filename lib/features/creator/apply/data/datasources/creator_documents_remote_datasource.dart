@@ -39,7 +39,9 @@ class CreatorDocumentsRemoteDataSource {
 
   /// The account's open KYC session, or null when it has none yet.
   Future<KycSession?> getActiveSession() async {
-    final response = await apiClient.get('${await _base()}/kyc-sessions/active');
+    final response = await apiClient.get(
+      '${await _base()}/kyc-sessions/active',
+    );
     if (response is! Map<String, dynamic>) return null;
     final session = _sessionFrom(response);
     return session.id.isEmpty ? null : session;
@@ -52,10 +54,12 @@ class CreatorDocumentsRemoteDataSource {
     final response = await apiClient.post(
       '${await _base()}/kyc-sessions',
       data: <String, dynamic>{'provider': provider},
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return _sessionFrom(response as Map<String, dynamic>);
   }
@@ -96,10 +100,12 @@ class CreatorDocumentsRemoteDataSource {
         'contentType': blob.contentType,
         'originalFilename': blob.originalFilename,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return _documentFrom(response as Map<String, dynamic>);
   }
@@ -118,17 +124,19 @@ class CreatorDocumentsRemoteDataSource {
     await apiClient.post(
       '${await _base()}/kyc-sessions/$sessionId/submit',
       data: <String, dynamic>{},
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
   KycSession _sessionFrom(Map<String, dynamic> m) => KycSession(
-        id: (m['id'] as String?) ?? (m['sessionId'] as String?) ?? '',
-        status: (m['status'] as String?) ?? '',
-      );
+    id: (m['id'] as String?) ?? (m['sessionId'] as String?) ?? '',
+    status: (m['status'] as String?) ?? '',
+  );
 
   IdentityDocument _documentFrom(Map<String, dynamic> m) {
     final typeCode = (m['documentType'] as num?)?.toInt() ?? 0;

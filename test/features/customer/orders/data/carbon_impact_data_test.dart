@@ -40,28 +40,32 @@ class _Network implements NetworkInfoConnectivity {
 
 void main() {
   group('OrdersRemoteDataSource.getCarbonImpact', () {
-    test('calls the customer carbon-impact route and maps camelCase fields',
-        () async {
-      final api = _GetApiClient(<String, dynamic>{
-        'kgCO2Saved': 3.25,
-        'deliveryCount': 4,
-        'comparedToTraditionalKg': 8.5,
-      });
+    test(
+      'calls the customer carbon-impact route and maps camelCase fields',
+      () async {
+        final api = _GetApiClient(<String, dynamic>{
+          'kgCO2Saved': 3.25,
+          'deliveryCount': 4,
+          'comparedToTraditionalKg': 8.5,
+        });
 
-      final dto =
-          await OrdersRemoteDataSource(apiClient: api).getCarbonImpact();
+        final dto = await OrdersRemoteDataSource(
+          apiClient: api,
+        ).getCarbonImpact();
 
-      expect(api.getUri, '/v1/customer/delivery/carbon-impact');
-      expect(dto.kgCo2Saved, 3.25);
-      expect(dto.deliveryCount, 4);
-      expect(dto.comparedToTraditionalKg, 8.5);
-    });
+        expect(api.getUri, '/v1/customer/delivery/carbon-impact');
+        expect(dto.kgCo2Saved, 3.25);
+        expect(dto.deliveryCount, 4);
+        expect(dto.comparedToTraditionalKg, 8.5);
+      },
+    );
 
     test('integer JSON numbers and missing fields default safely', () async {
       final api = _GetApiClient(<String, dynamic>{'kgCO2Saved': 2});
 
-      final dto =
-          await OrdersRemoteDataSource(apiClient: api).getCarbonImpact();
+      final dto = await OrdersRemoteDataSource(
+        apiClient: api,
+      ).getCarbonImpact();
 
       expect(dto.kgCo2Saved, 2.0);
       expect(dto.deliveryCount, 0);
@@ -139,7 +143,9 @@ void main() {
 
       final result = await repo().getCarbonImpact();
 
-      final impact = result.getOrElse((_) => throw StateError('expected right'));
+      final impact = result.getOrElse(
+        (_) => throw StateError('expected right'),
+      );
       expect(impact.kgCo2Saved, 1.5);
       expect(impact.deliveryCount, 2);
       expect(impact.comparedToTraditionalKg, 4);
@@ -164,15 +170,17 @@ void main() {
       );
     });
 
-    test('returns noInternetConnection without calling the API when offline',
-        () async {
-      final result = await repo(connected: false).getCarbonImpact();
+    test(
+      'returns noInternetConnection without calling the API when offline',
+      () async {
+        final result = await repo(connected: false).getCarbonImpact();
 
-      expect(
-        result.getLeft().toNullable(),
-        const NetworkExceptions.noInternetConnection(),
-      );
-      verifyNever(() => remote.getCarbonImpact());
-    });
+        expect(
+          result.getLeft().toNullable(),
+          const NetworkExceptions.noInternetConnection(),
+        );
+        verifyNever(() => remote.getCarbonImpact());
+      },
+    );
   });
 }

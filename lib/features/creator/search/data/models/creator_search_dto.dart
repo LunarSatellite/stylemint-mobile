@@ -27,13 +27,13 @@ abstract class SearchBrandResultDto with _$SearchBrandResultDto {
       _$SearchBrandResultDtoFromJson(json);
 
   SearchBrandResult toDomain() => SearchBrandResult(
-        brandId: brandId,
-        name: name,
-        logoUrl: logoUrl,
-        averageRating: averageRating,
-        productCount: productCount,
-        commissionRange: commissionRange,
-      );
+    brandId: brandId,
+    name: name,
+    logoUrl: logoUrl,
+    averageRating: averageRating,
+    productCount: productCount,
+    commissionRange: commissionRange,
+  );
 }
 
 @freezed
@@ -54,14 +54,14 @@ abstract class SearchProductResultDto with _$SearchProductResultDto {
       _$SearchProductResultDtoFromJson(json);
 
   SearchProductResult toDomain() => SearchProductResult(
-        productId: productId,
-        name: name,
-        heroImageUrl: heroImageUrl,
-        price: price,
-        currency: currency,
-        brandId: brandId,
-        brandName: brandName,
-      );
+    productId: productId,
+    name: name,
+    heroImageUrl: heroImageUrl,
+    price: price,
+    currency: currency,
+    brandId: brandId,
+    brandName: brandName,
+  );
 }
 
 @freezed
@@ -81,11 +81,11 @@ abstract class SearchCreatorResultDto with _$SearchCreatorResultDto {
       _$SearchCreatorResultDtoFromJson(json);
 
   SearchCreatorResult toDomain() => SearchCreatorResult(
-        creatorProfileId: creatorProfileId,
-        handle: handle,
-        displayName: displayName,
-        avatarUrl: avatarUrl,
-        followerCount: followerCount,
-        reelCount: reelCount,
-      );
+    creatorProfileId: creatorProfileId,
+    handle: handle,
+    displayName: displayName,
+    avatarUrl: avatarUrl,
+    followerCount: followerCount,
+    reelCount: reelCount,
+  );
 }

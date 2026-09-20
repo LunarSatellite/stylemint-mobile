@@ -19,23 +19,24 @@ class CreatorRepositoryImpl implements CreatorRepository {
   static const _uuid = Uuid();
 
   static int? _providerInt(String platformId) => const {
-        'instagram': 1,
-        'tiktok': 2,
-        'youtube': 3,
-        'facebook': 4,
-      }[platformId];
+    'instagram': 1,
+    'tiktok': 2,
+    'youtube': 3,
+    'facebook': 4,
+  }[platformId];
 
   @override
   Future<Either<NetworkExceptions, List<CreatorContentCategory>>>
-      getContentCategories() async {
+  getContentCategories() async {
     if (await networkInfo.isConnected) {
       try {
         final raw = await remoteDataSource.getCreatorCategories();
-        final active = raw
-            .where((m) => (m['isActive'] as bool?) ?? true)
-            .toList()
-          ..sort((a, b) => ((a['displayOrder'] as int?) ?? 0)
-              .compareTo((b['displayOrder'] as int?) ?? 0));
+        final active =
+            raw.where((m) => (m['isActive'] as bool?) ?? true).toList()..sort(
+              (a, b) => ((a['displayOrder'] as int?) ?? 0).compareTo(
+                (b['displayOrder'] as int?) ?? 0,
+              ),
+            );
         final categories = active
             .map(
               (m) => CreatorContentCategory(
@@ -89,7 +90,8 @@ class CreatorRepositoryImpl implements CreatorRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, CreatorApplication>> getApplicationStatus() async {
+  Future<Either<NetworkExceptions, CreatorApplication>>
+  getApplicationStatus() async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getApplicationStatus();
@@ -134,8 +136,8 @@ class CreatorRepositoryImpl implements CreatorRepository {
           bio: form.bio,
           otherCategoryDescription:
               form.otherCategoryDescription?.isEmpty ?? true
-                  ? null
-                  : form.otherCategoryDescription,
+              ? null
+              : form.otherCategoryDescription,
           idempotencyKey: _uuid.v4(),
         );
         return right(dto.toDomain());
@@ -176,8 +178,8 @@ class CreatorRepositoryImpl implements CreatorRepository {
           bio: form.bio,
           otherCategoryDescription:
               form.otherCategoryDescription?.isEmpty ?? true
-                  ? null
-                  : form.otherCategoryDescription,
+              ? null
+              : form.otherCategoryDescription,
           idempotencyKey: _uuid.v4(),
         );
         return right(dto.toDomain());

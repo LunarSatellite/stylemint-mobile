@@ -23,13 +23,13 @@ abstract class BadgeAwardDto with _$BadgeAwardDto {
       _$BadgeAwardDtoFromJson(json);
 
   BadgeAward toDomain() => BadgeAward(
-        id: id,
-        badgeCode: badgeCode,
-        badgeDisplayName: badgeDisplayName,
-        badgeIconUrl: badgeIconUrl,
-        badgeTier: badgeTier,
-        badgeCategory: badgeCategory,
-        isShowcased: isShowcased,
-        showcasedOrder: showcasedOrder,
-      );
+    id: id,
+    badgeCode: badgeCode,
+    badgeDisplayName: badgeDisplayName,
+    badgeIconUrl: badgeIconUrl,
+    badgeTier: badgeTier,
+    badgeCategory: badgeCategory,
+    isShowcased: isShowcased,
+    showcasedOrder: showcasedOrder,
+  );
 }

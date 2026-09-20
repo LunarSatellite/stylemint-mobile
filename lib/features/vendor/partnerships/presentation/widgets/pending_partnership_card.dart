@@ -158,9 +158,9 @@ class PendingPartnershipCard extends ConsumerWidget {
               // CreatorProfile.Id we get from partnership listings.
               final otherParticipantId =
                   (request.creatorAccountId == null ||
-                          request.creatorAccountId!.isEmpty)
-                      ? null
-                      : request.creatorAccountId;
+                      request.creatorAccountId!.isEmpty)
+                  ? null
+                  : request.creatorAccountId;
               context.push(
                 RouteNames.vendorMessageCreator,
                 extra: MessageCreatorArgs(

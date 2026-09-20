@@ -22,16 +22,17 @@ class CreatorReelSummaryDto {
       thumbnailUrl: json['thumbnailCdnUrl'] as String?,
       views: (json['viewsSnapshot'] as num?)?.toInt() ?? 0,
       likes: (json['likesSnapshot'] as num?)?.toInt() ?? 0,
-      publishedAtUtc:
-          DateTime.tryParse(json['publishedAtUtc'] as String? ?? ''),
+      publishedAtUtc: DateTime.tryParse(
+        json['publishedAtUtc'] as String? ?? '',
+      ),
     );
   }
 
   CreatorReelSummary toDomain() => CreatorReelSummary(
-        id: id,
-        thumbnailUrl: thumbnailUrl,
-        views: views,
-        likes: likes,
-        publishedAtUtc: publishedAtUtc,
-      );
+    id: id,
+    thumbnailUrl: thumbnailUrl,
+    views: views,
+    likes: likes,
+    publishedAtUtc: publishedAtUtc,
+  );
 }

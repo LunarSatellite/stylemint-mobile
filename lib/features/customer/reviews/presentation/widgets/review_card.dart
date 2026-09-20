@@ -93,7 +93,8 @@ class ReviewCard extends StatelessWidget {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: review.images.length,
-                separatorBuilder: (_, __) => const SizedBox(width: DesignTokens.s8),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: DesignTokens.s8),
                 itemBuilder: (_, i) => ClipRRect(
                   borderRadius: BorderRadius.circular(DesignTokens.s8),
                   child: Image.network(
@@ -105,7 +106,10 @@ class ReviewCard extends StatelessWidget {
                       width: 80,
                       height: 80,
                       color: DesignTokens.bgAppBodyLight,
-                      child: const Icon(Icons.broken_image, color: DesignTokens.textMuted),
+                      child: const Icon(
+                        Icons.broken_image,
+                        color: DesignTokens.textMuted,
+                      ),
                     ),
                   ),
                 ),
@@ -116,7 +120,11 @@ class ReviewCard extends StatelessWidget {
             const SizedBox(height: DesignTokens.s8),
             Row(
               children: [
-                const Icon(Icons.thumb_up_alt_outlined, size: 14, color: DesignTokens.textMuted),
+                const Icon(
+                  Icons.thumb_up_alt_outlined,
+                  size: 14,
+                  color: DesignTokens.textMuted,
+                ),
                 const SizedBox(width: 4),
                 // A count, so it wraps instead of being ellipsised into
                 // something unreadable.
@@ -161,7 +169,11 @@ class _StarRating extends StatelessWidget {
         if (i < rating) {
           return Icon(Icons.star, size: size, color: const Color(0xFFF1C40F));
         }
-        return Icon(Icons.star_border, size: size, color: DesignTokens.textMuted);
+        return Icon(
+          Icons.star_border,
+          size: size,
+          color: DesignTokens.textMuted,
+        );
       }),
     );
   }

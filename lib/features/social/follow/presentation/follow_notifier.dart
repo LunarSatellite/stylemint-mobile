@@ -29,7 +29,9 @@ class FollowNotifier extends StateNotifier<Set<String>> {
   /// Optimistically toggles follow state; rolls back on failure.
   /// Returns true if the resulting state is "following".
   Future<bool> toggle(String accountId) async {
-    _seeded.add(accountId); // a user action is authoritative — block later seeds
+    _seeded.add(
+      accountId,
+    ); // a user action is authoritative — block later seeds
     final wasFollowing = state.contains(accountId);
     // Optimistic update.
     state = wasFollowing
@@ -54,5 +56,5 @@ class FollowNotifier extends StateNotifier<Set<String>> {
 
 final followNotifierProvider =
     StateNotifierProvider<FollowNotifier, Set<String>>((ref) {
-  return FollowNotifier(ref.watch(followApiProvider));
-});
+      return FollowNotifier(ref.watch(followApiProvider));
+    });
