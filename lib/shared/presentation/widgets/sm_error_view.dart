@@ -1,51 +1,92 @@
 import 'package:flutter/material.dart';
-import '../../../theme/colors.dart';
 
-/// Style Mint error view — adapted from vpt-mydawa ErrorView.
+import '../../../theme/design_tokens.dart';
+import 'sm_button.dart';
+import 'sm_empty_state.dart';
+
+/// Style Mint failure view — the third of the app's three absence states.
+///
+/// This one, and only this one, is retryable: the data exists somewhere, the
+/// app just could not reach it this time. An empty list is not this — use
+/// [SmEmptyState] for "nothing recorded yet" and for "does not apply to you",
+/// neither of which a retry would change.
+///
+/// [message] is rendered verbatim; [title] is an optional heading above it.
 class SmErrorView extends StatelessWidget {
-  const SmErrorView({super.key, this.message, this.onRetry});
+  const SmErrorView({
+    super.key,
+    this.message,
+    this.title,
+    this.onRetry,
+    this.retryLabel = 'Tap to retry',
+    this.compact = false,
+  });
 
   final String? message;
+
+  /// Optional short heading above [message].
+  final String? title;
+
   final VoidCallback? onRetry;
+
+  /// Label on the retry control. Kept as the original wording by default.
+  final String retryLabel;
+
+  /// Tightens the vertical rhythm for a failure inside a card or tab body.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: kWarningColor, size: 56),
-            const SizedBox(height: 12),
-            if (message != null)
-              Text(
-                message!,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: kTextSecondary,
-                    ),
+        padding: EdgeInsets.symmetric(
+          horizontal: DesignTokens.s24,
+          vertical: compact
+              ? DesignTokens.s24
+              : DesignTokens.stateVerticalGap,
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: DesignTokens.stateMaxWidth,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SmStateMark(
+                icon: Icons.cloud_off_outlined,
+                failure: true,
               ),
-            if (onRetry != null) ...[
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: onRetry,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Tap to retry',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: kPrimaryColor,
-                          ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.refresh, size: 16, color: kPrimaryColor),
-                  ],
+              const SizedBox(height: DesignTokens.s20),
+              if (title != null) ...[
+                Text(
+                  title!,
+                  textAlign: TextAlign.center,
+                  style: DesignTokens.sectionInnerTitle,
                 ),
-              ),
+                const SizedBox(height: DesignTokens.s8),
+              ],
+              if (message != null)
+                Text(
+                  message!,
+                  textAlign: TextAlign.center,
+                  style: DesignTokens.mediumRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              if (onRetry != null) ...[
+                const SizedBox(height: DesignTokens.s24),
+                SmOutlinedButton(
+                  label: retryLabel,
+                  onPressed: onRetry!,
+                  prefixIcon: const Icon(
+                    Icons.refresh,
+                    size: DesignTokens.iconSmall,
+                    color: DesignTokens.primaryGreen,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
