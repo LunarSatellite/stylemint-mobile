@@ -19,6 +19,7 @@ class CreatorChipDto {
   final String handle;
   final String displayName;
   final String? avatarUrl;
+
   /// Follower total from the follow graph, or null when the backend could
   /// not measure it. Null must render as absent: a 0 is the claim that
   /// nobody follows this creator, which is a different statement.
@@ -27,7 +28,8 @@ class CreatorChipDto {
 
   factory CreatorChipDto.fromJson(Map<String, dynamic> json) {
     return CreatorChipDto(
-      accountId: (json['accountId'] as String?) ??
+      accountId:
+          (json['accountId'] as String?) ??
           (json['creatorProfileId'] as String?) ??
           '',
       handle: (json['handle'] as String?) ?? '',

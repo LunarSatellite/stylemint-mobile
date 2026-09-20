@@ -107,7 +107,12 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.s20,
+            DesignTokens.s4,
+            DesignTokens.s20,
+            DesignTokens.s24,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +121,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                 'Search what you see',
                 style: DesignTokens.sectionInnerTitle,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: DesignTokens.s8),
               Text(
                 'Use a photo or a short video. StyleMint samples the video '
                 'and finds matching products.',
@@ -124,7 +129,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                   color: DesignTokens.textMuted,
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: DesignTokens.s24),
               Row(
                 children: [
                   Expanded(
@@ -137,7 +142,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: DesignTokens.s12),
                   Expanded(
                     child: _PhotoSourceButton(
                       icon: Icons.photo_library_rounded,
@@ -150,7 +155,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: DesignTokens.s12),
               _PhotoSourceButton(
                 icon: Icons.video_library_rounded,
                 label: 'Understand a video',
@@ -340,7 +345,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                       // typing: recent searches, suggestions, results route.
                       onQuery: _submit,
                     ),
-                    if (visualSearchAvailable) const SizedBox(width: 8),
+                    if (visualSearchAvailable)
+                      const SizedBox(width: DesignTokens.s8),
                     if (visualSearchAvailable)
                       Semantics(
                         button: true,
@@ -460,15 +466,20 @@ class _Header extends StatelessWidget {
     final compact = MediaQuery.sizeOf(context).width < 360;
     return RepaintBoundary(
       child: Container(
-        margin: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 4),
+        margin: const EdgeInsetsDirectional.fromSTEB(
+          DesignTokens.s16,
+          DesignTokens.s12,
+          DesignTokens.s16,
+          DesignTokens.s4,
+        ),
         padding: EdgeInsetsDirectional.fromSTEB(
-          compact ? 14 : 18,
-          compact ? 12 : 18,
-          compact ? 10 : 14,
-          compact ? 12 : 18,
+          compact ? DesignTokens.s12 : DesignTokens.s20,
+          compact ? DesignTokens.s12 : DesignTokens.s20,
+          compact ? DesignTokens.s12 : DesignTokens.s16,
+          compact ? DesignTokens.s12 : DesignTokens.s20,
         ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusLarge),
           border: Border.all(
             color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
           ),
@@ -512,17 +523,21 @@ class _Header extends StatelessWidget {
                         color: DesignTokens.primaryGreen.withValues(
                           alpha: 0.12,
                         ),
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
                         child: InkWell(
                           key: const ValueKey('discover-mission'),
                           onTap: onMission,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.buttonRadius,
+                          ),
                           child: Padding(
                             padding: EdgeInsetsDirectional.fromSTEB(
-                              compact ? 10 : 12,
-                              9,
-                              compact ? 10 : 12,
-                              9,
+                              compact ? DesignTokens.s12 : DesignTokens.s16,
+                              DesignTokens.s12,
+                              compact ? DesignTokens.s12 : DesignTokens.s16,
+                              DesignTokens.s12,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -533,12 +548,10 @@ class _Header extends StatelessWidget {
                                   color: DesignTokens.primaryGreen,
                                 ),
                                 if (!compact) ...[
-                                  const SizedBox(width: 6),
-                                  const Text(
+                                  const SizedBox(width: DesignTokens.s6),
+                                  Text(
                                     'Shop by mission',
-                                    style: TextStyle(
-                                      fontFamily: DesignTokens.fontFamily,
-                                      fontSize: 12,
+                                    style: DesignTokens.smallRegular.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: DesignTokens.textWhite,
                                     ),
@@ -568,14 +581,13 @@ class _Header extends StatelessWidget {
                   ),
                 ),
                 if (!compact) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: DesignTokens.s8),
                   const Text(
                     'Products, reels and creators shaped around you.',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
-                      fontSize: 14,
                       height: 1.4,
                       color: DesignTokens.textLight,
                     ),
@@ -624,16 +636,23 @@ class _PhotoSourceButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
     color: DesignTokens.primaryGreen.withValues(alpha: 0.09),
-    borderRadius: BorderRadius.circular(18),
+    borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
     child: InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+        padding: const EdgeInsets.symmetric(
+          vertical: DesignTokens.s20,
+          horizontal: DesignTokens.s12,
+        ),
         child: Column(
           children: [
-            Icon(icon, color: DesignTokens.primaryGreen, size: 28),
-            const SizedBox(height: 8),
+            Icon(
+              icon,
+              color: DesignTokens.primaryGreen,
+              size: DesignTokens.iconLarge,
+            ),
+            const SizedBox(height: DesignTokens.s8),
             Text(
               label,
               style: DesignTokens.smallRegular.copyWith(

@@ -120,12 +120,11 @@ ReturnedUnitSplit? _split(Object? raw) {
   );
 }
 
-List<String> _facts(Object? raw) =>
-    (raw is List ? raw : const <Object?>[])
-        .whereType<String>()
-        .map((f) => f.trim())
-        .where((f) => f.isNotEmpty)
-        .toList(growable: false);
+List<String> _facts(Object? raw) => (raw is List ? raw : const <Object?>[])
+    .whereType<String>()
+    .map((f) => f.trim())
+    .where((f) => f.isNotEmpty)
+    .toList(growable: false);
 
 String _string(Object? raw) => raw is String ? raw : '';
 

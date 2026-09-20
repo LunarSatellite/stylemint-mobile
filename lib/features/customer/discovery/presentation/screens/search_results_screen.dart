@@ -91,20 +91,27 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s4,
+                DesignTokens.s16,
+                0,
+              ),
               child: Text(
                 widget.initialResults == null
                     ? 'Showing ${results.totalHits} results for "${widget.query}"'
                     : '${results.totalHits} visual matches from your photo',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textMuted,
-                  fontSize: 13,
-                ),
+                style: DesignTokens.smallRegular,
               ),
             ),
             if (results.queryUnderstanding case final understanding?)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  DesignTokens.s8,
+                  DesignTokens.s16,
+                  DesignTokens.s4,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -113,15 +120,14 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
                       size: 16,
                       color: DesignTokens.primaryGreen,
                     ),
-                    const SizedBox(width: 7),
+                    const SizedBox(width: DesignTokens.s8),
                     Expanded(
                       child: Text(
                         'Understood as: $understanding',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: DesignTokens.smallRegular.copyWith(
+                        style: DesignTokens.smallDescription.copyWith(
                           color: DesignTokens.textLight,
-                          fontSize: 12,
                         ),
                       ),
                     ),
@@ -136,13 +142,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
               indicatorColor: DesignTokens.primaryGreen,
               indicatorWeight: 2,
               dividerColor: DesignTokens.borderDefault,
-              labelStyle: DesignTokens.smallRegular.copyWith(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              unselectedLabelStyle: DesignTokens.smallRegular.copyWith(
-                fontSize: 14,
-              ),
+              labelStyle: DesignTokens.mediumSemibold,
+              unselectedLabelStyle: DesignTokens.mediumRegular,
               tabs: const [
                 Tab(text: 'Products'),
                 Tab(text: 'Creators'),
@@ -203,7 +204,10 @@ class _ProductsTab extends StatelessWidget {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s12,
+      ),
       itemCount: products.length,
       separatorBuilder: (_, _i) => const Divider(
         height: 1,
@@ -265,18 +269,14 @@ class _ProductResultTile extends StatelessWidget {
                           size: 13,
                           color: DesignTokens.primaryGreen,
                         ),
-                        const SizedBox(width: 5),
+                        const SizedBox(width: DesignTokens.s6),
                         Expanded(
                           child: ExcludeSemantics(
                             child: Text(
                               reason,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: DesignTokens.smallRegular.copyWith(
-                                color: DesignTokens.textMuted,
-                                fontSize: 11,
-                                height: 1.35,
-                              ),
+                              style: DesignTokens.smallDescription,
                             ),
                           ),
                         ),
@@ -324,9 +324,12 @@ class _CreatorsTab extends StatelessWidget {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s12,
+      ),
       itemCount: creators.length,
-      separatorBuilder: (_, _i) => const SizedBox(height: 12),
+      separatorBuilder: (_, _i) => const SizedBox(height: DesignTokens.s12),
       itemBuilder: (_, i) {
         final c = creators[i];
         return DiscoverCreatorCard(
@@ -364,11 +367,13 @@ class _ReelsTab extends StatelessWidget {
       );
     }
     return GridView.builder(
-      padding: const EdgeInsets.all(2),
+      padding: const EdgeInsets.all(DesignTokens.s4),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 2,
-        mainAxisSpacing: 2,
+        // A visible gutter on the spacing scale: at 2px the thumbnails
+        // fused into one block and read as a contact sheet.
+        crossAxisSpacing: DesignTokens.s4,
+        mainAxisSpacing: DesignTokens.s4,
         childAspectRatio: 0.85,
       ),
       itemCount: reels.length,
@@ -409,8 +414,8 @@ class _ReelThumbnail extends StatelessWidget {
             // Views are drawn only when the search really returned a count.
             if (views != null)
               PositionedDirectional(
-                bottom: 8,
-                start: 8,
+                bottom: DesignTokens.s8,
+                start: DesignTokens.s8,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -419,12 +424,11 @@ class _ReelThumbnail extends StatelessWidget {
                       size: 14,
                       color: DesignTokens.textLight,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: DesignTokens.s4),
                     Text(
                       views,
                       style: DesignTokens.smallRegular.copyWith(
                         color: DesignTokens.textWhite,
-                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         fontFeatures: mallTabularFigures,
                       ),
@@ -460,7 +464,10 @@ class _BrandsTab extends StatelessWidget {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s12,
+      ),
       itemCount: brands.length,
       separatorBuilder: (_, _i) => const Divider(
         height: 1,
@@ -509,19 +516,19 @@ class _BrandResultTile extends StatelessWidget {
               )
             : null,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: DesignTokens.s12),
           child: Row(
             children: [
               ClipOval(
                 child: SizedBox(
-                  width: 52,
-                  height: 52,
+                  width: DesignTokens.avatarLarge,
+                  height: DesignTokens.avatarLarge,
                   child: logo != null && logo.isNotEmpty
                       ? MallNetworkImage(url: logo)
                       : _BrandInitial(initial),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: DesignTokens.s12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -530,12 +537,11 @@ class _BrandResultTile extends StatelessWidget {
                       brand.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.mediumSemibold.copyWith(
-                        color: DesignTokens.textWhite,
-                        fontSize: 15,
+                      style: DesignTokens.sectionInnerTitle.copyWith(
+                        fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: DesignTokens.s4),
                     if (rated)
                       Row(
                         children: [
@@ -544,24 +550,20 @@ class _BrandResultTile extends StatelessWidget {
                             size: 14,
                             color: DesignTokens.secondaryYellow,
                           ),
-                          const SizedBox(width: 3),
+                          const SizedBox(width: DesignTokens.s4),
                           Text(
                             brand.averageRating.toStringAsFixed(1),
                             style: DesignTokens.smallRegular.copyWith(
-                              color: DesignTokens.textMuted,
-                              fontSize: 12,
                               fontFeatures: mallTabularFigures,
                             ),
                           ),
                         ],
                       ),
                     if (products != null) ...[
-                      const SizedBox(height: 3),
+                      const SizedBox(height: DesignTokens.s4),
                       Text(
                         products,
                         style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
-                          fontSize: 12,
                           fontFeatures: mallTabularFigures,
                         ),
                       ),
@@ -591,10 +593,8 @@ class _BrandInitial extends StatelessWidget {
     child: Center(
       child: Text(
         initial,
-        style: const TextStyle(
-          color: DesignTokens.textWhite,
-          fontWeight: FontWeight.w900,
-          fontSize: 20,
+        style: DesignTokens.titleLarge.copyWith(
+          fontWeight: FontWeight.w700,
         ),
       ),
     ),

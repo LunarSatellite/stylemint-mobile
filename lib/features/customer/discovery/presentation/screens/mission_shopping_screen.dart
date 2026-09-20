@@ -1476,7 +1476,6 @@ class _Error extends StatelessWidget {
   );
 }
 
-
 class _Glow extends StatelessWidget {
   const _Glow(this.size, this.color);
   final double size;

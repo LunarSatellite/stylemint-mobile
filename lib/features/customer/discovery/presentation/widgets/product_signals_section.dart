@@ -75,7 +75,8 @@ class ProductSignals extends StatelessWidget {
         ),
       if (viewers != null)
         MallSignal(
-          label: '$viewers ${viewers == 1 ? 'shopper' : 'shoppers'} '
+          label:
+              '$viewers ${viewers == 1 ? 'shopper' : 'shoppers'} '
               'viewing now',
           icon: Icons.visibility_outlined,
         ),

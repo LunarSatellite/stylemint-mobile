@@ -14,20 +14,23 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 /// a `?? 0` is reintroduced anywhere on the path.
 void main() {
   group('CreatorChipDto', () {
-    test('leaves an absent follower count absent instead of defaulting to 0',
-        () {
-      final dto = CreatorChipDto.fromJson(const {
-        'accountId': 'account-1',
-        'handle': 'minty',
-        'reelCount': 3,
-      });
+    test(
+      'leaves an absent follower count absent instead of defaulting to 0',
+      () {
+        final dto = CreatorChipDto.fromJson(const {
+          'accountId': 'account-1',
+          'handle': 'minty',
+          'reelCount': 3,
+        });
 
-      expect(
-        dto.followerCount,
-        isNull,
-        reason: 'a missing followerCount must not become the claim "0 followers"',
-      );
-    });
+        expect(
+          dto.followerCount,
+          isNull,
+          reason:
+              'a missing followerCount must not become the claim "0 followers"',
+        );
+      },
+    );
 
     test('keeps a measured zero, which is a real answer', () {
       final dto = CreatorChipDto.fromJson(const {
@@ -52,26 +55,29 @@ void main() {
 
   group('DiscoverCreatorCard', () {
     DiscoverCreator creator({int? followers}) => DiscoverCreator(
-          id: 'account-1',
-          name: 'Aanya',
-          handle: '@aanya',
-          avatarUrl: '',
-          category: '',
-          description: '',
-          rating: 0,
-          followers: followers,
-          isFollowing: false,
-        );
+      id: 'account-1',
+      name: 'Aanya',
+      handle: '@aanya',
+      avatarUrl: '',
+      category: '',
+      description: '',
+      rating: 0,
+      followers: followers,
+      isFollowing: false,
+    );
 
     Future<void> pump(WidgetTester tester, DiscoverCreator c) =>
-        tester.pumpWidget(ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(body: DiscoverCreatorCard(creator: c)),
+        tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(body: DiscoverCreatorCard(creator: c)),
+            ),
           ),
-        ));
+        );
 
-    testWidgets('renders no follower line at all when nothing was measured',
-        (tester) async {
+    testWidgets('renders no follower line at all when nothing was measured', (
+      tester,
+    ) async {
       await pump(tester, creator());
 
       expect(find.textContaining('Followers'), findsNothing);

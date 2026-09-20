@@ -236,8 +236,16 @@ void main() {
           );
 
           expect(tester.takeException(), isNull);
-          await openTab(tester, 'Brands');
-          expect(tester.takeException(), isNull);
+          // Every tab, not only Brands: the reel grid's gutter and the brand
+          // row's rhythm were both retuned and each has its own layout.
+          for (final tab in const ['Reels', 'Brands', 'Products']) {
+            await openTab(tester, tab);
+            expect(
+              tester.takeException(),
+              isNull,
+              reason: 'the $tab tab overflowed at ${width}dp x $scale',
+            );
+          }
         },
       );
     }
