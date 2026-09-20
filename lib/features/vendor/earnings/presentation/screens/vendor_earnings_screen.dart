@@ -215,8 +215,8 @@ class VendorEarningsScreen extends ConsumerWidget {
                 ),
                 _RevenueRow(
                   icon: Icons.percent_outlined,
-                  label: 'Platform Fees',
-                  amount: summary.platformFees,
+                  label: 'Creator Commission',
+                  amount: summary.creatorCommission,
                   negative: true,
                 ),
                 const Padding(
@@ -231,7 +231,7 @@ class VendorEarningsScreen extends ConsumerWidget {
                       Money(
                         amount:
                             summary.totalRevenue.amount -
-                            summary.platformFees.amount,
+                            summary.creatorCommission.amount,
                         currency: summary.totalRevenue.currency,
                       ),
                       style: DesignTokens.mediumSemibold.copyWith(
