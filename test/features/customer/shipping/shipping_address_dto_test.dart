@@ -170,11 +170,144 @@ void main() {
       expect(body['locationNote'], 'Second floor now');
     });
 
+    test("a link-resolved point is never claimed as this phone's GPS fix", () {
+      // The real in-app shape after POST /v1/addresses/resolve-link: the app
+      // is holding a point, but the server worked it out, not the phone. The
+      // earlier `?? deviceGps` default filed exactly this as a measurement.
+      const fromLink = ShippingAddress(
+        id: 'addr-4',
+        label: 'Home',
+        receiverName: 'Sita Rai',
+        receiverPhone: '+9779800000000',
+        country: 'NP',
+        mapsLink: 'https://maps.app.goo.gl/AbCdEf123',
+        latitude: 27.7172,
+        longitude: 85.324,
+      );
+      final body = ShippingAddressDto.writeBody(fromLink);
+
+      expect(body.containsKey('locationCapturedFrom'), isFalse);
+      expect(body.containsKey('latitude'), isFalse);
+      expect(body.containsKey('longitude'), isFalse);
+      // The link goes instead, and the server stamps SharedMapsLink (4).
+      expect(body['mapsLink'], 'https://maps.app.goo.gl/AbCdEf123');
+    });
+
+    test('a server-geocoded point is not written back as a client capture', () {
+      final body = ShippingAddressDto.writeBody(
+        gpsAddress.copyWith(
+          locationCapturedFrom: LocationSource.geocodedFromAddress,
+        ),
+      );
+
+      expect(body.containsKey('locationCapturedFrom'), isFalse);
+      expect(body.containsKey('latitude'), isFalse);
+    });
+
+    test('a stored SharedMapsLink point is not written back either', () {
+      final body = ShippingAddressDto.writeBody(
+        gpsAddress.copyWith(
+          locationCapturedFrom: LocationSource.sharedMapsLink,
+        ),
+      );
+
+      expect(body.containsKey('locationCapturedFrom'), isFalse);
+      expect(body.containsKey('latitude'), isFalse);
+    });
+
+    test('an address with no coordinates sends exactly the fields it always '
+        'did — no coordinate keys appear at all', () {
+      const noPoint = ShippingAddress(
+        id: 'addr-6',
+        label: 'Home',
+        receiverName: 'Sita Rai',
+        receiverPhone: '+9779800000000',
+        country: 'NP',
+        locationNote: 'Blue gate',
+        mapsLink: 'https://maps.app.goo.gl/AbCdEf123',
+      );
+      final body = ShippingAddressDto.writeBody(noPoint);
+
+      expect(body.keys.toSet(), {
+        'label',
+        'receiverName',
+        'receiverPhone',
+        'country',
+        'locationNote',
+        'mapsLink',
+        'addressLine1',
+        'landmark',
+        'state',
+        'city',
+        'zipCode',
+        'makeDefault',
+      });
+    });
+
     test('a blank maps link is sent as null, not an empty string', () {
       final body = ShippingAddressDto.writeBody(
         gpsAddress.copyWith(mapsLink: '   '),
       );
       expect(body['mapsLink'], isNull);
+    });
+  });
+
+  group('half a coordinate pair', () {
+    // The backend refuses a lone latitude outright. The client's job is never
+    // to construct one in the first place, so the pair is read as a pair
+    // everywhere: one half alone is not half a location, it is none.
+    const base = ShippingAddress(
+      id: 'addr-7',
+      label: 'Home',
+      receiverName: 'Sita Rai',
+      receiverPhone: '+9779800000000',
+      country: 'NP',
+      mapsLink: 'https://maps.app.goo.gl/AbCdEf123',
+      locationCapturedFrom: LocationSource.deviceGps,
+    );
+
+    test('a lone latitude is not a point and cannot be sent', () {
+      const half = ShippingAddress(
+        id: 'addr-7',
+        label: 'Home',
+        receiverName: 'Sita Rai',
+        receiverPhone: '+9779800000000',
+        country: 'NP',
+        mapsLink: 'https://maps.app.goo.gl/AbCdEf123',
+        locationCapturedFrom: LocationSource.deviceGps,
+        latitude: 27.7172,
+      );
+
+      expect(half.hasPoint, isFalse);
+      expect(half.hasClientCapturedPoint, isFalse);
+
+      final body = ShippingAddressDto.writeBody(half);
+      expect(body.containsKey('latitude'), isFalse);
+      expect(body.containsKey('longitude'), isFalse);
+      expect(body.containsKey('locationCapturedFrom'), isFalse);
+    });
+
+    test('a lone longitude is treated the same way', () {
+      final half = base.copyWith(longitude: 85.324);
+
+      expect(half.hasPoint, isFalse);
+      expect(half.hasClientCapturedPoint, isFalse);
+
+      final body = ShippingAddressDto.writeBody(half);
+      expect(body.containsKey('latitude'), isFalse);
+      expect(body.containsKey('longitude'), isFalse);
+      expect(body.containsKey('locationCapturedFrom'), isFalse);
+    });
+
+    test('the pair together, with a real source, does go', () {
+      final whole = base.copyWith(latitude: 27.7172, longitude: 85.324);
+
+      expect(whole.hasClientCapturedPoint, isTrue);
+
+      final body = ShippingAddressDto.writeBody(whole);
+      expect(body['latitude'], 27.7172);
+      expect(body['longitude'], 85.324);
+      expect(body['locationCapturedFrom'], 1);
     });
   });
 

@@ -19,26 +19,22 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/prov
 // ── Fakes ────────────────────────────────────────────────────────────────────
 
 class _FakeLocationService implements LocationCaptureService {
-  _FakeLocationService(this.result, {this.quietResult});
+  _FakeLocationService(this.result);
 
   LocationCaptureResult result;
 
-  /// What the silent, no-prompt reference read returns. Defaults to a plain
-  /// denial so most tests get no far-from-you reference point.
-  LocationCaptureResult? quietResult;
-
   bool openedAppSettings = false;
   bool openedLocationSettings = false;
+
+  /// Every read of the device position, of any kind. The service has no
+  /// silent variant, so this counting one call is the same thing as the
+  /// shopper having tapped "Use my current location" exactly once.
   int promptedCalls = 0;
 
   @override
   Future<LocationCaptureResult> capture({
     Duration timeout = const Duration(seconds: 15),
-    bool requestPermission = true,
   }) async {
-    if (!requestPermission) {
-      return quietResult ?? const LocationPermissionDenied();
-    }
     promptedCalls++;
     return result;
   }
@@ -508,6 +504,123 @@ void main() {
 
   // ── Maps link ──────────────────────────────────────────────────────────────
 
+  group('location is read only when the shopper asks for it', () {
+    testWidgets('opening the screen reads no location at all', (tester) async {
+      // Deliberately a service that *would* hand over a fix: the assertion is
+      // not "no permission dialog appeared", it is that nothing read the
+      // shopper's position. An already-granted permission is not a standing
+      // invitation to collect where they are on screen load.
+      final location = _FakeLocationService(
+        const LocationCaptured(
+          latitude: 27.7172,
+          longitude: 85.324,
+          accuracyMetres: 8,
+        ),
+      );
+      await _pumpAddEdit(
+        tester,
+        location: location,
+        repository: _FakeShippingRepository(),
+      );
+
+      expect(location.promptedCalls, 0);
+    });
+
+    testWidgets('the reason is on screen before anything can be tapped', (
+      tester,
+    ) async {
+      final location = _FakeLocationService(const LocationPermissionDenied());
+      await _pumpAddEdit(
+        tester,
+        location: location,
+        repository: _FakeShippingRepository(),
+      );
+
+      final reason = find.byKey(const Key('location_permission_reason'));
+      await tester.ensureVisible(reason);
+      expect(reason, findsOneWidget);
+      expect(
+        find.textContaining('only when you tap this'),
+        findsOneWidget,
+      );
+      // Still nothing read — the reason precedes the prompt, not the reverse.
+      expect(location.promptedCalls, 0);
+    });
+
+    testWidgets('pasting a Maps link never reads the device position', (
+      tester,
+    ) async {
+      final repository = _FakeShippingRepository();
+      final location = _FakeLocationService(
+        const LocationCaptured(
+          latitude: 27.7172,
+          longitude: 85.324,
+          accuracyMetres: 8,
+        ),
+      );
+      await _pumpAddEdit(
+        tester,
+        location: location,
+        repository: repository,
+      );
+
+      await tester.ensureVisible(find.byKey(const Key('maps_link_field')));
+      await tester.enterText(
+        find.byKey(const Key('maps_link_field')),
+        'https://maps.app.goo.gl/AbCdEf123',
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const Key('resolve_maps_link_button')),
+      );
+      await tester.tap(find.byKey(const Key('resolve_maps_link_button')));
+      await tester.pumpAndSettle();
+      await _fillReceiver(tester);
+      await _tapSave(tester);
+
+      expect(repository.writeCalls, 1);
+      expect(location.promptedCalls, 0);
+    });
+
+    testWidgets('a refusal leaves the address usable and asks no more', (
+      tester,
+    ) async {
+      final repository = _FakeShippingRepository();
+      final location = _FakeLocationService(const LocationPermissionDenied());
+      await _pumpAddEdit(
+        tester,
+        location: location,
+        repository: repository,
+      );
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      expect(location.promptedCalls, 1);
+
+      // Saying no is an ordinary answer, not an error state: the shopper
+      // carries straight on with a Maps link and saves.
+      await tester.ensureVisible(find.byKey(const Key('maps_link_field')));
+      await tester.enterText(
+        find.byKey(const Key('maps_link_field')),
+        'https://maps.app.goo.gl/AbCdEf123',
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const Key('resolve_maps_link_button')),
+      );
+      await tester.tap(find.byKey(const Key('resolve_maps_link_button')));
+      await tester.pumpAndSettle();
+      await _fillReceiver(tester);
+      await _tapSave(tester);
+
+      expect(repository.writeCalls, 1);
+      // Asked once, because they asked us to. Never again off their own bat.
+      expect(location.promptedCalls, 1);
+      // A link-derived point is the server's inference to stamp, not ours.
+      expect(repository.lastWritten!.locationCapturedFrom, isNull);
+    });
+  });
+
   group('paste a Maps link', () {
     testWidgets('resolves the link and shows the point', (tester) async {
       final repository = _FakeShippingRepository();
@@ -920,11 +1033,11 @@ void main() {
       tester,
     ) async {
       final repository = _FakeShippingRepository();
-      // Device is in Kathmandu; the pasted link resolves there too, so move
-      // the device reference far away instead.
+      // The only reference point we are ever entitled to is one the shopper
+      // asked us to take: they tap "Use my current location" in Pokhara, then
+      // drag the pin onto a Kathmandu address ~140 km away.
       final location = _FakeLocationService(
-        const LocationPermissionDenied(),
-        quietResult: const LocationCaptured(
+        const LocationCaptured(
           latitude: 28.2096,
           longitude: 83.9856,
           accuracyMetres: 10,
@@ -936,16 +1049,12 @@ void main() {
         repository: repository,
       );
 
-      await tester.ensureVisible(find.byKey(const Key('maps_link_field')));
-      await tester.enterText(
-        find.byKey(const Key('maps_link_field')),
-        'https://maps.app.goo.gl/AbCdEf123',
-      );
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(
-        find.byKey(const Key('resolve_maps_link_button')),
-      );
-      await tester.tap(find.byKey(const Key('resolve_maps_link_button')));
+
+      await _dismissDetails(tester);
+      await tester.ensureVisible(find.byKey(const Key('fake_pin_drag')));
+      await tester.tap(find.byKey(const Key('fake_pin_drag')));
       await tester.pumpAndSettle();
       await _fillReceiver(tester);
       await _tapSave(tester);

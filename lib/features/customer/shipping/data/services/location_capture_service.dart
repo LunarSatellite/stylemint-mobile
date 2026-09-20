@@ -101,16 +101,17 @@ class LocationCaptureFailed extends LocationCaptureResult {
 /// Wraps `geolocator` so screens never touch the plugin directly (and so
 /// tests can drive every failure path without a platform channel).
 abstract interface class LocationCaptureService {
-  /// Reads the device position.
+  /// Reads the device position, prompting for permission when it has not been
+  /// granted yet.
   ///
-  /// With [requestPermission] false the OS is never prompted — used to get a
-  /// quiet reference point for the "is this pin far from you?" check, which
-  /// must not throw a permission dialog at someone who only wants to paste a
-  /// Maps link.
-  Future<LocationCaptureResult> capture({
-    Duration timeout,
-    bool requestPermission,
-  });
+  /// There is deliberately **no quiet variant**. A shopper's position is
+  /// personal data and is read only in response to their own tap on "Use my
+  /// current location" — never on screen load, never in the background, and
+  /// never to improve something they did not ask for. A caller with no such
+  /// tap to point at has no business calling this at all, and keeping the
+  /// silent read out of the interface makes that a structural guarantee
+  /// rather than a convention someone can quietly drop.
+  Future<LocationCaptureResult> capture({Duration timeout});
 
   /// Opens the OS app-settings page — the only recovery from
   /// [LocationPermissionDeniedForever].
@@ -127,7 +128,6 @@ class GeolocatorLocationCaptureService implements LocationCaptureService {
   @override
   Future<LocationCaptureResult> capture({
     Duration timeout = const Duration(seconds: 15),
-    bool requestPermission = true,
   }) async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
@@ -135,7 +135,7 @@ class GeolocatorLocationCaptureService implements LocationCaptureService {
       }
 
       var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied && requestPermission) {
+      if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.deniedForever) {
