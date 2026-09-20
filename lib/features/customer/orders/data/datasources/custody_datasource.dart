@@ -58,7 +58,6 @@ class CustodyRemoteDataSource implements CustodyDataSource {
     );
   }
 
-
   /// The export is fetched on demand, never alongside the card: it is a
   /// document a buyer asks for, and requesting it speculatively would pull the
   /// buyer's own hop facts down to the device for a share nobody asked for.

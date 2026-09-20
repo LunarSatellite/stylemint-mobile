@@ -18,6 +18,7 @@ abstract class ReorderSuggestionDto with _$ReorderSuggestionDto {
     required double price,
     required String currency,
     required int daysUntilExpected,
+
     /// The model's internal confidence, when the backend still sends one.
     ///
     /// **Optional on purpose, and never drawn.** This is a score on a

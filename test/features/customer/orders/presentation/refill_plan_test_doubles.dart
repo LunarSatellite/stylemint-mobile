@@ -139,7 +139,8 @@ final RefillPlanDto fixturePlan = RefillPlanDto(
   currency: 'NPR',
   includedSubtotal: 1420,
   includedLineCount: 2,
-  headline: 'A refill basket you can change or ignore — 2 item(s) ready to '
+  headline:
+      'A refill basket you can change or ignore — 2 item(s) ready to '
       'review.',
   caveat:
       'These are estimates from what you have bought before — we cannot see '

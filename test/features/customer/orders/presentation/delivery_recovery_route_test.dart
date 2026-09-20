@@ -98,9 +98,8 @@ Widget _app({
   overrides: [
     ordersRepositoryProvider.overrideWithValue(_repository()),
     orderNumberForTrackingProvider.overrideWith(
-      (ref, trackingNumber) async => trackingNumber == _tracking
-          ? lookup
-          : const TrackingLookupNotFound(),
+      (ref, trackingNumber) async =>
+          trackingNumber == _tracking ? lookup : const TrackingLookupNotFound(),
     ),
     deliveryRiskProvider.overrideWith(
       (ref, tracking) async =>

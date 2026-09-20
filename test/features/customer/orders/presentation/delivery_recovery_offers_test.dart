@@ -111,8 +111,7 @@ Map<String, dynamic> _offerJson({
   String remedy = 'CancelForRefund',
   bool requiresAck = true,
   Duration expiresIn = const Duration(minutes: 20),
-  String description =
-      'We can stop this delivery now and refund you in full.',
+  String description = 'We can stop this delivery now and refund you in full.',
   String status = 'Offered',
   String? outcomeReference,
 }) => <String, dynamic>{
@@ -279,7 +278,10 @@ void main() {
     ) async {
       final api = _FakeRecoveryDataSource();
       await tester.pumpWidget(
-        _host(dataSource: api, risk: _riskJson(remedies: [_offerJson()])),
+        _host(
+          dataSource: api,
+          risk: _riskJson(remedies: [_offerJson()]),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -332,7 +334,10 @@ void main() {
     ) async {
       final api = _FakeRecoveryDataSource();
       await tester.pumpWidget(
-        _host(dataSource: api, risk: _riskJson(remedies: [_offerJson()])),
+        _host(
+          dataSource: api,
+          risk: _riskJson(remedies: [_offerJson()]),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -360,7 +365,10 @@ void main() {
         ],
       );
       await tester.pumpWidget(
-        _host(dataSource: api, risk: _riskJson(remedies: [_offerJson()])),
+        _host(
+          dataSource: api,
+          risk: _riskJson(remedies: [_offerJson()]),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -398,7 +406,10 @@ void main() {
         ],
       );
       await tester.pumpWidget(
-        _host(dataSource: api, risk: _riskJson(remedies: [_offerJson()])),
+        _host(
+          dataSource: api,
+          risk: _riskJson(remedies: [_offerJson()]),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -584,7 +595,10 @@ void main() {
     final handle = tester.ensureSemantics();
     final api = _FakeRecoveryDataSource();
     await tester.pumpWidget(
-      _host(dataSource: api, risk: _riskJson(remedies: [_offerJson()])),
+      _host(
+        dataSource: api,
+        risk: _riskJson(remedies: [_offerJson()]),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -598,9 +612,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      tester
-          .getSemantics(find.byKey(const Key('recovery-ack-checkbox')))
-          .label,
+      tester.getSemantics(find.byKey(const Key('recovery-ack-checkbox'))).label,
       contains('5 to 7 working days'),
     );
     expect(

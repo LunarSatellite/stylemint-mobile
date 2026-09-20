@@ -230,6 +230,7 @@ class _CancDetailRow extends StatelessWidget {
     );
   }
 }
+
 /// One card that reads the order's recorded events once, and hands them to
 /// its [builder]. Both the stage rail and the history use it, so the two
 /// blocks never disagree and the endpoint is read once per screen.
@@ -335,7 +336,8 @@ class _HistoryUnreadable extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const _SourceNotice(
     label: 'History unavailable',
-    note: 'We could not read this order’s history. Nothing here is missing '
+    note:
+        'We could not read this order’s history. Nothing here is missing '
         'from the order itself — try again in a moment.',
   );
 }

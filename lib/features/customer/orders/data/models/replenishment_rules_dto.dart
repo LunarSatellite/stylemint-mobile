@@ -91,8 +91,7 @@ abstract class ReplenishmentPreferenceDto with _$ReplenishmentPreferenceDto {
   /// True when the customer asked for a basket to be prepared. A plan is only
   /// ever built at this level, so it is also what decides whether a link to
   /// the refill basket can honestly be offered.
-  bool get prepares =>
-      automation == ReplenishmentAutomationLevel.prepareBasket;
+  bool get prepares => automation == ReplenishmentAutomationLevel.prepareBasket;
 
   /// The rules as a request body, so an edit can change one field and send
   /// the whole set (the backend replaces them as one, so a half-applied rule
