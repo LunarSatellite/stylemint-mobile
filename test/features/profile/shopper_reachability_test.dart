@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Four shopper-facing capabilities were built, tested, wired to working
+/// Shopper-facing capabilities were built, tested, wired to working
 /// endpoints — and unreachable by a shopper. They lived only on the `/settings`
 /// screen, and the only three routes to `/settings` are the **vendor** menu,
 /// the **creator** menu and the vendor profile. A customer could never open it.
@@ -25,6 +25,9 @@ void main() {
     'RouteNames.myClienteling':
         'In-store assistance — the only control that turns an associate '
         'claim into credit, so without it a claim can never be confirmed',
+    'RouteNames.settingsMemory':
+        'Memory Vault — the only switch that unpauses personalisation, and '
+        'every other link to it is itself hidden while paused',
   };
 
   test('the customer profile reaches every shopper-facing settings screen', () {

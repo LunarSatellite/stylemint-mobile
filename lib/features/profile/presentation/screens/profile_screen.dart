@@ -201,7 +201,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'Shopping missions',
               onTap: () => context.push(RouteNames.missions),
             ),
-            // These two live under /settings, which a shopper cannot open:
+            // These three live under /settings, which a shopper cannot open:
             // the only routes to it are the vendor and creator menus. Listed
             // here as well so they are reachable from the customer app at all.
             ProfileMenuItem(
@@ -213,6 +213,17 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               icon: Icons.smart_toy_outlined,
               label: 'Connected assistants',
               onTap: () => context.push(RouteNames.settingsConnectedAssistants),
+            ),
+            // The Memory Vault most of all, because pausing it is what hides
+            // every other way back to it: the restock rail on Your Orders
+            // draws nothing while personalisation is paused, and the screens
+            // behind that rail are the only ones that offer "Open Memory
+            // Vault". This tile is not personalised, so it survives the pause
+            // and the pause stays something a shopper can undo.
+            ProfileMenuItem(
+              icon: Icons.psychology_outlined,
+              label: 'Your StyleMint Memory',
+              onTap: () => context.push(RouteNames.settingsMemory),
             ),
           ],
         ),

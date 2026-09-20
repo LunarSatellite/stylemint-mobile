@@ -16,10 +16,18 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// "Buy It Again" — a horizontal row of predicted-reorder cards, sourced
 /// from the backend's nightly purchase-cadence job
-/// (`orders.reorder-predictions-recalculate`). Renders nothing (not even an
-/// empty state) when there are no suggestions or the fetch fails — this is
-/// a passive upsell surface, not a primary screen, so it should never make
+/// (`orders.reorder-predictions-recalculate`). Draws no card and no empty
+/// state when there are no suggestions or the fetch fails — this is a
+/// passive upsell surface, not a primary screen, so it should never make
 /// Your Orders look broken to a customer with no purchase history yet.
+///
+/// What it does keep in every one of those cases is the [_RestockEntry] row
+/// beneath, because the rail's "See all" link was the only way in to
+/// `/orders/buy-it-again` and everything behind it. A new account has no
+/// rhythm to read yet, so it got no rail, so the restock screens — and the
+/// refill basket and its rules, which are only linked from there — existed
+/// but could not be opened. An empty forecast is still empty; it is the door
+/// that has to stay, not the content behind it.
 class BuyItAgainSection extends ConsumerStatefulWidget {
   const BuyItAgainSection({super.key});
 
@@ -36,7 +44,9 @@ class _BuyItAgainSectionState extends ConsumerState<BuyItAgainSection> {
     // Replenishment prediction is personalisation, so it passes the same
     // Memory Vault gate the adaptive storefront does. A paused customer sees
     // no rail, no consent card and no link to the screen — an entry point
-    // that could only say "paused" is an entry point that dangles.
+    // that could only say "paused" is an entry point that dangles. Undoing
+    // the pause is a Memory Vault job and it has its own tile on Profile,
+    // which is not gated on personalisation and so outlives this one.
     final allowed = ref.watch(personalizationAllowedProvider);
     if (allowed.asData?.value != true) return const SizedBox.shrink();
 
@@ -51,13 +61,22 @@ class _BuyItAgainSectionState extends ConsumerState<BuyItAgainSection> {
     final preference = ref.watch(replenishmentPreferenceNotifierProvider);
     if (preference is ReplenishmentPreferenceLoading ||
         preference is ReplenishmentPreferenceFailed) {
-      return const SizedBox.shrink();
+      return const _RestockEntry();
     }
     final preferenceLoaded = preference as ReplenishmentPreferenceLoaded;
     if (!preferenceLoaded.enabled) {
-      return _ReplenishmentConsentCard(
-        saving: preferenceLoaded.saving,
-        onEnable: () => _setPreference(true),
+      // The invitation, and under it the way in regardless: a customer who
+      // declines the rail still owns rules, a pause and a refill plan, and
+      // those are reached through the same screen.
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ReplenishmentConsentCard(
+            saving: preferenceLoaded.saving,
+            onEnable: () => _setPreference(true),
+          ),
+          const _RestockEntry(),
+        ],
       );
     }
 
@@ -65,7 +84,7 @@ class _BuyItAgainSectionState extends ConsumerState<BuyItAgainSection> {
 
     return state.maybeWhen(
       loadSuccess: (suggestions) {
-        if (suggestions.isEmpty) return const SizedBox.shrink();
+        if (suggestions.isEmpty) return const _RestockEntry();
         return Padding(
           padding: const EdgeInsets.only(bottom: DesignTokens.s16),
           child: Column(
@@ -178,7 +197,7 @@ class _BuyItAgainSectionState extends ConsumerState<BuyItAgainSection> {
           ),
         );
       },
-      orElse: () => const SizedBox.shrink(),
+      orElse: () => const _RestockEntry(),
     );
   }
 
@@ -276,6 +295,81 @@ class _BuyItAgainSectionState extends ConsumerState<BuyItAgainSection> {
       SmSnackbar.error(context, "Couldn't add to cart. Please try again.");
     }
   }
+}
+
+/// The durable way in to the restock area, drawn wherever the rail above is
+/// not. It promises nothing: no count, no estimate, no "you have N items
+/// due" — the screen it opens is where an empty forecast gets to say so in
+/// its own words.
+class _RestockEntry extends StatelessWidget {
+  const _RestockEntry();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      DesignTokens.s16,
+      0,
+      DesignTokens.s16,
+      DesignTokens.s16,
+    ),
+    child: InkWell(
+      key: const ValueKey('restock-entry'),
+      borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+      onTap: () => context.push(RouteNames.buyItAgain),
+      child: Semantics(
+        button: true,
+        label: 'Open restock and refill',
+        excludeSemantics: true,
+        child: Container(
+          padding: const EdgeInsets.all(DesignTokens.s12),
+          decoration: BoxDecoration(
+            color: DesignTokens.bgAppBody,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+            border: Border.all(color: DesignTokens.borderDefault),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.event_repeat_outlined,
+                color: DesignTokens.textMuted,
+                size: 20,
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Restock and refill',
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Your restock estimates, the refill basket and the '
+                      'rules behind them.',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: DesignTokens.textMuted,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _ReplenishmentConsentCard extends StatelessWidget {

@@ -116,8 +116,17 @@ class SettingsScreen extends ConsumerWidget {
           ),
           // The associate's side. This app has no associate role — the
           // backend gates the client book on vendor team membership plus a
-          // live per-customer assignment — so the entry is open to any signed
-          // in account and an unassigned one honestly sees an empty book.
+          // live per-customer assignment — so the tile itself asks nothing of
+          // the account and an unassigned one honestly sees an empty book.
+          //
+          // It is reachable to whoever can open this screen, which is not the
+          // same as every signed in account: the only routes to /settings are
+          // the vendor menu, the vendor profile and the creator menu. That is
+          // the right population — an associate is vendor team staff, so the
+          // people who can ever have a non-empty book are exactly the people
+          // who can get here. A customer-only account cannot open Settings
+          // and has no business in someone else's client book, so it gets no
+          // tile of its own on Profile.
           _MenuTile(
             icon: Icons.badge_outlined,
             label: 'Client book (store associates)',
