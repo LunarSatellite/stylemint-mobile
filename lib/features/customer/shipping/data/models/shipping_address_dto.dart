@@ -55,7 +55,16 @@ abstract class ShippingAddressDto with _$ShippingAddressDto {
   /// text a legacy address carried. Latitude/longitude/`locationCapturedFrom`
   /// travel together or not at all — omitting all three on an edit makes the
   /// backend **keep** the stored location, which is what a note-only edit
-  /// wants. `4` (SharedMapsLink) is server-stamped and never sent.
+  /// wants.
+  ///
+  /// The point is sent only when the app can name a first-hand provenance for
+  /// it: `1` DeviceGps (this phone measured it) or `2` ManualPin (the shopper
+  /// placed it). A point the app merely *received* — the one
+  /// `/v1/addresses/resolve-link` returns for a pasted Maps link, or `3`
+  /// GeocodedFromAddress on a legacy row — is an inference the server made,
+  /// so the link is sent on its own and the server resolves it and stamps
+  /// `4` SharedMapsLink itself. Sending such a point with a made-up source
+  /// would file someone else's guess as this phone's measurement.
   static Map<String, dynamic> writeBody(
     ShippingAddress address, {
     bool includeMakeDefault = true,
@@ -68,15 +77,16 @@ abstract class ShippingAddressDto with _$ShippingAddressDto {
       'country': address.country,
       'locationNote': address.locationNote.trim(),
       'mapsLink': (link == null || link.isEmpty) ? null : link,
-      if (address.hasPoint) ...{
+      if (address.hasClientCapturedPoint) ...{
         'latitude': address.latitude,
         'longitude': address.longitude,
         // Geolocator reports a double, while the API contract stores whole
         // metres (int?). A decimal makes System.Text.Json reject the body.
         'locationAccuracyMetres': address.locationAccuracyMetres?.round(),
-        'locationCapturedFrom':
-            (address.locationCapturedFrom ?? LocationSource.deviceGps)
-                .wireValue,
+        // Not `?? deviceGps`. There is no sane default here: a point with no
+        // client provenance is excluded by `hasClientCapturedPoint` above, so
+        // by this line the source is known and is the true one.
+        'locationCapturedFrom': address.locationCapturedFrom!.wireValue,
       },
       'addressLine1': null,
       'landmark': null,

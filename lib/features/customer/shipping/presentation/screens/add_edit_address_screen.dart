@@ -50,9 +50,11 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   /// pasted link from one that's already been turned into a point.
   String? _resolvedLinkValue;
 
-  /// Where the device thinks it is, used only as the reference for the
-  /// "this pin is a long way from you" confirmation. Read without prompting,
-  /// so someone who only wants to paste a link is never nagged for GPS.
+  /// Where the device said it was, used only as the reference for the "this
+  /// pin is a long way from you" confirmation. Set from the shopper's own
+  /// "Use my current location" tap and from nothing else, so it stays null
+  /// for someone who only drags a pin or pastes a link — and the distance
+  /// check simply does not run for them.
   double? _deviceLatitude;
   double? _deviceLongitude;
 
@@ -152,26 +154,14 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
         ? existing!
         : (_countryMap[existing] ?? 'NP');
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _readDeviceReference());
-  }
-
-  /// Quietly reads the device position (no permission prompt) purely as the
-  /// reference for the far-from-you confirmation. Every failure is ignored —
-  /// without a reference we simply don't ask for confirmation on distance.
-  Future<void> _readDeviceReference() async {
-    final result = await ref
-        .read(locationCaptureServiceProvider)
-        .capture(
-          timeout: const Duration(seconds: 8),
-          requestPermission: false,
-        );
-    if (!mounted) return;
-    if (result is LocationCaptured) {
-      setState(() {
-        _deviceLatitude = result.latitude;
-        _deviceLongitude = result.longitude;
-      });
-    }
+    // Nothing here reads the device position. Opening the address screen is
+    // not a request for the shopper's location: the only read happens when
+    // they tap "Use my current location" below, and _deviceLatitude /
+    // _deviceLongitude are set from that reading alone. Without such a tap
+    // there is simply no reference point, and _distanceFromDevice returns
+    // null — the far-from-you confirmation then does not fire, which is the
+    // correct trade. Knowing where the shopper is standing is not worth
+    // reading their location behind their back to find out.
   }
 
   @override
@@ -197,8 +187,25 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
 
   bool get _hasMapsLink => _mapsLinkCtl.text.trim().isNotEmpty;
 
-  /// The backend needs a point or a link on every write.
-  bool get _hasLocation => _hasPoint || _hasMapsLink;
+  /// A point this app can honestly write: one it measured (GPS) or one the
+  /// shopper placed (pin). A point that merely came back from resolving a
+  /// pasted link is not written on its own — the link is, and the server
+  /// resolves and labels it — so it does not stand in for a location here.
+  bool get _hasWritablePoint =>
+      _hasPoint &&
+      (_capturedFrom == LocationSource.deviceGps ||
+          _capturedFrom == LocationSource.manualPin);
+
+  /// Editing an address the server already holds a point for, without
+  /// replacing it: the write omits the point and the server keeps the stored
+  /// one, so the result still has a location.
+  bool get _keepsStoredPoint => widget.address?.hasPoint ?? false;
+
+  /// The backend needs a point or a link on every write. This mirrors what
+  /// the write body will actually carry, so the gate can never pass something
+  /// the server will then reject.
+  bool get _hasLocation =>
+      _hasWritablePoint || _hasMapsLink || _keepsStoredPoint;
 
   /// A legacy address the customer opened to edit, which still has no point
   /// and no link. Saving is blocked until they add one — said up front rather
@@ -859,6 +866,19 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                 ),
                 const SizedBox(height: DesignTokens.s12),
                 _currentLocationButton(),
+                // The reason sits under the button, on screen before anyone
+                // can tap it, so the OS permission dialog is never the first
+                // time the shopper hears why we want their location or what
+                // it is used for.
+                const SizedBox(height: DesignTokens.s8),
+                Text(
+                  key: const Key('location_permission_reason'),
+                  'We read your location only when you tap this, and only to '
+                  'place the pin for this address.',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
                 if (_locationMessage != null) ...[
                   const SizedBox(height: DesignTokens.s8),
                   _LocationMessage(

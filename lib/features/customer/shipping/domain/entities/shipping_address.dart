@@ -82,8 +82,24 @@ class ShippingAddress {
   final bool isDefault;
   final String rowVersion;
 
-  /// True when a coordinate pair is present.
+  /// True when a coordinate pair is present. Both or neither — a lone
+  /// latitude is not half a location, it is not a location.
   bool get hasPoint => latitude != null && longitude != null;
+
+  /// True when a point is present **and** the app knows first-hand how it was
+  /// obtained: this phone measured it ([LocationSource.deviceGps]) or the
+  /// shopper placed it themselves ([LocationSource.manualPin]).
+  ///
+  /// False for a point the app merely received — the one the backend resolves
+  /// from a pasted Maps link, or [LocationSource.geocodedFromAddress] on a
+  /// legacy row. Those are the server's own inferences about where an address
+  /// is; only it may label them. This is the gate on writing a point back,
+  /// so the app can never file a guess it was handed as a measurement it
+  /// took.
+  bool get hasClientCapturedPoint =>
+      hasPoint &&
+      (locationCapturedFrom == LocationSource.deviceGps ||
+          locationCapturedFrom == LocationSource.manualPin);
 
   /// True when a Maps link is present.
   bool get hasMapsLink => (mapsLink ?? '').trim().isNotEmpty;
