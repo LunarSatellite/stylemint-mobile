@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/data/datasources/checkout_remote_datasource.dart';
-import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/delivery_distance_note.dart';
 
 import '../../codes/support/recording_api_client.dart';

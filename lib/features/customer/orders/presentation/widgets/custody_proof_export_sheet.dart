@@ -175,7 +175,7 @@ class _CustodyProofExportSheetState
               ),
               const SizedBox(height: DesignTokens.s8),
               _DisclosureOption(
-                title: 'Everything, for you',
+                title: 'Everything, including where it went',
                 // Said plainly and without euphemism. "Location data" would
                 // not tell a buyer that the parcel's last hop is their
                 // doorstep.

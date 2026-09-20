@@ -37,19 +37,18 @@ const String notStartedExplanation =
 
 /// A line with no coverage date. This is the ordinary shape for anything a
 /// seller never attached a policy to.
-final _uncoveredItem = CareItem(
+const _uncoveredItem = CareItem(
   subOrderId: 'sub-1',
   subOrderLineId: _lineId,
   productVariantId: 'variant-1',
   title: 'Linen shirt',
   variantLabel: 'M / White',
   stage: CareStage.returnWindowClosed,
-  actions: const [],
+  actions: [],
   guidance: 'Delivered.',
-  warrantyEligible: false,
 );
 
-final _plan = OrderCarePlan(orderNumber: _orderNumber, items: [_uncoveredItem]);
+const _plan = OrderCarePlan(orderNumber: _orderNumber, items: [_uncoveredItem]);
 
 WarrantyEligibility _eligibilitySaying(String explanation) =>
     WarrantyEligibility(
@@ -173,12 +172,12 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.dark,
-          home: MediaQuery(
-            data: const MediaQueryData(
+          home: const MediaQuery(
+            data: MediaQueryData(
               size: Size(320, 400),
               textScaler: TextScaler.linear(1.3),
             ),
-            child: const Scaffold(
+            child: Scaffold(
               body: SingleChildScrollView(
                 child: UnitWarrantyList(units: []),
               ),

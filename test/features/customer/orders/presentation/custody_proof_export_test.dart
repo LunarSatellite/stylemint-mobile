@@ -155,7 +155,7 @@ void main() {
       );
       await _pumpSheet(tester, source);
 
-      expect(find.text('Everything, for you'), findsOneWidget);
+      expect(find.text('Everything, including where it went'), findsOneWidget);
       expect(
         find.text('Sealed record only, safe for a stranger'),
         findsOneWidget,
@@ -209,7 +209,7 @@ void main() {
         CustodyProofExport.fromJson(_exportJson(), '{}'),
       );
       await _pumpSheet(tester, source);
-      final option = find.text('Everything, for you');
+      final option = find.text('Everything, including where it went');
       await tester.ensureVisible(option);
       await tester.pumpAndSettle();
       await tester.tap(option);
@@ -242,7 +242,7 @@ void main() {
     ) async {
       final source = _FakeCustodyDataSource(null);
       await _pumpSheet(tester, source);
-      final option = find.text('Everything, for you');
+      final option = find.text('Everything, including where it went');
       await tester.ensureVisible(option);
       await tester.pumpAndSettle();
       await tester.tap(option);
