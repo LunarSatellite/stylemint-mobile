@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_eligibility.dart';
 
 abstract interface class OrdersRepository {
   Future<Either<NetworkExceptions, List<TrackedOrder>>> getTrackedOrders({
@@ -102,6 +103,19 @@ abstract interface class OrdersRepository {
   });
 
   Future<Either<NetworkExceptions, List<WarrantyClaim>>> getWarrantyClaims();
+
+  /// This order's warranty position line by line, with the bound units on any
+  /// line that carries markers. A line with no marker comes back with no
+  /// units, which is the normal answer and not a failure.
+  Future<Either<NetworkExceptions, WarrantyEligibility>> getWarrantyEligibility(
+    String orderNumber,
+  );
+
+  /// The service history of one physical item: this buyer's claims against
+  /// every binding the same marker has ever carried.
+  Future<Either<NetworkExceptions, List<WarrantyClaim>>> getUnitWarrantyClaims(
+    String unitMarkerBindingId,
+  );
 
   /// State and seal of a StyleMint package (404 -> notFound).
   Future<Either<NetworkExceptions, DeliveryPackageStatus>>

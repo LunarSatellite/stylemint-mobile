@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker_binding.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/widgets/unit_marker_notice.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_unit_claims_card.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_appbar.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
@@ -55,8 +56,7 @@ class UnitMarkerBindingsScreen extends ConsumerWidget {
   static const String supersededLabel = 'Superseded';
   static const String supersededOnLabel = 'Superseded on';
   static const String currentLabel = 'Current binding';
-  static const String currentCorrectionLabel =
-      'Current binding — a correction';
+  static const String currentCorrectionLabel = 'Current binding — a correction';
   static const String reasonLabel = 'Reason given';
 
   /// Shown when a superseded row's replacement is not in this response.
@@ -138,8 +138,12 @@ class UnitMarkerBindingsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: DesignTokens.s16),
               ],
-              for (final entry in loaded.trail)
-                _BindingCard(entry: entry),
+              for (final entry in loaded.trail) _BindingCard(entry: entry),
+              // The warranty side of the same physical item. Any binding in
+              // the chain reaches the whole history, so the row that stands is
+              // used when there is one and the newest retired row otherwise.
+              if (_historyBindingId(loaded) case final bindingId?)
+                VendorUnitClaimsCard(unitMarkerBindingId: bindingId),
               const SizedBox(height: DesignTokens.s24),
             ],
           ),
@@ -147,6 +151,19 @@ class UnitMarkerBindingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Which binding id to read the warranty history over: the one that stands if
+/// one does, otherwise the first row in the trail. Null when no row carries an
+/// id, in which case the card is simply not built — there is nothing to ask
+/// about, and an empty string would ask about the wrong thing.
+String? _historyBindingId(UnitMarkerBindingsLoaded loaded) {
+  final live = loaded.liveBinding?.id;
+  if (live != null && live.isNotEmpty) return live;
+  for (final entry in loaded.trail) {
+    if (entry.binding.id.isNotEmpty) return entry.binding.id;
+  }
+  return null;
 }
 
 /// One row of the trail, with the rows around it.

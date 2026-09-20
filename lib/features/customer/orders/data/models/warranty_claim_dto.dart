@@ -12,6 +12,8 @@ class WarrantyClaimDto {
     required this.submittedUtc,
     this.decisionNote,
     this.resolvedUtc,
+    this.unitMarkerBindingId,
+    this.unit,
   });
 
   factory WarrantyClaimDto.fromJson(Map<String, dynamic> json) =>
@@ -31,6 +33,12 @@ class WarrantyClaimDto {
             DateTime.tryParse(json['submittedUtc']?.toString() ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
         resolvedUtc: DateTime.tryParse(json['resolvedUtc']?.toString() ?? ''),
+        unitMarkerBindingId: _text(json['unitMarkerBindingId']),
+        unit: json['unit'] is Map<String, dynamic>
+            ? WarrantyClaimUnitDto.fromJson(
+                json['unit'] as Map<String, dynamic>,
+              )
+            : null,
       );
 
   final String id;
@@ -43,6 +51,8 @@ class WarrantyClaimDto {
   final String? decisionNote;
   final DateTime submittedUtc;
   final DateTime? resolvedUtc;
+  final String? unitMarkerBindingId;
+  final WarrantyClaimUnitDto? unit;
 
   WarrantyClaim toDomain() => WarrantyClaim(
     id: id,
@@ -55,6 +65,53 @@ class WarrantyClaimDto {
     submittedUtc: submittedUtc,
     decisionNote: decisionNote,
     resolvedUtc: resolvedUtc,
+    unitMarkerBindingId: unitMarkerBindingId,
+    unit: unit?.toDomain(),
+  );
+}
+
+/// Backend `WarrantyClaimUnitDto` — the physical item a claim was filed
+/// against, as it stands now.
+class WarrantyClaimUnitDto {
+  const WarrantyClaimUnitDto({
+    required this.bindingId,
+    required this.markerReference,
+    required this.isLive,
+    this.inServiceSinceUtc,
+    this.supersededUtc,
+    this.supersededByBindingId,
+  });
+
+  factory WarrantyClaimUnitDto.fromJson(Map<String, dynamic> json) =>
+      WarrantyClaimUnitDto(
+        bindingId: json['bindingId']?.toString() ?? '',
+        markerReference: json['markerReference']?.toString() ?? '',
+        inServiceSinceUtc: DateTime.tryParse(
+          json['inServiceSinceUtc']?.toString() ?? '',
+        ),
+        // Absent means the server did not say it was superseded; a claim is
+        // only shown as corrected when the record says so.
+        isLive: json['isLive'] != false,
+        supersededUtc: DateTime.tryParse(
+          json['supersededUtc']?.toString() ?? '',
+        ),
+        supersededByBindingId: _text(json['supersededByBindingId']),
+      );
+
+  final String bindingId;
+  final String markerReference;
+  final DateTime? inServiceSinceUtc;
+  final bool isLive;
+  final DateTime? supersededUtc;
+  final String? supersededByBindingId;
+
+  WarrantyClaimUnit toDomain() => WarrantyClaimUnit(
+    bindingId: bindingId,
+    markerReference: markerReference,
+    inServiceSinceUtc: inServiceSinceUtc,
+    isLive: isLive,
+    supersededUtc: supersededUtc,
+    supersededByBindingId: supersededByBindingId,
   );
 }
 
