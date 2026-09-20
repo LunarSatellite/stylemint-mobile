@@ -34,7 +34,7 @@ abstract class CreatorAnalyticsOverviewDto with _$CreatorAnalyticsOverviewDto {
     window: window.toDomain(),
     totalEarnings: totalEarnings.toDomain(),
     totalSales: totalSales.toDomain(),
-    conversionRate: conversionRate.toDomain(),
+    conversionRate: conversionRate.toPercentDomain(),
     totalViews: totalViews.toDomain(),
     pendingBalance: pendingBalance.toDomain(),
     earningsTrend:

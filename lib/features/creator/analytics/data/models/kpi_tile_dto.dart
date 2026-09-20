@@ -64,4 +64,21 @@ abstract class DoubleKpiTileDto with _$DoubleKpiTileDto {
     previous: previous,
     deltaPercent: deltaPercent,
   );
+
+  /// The tile read as a percentage, for a backend field that is a ratio.
+  ///
+  /// `CreatorAnalyticsService.ComputeConversionRate` returns
+  /// `salesCount / views` — a ratio in `0..1` — and the screens print it
+  /// with a literal `%` suffix. Read through [toDomain] instead, a real
+  /// 3.4 % conversion rendered as "0.0%", telling a creator that none of
+  /// the people who watched their reels ever bought.
+  ///
+  /// [deltaPercent] is a relative change between the two windows, already
+  /// a percentage and independent of the scale of what it compares, so it
+  /// is carried through unscaled.
+  KpiTile<double> toPercentDomain() => KpiTile(
+    current: current * 100,
+    previous: previous == null ? null : previous! * 100,
+    deltaPercent: deltaPercent,
+  );
 }
