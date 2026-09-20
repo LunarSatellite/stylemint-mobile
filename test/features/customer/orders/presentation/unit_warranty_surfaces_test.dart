@@ -199,10 +199,9 @@ void main() {
     });
 
     /// Scoped to the new widget rather than to the whole card. The card's
-    /// header row and the pre-existing line-level `_WarrantyChip` already
-    /// overflow at this size, and the chip is the untouched line-level path —
-    /// asserting over it here would either fail for someone else's defect or
-    /// tempt a change to the one path that must not move.
+    /// own header row and its line-level chips used to overflow at this size
+    /// too; they are fixed now, and `order_care_card_overflow_test.dart`
+    /// covers the whole card at 320dp x 1.3.
     testWidgets('no overflow at 320dp with text at 1.3x', (tester) async {
       await tester.binding.setSurfaceSize(const Size(320, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));

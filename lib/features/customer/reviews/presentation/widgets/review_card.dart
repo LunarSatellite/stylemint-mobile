@@ -55,10 +55,14 @@ class ReviewCard extends StatelessWidget {
                         _StarRating(rating: review.rating, size: 14),
                         if (review.isVerifiedPurchase) ...[
                           const SizedBox(width: DesignTokens.s8),
-                          Text(
-                            'Verified Purchase',
-                            style: DesignTokens.smallRegular.copyWith(
-                              color: DesignTokens.primaryGreen,
+                          // A trust signal, so it wraps rather than being
+                          // cut down to something that reads differently.
+                          Flexible(
+                            child: Text(
+                              'Verified Purchase',
+                              style: DesignTokens.smallRegular.copyWith(
+                                color: DesignTokens.primaryGreen,
+                              ),
                             ),
                           ),
                         ],
@@ -114,10 +118,14 @@ class ReviewCard extends StatelessWidget {
               children: [
                 const Icon(Icons.thumb_up_alt_outlined, size: 14, color: DesignTokens.textMuted),
                 const SizedBox(width: 4),
-                Text(
-                  '${review.helpfulCount} found helpful',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
+                // A count, so it wraps instead of being ellipsised into
+                // something unreadable.
+                Expanded(
+                  child: Text(
+                    '${review.helpfulCount} found helpful',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 ),
               ],

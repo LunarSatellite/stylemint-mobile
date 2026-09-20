@@ -1955,17 +1955,26 @@ class _ReviewableItemsSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: DesignTokens.s8),
-                OutlinedButton(
-                  onPressed: () => _showRateReviewSheet(
-                    context,
-                    productId: item.productId,
-                    orderId: order.id,
-                  ),
-                  style: DesignTokens.outlinedButtonStyle(),
-                  child: Text(
-                    'Write a Review',
-                    style: DesignTokens.smallRegular.copyWith(
-                      fontWeight: FontWeight.w600,
+                // Unflexed, this button took the whole row at large text
+                // sizes and squeezed the product name to zero width, so the
+                // item being reviewed disappeared. It now yields space and
+                // shrinks its own label instead.
+                Flexible(
+                  child: OutlinedButton(
+                    onPressed: () => _showRateReviewSheet(
+                      context,
+                      productId: item.productId,
+                      orderId: order.id,
+                    ),
+                    style: DesignTokens.outlinedButtonStyle(),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Write a Review',
+                        style: DesignTokens.smallRegular.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ),

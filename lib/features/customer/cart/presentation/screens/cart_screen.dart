@@ -355,17 +355,30 @@ class _TicketCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    const Text(
-                      'Grand Total',
-                      style: DesignTokens.mediumSemibold,
+                    const Flexible(
+                      child: Text(
+                        'Grand Total',
+                        style: DesignTokens.mediumSemibold,
+                      ),
                     ),
-                    Text(
-                      formatMoney(cart.total),
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: DesignTokens.textWhite,
+                    const SizedBox(width: DesignTokens.s8),
+                    // The total is the one number on this screen that must
+                    // never be truncated, so it shrinks to fit rather than
+                    // ellipsising — the same treatment SmPrimaryButton gives
+                    // a long label.
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          formatMoney(cart.total),
+                          style: const TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: DesignTokens.textWhite,
+                          ),
+                        ),
                       ),
                     ),
                   ],

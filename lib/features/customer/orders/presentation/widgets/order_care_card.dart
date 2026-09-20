@@ -67,7 +67,12 @@ class OrderCareCard extends ConsumerWidget {
                   color: DesignTokens.primaryGreen,
                 ),
                 SizedBox(width: DesignTokens.s8),
-                Text('Care & returns', style: DesignTokens.sectionInnerTitle),
+                Expanded(
+                  child: Text(
+                    'Care & returns',
+                    style: DesignTokens.sectionInnerTitle,
+                  ),
+                ),
               ],
             ),
             if (deadline != null) ...[
@@ -244,6 +249,7 @@ class _WarrantyChip extends StatelessWidget {
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Icon(
           Icons.shield_outlined,
@@ -251,13 +257,18 @@ class _WarrantyChip extends StatelessWidget {
           color: DesignTokens.primaryGreen,
         ),
         const SizedBox(width: DesignTokens.s4),
-        Text(
-          inProgress
-              ? 'Warranty claim in progress'
-              : 'Warranty to ${DateFormat('MMM d, y').format(ends.toLocal())}',
-          style: DesignTokens.smallRegular.copyWith(
-            color: DesignTokens.primaryGreen,
-            fontWeight: FontWeight.w600,
+        // A coverage date must stay readable in full, so the label wraps
+        // inside the pill rather than being ellipsised or shrunk.
+        Flexible(
+          child: Text(
+            inProgress
+                ? 'Warranty claim in progress'
+                : 'Warranty to '
+                      '${DateFormat('MMM d, y').format(ends.toLocal())}',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.primaryGreen,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -286,14 +297,18 @@ class _DaysLeftChip extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.schedule, size: 14, color: color),
           const SizedBox(width: DesignTokens.s4),
-          Text(
-            daysLeftToReturnLabel(days),
-            style: DesignTokens.smallRegular.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
+          // A day count must not be truncated into ambiguity, so it wraps.
+          Flexible(
+            child: Text(
+              daysLeftToReturnLabel(days),
+              style: DesignTokens.smallRegular.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
