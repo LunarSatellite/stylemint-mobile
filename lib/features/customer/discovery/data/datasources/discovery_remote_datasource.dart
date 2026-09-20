@@ -78,7 +78,7 @@ class DiscoveryRemoteDataSource {
             name: c['displayName'] as String? ?? '',
             handle: c['handle'] as String? ?? '',
             avatarUrl: c['avatarUrl'] as String? ?? '',
-            followers: (c['followerCount'] as num?)?.toInt() ?? 0,
+            followers: (c['followerCount'] as num?)?.toInt(),
           ),
         )
         .where((c) => c.id.isNotEmpty)

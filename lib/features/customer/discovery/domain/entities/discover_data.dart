@@ -76,6 +76,9 @@ class DiscoverCreator {
   final String category; // e.g. "Travel & Skincare"
   final String description;
   final double rating;
-  final int followers;
+
+  /// Follower total, or null when it was not measured. Null renders as
+  /// absent -- "0 Followers" would assert that nobody follows them.
+  final int? followers;
   final bool isFollowing;
 }

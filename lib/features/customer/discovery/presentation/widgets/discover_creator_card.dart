@@ -56,6 +56,7 @@ class _DiscoverCreatorCardState extends ConsumerState<DiscoverCreatorCard> {
   @override
   Widget build(BuildContext context) {
     final c = widget.creator;
+    final followers = c.followers;
     final isFollowing = ref.watch(followNotifierProvider).contains(c.id);
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s16),
@@ -147,18 +148,21 @@ class _DiscoverCreatorCardState extends ConsumerState<DiscoverCreatorCard> {
                 ),
                 const SizedBox(width: DesignTokens.s16),
               ],
-              const Icon(
-                Icons.person_outline_rounded,
-                size: DesignTokens.iconSmall,
-                color: DesignTokens.iconLight,
-              ),
-              const SizedBox(width: DesignTokens.s4),
-              Text(
-                '${_compact(c.followers)} Followers',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textWhite,
+              // Drawn only when a follower total was actually measured.
+              if (followers != null) ...[
+                const Icon(
+                  Icons.person_outline_rounded,
+                  size: DesignTokens.iconSmall,
+                  color: DesignTokens.iconLight,
                 ),
-              ),
+                const SizedBox(width: DesignTokens.s4),
+                Text(
+                  '${_compact(followers)} Followers',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+              ],
             ],
           ),
         ],
