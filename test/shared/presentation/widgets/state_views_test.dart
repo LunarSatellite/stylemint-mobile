@@ -190,6 +190,29 @@ void main() {
     });
   });
 
+  group('A measured zero', () {
+    // Several surfaces deliberately separate a recorded 0 from an absence.
+    // The restyle tones a zero down; it must never remove it, swap it for a
+    // dash, or turn it into a sentence claiming there is no data.
+    testWidgets('an empty state is not a substitute for a recorded zero', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          const SmEmptyState(
+            title: 'Partnership earnings',
+            message: _notTracked,
+          ),
+        ),
+      );
+
+      // The honest sentence, not a figure.
+      expect(find.text(_notTracked), findsOneWidget);
+      expect(find.text('0'), findsNothing);
+      expect(find.text('—'), findsNothing);
+    });
+  });
+
   group('Skeletons', () {
     testWidgets('a list skeleton renders placeholder rows and no copy', (
       tester,

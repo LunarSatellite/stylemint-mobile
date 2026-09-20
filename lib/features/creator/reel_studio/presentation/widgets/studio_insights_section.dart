@@ -307,10 +307,23 @@ class _JourneyStat extends StatelessWidget {
   final String label;
   final String value;
 
+  /// A creator at the start of their journey reads `0 / 0 / 0`. That is a
+  /// measured zero and it stays on screen, spelled out, exactly as it is —
+  /// it is not hidden, not replaced by a dash, not turned into "no data".
+  /// A zero simply carries less visual weight than a number that has grown,
+  /// so a fresh account reads as a starting line rather than a fault.
+  bool get _isZero => value.trim() == '0';
+
   @override
   Widget build(BuildContext context) => Column(
     children: [
-      Text(value, style: DesignTokens.oneLinerSemibold),
+      Text(
+        value,
+        style: DesignTokens.oneLinerSemibold.copyWith(
+          color: _isZero ? DesignTokens.textMuted : DesignTokens.textWhite,
+        ),
+      ),
+      const SizedBox(height: DesignTokens.s4),
       Text(label, style: DesignTokens.tiny),
     ],
   );
