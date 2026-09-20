@@ -35,7 +35,7 @@ class _CampaignWorkspaceScreenState
     try {
       final data = await ref
           .read(apiClientProvider)
-          .get('/api/v1/vendor/campaign-workspaces');
+          .get('/v1/vendor/campaign-workspaces');
       final rows = (data as List<dynamic>).whereType<Map<String, dynamic>>();
       workspace = rows.cast<Map<String, dynamic>?>().firstWhere(
         (x) => x?['brandBriefId']?.toString() == widget.briefId,
@@ -281,7 +281,7 @@ class _CampaignWorkspaceScreenState
       error = null;
     });
     try {
-      final path = '/api/v1/vendor/campaign-workspaces$suffix';
+      final path = '/v1/vendor/campaign-workspaces$suffix';
       if (put) {
         await ref.read(apiClientProvider).put(path, data: body);
       } else {

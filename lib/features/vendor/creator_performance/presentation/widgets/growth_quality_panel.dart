@@ -11,7 +11,7 @@ final growthQualityProvider = FutureProvider.autoDispose
       final result = await ref
           .watch(apiClientProvider)
           .get(
-            '/api/v1/vendor/growth-quality',
+            '/v1/vendor/growth-quality',
             queryParameters: {'days': days},
           );
       return GrowthQualityBoard.fromJson(result as Map<String, dynamic>);

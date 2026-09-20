@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 ///
 /// ## Why this type exists
 ///
-/// `POST /api/v1/vendor/digital-twin/scenarios` runs a seeded model. Nothing
+/// `POST /v1/vendor/digital-twin/scenarios` runs a seeded model. Nothing
 /// it returns was measured. The dialog that shows its result sits on the same
 /// screen as Store Pulse, whose figures *are* counted, so a simulated number
 /// drawn in the measured visual language is a fabricated measurement on a

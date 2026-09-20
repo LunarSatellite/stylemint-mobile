@@ -107,7 +107,7 @@ class DigitalTwinScenarioButton extends ConsumerWidget {
       final response = await ref
           .read(apiClientProvider)
           .post(
-            '/api/v1/vendor/digital-twin/scenarios',
+            '/v1/vendor/digital-twin/scenarios',
             data: {
               'name': 'Vendor what-if ${DateTime.now().toIso8601String()}',
               'seed': Random().nextInt(2147483646) + 1,
