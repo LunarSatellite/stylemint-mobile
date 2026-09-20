@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/enti
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_dashboard_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_overview_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/shared/widgets/creator_menu_button.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
@@ -113,6 +114,7 @@ class AnalyticsScreen extends ConsumerWidget {
             ),
             onPressed: () => context.push(RouteNames.creatorActivity),
           ),
+          const CreatorMenuButton.iconButton(),
         ],
       ),
     );

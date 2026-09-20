@@ -9,7 +9,7 @@ import 'package:stylemint_mobile_frontend/core/auth/jwt_roles.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/domain/entities/creator_dashboard.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
-import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/widgets/creator_more_menu_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/creator/shared/widgets/creator_menu_button.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart' as partnerships;
@@ -309,11 +309,9 @@ class _Header extends StatelessWidget {
           onTap: () => context.push(RouteNames.creatorActivity),
         ),
         const SizedBox(width: DesignTokens.s8),
-        Consumer(
-          builder: (ctx, ref, _) => _HeaderIconBtn(
-            iconWidget: const Icon(Icons.menu_rounded, size: 20, color: DesignTokens.textWhite),
-            onTap: () => showCreatorMoreMenu(ctx, ref),
-          ),
+        const CreatorMenuButton.circle(
+          diameter: 32,
+          fill: DesignTokens.buttonGrayFill,
         ),
       ],
     );

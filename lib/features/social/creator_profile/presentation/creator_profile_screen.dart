@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/shared/widgets/creator_menu_button.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/social_account_summary.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/widgets/social_platform_popup.dart';
@@ -116,6 +117,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       },
     );
 
+    // This screen doubles as the public view of *another* creator, so every
+    // owner-only affordance keys off this.
+    final isOwnProfile =
+        sessionId.isNotEmpty && effectiveAccountId == sessionId;
+
     final profileData = ref.watch(creatorProfileEditProvider);
     final CreatorProfile? loadedProfile = ref
         .watch(creatorProfileNotifierProvider(effectiveAccountId))
@@ -149,12 +155,14 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _topBar(effectiveAccountId, loadedProfile),
+                    _topBar(
+                      effectiveAccountId,
+                      loadedProfile,
+                      isOwnProfile: isOwnProfile,
+                    ),
                     const SizedBox(height: DesignTokens.s12),
                     _avatarSection(
-                      isOwnProfile:
-                          sessionId.isNotEmpty &&
-                          effectiveAccountId == sessionId,
+                      isOwnProfile: isOwnProfile,
                       accountId: effectiveAccountId,
                     ),
                     const SizedBox(height: DesignTokens.s12),
@@ -216,7 +224,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
   // ── Sections ──────────────────────────────────────────────────────────────
 
-  Widget _topBar(String effectiveAccountId, CreatorProfile? loadedProfile) {
+  Widget _topBar(
+    String effectiveAccountId,
+    CreatorProfile? loadedProfile, {
+    required bool isOwnProfile,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: DesignTokens.s16,
@@ -257,6 +269,13 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
               size: 22,
             ),
           ),
+          // Rate Card, Reach, Settings and the exit to Shopping live behind
+          // this, and they are the signed-in creator's own tools — they have
+          // no business on someone else's profile.
+          if (isOwnProfile) ...[
+            const SizedBox(width: DesignTokens.s16),
+            const CreatorMenuButton.bare(),
+          ],
         ],
       ),
     );

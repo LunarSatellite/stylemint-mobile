@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
-import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/widgets/creator_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/rate_card_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/shared/widgets/creator_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
 import '../../../smoke/fake_api_client.dart';
