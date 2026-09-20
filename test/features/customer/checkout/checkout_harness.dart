@@ -200,8 +200,7 @@ const String npr = 'NPR';
 /// What a customer actually types into "Label" — not "Home".
 const String typedAddressLabel = "Mum's place, Baluwatar";
 
-const String secondTypedAddressLabel =
-    'Sanepa flat — ring the top-floor bell';
+const String secondTypedAddressLabel = 'Sanepa flat — ring the top-floor bell';
 
 const String longVendorName = 'Kathmandu Atelier & Handloom Collective';
 

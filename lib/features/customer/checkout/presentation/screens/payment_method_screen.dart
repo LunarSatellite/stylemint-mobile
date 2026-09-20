@@ -28,12 +28,16 @@ class PaymentMethodScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
-        title: const Text('Payment Method',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Payment Method',
+          style: DesignTokens.sectionInnerTitle,
+        ),
         centerTitle: false,
       ),
       body: state.maybeWhen(
@@ -45,8 +49,7 @@ class PaymentMethodScreen extends ConsumerWidget {
         orElse: () => state.maybeWhen(
           loadFailure: (failure, _) => SmErrorView(
             message: 'Failed to load payment methods.',
-            onRetry: () =>
-                ref.read(checkoutNotifierProvider.notifier).load(),
+            onRetry: () => ref.read(checkoutNotifierProvider.notifier).load(),
           ),
           orElse: () => const SmPageLoader(),
         ),
@@ -115,11 +118,13 @@ class _MethodListState extends State<_MethodList> {
                             widget.onSelect(method);
                           },
                           borderRadius: BorderRadius.circular(
-                              DesignTokens.cardRadius),
+                            DesignTokens.cardRadius,
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: DesignTokens.s16,
-                                vertical: DesignTokens.s12),
+                              horizontal: DesignTokens.s16,
+                              vertical: DesignTokens.s12,
+                            ),
                             child: Row(
                               children: [
                                 _PaymentIcon(type: method.type),
@@ -127,21 +132,21 @@ class _MethodListState extends State<_MethodList> {
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         method.label,
                                         style: DesignTokens.oneLinerSemibold
                                             .copyWith(
-                                            color:
-                                            DesignTokens.textWhite),
+                                              color: DesignTokens.textWhite,
+                                            ),
                                       ),
                                       Text(
                                         _subtitle(method),
                                         style: DesignTokens.smallRegular
                                             .copyWith(
-                                            color:
-                                            DesignTokens.textMuted),
+                                              color: DesignTokens.textMuted,
+                                            ),
                                       ),
                                     ],
                                   ),

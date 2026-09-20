@@ -76,6 +76,13 @@ class DesignTokens {
   static const Color warning500 = Color(0xFFF0B100); // Warning/500
   static const Color baseBlack = Color(0xFF000000); // Base/Black
 
+  // --- Payment brand marks -------------------------------------------------
+  // Not part of the palette: these are the provider's own colours and must
+  // stay exact, which is precisely why they belong here rather than inline.
+  static const Color brandVisa = Color(0xFF1A1F71);
+  static const Color brandPayPal = Color(0xFF009CDE);
+  static const Color brandESewa = Color(0xFF4CAF50);
+
   /// Warm accent for affection/appreciation marks (cart thank-you stub).
   /// Deliberately distinct from [colorError] so a heart never reads as a fault.
   static const Color accentHeart = Color(0xFFE53935);
@@ -421,6 +428,7 @@ class DesignTokens {
 
   // List thumbnails — product images in cart/order/search rows. One size so
   // every list on the shopper journey aligns to the same left edge.
+  static const double thumbCompact = 64;
   static const double thumbSmall = 72;
   static const double thumbMedium = 88;
 

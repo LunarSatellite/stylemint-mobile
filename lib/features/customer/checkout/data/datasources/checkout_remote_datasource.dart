@@ -304,8 +304,7 @@ class CheckoutRemoteDataSource {
       options: Options(
         headers: {
           'requiresToken': true,
-          'Idempotency-Key':
-              'checkout-pickup-$sessionId-$sellerId-$locationId',
+          'Idempotency-Key': 'checkout-pickup-$sessionId-$sellerId-$locationId',
         },
       ),
     );

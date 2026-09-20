@@ -80,6 +80,24 @@ void main() {
     });
   });
 
+  group('the polished delivery card', () {
+    testCheckoutLayouts(
+      'keeps the "Recommended" chip on screen beside a long option title',
+      (tester, width, scale) async {
+        await pumpCheckout(tester, repository, width: width, textScale: scale);
+
+        final chip = find.text('Recommended');
+        if (chip.evaluate().isEmpty) return;
+        expect(
+          _rightEdge(tester, chip.first),
+          lessThanOrEqualTo(width),
+          reason: 'the recommended chip ran off the delivery card',
+        );
+        expectNoLayoutErrors(tester);
+      },
+    );
+  });
+
   group('the fixed overflows stay fixed', () {
     // Each test below fails if its fix is reverted. Verified by reverting
     // each one in turn and watching it go red.
