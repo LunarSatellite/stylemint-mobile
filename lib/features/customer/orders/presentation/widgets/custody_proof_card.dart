@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/custody_chain.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/custody_proof_export_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/kathmandu_time.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_status.dart';
@@ -49,16 +50,21 @@ class CustodyProofCard extends ConsumerWidget {
     // Not an error, not an empty shell — the rest of order detail is unaware
     // this card exists.
     if (proof == null || proof.isEmpty) return const SizedBox.shrink();
-    return CustodyProofView(proof: proof);
+    return CustodyProofView(proof: proof, trackingNumber: trackingNumber);
   }
 }
 
 /// The card itself, separated from the read so it can be rendered from a
 /// fixture in tests and reused wherever a proof is already in hand.
 class CustodyProofView extends StatelessWidget {
-  const CustodyProofView({required this.proof, super.key});
+  const CustodyProofView({required this.proof, this.trackingNumber, super.key});
 
   final CustodyProof proof;
+
+  /// The parcel this proof belongs to, when the card knows it. Non-null adds
+  /// the hand-over control; null renders the card exactly as it always has,
+  /// which is what a fixture-driven test gets.
+  final String? trackingNumber;
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +106,28 @@ class CustodyProofView extends StatelessWidget {
                 for (final entry in proof.entries) _stepFor(entry),
               ],
             ),
+            // The export has been buyer-facing since it shipped and had no
+            // caller of any kind: the endpoint is authenticated and scoped to
+            // the buyer, so no buyer could reach it without a client. This is
+            // that client, and it is deliberately a control rather than a
+            // screen — the document is hashes and signatures, which nobody
+            // checks by eye, and the question a buyer has about their own
+            // parcel is already answered by the verdict above. What the
+            // export adds is a document somebody *else* can check.
+            if (trackingNumber case final tracking?) ...[
+              const SizedBox(height: DesignTokens.s16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => CustodyProofExportSheet.open(
+                    context,
+                    trackingNumber: tracking,
+                  ),
+                  style: DesignTokens.outlinedButtonStyle(),
+                  child: const Text('Hand this proof to someone'),
+                ),
+              ),
+            ],
           ],
         ),
       ),

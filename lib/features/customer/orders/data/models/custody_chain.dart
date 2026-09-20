@@ -155,3 +155,98 @@ class CustodyProof {
   /// A parcel with no entries has no proof to show, and renders nothing.
   bool get isEmpty => entries.isEmpty;
 }
+
+/// The self-contained custody proof from
+/// `GET /v1/deliveries/{tracking}/custody/export` — the thing a buyer hands to
+/// somebody else.
+///
+/// It is deliberately *not* a view model. The export is a document the
+/// recipient checks against the published algorithm without calling StyleMint
+/// and without trusting StyleMint; [json] is that document, byte for byte as
+/// the server produced it, because re-encoding it client-side would change the
+/// bytes the recipient is meant to verify. The other fields exist only so the
+/// app can tell the buyer what they are about to hand over.
+///
+/// ## The attestation level is never rendered as "verified"
+///
+/// [attestationState] is a machine token (`unsigned`, `self_attested`,
+/// `counter_signed`, `anchored`) and this app never turns one into a word of
+/// its own. [attestationMeaning] is the server's sentence about that level and
+/// is the only thing shown, because every shorter phrasing of `self_attested`
+/// reads as third-party verification, and a StyleMint seal is not that.
+///
+/// ## Limitations are never empty
+///
+/// The server always states at least one limitation. An export arriving with
+/// none is not a stronger proof, it is a malformed one — see [isPresentable],
+/// which refuses to offer it rather than presenting a proof with no caveats.
+class CustodyProofExport {
+  const CustodyProofExport({
+    required this.json,
+    required this.disclosureProfile,
+    required this.attestationState,
+    required this.attestationMeaning,
+    required this.limitations,
+    required this.entryCount,
+    this.attestedBy = const [],
+  });
+
+  /// The export document, exactly as the server serialised it.
+  final String json;
+
+  /// `full` or `bearer`, as the server reports it back.
+  final String disclosureProfile;
+
+  /// The server's own token. Shown to nobody; used only to key a test.
+  final String attestationState;
+
+  /// The server's sentence about the attestation. Rendered verbatim.
+  final String attestationMeaning;
+
+  /// Every caveat the server attached, verbatim and in order.
+  final List<String> limitations;
+
+  /// Who, other than StyleMint, has attested to this chain root. Empty on
+  /// every deployment today, and empty means nobody — never "unknown".
+  final List<String> attestedBy;
+
+  final int entryCount;
+
+  /// Whether this export can honestly be offered to a buyer.
+  ///
+  /// A proof with no attestation sentence, or no limitations, is missing the
+  /// parts that stop it reading as an independent guarantee. The app declines
+  /// to hand over a document it cannot describe truthfully.
+  bool get isPresentable =>
+      attestationMeaning.trim().isNotEmpty &&
+      limitations.any((line) => line.trim().isNotEmpty) &&
+      json.trim().isNotEmpty;
+
+  /// True only when a named party other than StyleMint signed the chain root.
+  /// `anchored` is deliberately excluded: an anchor is a timestamp over a
+  /// 32-byte digest by a party that never saw the parcel, and the server's own
+  /// limitations say in capitals that anchored is not counter-signed.
+  bool get hasIndependentAttestation =>
+      attestationState == 'counter_signed' && attestedBy.isNotEmpty;
+
+  static CustodyProofExport? fromJson(Map<String, dynamic> json, String raw) {
+    final attestation = json['attestation'];
+    if (attestation is! Map<String, dynamic>) return null;
+    final export = CustodyProofExport(
+      json: raw,
+      disclosureProfile: json['disclosureProfile']?.toString() ?? '',
+      attestationState: attestation['state']?.toString() ?? '',
+      attestationMeaning: attestation['meaning']?.toString() ?? '',
+      limitations: (json['limitations'] as List<dynamic>? ?? const [])
+          .map((line) => line.toString())
+          .where((line) => line.trim().isNotEmpty)
+          .toList(growable: false),
+      attestedBy: (attestation['attestedBy'] as List<dynamic>? ?? const [])
+          .map((party) => party.toString())
+          .where((party) => party.trim().isNotEmpty)
+          .toList(growable: false),
+      entryCount: (json['entries'] as List<dynamic>? ?? const []).length,
+    );
+    return export.isPresentable ? export : null;
+  }
+}
