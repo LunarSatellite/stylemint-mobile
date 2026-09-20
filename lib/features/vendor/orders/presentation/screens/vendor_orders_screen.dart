@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/wi
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_return_card.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_menu_button.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -203,6 +204,10 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
                 builder: (_) => const _FilterSheet(),
               ),
             ),
+            // The store tools (Partnerships, Brand Studio, Payouts, …) used to
+            // hang off the Home tab alone, so a vendor standing here had to go
+            // back Home to reach any of them.
+            const VendorMenuButton(),
           ],
           bottom: TabBar(
             controller: _tabController,

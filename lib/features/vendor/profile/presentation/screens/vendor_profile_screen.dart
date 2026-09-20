@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/features/vendor/profile/domain/entities/vendor_profile.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_menu_button.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -39,6 +40,10 @@ class VendorProfileScreen extends ConsumerWidget {
             ),
             onPressed: () => context.push(RouteNames.settings),
           ),
+          // The store tools (Partnerships, Brand Studio, Payouts, …) used to
+          // hang off the Home tab alone, so a vendor standing here had to go
+          // back Home to reach any of them.
+          const VendorMenuButton(),
         ],
       ),
       body: profile.when(
