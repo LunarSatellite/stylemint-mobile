@@ -168,4 +168,21 @@ class WarrantyEligibility {
     }
     return const [];
   }
+
+  /// This order's warranty position for one line, or null when the report
+  /// carries no row for it.
+  ///
+  /// Null here is "the platform has not told us about this line" — which is
+  /// what a screen sees while the report loads and after it fails — and never
+  /// "this line has no warranty". Those two readings look identical on screen
+  /// unless a caller keeps them apart, so this returns the row rather than a
+  /// flattened answer, and lets the caller render the row's own sentence.
+  WarrantyEligibilityItem? itemForLine(String subOrderLineId) {
+    final needle = subOrderLineId.toLowerCase();
+    if (needle.isEmpty) return null;
+    for (final item in items) {
+      if (item.subOrderLineId.toLowerCase() == needle) return item;
+    }
+    return null;
+  }
 }
