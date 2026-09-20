@@ -19,7 +19,22 @@ class PartnershipDetailDto {
   final String id;
   final String vendorProfileId;
   final String stateLabel;
+
+  /// Percent (`15.0` is fifteen percent), already converted from the
+  /// fraction the backend sends. `PartnershipDto.commissionMinPercent`
+  /// is `CommissionRange.MinPercent`, which — despite its name — is
+  /// stored as a fraction in `0..1` (`0.15` == 15 %); `CommissionRange`
+  /// says so and `RequestPartnershipVmValidator` pins it to
+  /// `CommissionRange.Floor..Ceiling` == `0..1`. Reading it here without
+  /// the ×100 made `toStringAsFixed(0)` on `0.15` render **"0%
+  /// Commission"** on the brand detail header, and handed
+  /// `PartnershipApplyArgs` a fraction where every other caller
+  /// (`BrandListItemDto` → `BrandInfoData`) passes a percent — so the
+  /// apply slider was labelled "0%-0%" and its `_range.start / 100`
+  /// submitted `0.0015`, asking for 0.15 % instead of 15 %.
   final double commissionMinPercent;
+
+  /// Percent. See [commissionMinPercent].
   final double commissionMaxPercent;
   final double? vendorRating;
   final String? requestMessage;
@@ -67,9 +82,9 @@ class PartnershipDetailDto {
       vendorProfileId: (json['vendorProfileId'] as String?) ?? '',
       stateLabel: _states[(json['state'] as num?)?.toInt() ?? 0] ?? 'Unknown',
       commissionMinPercent:
-          (json['commissionMinPercent'] as num?)?.toDouble() ?? 0,
+          ((json['commissionMinPercent'] as num?)?.toDouble() ?? 0) * 100,
       commissionMaxPercent:
-          (json['commissionMaxPercent'] as num?)?.toDouble() ?? 0,
+          ((json['commissionMaxPercent'] as num?)?.toDouble() ?? 0) * 100,
       vendorRating: (json['vendorRating'] as num?)?.toDouble(),
       requestMessage: json['requestMessage'] as String?,
       vendorName: (json['vendorName'] as String?) ?? '',
