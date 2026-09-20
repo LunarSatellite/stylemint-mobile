@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/notifiers/checkout_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/delivery_distance_note.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -1053,6 +1054,13 @@ class _DeliveryChoiceCard extends StatelessWidget {
                               height: 1.35,
                             ),
                           ),
+                          if (choice.distance case final distance?) ...[
+                            const SizedBox(height: DesignTokens.s8),
+                            DeliveryDistanceNote(
+                              distance: distance,
+                              emissions: choice.emissions,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1217,9 +1225,13 @@ class _DeliveryChoiceCard extends StatelessWidget {
 //     break model behind them, so they can be repeated but never interpreted.
 //   • Stock at a counter. The platform records none; the server reports every
 //     counter as "unknown", which is not a quantity and is not zero.
-//   • Distance or a map. That would need the shopper's coordinates, which this
-//     screen never asks for — no location permission is requested here, because
-//     nothing shown depends on where the shopper is.
+//   • Distance or a map to a counter. The server measures from a seller's
+//     recorded store address to the delivery address on the checkout; a
+//     counter the shopper travels to is neither endpoint, and nothing records
+//     where the shopper would set out from. (The delivery options above do
+//     carry a distance now, where both of *those* ends are recorded — see
+//     [DeliveryDistanceNote]. This picker still asks for no location
+//     permission, because nothing shown here depends on where the shopper is.)
 //
 // Nothing here is preselected, including when the seller has exactly one
 // counter. See [_PickupCounterPicker.build].

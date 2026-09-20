@@ -98,6 +98,9 @@ class OrderCareCard extends ConsumerWidget {
                 units:
                     eligibility?.unitsForLine(plan.items[i].subOrderLineId) ??
                     const [],
+                warranty: eligibility?.itemForLine(
+                  plan.items[i].subOrderLineId,
+                ),
                 onOpenUnitClaims: onOpenUnitClaims,
               ),
             ],
@@ -113,6 +116,7 @@ class _CareItemRow extends StatelessWidget {
     required this.item,
     required this.resolveAction,
     this.units = const [],
+    this.warranty,
     this.onOpenUnitClaims,
   });
 
@@ -122,6 +126,14 @@ class _CareItemRow extends StatelessWidget {
   /// The physical items tagged on this line. Empty on almost every line, and
   /// empty is what keeps the line-level path below untouched.
   final List<WarrantyUnitEligibility> units;
+
+  /// This line's row in the warranty report, or null when the report has not
+  /// arrived — while it loads, and after a 404 or an outage.
+  ///
+  /// Null is not "no warranty". It is "nobody has told us yet", and the two
+  /// must render differently: one is a fact about the goods, the other is a
+  /// fact about the request.
+  final WarrantyEligibilityItem? warranty;
   final void Function(WarrantyUnitEligibility unit)? onOpenUnitClaims;
 
   @override
@@ -210,6 +222,28 @@ class _CareItemRow extends StatelessWidget {
                   ends: warrantyEnds,
                   inProgress: item.hasOpenWarrantyClaim,
                 ),
+              ]
+              // No tagged items, no coverage date — and, until now, nothing
+              // at all. A buyer who was shown this feature saw a blank where
+              // it should be, which reads as a broken screen rather than as
+              // an answer.
+              //
+              // The report itself carries the answer: the server writes one
+              // sentence per line, and for a line nobody attached a policy to
+              // it is "No seller warranty was attached when this item was
+              // purchased." It is rendered verbatim, because a client that
+              // rephrases a warranty position is a client that eventually
+              // states one that is not true.
+              //
+              // There is deliberately no branch for a null [warranty]. A
+              // report that has not arrived is not evidence that cover is
+              // absent, and this card is supplementary by design: it says
+              // nothing while it does not know, exactly as it does while the
+              // care plan itself is loading.
+              else if (warranty?.statusExplanation.trim() case final note?
+                  when note.isNotEmpty) ...[
+                const SizedBox(height: DesignTokens.s8),
+                _NoWarrantyNote(note: note),
               ],
               if (item.isReturnWindowOpen && daysLeft != null) ...[
                 const SizedBox(height: DesignTokens.s8),
@@ -268,6 +302,46 @@ class _WarrantyChip extends StatelessWidget {
             style: DesignTokens.smallRegular.copyWith(
               color: DesignTokens.primaryGreen,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// What a line says about its warranty when it has no coverage date and no
+/// tagged items — the state that used to render nothing at all.
+///
+/// Muted, not green, and carrying no shield: this is the platform reporting
+/// that it looked and found nothing, not a badge of cover. The sentence is the
+/// server's own, rendered verbatim.
+class _NoWarrantyNote extends StatelessWidget {
+  const _NoWarrantyNote({required this.note});
+
+  final String note;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label: 'Warranty: $note',
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(
+          Icons.info_outline,
+          size: 14,
+          color: DesignTokens.textMuted,
+        ),
+        const SizedBox(width: DesignTokens.s4),
+        // The sentence wraps in full. Truncating "No seller warranty was
+        // attached…" to its first words is how an absence starts reading as
+        // a presence.
+        Expanded(
+          child: Text(
+            note,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
             ),
           ),
         ),

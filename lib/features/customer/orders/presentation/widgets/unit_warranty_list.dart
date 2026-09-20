@@ -14,12 +14,26 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// It is only ever built for a line that actually has units. A line with no
 /// marker keeps the single line-level chip it has always had; that is the
 /// right answer for almost all stock, not a lesser one.
+///
+/// Handed an empty list anyway, this says so in a sentence rather than
+/// collapsing to nothing. It used to return a zero-size box, which meant a
+/// caller that got the condition wrong produced a blank where a feature had
+/// been demonstrated — and a blank is indistinguishable from a bug. Saying
+/// "the platform looked and found no tagged items" is an answer; silence is
+/// not.
 class UnitWarrantyList extends StatelessWidget {
   const UnitWarrantyList({
     required this.units,
     this.onOpenUnit,
     super.key,
   });
+
+  /// What an empty list renders. It reports the lookup, not the goods: no
+  /// tagged item was found on this line, which is the ordinary answer for
+  /// almost all stock and says nothing about whether the line is covered.
+  static const String noTaggedItemsNote =
+      'No item on this line carries a unit tag, so there is no per-item '
+      'warranty to show.';
 
   final List<WarrantyUnitEligibility> units;
 
@@ -28,7 +42,31 @@ class UnitWarrantyList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (units.isEmpty) return const SizedBox.shrink();
+    if (units.isEmpty) {
+      return Semantics(
+        container: true,
+        label: noTaggedItemsNote,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.info_outline,
+              size: 14,
+              color: DesignTokens.textMuted,
+            ),
+            const SizedBox(width: DesignTokens.s4),
+            Expanded(
+              child: Text(
+                noTaggedItemsNote,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

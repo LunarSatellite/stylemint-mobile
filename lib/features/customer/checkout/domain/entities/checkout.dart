@@ -178,6 +178,171 @@ enum PaymentMethodType { card, eSewa, cod, paypal }
 
 enum DeliveryChoiceKind { homeDelivery, pickupFromSeller }
 
+/// Whether a delivery option's distance could be measured, and when it could
+/// not, which end was missing — backend `DeliveryDistanceState`, serialised as
+/// a word and never as a number.
+///
+/// Read this before [DeliveryDistanceSummary.straightLineKm]. The state is the
+/// answer; the number is only ever a detail of one state.
+enum DeliveryDistanceState {
+  /// Every journey had a known start and a known end, so
+  /// [DeliveryDistanceSummary.straightLineKm] carries a figure. That figure
+  /// may legitimately be `0.0` — two points close enough together round to
+  /// zero — and here `0.0` means measured-and-tiny, never unknown.
+  measured('Measured'),
+
+  /// At least one seller has no recorded location carrying coordinates.
+  originUnknown('OriginUnknown'),
+
+  /// The delivery address on this checkout has no coordinates recorded.
+  destinationUnknown('DestinationUnknown'),
+
+  /// Neither end is known.
+  bothEndsUnknown('BothEndsUnknown'),
+
+  /// There is no delivery journey to measure — collection is the case. This is
+  /// *not* a measured zero distance: the shopper still travels, and this
+  /// platform does not know where they would set out from.
+  noDeliveryJourney('NoDeliveryJourney');
+
+  const DeliveryDistanceState(this.wire);
+
+  final String wire;
+
+  /// True for every state except [measured]. A withheld figure is unknown,
+  /// never zero.
+  bool get isWithheld => this != DeliveryDistanceState.measured;
+}
+
+/// What this checkout can honestly say about how far a delivery option travels
+/// — backend `DeliveryDistanceSummary`.
+///
+/// [straightLineKm] is a great-circle distance and nothing else. A vehicle
+/// travels further, always, so [method] — which says exactly that — is
+/// rendered with the figure and never separately from it.
+///
+/// There is deliberately no "estimated distance" here and no fallback. Null is
+/// the only way "we don't know" is expressed, it is never `0`, and a partial
+/// sum is never shown: if one journey of three could not be measured the whole
+/// figure is withheld, because a sum missing a leg reads as complete *and
+/// shorter than the truth*.
+@immutable
+class DeliveryDistanceSummary {
+  const DeliveryDistanceSummary({
+    required this.state,
+    required this.journeys,
+    required this.journeysMeasured,
+    required this.method,
+    this.straightLineKm,
+    this.withheldReason,
+  });
+
+  final DeliveryDistanceState state;
+
+  /// Separate delivery journeys this option needs: one per seller for home
+  /// delivery, none for collection. A count this platform records rather than
+  /// estimates — available whether or not any coordinate is known, which is
+  /// why collection is `0` journeys with the distance withheld and not a
+  /// distance of zero.
+  final int journeys;
+
+  /// How many of [journeys] had both endpoints known.
+  final int journeysMeasured;
+
+  /// Total straight-line kilometres, or null whenever [state] is anything
+  /// other than [DeliveryDistanceState.measured].
+  final double? straightLineKm;
+
+  /// The server's own sentence about how the figure was produced and what it
+  /// is not. Always populated, on measured and withheld alike. Rendered
+  /// verbatim — paraphrasing it is how a straight line becomes "distance
+  /// travelled".
+  final String method;
+
+  /// Why no figure is shown, in the server's own words. Null exactly when
+  /// [state] is [DeliveryDistanceState.measured]; non-null otherwise, so "we
+  /// don't know" is never silent.
+  final String? withheldReason;
+
+  /// True only when the state says measured *and* a figure actually arrived.
+  /// Anything less renders as an absence with its reason, never as a number.
+  bool get hasFigure =>
+      state == DeliveryDistanceState.measured && straightLineKm != null;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DeliveryDistanceSummary &&
+      other.state == state &&
+      other.journeys == journeys &&
+      other.journeysMeasured == journeysMeasured &&
+      other.straightLineKm == straightLineKm &&
+      other.method == method &&
+      other.withheldReason == withheldReason;
+
+  @override
+  int get hashCode => Object.hash(
+    state,
+    journeys,
+    journeysMeasured,
+    straightLineKm,
+    method,
+    withheldReason,
+  );
+}
+
+/// Transport emissions for one delivery option — backend
+/// `DeliveryEmissionsEstimate`.
+///
+/// Null on every response this platform currently produces: turning a distance
+/// into a mass needs a reviewed factor, the one place that holds reviewed
+/// factors is deliberately blank, and null here means "we are not entitled to
+/// state a figure", never "this emits nothing".
+///
+/// The mass is never renderable on its own. [factorVersion], [factorSourceUri]
+/// and [method] are what make it a citation rather than a claim, so
+/// [isRenderable] refuses the whole estimate when any of them is missing.
+@immutable
+class DeliveryEmissionsEstimate {
+  const DeliveryEmissionsEstimate({
+    required this.kgCo2e,
+    required this.factorVersion,
+    required this.factorSourceUri,
+    required this.method,
+    this.factorEffectiveUtc,
+  });
+
+  final double kgCo2e;
+  final String factorVersion;
+  final String factorSourceUri;
+  final String method;
+  final DateTime? factorEffectiveUtc;
+
+  /// A mass with no factor version, no source and no method is an unsourced
+  /// number. It is not shown at all rather than shown bare.
+  bool get isRenderable =>
+      factorVersion.trim().isNotEmpty &&
+      factorSourceUri.trim().isNotEmpty &&
+      method.trim().isNotEmpty;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DeliveryEmissionsEstimate &&
+      other.kgCo2e == kgCo2e &&
+      other.factorVersion == factorVersion &&
+      other.factorSourceUri == factorSourceUri &&
+      other.method == method &&
+      other.factorEffectiveUtc == factorEffectiveUtc;
+
+  @override
+  int get hashCode => Object.hash(
+    kgCo2e,
+    factorVersion,
+    factorSourceUri,
+    method,
+    factorEffectiveUtc,
+  );
+}
+
 class DeliveryChoice {
   const DeliveryChoice({
     required this.kind,
@@ -189,6 +354,8 @@ class DeliveryChoice {
     this.recommended = false,
     this.sellerAccountId,
     this.sellerName,
+    this.distance,
+    this.emissions,
   });
   final DeliveryChoiceKind kind;
   final String title;
@@ -199,6 +366,17 @@ class DeliveryChoice {
   final String? sellerName;
   final bool selected;
   final bool recommended;
+
+  /// How far this option travels, when both ends are recorded, and the
+  /// server's explanation when they are not. Null is what every response
+  /// carried before the field existed, and it means the same thing a withheld
+  /// figure does: unknown, never zero.
+  final DeliveryDistanceSummary? distance;
+
+  /// Null on every deployment that holds no reviewed emissions factor, which
+  /// is all of them. Never rendered as zero.
+  final DeliveryEmissionsEstimate? emissions;
+
   DeliveryChoice copyWith({bool? selected}) => DeliveryChoice(
     kind: kind,
     title: title,
@@ -209,6 +387,8 @@ class DeliveryChoice {
     sellerName: sellerName,
     selected: selected ?? this.selected,
     recommended: recommended,
+    distance: distance,
+    emissions: emissions,
   );
 }
 
@@ -267,8 +447,13 @@ enum PickupLocationConfirmation { neverConfirmed, confirmed, stale }
 /// verbatim but never interpreted.
 ///
 /// There is deliberately no distance and no stock field. The server reports
-/// stock as `Unknown` for every counter (no per-location inventory exists), and
-/// distance would need the shopper's coordinates, which are not collected.
+/// stock as `Unknown` for every counter (no per-location inventory exists).
+/// Distance is absent for a different reason: the server measures from a
+/// seller's recorded store address to the *delivery address* on the checkout,
+/// and a counter the shopper travels to is neither of those. The platform does
+/// not know where a shopper would set out from, so no counter carries a
+/// distance — see [DeliveryDistanceSummary], which withholds for exactly that
+/// reason on the collection option itself.
 @immutable
 class PickupLocation {
   const PickupLocation({

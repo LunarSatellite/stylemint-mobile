@@ -21,6 +21,14 @@ class _FakeCustodyDataSource implements CustodyDataSource {
     calls++;
     return _proof;
   }
+
+  /// These tests are about the card, not the hand-over. Nothing here asks for
+  /// an export, and answering "none" keeps it that way.
+  @override
+  Future<CustodyProofExport?> export(
+    String trackingNumber, {
+    required bool bearer,
+  }) async => null;
 }
 
 /// Deliberately *not* evenly spaced, deliberately not derived from each other,
