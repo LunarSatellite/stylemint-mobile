@@ -23,6 +23,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_shipment.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracking_lookup.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_eligibility.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
@@ -268,6 +269,34 @@ final warrantyClaimsProvider = FutureProvider.autoDispose<List<WarrantyClaim>>((
   return result.fold((_) => const <WarrantyClaim>[], (claims) => claims);
 });
 
+/// This order's warranty position, used only to find the units bound to a
+/// line. Supplementary in exactly the way [orderCarePlanProvider] is: a
+/// failure or a 404 yields null, and every line then renders its line-level
+/// warranty as it always has. It never turns an absent answer into a claim
+/// about the goods.
+final warrantyEligibilityProvider = FutureProvider.autoDispose
+    .family<WarrantyEligibility?, String>((ref, orderNumber) async {
+      try {
+        final result = await ref
+            .watch(ordersRepositoryProvider)
+            .getWarrantyEligibility(orderNumber);
+        return result.fold((_) => null, (eligibility) => eligibility);
+      } catch (_) {
+        return null;
+      }
+    });
+
+/// The service history of one physical item, keyed by a binding id. Empty for
+/// a unit with no claims — and for a binding the server will not talk about,
+/// which is deliberately the same answer.
+final unitWarrantyClaimsProvider = FutureProvider.autoDispose
+    .family<List<WarrantyClaim>, String>((ref, unitMarkerBindingId) async {
+      final result = await ref
+          .watch(ordersRepositoryProvider)
+          .getUnitWarrantyClaims(unitMarkerBindingId);
+      return result.fold((_) => const <WarrantyClaim>[], (claims) => claims);
+    });
+
 /// Voyager "Verified Scan-to-Receive Handover" — asks the buyer what arrived
 /// once a StyleMint parcel is out for delivery or delivered, then shows the
 /// saved answer. Keyed by tracking number; autoDispose so reopening the
@@ -479,10 +508,7 @@ refillPlanNotifierProvider =
 /// pause. Kept separate from [replenishmentPreferenceNotifierProvider], which
 /// owns only the on/off switch and is what the existing Buy-It-Again surface
 /// reads — this one is additive and changes nothing there.
-final StateNotifierProvider<
-  ReplenishmentRulesNotifier,
-  ReplenishmentRulesState
->
+final StateNotifierProvider<ReplenishmentRulesNotifier, ReplenishmentRulesState>
 replenishmentRulesNotifierProvider =
     StateNotifierProvider.autoDispose<
       ReplenishmentRulesNotifier,

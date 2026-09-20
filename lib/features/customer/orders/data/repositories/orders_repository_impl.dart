@@ -20,6 +20,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_eligibility.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 
 class OrdersRepositoryImpl implements OrdersRepository {
@@ -388,6 +389,23 @@ class OrdersRepositoryImpl implements OrdersRepository {
             .map((dto) => dto.toDomain())
             .toList(growable: false),
       );
+
+  @override
+  Future<Either<NetworkExceptions, WarrantyEligibility>> getWarrantyEligibility(
+    String orderNumber,
+  ) => _deliveryCall(
+    () async =>
+        (await remoteDataSource.getWarrantyEligibility(orderNumber)).toDomain(),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, List<WarrantyClaim>>> getUnitWarrantyClaims(
+    String unitMarkerBindingId,
+  ) => _deliveryCall(
+    () async => (await remoteDataSource.getUnitWarrantyClaims(
+      unitMarkerBindingId,
+    )).map((dto) => dto.toDomain()).toList(growable: false),
+  );
   @override
   Future<Either<NetworkExceptions, DeliveryPackageStatus>>
   getDeliveryPackageStatus(String trackingNumber) => _deliveryCall(

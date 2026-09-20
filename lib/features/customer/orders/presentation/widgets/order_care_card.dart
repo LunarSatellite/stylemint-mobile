@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_eligibility.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/unit_warranty_list.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -21,16 +23,30 @@ class OrderCareCard extends ConsumerWidget {
   const OrderCareCard({
     required this.orderNumber,
     this.resolveAction,
+    this.onOpenUnitClaims,
     super.key,
   });
 
   final String orderNumber;
   final CareActionResolver? resolveAction;
 
+  /// Opens one tagged item's claim history. Null omits that control, which is
+  /// also what happens on every line that carries no marker.
+  final void Function(WarrantyUnitEligibility unit)? onOpenUnitClaims;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plan = ref.watch(orderCarePlanProvider(orderNumber)).asData?.value;
     if (plan == null || plan.items.isEmpty) return const SizedBox.shrink();
+
+    // Supplementary, exactly like the care plan itself: null while loading and
+    // on any failure, and then every line renders the line-level warranty it
+    // has always rendered. An absent answer never becomes a claim about the
+    // goods.
+    final eligibility = ref
+        .watch(warrantyEligibilityProvider(orderNumber))
+        .asData
+        ?.value;
 
     final deadline = plan.nextReturnDeadlineUtc;
 
@@ -71,7 +87,14 @@ class OrderCareCard extends ConsumerWidget {
                   height: DesignTokens.s24,
                   color: DesignTokens.borderDefault,
                 ),
-              _CareItemRow(item: plan.items[i], resolveAction: resolveAction),
+              _CareItemRow(
+                item: plan.items[i],
+                resolveAction: resolveAction,
+                units:
+                    eligibility?.unitsForLine(plan.items[i].subOrderLineId) ??
+                    const [],
+                onOpenUnitClaims: onOpenUnitClaims,
+              ),
             ],
           ],
         ),
@@ -81,10 +104,20 @@ class OrderCareCard extends ConsumerWidget {
 }
 
 class _CareItemRow extends StatelessWidget {
-  const _CareItemRow({required this.item, required this.resolveAction});
+  const _CareItemRow({
+    required this.item,
+    required this.resolveAction,
+    this.units = const [],
+    this.onOpenUnitClaims,
+  });
 
   final CareItem item;
   final CareActionResolver? resolveAction;
+
+  /// The physical items tagged on this line. Empty on almost every line, and
+  /// empty is what keeps the line-level path below untouched.
+  final List<WarrantyUnitEligibility> units;
+  final void Function(WarrantyUnitEligibility unit)? onOpenUnitClaims;
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +191,15 @@ class _CareItemRow extends StatelessWidget {
                   ),
                 ),
               ],
-              if (item.warrantyEndsUtc case final warrantyEnds?) ...[
+              // Where the goods carry markers the warranty belongs to each
+              // physical item, so the single line chip would be a merge of
+              // three separate answers. Where they do not — almost always —
+              // this branch is not taken and the chip renders exactly as it
+              // always has.
+              if (units.isNotEmpty) ...[
+                const SizedBox(height: DesignTokens.s8),
+                UnitWarrantyList(units: units, onOpenUnit: onOpenUnitClaims),
+              ] else if (item.warrantyEndsUtc case final warrantyEnds?) ...[
                 const SizedBox(height: DesignTokens.s8),
                 _WarrantyChip(
                   ends: warrantyEnds,

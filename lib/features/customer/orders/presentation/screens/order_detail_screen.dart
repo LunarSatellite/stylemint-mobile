@@ -21,6 +21,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/handover_delegation_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_care_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_return_link.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/unit_warranty_claims_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/warranty_claim_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_tracking_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
@@ -270,6 +271,11 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             orderNumber: order.orderNumber,
             resolveAction: (item, action) =>
                 _careActionFor(order, item, action),
+            onOpenUnitClaims: (unit) => showUnitWarrantyClaimsSheet(
+              context,
+              unitMarkerBindingId: unit.unitMarkerBindingId,
+              markerReference: unit.markerReference,
+            ),
           ),
           OrderReturnLink(order: order),
           const SizedBox(height: DesignTokens.s24),

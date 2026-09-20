@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/o
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/tracked_order_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/warranty_claim_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/warranty_eligibility_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
 import 'package:stylemint_mobile_frontend/shared/data/option_label.dart';
 
@@ -101,6 +102,35 @@ class OrdersRemoteDataSource {
       options: _idempotent(idempotencyKey),
     );
     return WarrantyClaimDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// GET `/v1/warranties/orders/{orderNumber}/eligibility` — this order's
+  /// warranty position line by line, with the bound units on any line that
+  /// carries markers. Lines with no marker come back with an empty `units`,
+  /// which is the normal answer for almost all stock.
+  Future<WarrantyEligibilityDto> getWarrantyEligibility(
+    String orderNumber,
+  ) async {
+    final response = await apiClient.get(
+      '/v1/warranties/orders/${Uri.encodeComponent(orderNumber)}/eligibility',
+    );
+    return WarrantyEligibilityDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// GET `/v1/warranties/units/{unitMarkerBindingId}/claims` — this buyer's
+  /// claims against every binding the same marker has ever carried, so a
+  /// corrected tag does not split one item's history in two.
+  Future<List<WarrantyClaimDto>> getUnitWarrantyClaims(
+    String unitMarkerBindingId,
+  ) async {
+    final response = await apiClient.get(
+      '/v1/warranties/units/'
+      '${Uri.encodeComponent(unitMarkerBindingId)}/claims',
+    );
+    return (response as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map(WarrantyClaimDto.fromJson)
+        .toList(growable: false);
   }
 
   Future<List<WarrantyClaimDto>> getWarrantyClaims() async {
