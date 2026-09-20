@@ -33,7 +33,7 @@ abstract class CreatorDashboardDto with _$CreatorDashboardDto {
     pendingBalance: pendingBalance.toDomain(),
     totalSales: totalSales.toDomain(),
     totalViews: totalViews.toDomain(),
-    conversionRate: conversionRate.toDomain(),
+    conversionRate: conversionRate.toPercentDomain(),
     topReels: topReels.map((e) => e.toDomain()).toList(growable: false),
     topProducts: topProducts.map((e) => e.toDomain()).toList(growable: false),
   );

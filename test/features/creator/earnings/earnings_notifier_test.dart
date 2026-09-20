@@ -96,9 +96,6 @@ EarningsSummary _summary() => const EarningsSummary(
   totalEarnings: Money(amount: 100, currency: _npr),
   availableBalance: Money(amount: 60, currency: _npr),
   pendingBalance: Money(amount: 40, currency: _npr),
-  totalCommission: 2,
-  thisMonthEarnings: Money(amount: 25, currency: _npr),
-  totalPayouts: Money(amount: 10, currency: _npr),
 );
 
 /// The notifier loads from its constructor; settle that before asserting.

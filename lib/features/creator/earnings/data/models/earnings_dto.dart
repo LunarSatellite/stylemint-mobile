@@ -6,8 +6,10 @@ part 'earnings_dto.freezed.dart';
 part 'earnings_dto.g.dart';
 
 // Response shape: { availableValue, pendingValue, lifetimeValue, currency }
-// thisMonthEarnings, totalCommission, totalPayouts are not provided by this
-// endpoint — they default to zero until a confirmed source is wired.
+// — `LedgerBalanceDto`, and that is the whole of it. `toDomain` also set
+// `totalCommission: 0`, `thisMonthEarnings: Money(0)` and
+// `totalPayouts: Money(0)` "until a confirmed source is wired". Those
+// three fields are gone from `EarningsSummary`; see the doc there.
 @freezed
 abstract class EarningsSummaryDto with _$EarningsSummaryDto {
   const factory EarningsSummaryDto({
@@ -26,9 +28,6 @@ abstract class EarningsSummaryDto with _$EarningsSummaryDto {
     totalEarnings: Money(amount: lifetimeValue, currency: currency),
     availableBalance: Money(amount: availableValue, currency: currency),
     pendingBalance: Money(amount: pendingValue, currency: currency),
-    totalCommission: 0,
-    thisMonthEarnings: Money(amount: 0, currency: currency),
-    totalPayouts: Money(amount: 0, currency: currency),
   );
 }
 

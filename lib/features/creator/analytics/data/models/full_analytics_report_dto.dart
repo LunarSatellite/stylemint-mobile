@@ -59,7 +59,10 @@ abstract class ConversionMetricsDto with _$ConversionMetricsDto {
   ConversionMetrics toDomain() => ConversionMetrics(
         totalClicks: totalClicks,
         totalOrders: totalOrders,
-        conversionRate: conversionRate,
+        // `distinctOrderCount / totalViews` on the backend — a ratio, and
+        // the report prints it as `'${...toStringAsFixed(2)}%'` in two
+        // places. Unscaled, a real 3.4 % conversion read "0.03%".
+        conversionRate: conversionRate * 100,
         averageOrderValue: averageOrderValue.toDomain(),
       );
 }

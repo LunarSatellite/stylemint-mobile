@@ -265,31 +265,34 @@ class LaunchpadLessonDto {
       );
 }
 
+/// The Launchpad's next-step guidance — `LaunchpadResponse.forecast`.
+///
+/// **`projectedMonthlyEarnings` used to live here, and every creator on
+/// the platform was shown NPR 500.** `LaunchpadService` built it as
+/// `revenuePerReel * projectedReels`, where both fell back to literals
+/// (`50` and `max(10, 5)`) whenever the creator's journey recorded no
+/// reels — and `CreatorJourney.UpdateStats`, the only writer of
+/// `TotalReelsPublished`/`TotalRevenue`/`TotalFollowers`, has no callers
+/// anywhere in lead360, so that is every creator, always.
+/// `studio_insights_section.dart` drew it as "NPR 500 · <next month>"
+/// under the heading "Revenue forecast".
+///
+/// `growthRatePercent`, `projectedReels` and `projectedFollowers` were
+/// the same kind of constant and were never rendered. All four are gone
+/// from the response. What is left is the month the guidance is about and
+/// the phase-appropriate advice, which carries no figures.
 class LaunchpadForecastDto {
   const LaunchpadForecastDto({
-    required this.projectedMonthlyEarnings,
     required this.projectedMonthLabel,
-    required this.growthRatePercent,
-    required this.projectedReels,
-    required this.projectedFollowers,
     required this.recommendation,
   });
 
-  final double projectedMonthlyEarnings;
   final String projectedMonthLabel;
-  final double growthRatePercent;
-  final int projectedReels;
-  final int projectedFollowers;
   final String recommendation;
 
   factory LaunchpadForecastDto.fromJson(Map<String, dynamic> json) =>
       LaunchpadForecastDto(
-        projectedMonthlyEarnings:
-            (json['projectedMonthlyEarnings'] as num?)?.toDouble() ?? 0,
         projectedMonthLabel: json['projectedMonthLabel'] as String? ?? '',
-        growthRatePercent: (json['growthRatePercent'] as num?)?.toDouble() ?? 0,
-        projectedReels: (json['projectedReels'] as num?)?.toInt() ?? 0,
-        projectedFollowers: (json['projectedFollowers'] as num?)?.toInt() ?? 0,
         recommendation: json['recommendation'] as String? ?? '',
       );
 }

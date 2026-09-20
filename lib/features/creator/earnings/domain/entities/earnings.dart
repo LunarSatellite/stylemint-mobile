@@ -16,38 +16,44 @@ class MonthlySummary {
   final Money highestReelEarnings;
 }
 
+/// The three fields `GET /v1/earnings/balance` actually returns
+/// (`LedgerBalanceDto`: available, pending, lifetime).
+///
+/// `totalCommission`, `thisMonthEarnings` and `totalPayouts` used to sit
+/// here too. That endpoint sends none of them, so `toDomain` filled all
+/// three with literal zeros — a `double 0` and two `Money(amount: 0)` —
+/// and the mapper's own comment said they "default to zero until a
+/// confirmed source is wired". Nothing rendered them, which is the only
+/// reason no creator was ever told they had been paid Rs 0 in total. They
+/// are removed rather than left loaded: a money field whose only producer
+/// is a constant is a rendering waiting to happen, and this app has drawn
+/// that exact "Rs 0" before, on the Active Partnerships card.
+///
+/// The month-to-date figures are real and already have a home:
+/// [MonthlySummary], from `GET /v1/earnings/summary`, which the earnings
+/// screen reads through `monthlyEarningsSummaryProvider`. Lifetime
+/// payouts have no producer at all — Payouts has no per-payee payout
+/// total endpoint — so nothing here can stand in for one.
 class EarningsSummary {
   const EarningsSummary({
     required this.totalEarnings,
     required this.availableBalance,
     required this.pendingBalance,
-    required this.totalCommission,
-    required this.thisMonthEarnings,
-    required this.totalPayouts,
   });
 
   final Money totalEarnings;
   final Money availableBalance;
   final Money pendingBalance;
-  final double totalCommission;
-  final Money thisMonthEarnings;
-  final Money totalPayouts;
 
   EarningsSummary copyWith({
     Money? totalEarnings,
     Money? availableBalance,
     Money? pendingBalance,
-    double? totalCommission,
-    Money? thisMonthEarnings,
-    Money? totalPayouts,
   }) {
     return EarningsSummary(
       totalEarnings: totalEarnings ?? this.totalEarnings,
       availableBalance: availableBalance ?? this.availableBalance,
       pendingBalance: pendingBalance ?? this.pendingBalance,
-      totalCommission: totalCommission ?? this.totalCommission,
-      thisMonthEarnings: thisMonthEarnings ?? this.thisMonthEarnings,
-      totalPayouts: totalPayouts ?? this.totalPayouts,
     );
   }
 }

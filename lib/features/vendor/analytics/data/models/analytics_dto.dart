@@ -99,7 +99,19 @@ class AnalyticsOverviewDto {
     grossSalesBadge: _formatBadge(grossSales.deltaPercent),
     netRevenue: netRevenue.current?.amount ?? 0,
     netRevenueBadge: _formatBadge(netRevenue.deltaPercent),
-    conversionRate: conversionRate.current.toDouble(),
+    // `VendorAnalyticsService.ComputeConversionRate` returns
+    // `ReelAttributedOrderCount / AttributedViewCount` — a ratio, not a
+    // percent, and `KpiTileDto<double>` carries it through untouched.
+    // Read straight into a field two screens render as
+    // `'${...toStringAsFixed(1)}%'`, a real 3.4 % conversion printed as
+    // "0.0%" and a 0.8 % one as "0.0%" too: a vendor was told none of the
+    // people who watched a reel ever bought. The ×100 belongs here, at the
+    // one boundary where the ratio becomes a percentage.
+    //
+    // `deltaPercent` beside it is a relative change between the two
+    // windows, already a percentage and unaffected by the scale of what it
+    // compares, so it is not touched.
+    conversionRate: conversionRate.current.toDouble() * 100,
     conversionRateBadge: _formatBadge(conversionRate.deltaPercent),
     totalOrders: totalOrders.current.round(),
     totalOrdersBadge: _formatBadge(totalOrders.deltaPercent),

@@ -86,10 +86,17 @@ abstract class ReelStatisticsDto with _$ReelStatisticsDto {
   factory ReelStatisticsDto.fromJson(Map<String, dynamic> json) =>
       _$ReelStatisticsDtoFromJson(json);
 
+  /// All three rates arrive from `CreatorAnalyticsService` as ratios in
+  /// `0..1` — `attributedUnits / inAppViews` and
+  /// `completedViews / inAppViews` — and
+  /// `reel_detail_analytics_screen.dart` prints each with a literal `%`,
+  /// both in the tiles and in the shared text report. Unscaled, a reel
+  /// that 62 % of viewers watched to the end read "Completion rate:
+  /// 0.62%", and one converting 3.4 % of them read "0.03%".
   ReelStatistics toDomain() => ReelStatistics(
-        conversionRate: conversionRate,
-        clickThroughRate: clickThroughRate,
-        completionRate: completionRate,
+        conversionRate: conversionRate * 100,
+        clickThroughRate: clickThroughRate * 100,
+        completionRate: completionRate * 100,
         uniqueViewersEstimate: uniqueViewersEstimate,
       );
 }

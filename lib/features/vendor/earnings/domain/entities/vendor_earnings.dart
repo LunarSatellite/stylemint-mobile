@@ -11,7 +11,7 @@ class VendorEarningsSummary {
     required this.thisMonth,
     required this.lastMonth,
     required this.totalOrders,
-    required this.platformFees,
+    required this.creatorCommission,
     this.nextPayoutDate,
   });
 
@@ -19,7 +19,21 @@ class VendorEarningsSummary {
   final Money thisMonth;
   final Money lastMonth;
   final int totalOrders;
-  final Money platformFees;
+
+  /// The creator commission paid out of this revenue — `grossSales −
+  /// netRevenue` on the overview, which is exactly
+  /// `VendorRevenueSummary.CommissionPaid`, summed from
+  /// `SubOrderLine.CommissionAmount`.
+  ///
+  /// This was called `platformFees` and drawn on the Revenue Breakdown as
+  /// "Platform Fees −Rs X". The platform charges a vendor no fee on order
+  /// revenue: every rupee of it went to the creators who sold the goods.
+  /// It was also larger than the commission, because
+  /// `VendorAnalyticsService` subtracted an invented 5 % platform fee from
+  /// gross before the commission — so the row named the wrong recipient
+  /// *and* overstated the amount.
+  final Money creatorCommission;
+
   final DateTime? nextPayoutDate;
 
   VendorEarningsSummary copyWith({
@@ -27,7 +41,7 @@ class VendorEarningsSummary {
     Money? thisMonth,
     Money? lastMonth,
     int? totalOrders,
-    Money? platformFees,
+    Money? creatorCommission,
     DateTime? nextPayoutDate,
   }) {
     return VendorEarningsSummary(
@@ -35,7 +49,7 @@ class VendorEarningsSummary {
       thisMonth: thisMonth ?? this.thisMonth,
       lastMonth: lastMonth ?? this.lastMonth,
       totalOrders: totalOrders ?? this.totalOrders,
-      platformFees: platformFees ?? this.platformFees,
+      creatorCommission: creatorCommission ?? this.creatorCommission,
       nextPayoutDate: nextPayoutDate ?? this.nextPayoutDate,
     );
   }

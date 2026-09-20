@@ -50,7 +50,7 @@ class VendorEarningsRepositoryImpl implements VendorEarningsRepository {
         return right(
           VendorEarningsSummary(
             totalRevenue: overview.grossSales,
-            platformFees: Money(
+            creatorCommission: Money(
               amount: overview.grossSales.amount - overview.netRevenue.amount,
               currency: overview.grossSales.currency,
             ),
