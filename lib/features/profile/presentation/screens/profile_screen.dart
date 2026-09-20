@@ -201,6 +201,19 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'Shopping missions',
               onTap: () => context.push(RouteNames.missions),
             ),
+            // These two live under /settings, which a shopper cannot open:
+            // the only routes to it are the vendor and creator menus. Listed
+            // here as well so they are reachable from the customer app at all.
+            ProfileMenuItem(
+              icon: Icons.checklist_rtl_outlined,
+              label: 'Shopping plans',
+              onTap: () => context.push(RouteNames.settingsShoppingPlans),
+            ),
+            ProfileMenuItem(
+              icon: Icons.smart_toy_outlined,
+              label: 'Connected assistants',
+              onTap: () => context.push(RouteNames.settingsConnectedAssistants),
+            ),
           ],
         ),
         const SizedBox(height: DesignTokens.s20),
@@ -245,6 +258,14 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               icon: Icons.qr_code_2_rounded,
               label: 'My StyleMint code',
               onTap: () => context.push(RouteNames.myStyleMintCode),
+            ),
+            // Your own record of who served you in a shop, and the only
+            // control that turns an associate's claim into credit. Same
+            // reachability problem as the two above.
+            ProfileMenuItem(
+              icon: Icons.storefront_outlined,
+              label: 'In-store assistance',
+              onTap: () => context.push(RouteNames.myClienteling),
             ),
           ],
         ),
