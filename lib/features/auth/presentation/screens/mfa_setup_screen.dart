@@ -38,16 +38,20 @@ class _MfaSetupScreenState extends ConsumerState<MfaSetupScreen> {
 
   Future<void> _beginEnrollment() async {
     if (_accountId == null) return;
-    await ref.read(totpEnrollmentProvider.notifier).beginEnrollment(_accountId!);
+    await ref
+        .read(totpEnrollmentProvider.notifier)
+        .beginEnrollment(_accountId!);
   }
 
   Future<void> _confirmEnrollment(String methodId, String code) async {
     if (_accountId == null) return;
-    await ref.read(totpEnrollmentProvider.notifier).confirm(
-      accountId: _accountId!,
-      methodId: methodId,
-      code: code,
-    );
+    await ref
+        .read(totpEnrollmentProvider.notifier)
+        .confirm(
+          accountId: _accountId!,
+          methodId: methodId,
+          code: code,
+        );
   }
 
   Future<void> _disableMethod(String methodId) async {
@@ -56,8 +60,10 @@ class _MfaSetupScreenState extends ConsumerState<MfaSetupScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DesignTokens.bgAppBody,
-        title: const Text('Disable MFA Method',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Disable MFA Method',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
         content: const Text(
           'Are you sure you want to disable this MFA method?',
           style: TextStyle(color: DesignTokens.textLight),
@@ -65,31 +71,39 @@ class _MfaSetupScreenState extends ConsumerState<MfaSetupScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: DesignTokens.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: DesignTokens.textMuted),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Disable',
-                style: TextStyle(color: DesignTokens.colorError)),
+            child: const Text(
+              'Disable',
+              style: TextStyle(color: DesignTokens.colorError),
+            ),
           ),
         ],
       ),
     );
     if (confirmed == true) {
-      ref.read(mfaActionProvider.notifier).disableMfa(
-        accountId: _accountId!,
-        methodId: methodId,
-      );
+      ref
+          .read(mfaActionProvider.notifier)
+          .disableMfa(
+            accountId: _accountId!,
+            methodId: methodId,
+          );
     }
   }
 
   Future<void> _setPrimary(String methodId) async {
     if (_accountId == null) return;
-    ref.read(mfaActionProvider.notifier).setPrimary(
-      accountId: _accountId!,
-      methodId: methodId,
-    );
+    ref
+        .read(mfaActionProvider.notifier)
+        .setPrimary(
+          accountId: _accountId!,
+          methodId: methodId,
+        );
   }
 
   void _showRenameDialog(String methodId, String currentLabel) {
@@ -98,8 +112,10 @@ class _MfaSetupScreenState extends ConsumerState<MfaSetupScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DesignTokens.bgAppBody,
-        title: const Text('Rename Method',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Rename Method',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
         content: TextField(
           controller: controller,
           style: DesignTokens.bodyText,
@@ -108,20 +124,26 @@ class _MfaSetupScreenState extends ConsumerState<MfaSetupScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: DesignTokens.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: DesignTokens.textMuted),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              ref.read(mfaActionProvider.notifier).renameLabel(
-                accountId: _accountId!,
-                methodId: methodId,
-                label: controller.text.trim(),
-              );
+              ref
+                  .read(mfaActionProvider.notifier)
+                  .renameLabel(
+                    accountId: _accountId!,
+                    methodId: methodId,
+                    label: controller.text.trim(),
+                  );
             },
-            child: const Text('Save',
-                style: TextStyle(color: DesignTokens.primaryGreen)),
+            child: const Text(
+              'Save',
+              style: TextStyle(color: DesignTokens.primaryGreen),
+            ),
           ),
         ],
       ),
@@ -149,12 +171,17 @@ class _MfaSetupScreenState extends ConsumerState<MfaSetupScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded,
-              color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            color: DesignTokens.textWhite,
+            size: DesignTokens.iconMedium,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Two-Factor Authentication',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Two-Factor Authentication',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
       ),
       body: SafeArea(
         child: mfaState.when(
@@ -171,24 +198,29 @@ class _MfaSetupScreenState extends ConsumerState<MfaSetupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Security Methods',
-                      style: DesignTokens.sectionInnerTitle),
+                  Text(
+                    'Security Methods',
+                    style: DesignTokens.sectionInnerTitle,
+                  ),
                   const SizedBox(height: DesignTokens.s16),
 
                   if (methods.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
-                      child: Text('No MFA methods configured yet.',
-                          style: TextStyle(color: DesignTokens.textMuted)),
+                      child: Text(
+                        'No MFA methods configured yet.',
+                        style: TextStyle(color: DesignTokens.textMuted),
+                      ),
                     ),
 
-                  ...methods.map((m) => _MfaMethodTile(
-                    method: m,
-                    onSetPrimary: () => _setPrimary(m.id),
-                    onDisable: () => _disableMethod(m.id),
-                    onRename: () =>
-                        _showRenameDialog(m.id, m.label ?? ''),
-                  )),
+                  ...methods.map(
+                    (m) => _MfaMethodTile(
+                      method: m,
+                      onSetPrimary: () => _setPrimary(m.id),
+                      onDisable: () => _disableMethod(m.id),
+                      onRename: () => _showRenameDialog(m.id, m.label ?? ''),
+                    ),
+                  ),
 
                   const SizedBox(height: DesignTokens.s32),
 
@@ -221,11 +253,16 @@ class _MfaSetupScreenState extends ConsumerState<MfaSetupScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: DesignTokens.colorError, size: 48),
+                const Icon(
+                  Icons.error_outline,
+                  color: DesignTokens.colorError,
+                  size: 48,
+                ),
                 const SizedBox(height: DesignTokens.s16),
-                Text('Failed to load MFA methods',
-                    style: DesignTokens.bodyText),
+                Text(
+                  'Failed to load MFA methods',
+                  style: DesignTokens.bodyText,
+                ),
                 const SizedBox(height: DesignTokens.s16),
                 SmTextButton(label: 'Retry', onPressed: _load),
               ],
@@ -236,8 +273,7 @@ class _MfaSetupScreenState extends ConsumerState<MfaSetupScreen> {
     );
   }
 
-  Widget _loader() =>
-      const SmPageLoader();
+  Widget _loader() => const SmPageLoader();
 }
 
 class _MfaMethodTile extends StatelessWidget {
@@ -286,14 +322,21 @@ class _MfaMethodTile extends StatelessWidget {
               if (method.isPrimary == true)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+                    horizontal: DesignTokens.s8,
+                    vertical: DesignTokens.s4,
+                  ),
                   decoration: BoxDecoration(
                     color: DesignTokens.primaryGreenDark,
-                    borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.chipRadius,
+                    ),
                   ),
-                  child: Text('Primary',
-                      style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.primaryGreen)),
+                  child: Text(
+                    'Primary',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -374,11 +417,17 @@ class _TotpVerificationCardState extends State<_TotpVerificationCard> {
                 ? Image.network(
                     widget.enrollment.qrCodeUrl,
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.qr_code, size: 200,
-                        color: DesignTokens.textMuted),
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.qr_code,
+                      size: 200,
+                      color: DesignTokens.textMuted,
+                    ),
                   )
-                : const Icon(Icons.qr_code, size: 200,
-                    color: DesignTokens.textMuted),
+                : const Icon(
+                    Icons.qr_code,
+                    size: 200,
+                    color: DesignTokens.textMuted,
+                  ),
           ),
           const SizedBox(height: DesignTokens.s12),
 
@@ -414,8 +463,7 @@ class _TotpVerificationCardState extends State<_TotpVerificationCard> {
                   SmSnackbar.error(context, 'Please enter a 6-digit code');
                   return;
                 }
-                await widget.onVerify(
-                    widget.enrollment.methodId ?? '', code);
+                await widget.onVerify(widget.enrollment.methodId ?? '', code);
               },
               isLoadingInitially: widget.isLoading,
               height: DesignTokens.buttonHeight,

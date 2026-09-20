@@ -63,7 +63,9 @@ class _IdentityDocumentsSectionState
 
     if (!mounted) return;
     final state = ref.read(creatorDocumentsNotifierProvider);
-    _toast(ok ? 'Document uploaded.' : (state.errorMessage ?? 'Upload failed.'));
+    _toast(
+      ok ? 'Document uploaded.' : (state.errorMessage ?? 'Upload failed.'),
+    );
   }
 
   void _toast(String message) {
@@ -148,8 +150,9 @@ class _IdentityDocumentsSectionState
             const SizedBox(height: DesignTokens.s8),
             Text(
               state.errorMessage!,
-              style:
-                  DesignTokens.smallRegular.copyWith(color: DesignTokens.colorError),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.colorError,
+              ),
             ),
           ],
           if (state.documents.isNotEmpty) ...[
@@ -181,16 +184,16 @@ class _UploadButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => OutlinedButton.icon(
-        onPressed: busy ? null : onTap,
-        icon: busy
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.upload_file, size: 18),
-        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-      );
+    onPressed: busy ? null : onTap,
+    icon: busy
+        ? const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : const Icon(Icons.upload_file, size: 18),
+    label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+  );
 }
 
 class _DocumentRow extends StatelessWidget {
@@ -236,14 +239,16 @@ class _DocumentRow extends StatelessWidget {
                 ),
                 Text(
                   document.status.isEmpty ? 'Pending review' : document.status,
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
                 if (document.rejectionReason != null)
                   Text(
                     document.rejectionReason!,
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.colorError),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.colorError,
+                    ),
                   ),
               ],
             ),

@@ -140,10 +140,14 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
 
   static String _svgAsset(SocialPlatform p) {
     switch (p) {
-      case SocialPlatform.instagram: return 'assets/icons/instagram.svg';
-      case SocialPlatform.tiktok:    return 'assets/icons/tiktok.svg';
-      case SocialPlatform.youtube:   return 'assets/icons/youtube.svg';
-      case SocialPlatform.facebook:  return 'assets/icons/facebook.svg';
+      case SocialPlatform.instagram:
+        return 'assets/icons/instagram.svg';
+      case SocialPlatform.tiktok:
+        return 'assets/icons/tiktok.svg';
+      case SocialPlatform.youtube:
+        return 'assets/icons/youtube.svg';
+      case SocialPlatform.facebook:
+        return 'assets/icons/facebook.svg';
     }
   }
 
@@ -172,184 +176,191 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
       ),
       body: SafeArea(
         child: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16, DesignTokens.s8,
-                DesignTokens.s16, DesignTokens.s24,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Video thumbnail ──────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: _VideoThumbnail(
-                      thumbnailUrl: reel?.thumbnailUrl ?? '',
-                      elapsed: elapsed,
-                      total: totalDuration,
-                      formatDuration: _formatDuration,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  DesignTokens.s8,
+                  DesignTokens.s16,
+                  DesignTokens.s24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Video thumbnail ──────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: _VideoThumbnail(
+                        thumbnailUrl: reel?.thumbnailUrl ?? '',
+                        elapsed: elapsed,
+                        total: totalDuration,
+                        formatDuration: _formatDuration,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: DesignTokens.s16),
+                    const SizedBox(height: DesignTokens.s16),
 
-                  // ── Reel details card ────────────────────────────────────
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(DesignTokens.s16),
-                    decoration: DesignTokens.cardDecoration(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Reel Details',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: DesignTokens.s8),
-                        // Original platform caption, rendered with the
-                        // shared caption renderer (hashtags highlighted).
-                        ReelCaptionText(
-                          caption: reel?.caption,
-                          emptyText: 'No caption on this post',
-                        ),
-                        const SizedBox(height: DesignTokens.s12),
-                        Row(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: SvgPicture.asset(
-                                _svgAsset(platform),
-                                width: 20,
-                                height: 20,
-                                fit: BoxFit.cover,
-                              ),
+                    // ── Reel details card ────────────────────────────────────
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(DesignTokens.s16),
+                      decoration: DesignTokens.cardDecoration(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Reel Details',
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textMuted,
+                              fontSize: 12,
                             ),
-                            const SizedBox(width: DesignTokens.s8),
-                            // Flexible: this row already overflowed at narrow
-                            // widths and large text before the earnings line
-                            // below it existed.
-                            Flexible(
-                              child: Text(
-                                'Imported from ${platform.displayName}',
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textMuted,
+                          ),
+                          const SizedBox(height: DesignTokens.s8),
+                          // Original platform caption, rendered with the
+                          // shared caption renderer (hashtags highlighted).
+                          ReelCaptionText(
+                            caption: reel?.caption,
+                            emptyText: 'No caption on this post',
+                          ),
+                          const SizedBox(height: DesignTokens.s12),
+                          Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: SvgPicture.asset(
+                                  _svgAsset(platform),
+                                  width: 20,
+                                  height: 20,
+                                  fit: BoxFit.cover,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: DesignTokens.s16),
-                        const _DashedDivider(),
-                        const SizedBox(height: DesignTokens.s16),
-                        // Total Products Tagged — tappable
-                        GestureDetector(
-                          onTap: _showTaggedSheet,
-                          behavior: HitTestBehavior.opaque,
-                          child: _StatRow(
-                            iconWidget: Image.asset(
-                              'assets/images/creatordash/material-symbols_package-2-outline.png',
-                              width: 18,
-                              height: 18,
-                            ),
-                            label: 'Total Products Tagged',
-                            value: '${_taggedProducts.length}',
-                            labelUnderlined: true,
-                          ),
-                        ),
-                        // Drawn only when the commission behind it is known.
-                        // An unknown basket draws no row at all: no zero, no
-                        // dash, no "(est.)" over an invented rate.
-                        if (projectedEarnings != null) ...[
-                          const SizedBox(height: DesignTokens.s12),
-                          _StatRow(
-                            iconWidget: Image.asset(
-                              'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
-                              width: 18,
-                              height: 18,
-                            ),
-                            label: 'Potential Earnings',
-                            value:
-                                '${formatMoney(projectedEarnings)} '
-                                'with $projectedSales sales',
-                          ),
-                          // A total over part of the basket says so.
-                          if (earnings!.isPartial) ...[
-                            const SizedBox(height: DesignTokens.s4),
-                            Text(
-                              partialEarningsCoverage(earnings),
-                              style: DesignTokens.smallRegular.copyWith(
-                                color: DesignTokens.textMuted,
-                                fontSize: 12,
+                              const SizedBox(width: DesignTokens.s8),
+                              // Flexible: this row already overflowed at narrow
+                              // widths and large text before the earnings line
+                              // below it existed.
+                              Flexible(
+                                child: Text(
+                                  'Imported from ${platform.displayName}',
+                                  style: DesignTokens.smallRegular.copyWith(
+                                    color: DesignTokens.textMuted,
+                                  ),
+                                ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: DesignTokens.s16),
+                          const _DashedDivider(),
+                          const SizedBox(height: DesignTokens.s16),
+                          // Total Products Tagged — tappable
+                          GestureDetector(
+                            onTap: _showTaggedSheet,
+                            behavior: HitTestBehavior.opaque,
+                            child: _StatRow(
+                              iconWidget: Image.asset(
+                                'assets/images/creatordash/material-symbols_package-2-outline.png',
+                                width: 18,
+                                height: 18,
+                              ),
+                              label: 'Total Products Tagged',
+                              value: '${_taggedProducts.length}',
+                              labelUnderlined: true,
                             ),
+                          ),
+                          // Drawn only when the commission behind it is known.
+                          // An unknown basket draws no row at all: no zero, no
+                          // dash, no "(est.)" over an invented rate.
+                          if (projectedEarnings != null) ...[
+                            const SizedBox(height: DesignTokens.s12),
+                            _StatRow(
+                              iconWidget: Image.asset(
+                                'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
+                                width: 18,
+                                height: 18,
+                              ),
+                              label: 'Potential Earnings',
+                              value:
+                                  '${formatMoney(projectedEarnings)} '
+                                  'with $projectedSales sales',
+                            ),
+                            // A total over part of the basket says so.
+                            if (earnings!.isPartial) ...[
+                              const SizedBox(height: DesignTokens.s4),
+                              Text(
+                                partialEarningsCoverage(earnings),
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: DesignTokens.s16),
+                    const SizedBox(height: DesignTokens.s16),
 
-                  // ── Caption (StyleMint Reel Caption Standard) ────────────
-                  CaptionEditor(
-                    initialDraft: _captionDraft,
-                    onChanged: (draft) => setState(() => _captionDraft = draft),
-                  ),
-                ],
+                    // ── Caption (StyleMint Reel Caption Standard) ────────────
+                    CaptionEditor(
+                      initialDraft: _captionDraft,
+                      onChanged: (draft) =>
+                          setState(() => _captionDraft = draft),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // ── Share Reel button ────────────────────────────────────────────
-          Consumer(
-            builder: (context, ref, _) {
-              final submitState = ref.watch(reelSubmitNotifierProvider);
-              final isLoading = submitState is ReelSubmitInProgress;
-              // Share stays disabled until the hook is 20–70 characters.
-              final canShare = !isLoading && _captionDraft.canSubmit;
-              return Container(
-                padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16, DesignTokens.s8,
-                  DesignTokens.s16, DesignTokens.s24,
-                ),
-                color: DesignTokens.bgAppFoundation,
-                child: SizedBox(
-                  width: double.infinity,
-                  height: DesignTokens.buttonHeight,
-                  child: ElevatedButton(
-                    onPressed: !canShare
-                        ? null
-                        : () {
-                            final reel = widget.args.reel;
-                            if (reel == null) return;
-                            ref
-                                .read(reelSubmitNotifierProvider.notifier)
-                                .submit(
-                                  reel,
-                                  _taggedProducts,
-                                  caption: _captionDraft.caption,
-                                );
-                          },
-                    style: DesignTokens.primaryButtonStyle(),
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Colors.white),
-                            ),
-                          )
-                        : const Text('Share Reel'),
+            // ── Share Reel button ────────────────────────────────────────────
+            Consumer(
+              builder: (context, ref, _) {
+                final submitState = ref.watch(reelSubmitNotifierProvider);
+                final isLoading = submitState is ReelSubmitInProgress;
+                // Share stays disabled until the hook is 20–70 characters.
+                final canShare = !isLoading && _captionDraft.canSubmit;
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(
+                    DesignTokens.s16,
+                    DesignTokens.s8,
+                    DesignTokens.s16,
+                    DesignTokens.s24,
                   ),
-                ),
-              );
-            },
-          ),
-        ],
+                  color: DesignTokens.bgAppFoundation,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: DesignTokens.buttonHeight,
+                    child: ElevatedButton(
+                      onPressed: !canShare
+                          ? null
+                          : () {
+                              final reel = widget.args.reel;
+                              if (reel == null) return;
+                              ref
+                                  .read(reelSubmitNotifierProvider.notifier)
+                                  .submit(
+                                    reel,
+                                    _taggedProducts,
+                                    caption: _captionDraft.caption,
+                                  );
+                            },
+                      style: DesignTokens.primaryButtonStyle(),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text('Share Reel'),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -382,15 +393,21 @@ class _VideoThumbnail extends StatelessWidget {
           children: [
             // Background
             thumbnailUrl.isNotEmpty
-                ? Image.network(thumbnailUrl, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _bg())
+                ? Image.network(
+                    thumbnailUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _bg(),
+                  )
                 : _bg(),
             // Duration badge
             Positioned(
               bottom: 12,
               left: 12,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.60),
                   borderRadius: BorderRadius.circular(20),
@@ -413,21 +430,21 @@ class _VideoThumbnail extends StatelessWidget {
   }
 
   Widget _bg() => Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF2A1A0A), Color(0xFF0D0D1A)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.play_arrow_rounded,
-            color: Colors.white,
-            size: 56,
-          ),
-        ),
-      );
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Color(0xFF2A1A0A), Color(0xFF0D0D1A)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ),
+    ),
+    child: const Center(
+      child: Icon(
+        Icons.play_arrow_rounded,
+        color: Colors.white,
+        size: 56,
+      ),
+    ),
+  );
 }
 
 // ── Stat row ──────────────────────────────────────────────────────────────────
@@ -458,7 +475,9 @@ class _StatRow extends StatelessWidget {
               color: DesignTokens.textLight,
               decoration: labelUnderlined ? TextDecoration.underline : null,
               decorationColor: DesignTokens.textLight,
-              decorationStyle: labelUnderlined ? TextDecorationStyle.dotted : null,
+              decorationStyle: labelUnderlined
+                  ? TextDecorationStyle.dotted
+                  : null,
             ),
           ),
         ),

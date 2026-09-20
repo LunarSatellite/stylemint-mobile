@@ -42,8 +42,7 @@ class PasskeyHowItWorks extends StatelessWidget {
           const SizedBox(height: DesignTokens.s12),
           ...List.generate(_items.length, (i) {
             return Padding(
-              padding:
-                  EdgeInsets.only(bottom: i == _items.length - 1 ? 0 : 10),
+              padding: EdgeInsets.only(bottom: i == _items.length - 1 ? 0 : 10),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

@@ -237,7 +237,11 @@ class _Point extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: DesignTokens.iconSmall, color: DesignTokens.primaryGreen),
+        Icon(
+          icon,
+          size: DesignTokens.iconSmall,
+          color: DesignTokens.primaryGreen,
+        ),
         const SizedBox(width: DesignTokens.s8),
         Expanded(
           child: Text(text, style: DesignTokens.smallDescription),

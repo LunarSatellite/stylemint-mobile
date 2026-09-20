@@ -42,118 +42,130 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
       ),
       body: SafeArea(
         child: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16,
-                DesignTokens.s16,
-                DesignTokens.s16,
-                DesignTokens.s24,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Small player at the top, matches the image proportion.
-                  // YouTube's embedded-player terms require a viewport of at
-                  // least 200x200, so the width never drops below 200.
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: SizedBox(
-                        width: (MediaQuery.of(context).size.width * 0.42)
-                            .clamp(200.0, double.infinity),
-                        height: (MediaQuery.of(context).size.width * 0.42)
-                                .clamp(200.0, double.infinity) *
-                            (0.62 / 0.42),
-                        child: ReelPlayer(
-                          reel: reel,
-                          isActive: true,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: DesignTokens.s16),
-
-                  // Reel info card (profile + caption + URL + badge + stats).
-                  _ReelInfoCard(reel: reel),
-                  const SizedBox(height: DesignTokens.s16),
-
-                  // Caption input (no internal border, blends with card).
-                  Container(
-                    decoration: DesignTokens.cardDecoration(),
-                    child: TextField(
-                      controller: _captionController,
-                      maxLines: 4,
-                      minLines: 4,
-                      textAlignVertical: TextAlignVertical.top,
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textWhite,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Add a Caption (Optional)',
-                        hintStyle: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
-                        ),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-                          borderSide: const BorderSide(
-                            color: DesignTokens.primaryGreen,
-                            width: 1.5,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  DesignTokens.s16,
+                  DesignTokens.s16,
+                  DesignTokens.s24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Small player at the top, matches the image proportion.
+                    // YouTube's embedded-player terms require a viewport of at
+                    // least 200x200, so the width never drops below 200.
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: SizedBox(
+                          width: (MediaQuery.of(context).size.width * 0.42)
+                              .clamp(200.0, double.infinity),
+                          height:
+                              (MediaQuery.of(context).size.width * 0.42).clamp(
+                                200.0,
+                                double.infinity,
+                              ) *
+                              (0.62 / 0.42),
+                          child: ReelPlayer(
+                            reel: reel,
+                            isActive: true,
                           ),
                         ),
-                        disabledBorder: InputBorder.none,
-                        isCollapsed: true,
-                        contentPadding: const EdgeInsets.all(DesignTokens.s16),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+                    const SizedBox(height: DesignTokens.s16),
 
-          // Continue button
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16,
-              DesignTokens.s12,
-              DesignTokens.s16,
-              DesignTokens.s24,
-            ),
-            color: DesignTokens.bgAppFoundation,
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  context.push(
-                    RouteNames.reelImportTagProducts.replaceFirst(':postId', reel.platformPostId),
-                    extra: reel.copyWith(caption: _captionController.text),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: DesignTokens.primaryGreen,
-                  foregroundColor: DesignTokens.textWhite,
-                  padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Continue to Tag Products'),
-                    SizedBox(width: DesignTokens.s8),
-                    Icon(Icons.arrow_forward_rounded, size: 18),
+                    // Reel info card (profile + caption + URL + badge + stats).
+                    _ReelInfoCard(reel: reel),
+                    const SizedBox(height: DesignTokens.s16),
+
+                    // Caption input (no internal border, blends with card).
+                    Container(
+                      decoration: DesignTokens.cardDecoration(),
+                      child: TextField(
+                        controller: _captionController,
+                        maxLines: 4,
+                        minLines: 4,
+                        textAlignVertical: TextAlignVertical.top,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Add a Caption (Optional)',
+                          hintStyle: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              DesignTokens.cardRadius,
+                            ),
+                            borderSide: const BorderSide(
+                              color: DesignTokens.primaryGreen,
+                              width: 1.5,
+                            ),
+                          ),
+                          disabledBorder: InputBorder.none,
+                          isCollapsed: true,
+                          contentPadding: const EdgeInsets.all(
+                            DesignTokens.s16,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
-          ),
-        ],
+
+            // Continue button
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s12,
+                DesignTokens.s16,
+                DesignTokens.s24,
+              ),
+              color: DesignTokens.bgAppFoundation,
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    context.push(
+                      RouteNames.reelImportTagProducts.replaceFirst(
+                        ':postId',
+                        reel.platformPostId,
+                      ),
+                      extra: reel.copyWith(caption: _captionController.text),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: DesignTokens.primaryGreen,
+                    foregroundColor: DesignTokens.textWhite,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: DesignTokens.s16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Continue to Tag Products'),
+                      SizedBox(width: DesignTokens.s8),
+                      Icon(Icons.arrow_forward_rounded, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -281,8 +293,7 @@ class _StatsRow extends StatelessWidget {
         children: [
           for (var i = 0; i < entries.length; i++) ...[
             _StatItem(entry: entries[i]),
-            if (i < entries.length - 1)
-              const SizedBox(width: DesignTokens.s40),
+            if (i < entries.length - 1) const SizedBox(width: DesignTokens.s40),
           ],
         ],
       ),

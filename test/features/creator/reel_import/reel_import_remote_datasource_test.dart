@@ -68,34 +68,36 @@ void main() {
       expect(page.toFreshness(), const ContentFreshness());
     });
 
-    test('new JSON carries saved-posts freshness and provider status',
-        () async {
-      final page = await _parse({
-        'items': [_item('a'), _item('b')],
-        'nextCursor': 'sm1.eyJwIjoiMjAyNi0wOS0xMCJ9',
-        'servedFromCache': true,
-        'fetchedUtc': '2026-09-14T15:10:00Z',
-        'staleSinceUtc': '2026-09-14T15:25:00Z',
-        'providerStatus': {
-          'code': 'RATE_LIMITED',
-          'message': 'Instagram is limiting requests right now.',
-          'retryAfterUtc': '2026-09-14T15:40:00Z',
-        },
-      });
+    test(
+      'new JSON carries saved-posts freshness and provider status',
+      () async {
+        final page = await _parse({
+          'items': [_item('a'), _item('b')],
+          'nextCursor': 'sm1.eyJwIjoiMjAyNi0wOS0xMCJ9',
+          'servedFromCache': true,
+          'fetchedUtc': '2026-09-14T15:10:00Z',
+          'staleSinceUtc': '2026-09-14T15:25:00Z',
+          'providerStatus': {
+            'code': 'RATE_LIMITED',
+            'message': 'Instagram is limiting requests right now.',
+            'retryAfterUtc': '2026-09-14T15:40:00Z',
+          },
+        });
 
-      expect(page.reels, hasLength(2));
-      expect(page.nextCursor, 'sm1.eyJwIjoiMjAyNi0wOS0xMCJ9');
+        expect(page.reels, hasLength(2));
+        expect(page.nextCursor, 'sm1.eyJwIjoiMjAyNi0wOS0xMCJ9');
 
-      final freshness = page.toFreshness();
-      expect(freshness.servedFromCache, isTrue);
-      expect(freshness.fetchedUtc, DateTime.utc(2026, 9, 14, 15, 10));
-      expect(freshness.staleSinceUtc, DateTime.utc(2026, 9, 14, 15, 25));
-      final status = freshness.providerStatus!;
-      expect(status.code, 'RATE_LIMITED');
-      expect(status.message, 'Instagram is limiting requests right now.');
-      expect(status.retryAfterUtc, DateTime.utc(2026, 9, 14, 15, 40));
-      expect(status.issue, ContentProviderIssue.rateLimited);
-    });
+        final freshness = page.toFreshness();
+        expect(freshness.servedFromCache, isTrue);
+        expect(freshness.fetchedUtc, DateTime.utc(2026, 9, 14, 15, 10));
+        expect(freshness.staleSinceUtc, DateTime.utc(2026, 9, 14, 15, 25));
+        final status = freshness.providerStatus!;
+        expect(status.code, 'RATE_LIMITED');
+        expect(status.message, 'Instagram is limiting requests right now.');
+        expect(status.retryAfterUtc, DateTime.utc(2026, 9, 14, 15, 40));
+        expect(status.issue, ContentProviderIssue.rateLimited);
+      },
+    );
 
     test('a reconnect status has no retry time', () async {
       final page = await _parse({
@@ -119,24 +121,26 @@ void main() {
       );
     });
 
-    test('malformed freshness fields are ignored instead of throwing',
-        () async {
-      final page = await _parse({
-        'items': [_item('a')],
-        'nextCursor': '',
-        'servedFromCache': 'yes',
-        'fetchedUtc': 'not a date',
-        'staleSinceUtc': 42,
-        'providerStatus': {'message': 'no code'},
-      });
+    test(
+      'malformed freshness fields are ignored instead of throwing',
+      () async {
+        final page = await _parse({
+          'items': [_item('a')],
+          'nextCursor': '',
+          'servedFromCache': 'yes',
+          'fetchedUtc': 'not a date',
+          'staleSinceUtc': 42,
+          'providerStatus': {'message': 'no code'},
+        });
 
-      expect(page.reels, hasLength(1));
-      expect(page.nextCursor, isNull);
-      expect(page.servedFromCache, isFalse);
-      expect(page.fetchedUtc, isNull);
-      expect(page.staleSinceUtc, isNull);
-      expect(page.providerStatus, isNull);
-    });
+        expect(page.reels, hasLength(1));
+        expect(page.nextCursor, isNull);
+        expect(page.servedFromCache, isFalse);
+        expect(page.fetchedUtc, isNull);
+        expect(page.staleSinceUtc, isNull);
+        expect(page.providerStatus, isNull);
+      },
+    );
 
     test('a non-object providerStatus is ignored', () async {
       final page = await _parse({

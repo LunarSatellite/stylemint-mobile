@@ -28,14 +28,12 @@ class ProfileHeader extends StatelessWidget {
             // rather than changing that shared constant.
             radius: 32,
             backgroundColor: DesignTokens.bgAppBodyLight,
-            backgroundImage:
-                summary.avatarUrl.isNotEmpty
-                    ? CachedNetworkImageProvider(summary.avatarUrl)
-                    : null,
-            child:
-                summary.avatarUrl.isEmpty
-                    ? const Icon(Icons.person, color: DesignTokens.iconLight)
-                    : null,
+            backgroundImage: summary.avatarUrl.isNotEmpty
+                ? CachedNetworkImageProvider(summary.avatarUrl)
+                : null,
+            child: summary.avatarUrl.isEmpty
+                ? const Icon(Icons.person, color: DesignTokens.iconLight)
+                : null,
           ),
           const SizedBox(width: DesignTokens.s16),
           Expanded(

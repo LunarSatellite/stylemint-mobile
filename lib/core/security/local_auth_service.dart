@@ -6,7 +6,7 @@ import 'package:local_auth/local_auth.dart';
 /// session — "open app → biometric → in".
 class LocalAuthService {
   LocalAuthService([LocalAuthentication? auth])
-      : _auth = auth ?? LocalAuthentication();
+    : _auth = auth ?? LocalAuthentication();
 
   final LocalAuthentication _auth;
 
@@ -46,5 +46,6 @@ class LocalAuthService {
   }
 }
 
-final localAuthServiceProvider =
-    Provider<LocalAuthService>((ref) => LocalAuthService());
+final localAuthServiceProvider = Provider<LocalAuthService>(
+  (ref) => LocalAuthService(),
+);

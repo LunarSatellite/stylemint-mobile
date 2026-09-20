@@ -72,8 +72,9 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
   @override
   Widget build(BuildContext context) {
     final reel = widget.reel;
-    final isFollowing =
-        ref.watch(followNotifierProvider).contains(reel.creatorId);
+    final isFollowing = ref
+        .watch(followNotifierProvider)
+        .contains(reel.creatorId);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
       child: Column(
@@ -96,23 +97,33 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(reel.creatorName, maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: DesignTokens.mediumSemibold.copyWith(
-                            color: DesignTokens.textWhite)),
+                    Text(
+                      reel.creatorName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
                     if (reel.musicTitle.isNotEmpty) ...[
                       const SizedBox(height: DesignTokens.s4),
                       Row(
                         children: [
-                          const Icon(Icons.music_note,
-                              size: DesignTokens.iconSmall,
-                              color: DesignTokens.textLight),
+                          const Icon(
+                            Icons.music_note,
+                            size: DesignTokens.iconSmall,
+                            color: DesignTokens.textLight,
+                          ),
                           const SizedBox(width: DesignTokens.s4),
                           Expanded(
-                            child: Text(reel.musicTitle, maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: DesignTokens.smallRegular.copyWith(
-                                    color: DesignTokens.textLight)),
+                            child: Text(
+                              reel.musicTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: DesignTokens.smallRegular.copyWith(
+                                color: DesignTokens.textLight,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -176,20 +187,24 @@ class _FollowButton extends StatelessWidget {
                 width: 14,
                 height: 14,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: DesignTokens.textWhite))
+                  strokeWidth: 2,
+                  color: DesignTokens.textWhite,
+                ),
+              )
             : Text(
                 isFollowing ? 'Following' : 'Follow',
                 // Spec: 12/600/130%, #52525C (Button-White-Text).
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                ).copyWith(
-                  color: isFollowing
-                      ? DesignTokens.textWhite
-                      : const Color(0xFF52525C),
-                ),
+                style:
+                    const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    ).copyWith(
+                      color: isFollowing
+                          ? DesignTokens.textWhite
+                          : const Color(0xFF52525C),
+                    ),
               ),
       ),
     );

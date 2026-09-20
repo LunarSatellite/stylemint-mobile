@@ -44,7 +44,7 @@ abstract interface class ReelImportRepository {
   });
 
   Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
-      searchProducts(
+  searchProducts(
     String query,
   );
 
@@ -53,7 +53,7 @@ abstract interface class ReelImportRepository {
   /// kept in its own dedicated state on the client so the search sheet
   /// can never leak into this list.
   Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
-      getSuggestedProducts({
+  getSuggestedProducts({
     required SocialPlatform platform,
     required String externalId,
   });

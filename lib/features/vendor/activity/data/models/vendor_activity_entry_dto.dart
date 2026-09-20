@@ -18,7 +18,8 @@ class VendorActivityEntryDto {
         headline: json['headline'] as String?,
         body: json['body'] as String?,
         actionUrl: json['actionUrl'] as String?,
-        occurredUtc: DateTime.tryParse(json['occurredUtc'] as String? ?? '') ??
+        occurredUtc:
+            DateTime.tryParse(json['occurredUtc'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       );
 
@@ -46,7 +47,9 @@ class VendorActivityPageDto {
   factory VendorActivityPageDto.fromJson(Map<String, dynamic> json) =>
       VendorActivityPageDto(
         items: (json['items'] as List<dynamic>? ?? [])
-            .map((e) => VendorActivityEntryDto.fromJson(e as Map<String, dynamic>))
+            .map(
+              (e) => VendorActivityEntryDto.fromJson(e as Map<String, dynamic>),
+            )
             .toList(),
         nextCursor: json['nextCursor'] as String?,
       );

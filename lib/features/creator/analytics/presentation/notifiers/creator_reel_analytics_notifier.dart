@@ -25,7 +25,7 @@ abstract class CreatorReelAnalyticsState with _$CreatorReelAnalyticsState {
 class CreatorReelAnalyticsNotifier
     extends StateNotifier<CreatorReelAnalyticsState> {
   CreatorReelAnalyticsNotifier(this._repository, this._reelId)
-      : super(const CreatorReelAnalyticsState.initial()) {
+    : super(const CreatorReelAnalyticsState.initial()) {
     unawaited(fetch());
   }
 

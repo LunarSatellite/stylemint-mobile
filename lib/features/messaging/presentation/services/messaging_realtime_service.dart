@@ -17,7 +17,9 @@ class MessagingRealtimeService {
   bool _starting = false;
 
   final _messageController =
-      StreamController<({String threadId, DirectMessageDto message})>.broadcast();
+      StreamController<
+        ({String threadId, DirectMessageDto message})
+      >.broadcast();
 
   /// Stream of new messages that just landed in any of the caller's threads.
   Stream<({String threadId, DirectMessageDto message})> get onMessage =>
@@ -62,7 +64,9 @@ class MessagingRealtimeService {
       final messageJson = map['message'];
       if (threadId == null || messageJson is! Map) return;
       try {
-        final msg = DirectMessageDto.fromJson(messageJson.cast<String, dynamic>());
+        final msg = DirectMessageDto.fromJson(
+          messageJson.cast<String, dynamic>(),
+        );
         _messageController.add((threadId: threadId, message: msg));
       } catch (_) {
         // Drop malformed payloads; the REST inbox is the durable read.

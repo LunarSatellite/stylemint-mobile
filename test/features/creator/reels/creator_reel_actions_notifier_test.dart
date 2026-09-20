@@ -153,20 +153,22 @@ void main() {
       },
     );
 
-    test('updateCaption sends the caption and reports "Caption updated."',
-        () async {
-      final repo = _FakeRepository();
-      final notifier = CreatorReelActionsNotifier(repo);
+    test(
+      'updateCaption sends the caption and reports "Caption updated."',
+      () async {
+        final repo = _FakeRepository();
+        final notifier = CreatorReelActionsNotifier(repo);
 
-      final ok = await notifier.updateCaption('reel-1', 'Hook\n\n#StyleMint');
+        final ok = await notifier.updateCaption('reel-1', 'Hook\n\n#StyleMint');
 
-      expect(ok, isTrue);
-      expect(repo.calls.single, 'caption:reel-1:Hook\n\n#StyleMint');
-      expect(
-        (notifier.state as CreatorReelActionSucceeded).message,
-        'Caption updated.',
-      );
-    });
+        expect(ok, isTrue);
+        expect(repo.calls.single, 'caption:reel-1:Hook\n\n#StyleMint');
+        expect(
+          (notifier.state as CreatorReelActionSucceeded).message,
+          'Caption updated.',
+        );
+      },
+    );
 
     test('updateCaption failure surfaces the repository message', () async {
       final repo = _FakeRepository(

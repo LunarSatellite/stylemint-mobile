@@ -21,13 +21,17 @@ final groupCartRepositoryProvider = Provider<GroupCartRepository>(
 
 final groupCartsNotifierProvider =
     StateNotifierProvider<GroupCartNotifier, GroupCartsState>(
-  (ref) => GroupCartNotifier(ref.watch(groupCartRepositoryProvider)),
-);
+      (ref) => GroupCartNotifier(ref.watch(groupCartRepositoryProvider)),
+    );
 
 final groupCartDetailNotifierProvider =
-    StateNotifierProvider.family<GroupCartDetailNotifier, GroupCartDetailState, String>(
-  (ref, cartId) => GroupCartDetailNotifier(
-    ref.watch(groupCartRepositoryProvider),
-    cartId,
-  ),
-);
+    StateNotifierProvider.family<
+      GroupCartDetailNotifier,
+      GroupCartDetailState,
+      String
+    >(
+      (ref, cartId) => GroupCartDetailNotifier(
+        ref.watch(groupCartRepositoryProvider),
+        cartId,
+      ),
+    );

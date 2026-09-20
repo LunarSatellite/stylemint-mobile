@@ -267,29 +267,31 @@ void main() {
       expect(find.byKey(const ValueKey('plans-load-failed')), findsOneWidget);
     });
 
-    testWidgets('a refused compile shows the backend reason, not an exception',
-        (tester) async {
-      final ds = await pumpList(
-        tester,
-        source: _FakeDataSource(
-          plans: <CommerceExecutionPlan>[_plan()],
-          failure: 'refused',
-        ),
-      );
+    testWidgets(
+      'a refused compile shows the backend reason, not an exception',
+      (tester) async {
+        final ds = await pumpList(
+          tester,
+          source: _FakeDataSource(
+            plans: <CommerceExecutionPlan>[_plan()],
+            failure: 'refused',
+          ),
+        );
 
-      await tester.enterText(
-        find.byKey(const ValueKey('plan-intent-field')),
-        'boots',
-      );
-      await tester.tap(find.byKey(const ValueKey('plan-compile-button')));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('plan-intent-field')),
+          'boots',
+        );
+        await tester.tap(find.byKey(const ValueKey('plan-compile-button')));
+        await tester.pumpAndSettle();
 
-      expect(
-        find.byKey(const ValueKey('plan-action-failure-notice')),
-        findsOneWidget,
-      );
-      expect(ds.calls, contains('compile:boots:NPR:5:null'));
-    });
+        expect(
+          find.byKey(const ValueKey('plan-action-failure-notice')),
+          findsOneWidget,
+        );
+        expect(ds.calls, contains('compile:boots:NPR:5:null'));
+      },
+    );
 
     testWidgets('an empty intent asks the backend nothing', (tester) async {
       final ds = await pumpList(tester);
@@ -525,8 +527,9 @@ void main() {
       expect(find.textContaining('Evidence recorded'), findsWidgets);
     });
 
-    testWidgets('a commitment the shopper never approved is not drawn at all',
-        (tester) async {
+    testWidgets('a commitment the shopper never approved is not drawn at all', (
+      tester,
+    ) async {
       await pumpDetail(
         tester,
         _plan(

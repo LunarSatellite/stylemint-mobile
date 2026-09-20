@@ -376,8 +376,8 @@ abstract final class ReelCaption {
         line.replaceAll(_link, '').replaceAll(_hashtag, ''),
       );
       if (cleaned.isEmpty) continue;
-      final sentence =
-          (_firstSentence.firstMatch(cleaned)?.group(0) ?? cleaned).trim();
+      final sentence = (_firstSentence.firstMatch(cleaned)?.group(0) ?? cleaned)
+          .trim();
       return isHookLengthValid(sentence) ? sentence : '';
     }
     return '';

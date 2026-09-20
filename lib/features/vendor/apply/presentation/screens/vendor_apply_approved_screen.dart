@@ -94,4 +94,3 @@ class VendorApplyApprovedScreen extends StatelessWidget {
     );
   }
 }
-

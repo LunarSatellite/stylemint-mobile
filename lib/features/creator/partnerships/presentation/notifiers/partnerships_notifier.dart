@@ -13,7 +13,8 @@ abstract class PartnershipsState with _$PartnershipsState {
   const PartnershipsState._();
 
   const factory PartnershipsState.initial() = _PartnershipsInitial;
-  const factory PartnershipsState.loadInProgress() = _PartnershipsLoadInProgress;
+  const factory PartnershipsState.loadInProgress() =
+      _PartnershipsLoadInProgress;
   const factory PartnershipsState.loadSuccess({
     required List<PartnershipInvite> invites,
     required List<ActivePartnership> active,

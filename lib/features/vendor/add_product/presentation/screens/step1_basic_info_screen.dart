@@ -52,7 +52,9 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
 
   void _hydrateFromState() {
     if (!mounted) return;
-    final fs = ref.read(addProductNotifierProvider).maybeWhen(
+    final fs = ref
+        .read(addProductNotifierProvider)
+        .maybeWhen(
           loadSuccess: (s) => s,
           orElse: () => null,
         );
@@ -63,8 +65,7 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
       _skuController.text = info.sku;
       _shortDescController.text = info.shortDescription;
       _descriptionController.text = info.description;
-      _selectedCategoryId =
-          info.categoryId.isEmpty ? null : info.categoryId;
+      _selectedCategoryId = info.categoryId.isEmpty ? null : info.categoryId;
       _selectedCategoryName = info.categories.isEmpty
           ? null
           : info.categories.first;

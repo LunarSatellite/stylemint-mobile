@@ -1,4 +1,4 @@
-﻿import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
@@ -31,8 +31,9 @@ final messagingRepositoryProvider = Provider<MessagingRepository>(
 
 /// Singleton realtime service. Kept alive for the whole app session so
 /// the SignalR connection survives screen-to-screen navigation.
-final messagingRealtimeServiceProvider =
-    Provider<MessagingRealtimeService>((ref) {
+final messagingRealtimeServiceProvider = Provider<MessagingRealtimeService>((
+  ref,
+) {
   final service = MessagingRealtimeService();
   ref.onDispose(service.dispose);
   return service;
@@ -42,7 +43,9 @@ final messagingRealtimeServiceProvider =
 /// Used by the chat notifier to decide which messages are "mine" and
 /// by the realtime service to set up the SignalR connection.
 final currentAccountIdProvider = Provider<String>(
-  (ref) => ref.watch(sessionControllerProvider).maybeWhen(
+  (ref) => ref
+      .watch(sessionControllerProvider)
+      .maybeWhen(
         authenticated: (id) => id,
         orElse: () => '',
       ),
@@ -51,15 +54,18 @@ final currentAccountIdProvider = Provider<String>(
 /// Notifier for the open chat of a single thread. Family-keyed by
 /// threadId so each open thread maintains its own message list +
 /// realtime handler.
-final chatNotifierProvider = StateNotifierProvider.family<
-    ChatNotifier, ChatState, String>((ref, threadId) {
-  return ChatNotifier(
-    threadId: threadId,
-    repository: ref.watch(messagingRepositoryProvider),
-    realtime: ref.watch(messagingRealtimeServiceProvider),
-    currentAccountId: ref.watch(currentAccountIdProvider),
-  );
-});
+final chatNotifierProvider =
+    StateNotifierProvider.family<ChatNotifier, ChatState, String>((
+      ref,
+      threadId,
+    ) {
+      return ChatNotifier(
+        threadId: threadId,
+        repository: ref.watch(messagingRepositoryProvider),
+        realtime: ref.watch(messagingRealtimeServiceProvider),
+        currentAccountId: ref.watch(currentAccountIdProvider),
+      );
+    });
 
 /// Resolves a profile id to the owning account id (used so screens
 /// that only have a profile id can open a chat thread). Cached per

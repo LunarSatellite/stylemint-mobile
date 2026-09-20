@@ -67,8 +67,7 @@ class CreatorPerformanceNotifier
         sorted.sort((a, b) => b.unitsSold.compareTo(a.unitsSold));
       case CreatorPerformanceSortBy.commission:
         sorted.sort(
-          (a, b) =>
-              b.commissionPaid.amount.compareTo(a.commissionPaid.amount),
+          (a, b) => b.commissionPaid.amount.compareTo(a.commissionPaid.amount),
         );
     }
     return sorted;

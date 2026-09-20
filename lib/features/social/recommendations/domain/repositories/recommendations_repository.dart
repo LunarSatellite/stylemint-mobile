@@ -4,7 +4,8 @@ import 'package:stylemint_mobile_frontend/features/social/recommendations/domain
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
 abstract interface class RecommendationsRepository {
-  Future<Either<NetworkExceptions, PagedResult<RecommendationRequest>>> getRequests({
+  Future<Either<NetworkExceptions, PagedResult<RecommendationRequest>>>
+  getRequests({
     int limit = 20,
     String? cursor,
   });

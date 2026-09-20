@@ -197,7 +197,8 @@ class _OrdersReadyToShipScreenState
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => _isSelectMode ? _exitSelectMode() : context.popOrHome(),
+          onPressed: () =>
+              _isSelectMode ? _exitSelectMode() : context.popOrHome(),
         ),
         title: Text(
           'Orders Ready to Ship(${toShip.length})',

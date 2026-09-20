@@ -383,7 +383,8 @@ class _MultiCurrencyNote extends StatelessWidget {
             ),
             children: [
               TextSpan(
-                text: 'These totals span more than one currency, so StyleMint '
+                text:
+                    'These totals span more than one currency, so StyleMint '
                     'does not add them into one amount here.',
               ),
               TextSpan(

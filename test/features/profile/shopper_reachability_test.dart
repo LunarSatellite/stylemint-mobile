@@ -24,7 +24,7 @@ void main() {
         'Connected assistants — no way to see or revoke an agent',
     'RouteNames.myClienteling':
         'In-store assistance — the only control that turns an associate '
-            'claim into credit, so without it a claim can never be confirmed',
+        'claim into credit, so without it a claim can never be confirmed',
   };
 
   test('the customer profile reaches every shopper-facing settings screen', () {
@@ -39,7 +39,8 @@ void main() {
     expect(
       stranded,
       isEmpty,
-      reason: 'these are reachable only from /settings, which no customer can '
+      reason:
+          'these are reachable only from /settings, which no customer can '
           'open. Re-add the tile rather than relying on deep links:\n'
           '${stranded.join('\n')}',
     );

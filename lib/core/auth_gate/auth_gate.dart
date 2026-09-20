@@ -100,8 +100,10 @@ Future<List<ProfileField>> _missingProfileFields(
 
   if (required_.contains(ProfileField.shippingAddress)) {
     final either = await ref.read(shippingRepositoryProvider).getAddresses();
-    final hasAddress =
-        either.fold((_) => false, (addresses) => addresses.isNotEmpty);
+    final hasAddress = either.fold(
+      (_) => false,
+      (addresses) => addresses.isNotEmpty,
+    );
     if (!hasAddress) missing.add(ProfileField.shippingAddress);
   }
 
@@ -119,8 +121,8 @@ Future<bool> _hasApprovedKyc(WidgetRef ref) async {
     final response = await ref
         .read(apiClientProvider)
         .get('/v1/accounts/$accountId/kyc-sessions');
-    final sessions =
-        (response as List<dynamic>? ?? const <dynamic>[]).cast<Map<String, dynamic>>();
+    final sessions = (response as List<dynamic>? ?? const <dynamic>[])
+        .cast<Map<String, dynamic>>();
     return sessions.any((s) => s['status'] == 4); // KycSessionStatus.Approved
   } catch (_) {
     return false;

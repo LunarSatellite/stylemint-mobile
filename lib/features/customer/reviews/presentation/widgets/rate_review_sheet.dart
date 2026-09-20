@@ -59,7 +59,10 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
   @override
   Widget build(BuildContext context) {
     final submitState = ref.watch(submitReviewNotifierProvider);
-    final isSubmitting = submitState.maybeWhen(submitting: () => true, orElse: () => false);
+    final isSubmitting = submitState.maybeWhen(
+      submitting: () => true,
+      orElse: () => false,
+    );
 
     ref.listen<SubmitReviewState>(submitReviewNotifierProvider, (_, next) {
       next.maybeWhen(
@@ -71,7 +74,9 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
         // Sheet stays open on failure, so (unlike the success path above,
         // which pops first) a SnackBar here would be invisible — see the
         // note on _inlineError.
-        failure: (_) => setState(() => _inlineError = 'Failed to submit review. Please try again.'),
+        failure: (_) => setState(
+          () => _inlineError = 'Failed to submit review. Please try again.',
+        ),
         orElse: () {},
       );
     });
@@ -81,7 +86,8 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
         left: DesignTokens.s16,
         right: DesignTokens.s16,
         top: DesignTokens.s24,
-        bottom: MediaQuery.of(context).viewInsets.bottom +
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom +
             MediaQuery.of(context).padding.bottom +
             DesignTokens.s24,
       ),
@@ -105,14 +111,16 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
           _RadioOption(
             selected: _type == _ReviewType.reel,
             title: 'Reel Review',
-            description: 'Got a reel where you reviewed this product? Drop the link here!',
+            description:
+                'Got a reel where you reviewed this product? Drop the link here!',
             onTap: () => setState(() => _type = _ReviewType.reel),
           ),
           const SizedBox(height: DesignTokens.s8),
           _RadioOption(
             selected: _type == _ReviewType.written,
             title: 'Written Review',
-            description: "Give this product a star rating and, if you'd like, tell us what you enjoyed about it!",
+            description:
+                "Give this product a star rating and, if you'd like, tell us what you enjoyed about it!",
             onTap: () => setState(() => _type = _ReviewType.written),
           ),
           const SizedBox(height: DesignTokens.s20),
@@ -120,56 +128,71 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
             Text('Select Platform', style: DesignTokens.mediumSemibold),
             const SizedBox(height: DesignTokens.s12),
             Row(
-              children: _platforms.map((p) {
-                final isSelected = _platform == p.$1;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: DesignTokens.s8),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _platform = p.$1),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: DesignTokens.s12),
-                        decoration: BoxDecoration(
-                          color: isSelected ? DesignTokens.chipsSelectedFill : DesignTokens.bgAppBodyLight,
-                          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-                          border: Border.all(
-                            color: isSelected ? DesignTokens.chipsSelectedBorder : DesignTokens.borderDefault,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(color: p.$2, shape: BoxShape.circle),
-                              child: Center(
-                                child: Text(
-                                  p.$1[0],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+              children: _platforms
+                  .map((p) {
+                    final isSelected = _platform == p.$1;
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: DesignTokens.s8),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _platform = p.$1),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: DesignTokens.s12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? DesignTokens.chipsSelectedFill
+                                  : DesignTokens.bgAppBodyLight,
+                              borderRadius: BorderRadius.circular(
+                                DesignTokens.cardRadius,
+                              ),
+                              border: Border.all(
+                                color: isSelected
+                                    ? DesignTokens.chipsSelectedBorder
+                                    : DesignTokens.borderDefault,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: p.$2,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      p.$1[0],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                                const SizedBox(height: DesignTokens.s4),
+                                Text(
+                                  p.$1,
+                                  style: DesignTokens.smallRegular.copyWith(
+                                    color: isSelected
+                                        ? DesignTokens.primaryGreen
+                                        : DesignTokens.textLight,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: DesignTokens.s4),
-                            Text(
-                              p.$1,
-                              style: DesignTokens.smallRegular.copyWith(
-                                color: isSelected ? DesignTokens.primaryGreen : DesignTokens.textLight,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                );
-              }).toList(growable: false),
+                    );
+                  })
+                  .toList(growable: false),
             ),
           ] else ...[
             Center(
@@ -178,11 +201,15 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
                 children: List.generate(5, (i) {
                   final star = i + 1;
                   return GestureDetector(
-                    onTap: isSubmitting ? null : () => setState(() => _rating = star),
+                    onTap: isSubmitting
+                        ? null
+                        : () => setState(() => _rating = star),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Icon(
-                        star <= _rating ? Icons.star_rounded : Icons.star_border_rounded,
+                        star <= _rating
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
                         size: 36,
                         color: DesignTokens.secondaryYellow,
                       ),
@@ -197,7 +224,9 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
               maxLines: 4,
               enabled: !isSubmitting,
               style: DesignTokens.mediumRegular,
-              decoration: DesignTokens.inputDecoration(hintText: 'Write your review'),
+              decoration: DesignTokens.inputDecoration(
+                hintText: 'Write your review',
+              ),
             ),
             const SizedBox(height: DesignTokens.s12),
             if (_imagePaths.isNotEmpty) ...[
@@ -206,12 +235,18 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: _imagePaths.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: DesignTokens.s8),
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(width: DesignTokens.s8),
                   itemBuilder: (_, i) => Stack(
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(DesignTokens.s8),
-                        child: Image.file(File(_imagePaths[i]), width: 80, height: 80, fit: BoxFit.cover),
+                        child: Image.file(
+                          File(_imagePaths[i]),
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       Positioned(
                         top: 2,
@@ -219,9 +254,16 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
                         child: GestureDetector(
                           onTap: () => setState(() => _imagePaths.removeAt(i)),
                           child: Container(
-                            decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
                             padding: const EdgeInsets.all(2),
-                            child: const Icon(Icons.close, size: 12, color: Colors.white),
+                            child: const Icon(
+                              Icons.close,
+                              size: 12,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -248,7 +290,9 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
             const SizedBox(height: DesignTokens.s12),
             Text(
               _inlineError!,
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.colorError),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.colorError,
+              ),
             ),
           ],
           const SizedBox(height: DesignTokens.s20),
@@ -261,11 +305,16 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: DesignTokens.buttonPrimaryText),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: DesignTokens.buttonPrimaryText,
+                      ),
                     )
                   : Text(
                       'Submit Review',
-                      style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.buttonPrimaryText),
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.buttonPrimaryText,
+                      ),
                     ),
             ),
           ),
@@ -300,17 +349,21 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
     }
     final orderId = widget.orderId;
     if (orderId == null) {
-      setState(() => _inlineError =
-          'Open "Write a Review" from a delivered order to review this product.');
+      setState(
+        () => _inlineError =
+            'Open "Write a Review" from a delivered order to review this product.',
+      );
       return;
     }
-    ref.read(submitReviewNotifierProvider.notifier).submitReview(
-      productId: widget.productId,
-      orderId: orderId,
-      rating: _rating,
-      comment: comment,
-      imagePaths: _imagePaths.isEmpty ? null : _imagePaths,
-    );
+    ref
+        .read(submitReviewNotifierProvider.notifier)
+        .submitReview(
+          productId: widget.productId,
+          orderId: orderId,
+          rating: _rating,
+          comment: comment,
+          imagePaths: _imagePaths.isEmpty ? null : _imagePaths,
+        );
   }
 }
 
@@ -335,8 +388,12 @@ class _RadioOption extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            selected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
-            color: selected ? DesignTokens.primaryGreen : DesignTokens.radioIconDefault,
+            selected
+                ? Icons.radio_button_checked_rounded
+                : Icons.radio_button_unchecked_rounded,
+            color: selected
+                ? DesignTokens.primaryGreen
+                : DesignTokens.radioIconDefault,
             size: 20,
           ),
           const SizedBox(width: DesignTokens.s8),

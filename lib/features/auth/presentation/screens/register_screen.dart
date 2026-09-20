@@ -77,7 +77,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final phone = _phoneController.text.trim();
     final timezone = _timezoneController.text.trim();
 
-    if (displayName.isEmpty || email.isEmpty || phone.isEmpty || timezone.isEmpty) {
+    if (displayName.isEmpty ||
+        email.isEmpty ||
+        phone.isEmpty ||
+        timezone.isEmpty) {
       SmSnackbar.error(context, 'Please fill in all fields');
       return;
     }
@@ -87,12 +90,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
-    final phoneE164 =
-        _phoneFieldKey.currentState?.getFullPhoneNumber() ?? '';
+    final phoneE164 = _phoneFieldKey.currentState?.getFullPhoneNumber() ?? '';
     final countryDialCode =
         '+${_phoneFieldKey.currentState?.getSelectedCountry().phoneCode ?? '977'}';
 
-    await ref.read(registrationNotifierProvider.notifier).startRegistration(
+    await ref
+        .read(registrationNotifierProvider.notifier)
+        .startRegistration(
           displayName: displayName,
           locale: _locale,
           timezone: timezone,
@@ -138,7 +142,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final rng = Random.secure();
     String pick(String set) => set[rng.nextInt(set.length)];
     // Guarantee one of each class, then fill to 24 chars.
-    final chars = <String>[pick(upper), pick(lower), pick(digits), pick(symbols)];
+    final chars = <String>[
+      pick(upper),
+      pick(lower),
+      pick(digits),
+      pick(symbols),
+    ];
     while (chars.length < 24) {
       chars.add(pick(all));
     }
@@ -163,13 +172,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) context.go(RouteNames.signInMethod);
       return;
     }
-    await ref.read(loginProvider.notifier).loginWithPassword(
+    await ref
+        .read(loginProvider.notifier)
+        .loginWithPassword(
           identifierType: 'email',
           identifier: email,
           password: password,
         );
     if (!mounted) return;
-    ref.read(loginProvider).maybeWhen(
+    ref
+        .read(loginProvider)
+        .maybeWhen(
           loadSuccess: (_) {
             SmSnackbar.success(context, 'Welcome to Style Mint!');
             context.go(RouteNames.home);
@@ -193,7 +206,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final state = ref.watch(registrationNotifierProvider);
     final isLoading = state.isLoading;
 
-    ref.listen<RegistrationState>(registrationNotifierProvider, (previous, next) {
+    ref.listen<RegistrationState>(registrationNotifierProvider, (
+      previous,
+      next,
+    ) {
       next.maybeWhen(
         step1LoadSuccess: (_) => _goToStep(1),
         step2Success: () => _goToStep(2),
@@ -726,9 +742,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   String _failureMessage(NetworkExceptions failure, String fallback) {
     final s = failure.toString();
-    if (s.contains('DUPLICATE')) return 'An account with this email or phone already exists';
-    if (s.contains('INVALID')) return 'Please check your information and try again';
-    if (s.contains('network')) return 'Network error. Please check your connection';
+    if (s.contains('DUPLICATE'))
+      return 'An account with this email or phone already exists';
+    if (s.contains('INVALID'))
+      return 'Please check your information and try again';
+    if (s.contains('network'))
+      return 'Network error. Please check your connection';
     if (s.contains('auth')) return 'Authentication error. Please try again';
     return fallback;
   }

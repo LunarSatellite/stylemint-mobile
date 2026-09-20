@@ -26,11 +26,13 @@ class _Reel implements ReelMedia {
 
 void main() {
   test('Instagram with a media URL plays natively, cached by permalink', () {
-    final source = resolveReelPlayback(const _Reel(
-      platform: SocialPlatform.instagram,
-      videoUrl: 'https://scontent.cdninstagram.com/v/reel.mp4',
-      permalink: 'https://www.instagram.com/reel/abc/',
-    ));
+    final source = resolveReelPlayback(
+      const _Reel(
+        platform: SocialPlatform.instagram,
+        videoUrl: 'https://scontent.cdninstagram.com/v/reel.mp4',
+        permalink: 'https://www.instagram.com/reel/abc/',
+      ),
+    );
 
     expect(source, isA<NativeVideoSource>());
     source as NativeVideoSource;
@@ -39,20 +41,24 @@ void main() {
   });
 
   test('Instagram without a media URL falls back to external hand-off', () {
-    final source = resolveReelPlayback(const _Reel(
-      platform: SocialPlatform.instagram,
-      platformVideoId: '1789',
-    ));
+    final source = resolveReelPlayback(
+      const _Reel(
+        platform: SocialPlatform.instagram,
+        platformVideoId: '1789',
+      ),
+    );
 
     expect(source, isA<ExternalOnlySource>());
   });
 
   test('YouTube uses the official embed even when a video URL is present', () {
-    final source = resolveReelPlayback(const _Reel(
-      platform: SocialPlatform.youtube,
-      platformVideoId: '39bix0Z0NOQ',
-      videoUrl: 'https://rr1---sn.googlevideo.com/videoplayback?x=1',
-    ));
+    final source = resolveReelPlayback(
+      const _Reel(
+        platform: SocialPlatform.youtube,
+        platformVideoId: '39bix0Z0NOQ',
+        videoUrl: 'https://rr1---sn.googlevideo.com/videoplayback?x=1',
+      ),
+    );
 
     expect(source, isA<EmbedSource>());
     source as EmbedSource;
@@ -62,11 +68,13 @@ void main() {
 
   test('TikTok and Facebook use their official embeds', () {
     for (final platform in [SocialPlatform.tiktok, SocialPlatform.facebook]) {
-      final source = resolveReelPlayback(_Reel(
-        platform: platform,
-        platformVideoId: '6718335390845095173',
-        permalink: 'https://www.facebook.com/reel/1/',
-      ));
+      final source = resolveReelPlayback(
+        _Reel(
+          platform: platform,
+          platformVideoId: '6718335390845095173',
+          permalink: 'https://www.facebook.com/reel/1/',
+        ),
+      );
 
       expect(source, isA<EmbedSource>(), reason: platform.name);
       source as EmbedSource;
@@ -75,19 +83,26 @@ void main() {
   });
 
   test('an embed platform without an id falls back to external hand-off', () {
-    final source = resolveReelPlayback(const _Reel(
-      platform: SocialPlatform.youtube,
-      permalink: 'https://youtube.com/shorts/',
-    ));
+    final source = resolveReelPlayback(
+      const _Reel(
+        platform: SocialPlatform.youtube,
+        permalink: 'https://youtube.com/shorts/',
+      ),
+    );
 
     expect(source, isA<ExternalOnlySource>());
-    expect((source as ExternalOnlySource).permalink, 'https://youtube.com/shorts/');
+    expect(
+      (source as ExternalOnlySource).permalink,
+      'https://youtube.com/shorts/',
+    );
   });
 
   test('an unknown platform is treated as Instagram', () {
-    final source = resolveReelPlayback(const _Reel(
-      videoUrl: 'https://scontent.cdninstagram.com/v/reel.mp4',
-    ));
+    final source = resolveReelPlayback(
+      const _Reel(
+        videoUrl: 'https://scontent.cdninstagram.com/v/reel.mp4',
+      ),
+    );
 
     expect(source, isA<NativeVideoSource>());
   });

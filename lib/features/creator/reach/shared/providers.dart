@@ -19,10 +19,9 @@ final reachRepositoryProvider = Provider<ReachRepository>(
   ),
 );
 
-final reachNotifierProvider =
-    StateNotifierProvider<ReachNotifier, ReachState>(
-      (ref) => ReachNotifier(ref.watch(reachRepositoryProvider)),
-    );
+final reachNotifierProvider = StateNotifierProvider<ReachNotifier, ReachState>(
+  (ref) => ReachNotifier(ref.watch(reachRepositoryProvider)),
+);
 
 final createBoostNotifierProvider =
     StateNotifierProvider.family<CreateBoostNotifier, CreateBoostState, String>(

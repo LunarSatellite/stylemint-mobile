@@ -90,7 +90,9 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
             // Rounded card — does not reach the top edge of the screen
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
@@ -184,11 +186,15 @@ class _SlideView extends StatelessWidget {
                       height: 240,
                       decoration: BoxDecoration(
                         color: DesignTokens.bgAppBodyLight,
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.cardRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.cardRadius,
+                        ),
                       ),
-                      child: Icon(slide.icon,
-                          size: 120, color: DesignTokens.primaryGreen),
+                      child: Icon(
+                        slide.icon,
+                        size: 120,
+                        color: DesignTokens.primaryGreen,
+                      ),
                     ),
             ),
           ),
@@ -196,14 +202,18 @@ class _SlideView extends StatelessWidget {
           // Text block (gap 12)
           Column(
             children: [
-              Text(slide.title,
-                  textAlign: TextAlign.center, style: DesignTokens.titleMedium),
+              Text(
+                slide.title,
+                textAlign: TextAlign.center,
+                style: DesignTokens.titleMedium,
+              ),
               const SizedBox(height: DesignTokens.s12),
               Text(
                 slide.subtitle,
                 textAlign: TextAlign.center,
-                style: DesignTokens.mediumRegular
-                    .copyWith(color: DesignTokens.textWhite),
+                style: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
               ),
             ],
           ),

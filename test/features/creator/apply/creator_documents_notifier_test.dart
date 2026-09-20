@@ -28,7 +28,8 @@ class _FakeRepository implements CreatorDocumentsRepository {
   }
 
   @override
-  Future<NetworkEither<List<IdentityDocument>>> listSubmittedDocuments() async =>
+  Future<NetworkEither<List<IdentityDocument>>>
+  listSubmittedDocuments() async =>
       listResult ?? networkRight(<IdentityDocument>[]);
 
   @override

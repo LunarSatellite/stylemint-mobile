@@ -27,7 +27,8 @@ class GroupBuy {
   bool get isOpen =>
       (state == GroupBuyState.open || state == GroupBuyState.committed) &&
       expiresAt.isAfter(DateTime.now());
-  int get slotsRemaining => (targetBuyerCount - commitCount).clamp(0, targetBuyerCount);
+  int get slotsRemaining =>
+      (targetBuyerCount - commitCount).clamp(0, targetBuyerCount);
   double get progress =>
       targetBuyerCount <= 0 ? 0 : (commitCount / targetBuyerCount).clamp(0, 1);
 }

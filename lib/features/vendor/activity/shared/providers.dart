@@ -10,9 +10,12 @@ import 'package:stylemint_mobile_frontend/features/vendor/activity/presentation/
 
 export 'package:stylemint_mobile_frontend/features/vendor/activity/presentation/notifiers/vendor_activity_notifier.dart';
 
-final vendorActivityRemoteDataSourceProvider = Provider<VendorActivityRemoteDataSource>(
-  (ref) => VendorActivityRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
-);
+final vendorActivityRemoteDataSourceProvider =
+    Provider<VendorActivityRemoteDataSource>(
+      (ref) => VendorActivityRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
 
 final vendorActivityRepositoryProvider = Provider<VendorActivityRepository>(
   (ref) => VendorActivityRepositoryImpl(
@@ -24,11 +27,17 @@ final vendorActivityRepositoryProvider = Provider<VendorActivityRepository>(
 /// Small preview feed for the dashboard's "Recent Activity" card.
 final vendorActivityPreviewNotifierProvider =
     StateNotifierProvider<VendorActivityNotifier, VendorActivityState>(
-      (ref) => VendorActivityNotifier(ref.watch(vendorActivityRepositoryProvider), pageSize: 5),
+      (ref) => VendorActivityNotifier(
+        ref.watch(vendorActivityRepositoryProvider),
+        pageSize: 5,
+      ),
     );
 
 /// Fuller feed for the standalone Recent Activity screen.
 final vendorActivityNotifierProvider =
     StateNotifierProvider<VendorActivityNotifier, VendorActivityState>(
-      (ref) => VendorActivityNotifier(ref.watch(vendorActivityRepositoryProvider), pageSize: 50),
+      (ref) => VendorActivityNotifier(
+        ref.watch(vendorActivityRepositoryProvider),
+        pageSize: 50,
+      ),
     );

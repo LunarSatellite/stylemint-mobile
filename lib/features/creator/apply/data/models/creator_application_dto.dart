@@ -33,8 +33,7 @@ abstract class PlatformDto with _$PlatformDto {
 /// enum, handle, self-reported follower count). Maps back to a [Platform]
 /// domain entity via [toDomain] for reapply pre-fill.
 @freezed
-abstract class CreatorApplicationSocialDto
-    with _$CreatorApplicationSocialDto {
+abstract class CreatorApplicationSocialDto with _$CreatorApplicationSocialDto {
   const factory CreatorApplicationSocialDto({
     required int provider,
     String? handle,
@@ -49,12 +48,12 @@ abstract class CreatorApplicationSocialDto
   /// Reverse of the [SocialIdentityProvider] enum used by the apply endpoint.
   /// Null for providers the wizard doesn't model (e.g. Snapchat, X).
   String? get platformId => switch (provider) {
-        1 => 'instagram',
-        2 => 'tiktok',
-        3 => 'youtube',
-        4 => 'facebook',
-        _ => null,
-      };
+    1 => 'instagram',
+    2 => 'tiktok',
+    3 => 'youtube',
+    4 => 'facebook',
+    _ => null,
+  };
 
   Platform toDomain() {
     final id = platformId ?? 'unknown';
@@ -99,8 +98,9 @@ abstract class CreatorApplicationDto with _$CreatorApplicationDto {
     final rawCategories = (json['categories'] as List<dynamic>?) ?? const [];
     final categoryIds = rawCategories
         .map(
-          (c) => (c as Map<String, dynamic>)['creatorContentCategoryId']
-              as String?,
+          (c) =>
+              (c as Map<String, dynamic>)['creatorContentCategoryId']
+                  as String?,
         )
         .whereType<String>()
         .toList(growable: false);

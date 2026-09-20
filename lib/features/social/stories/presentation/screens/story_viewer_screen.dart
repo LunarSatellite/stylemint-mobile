@@ -65,9 +65,11 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
 
   void _markViewed(int index) {
     if (index < _stories.length) {
-      ref.read(storiesNotifierProvider.notifier).viewStory(
-        _stories[index].id,
-      );
+      ref
+          .read(storiesNotifierProvider.notifier)
+          .viewStory(
+            _stories[index].id,
+          );
     }
   }
 
@@ -235,14 +237,16 @@ class _StoryHeader extends StatelessWidget {
         CircleAvatar(
           radius: DesignTokens.avatarSmall / 2,
           backgroundColor: DesignTokens.bgAppBodyLight,
-          backgroundImage:
-              story.userAvatarUrl.isNotEmpty
-                  ? CachedNetworkImageProvider(story.userAvatarUrl)
-                  : null,
-          child:
-              story.userAvatarUrl.isEmpty
-                  ? const Icon(Icons.person, color: DesignTokens.iconLight, size: DesignTokens.iconSmall)
-                  : null,
+          backgroundImage: story.userAvatarUrl.isNotEmpty
+              ? CachedNetworkImageProvider(story.userAvatarUrl)
+              : null,
+          child: story.userAvatarUrl.isEmpty
+              ? const Icon(
+                  Icons.person,
+                  color: DesignTokens.iconLight,
+                  size: DesignTokens.iconSmall,
+                )
+              : null,
         ),
         const SizedBox(width: DesignTokens.s12),
         Expanded(

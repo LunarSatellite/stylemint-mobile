@@ -372,8 +372,7 @@ bool mallRailHasSignals(
   required DateTime now,
   required MallStrings strings,
 }) => items.any(
-  (product) =>
-      mallProductSignal(product, now: now, strings: strings) != null,
+  (product) => mallProductSignal(product, now: now, strings: strings) != null,
 );
 
 /// The live facts shown beside a section's title.
@@ -395,9 +394,8 @@ List<MallSignal> mallSectionMeta(HomeSection section, MallStrings strings) =>
       HomeCollectionsSection(:final items) => _collectionMeta(items, strings),
       // The recorded count the server sent, phrased as the count it is and
       // placed where the kit puts one scannable fact.
-      HomePromptSection(:final fact) => fact == null
-          ? const []
-          : [MallSignal(label: fact)],
+      HomePromptSection(:final fact) =>
+        fact == null ? const [] : [MallSignal(label: fact)],
       HomeCampaignsSection() ||
       HomeCategoriesSection() ||
       HomeTrustSection() => const [],

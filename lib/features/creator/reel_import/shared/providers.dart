@@ -14,12 +14,11 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentat
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 
-final reelImportRemoteDataSourceProvider =
-    Provider<ReelImportRemoteDataSource>(
-      (ref) => ReelImportRemoteDataSource(
-        apiClient: ref.watch(apiClientProvider),
-      ),
-    );
+final reelImportRemoteDataSourceProvider = Provider<ReelImportRemoteDataSource>(
+  (ref) => ReelImportRemoteDataSource(
+    apiClient: ref.watch(apiClientProvider),
+  ),
+);
 
 final reelImportRepositoryProvider = Provider<ReelImportRepository>(
   (ref) => ReelImportRepositoryImpl(
@@ -53,7 +52,10 @@ final productSearchNotifierProvider =
 /// results typed in the sheet never leak into the main screen's
 /// suggested-products list (which has its own dedicated state).
 final productSearchSheetNotifierProvider =
-    StateNotifierProvider.autoDispose<ProductSearchNotifier, ProductSearchState>(
+    StateNotifierProvider.autoDispose<
+      ProductSearchNotifier,
+      ProductSearchState
+    >(
       (ref) => ProductSearchNotifier(ref.watch(reelImportRepositoryProvider)),
     );
 
@@ -75,10 +77,13 @@ final bulkImportNotifierProvider =
       (ref) => BulkImportNotifier(ref.watch(reelImportRepositoryProvider)),
     );
 
-final reelIntentNotifierProvider = StateNotifierProvider.autoDispose<
-    ReelIntentNotifier, ReelIntentNotifierState>(
-  (ref) => ReelIntentNotifier(ref.watch(reelImportRepositoryProvider)),
-);
+final reelIntentNotifierProvider =
+    StateNotifierProvider.autoDispose<
+      ReelIntentNotifier,
+      ReelIntentNotifierState
+    >(
+      (ref) => ReelIntentNotifier(ref.watch(reelImportRepositoryProvider)),
+    );
 
 // ── Real commission terms for the products on screen ────────────────────────
 

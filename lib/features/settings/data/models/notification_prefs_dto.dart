@@ -49,30 +49,28 @@ class NotificationPreferencesDto {
   final String quietHoursStartLocal;
   final String quietHoursEndLocal;
 
-  factory NotificationPreferencesDto.fromJson(Map<String, dynamic> json) =>
-      NotificationPreferencesDto(
-        emailEnabledMaster: json['emailEnabledMaster'] as bool? ?? true,
-        pushEnabledMaster: json['pushEnabledMaster'] as bool? ?? true,
-        smsEnabledMaster: json['smsEnabledMaster'] as bool? ?? false,
-        emailOrderUpdates: json['emailOrderUpdates'] as bool? ?? true,
-        pushOrderUpdates: json['pushOrderUpdates'] as bool? ?? true,
-        emailDeliveryUpdates: json['emailDeliveryUpdates'] as bool? ?? true,
-        pushDeliveryUpdates: json['pushDeliveryUpdates'] as bool? ?? true,
-        emailReelActivity: json['emailReelActivity'] as bool? ?? false,
-        pushReelActivity: json['pushReelActivity'] as bool? ?? false,
-        emailFriendActivity: json['emailFriendActivity'] as bool? ?? false,
-        pushFriendActivity: json['pushFriendActivity'] as bool? ?? false,
-        emailMarketing: json['emailMarketing'] as bool? ?? true,
-        pushMarketing: json['pushMarketing'] as bool? ?? true,
-        emailSystemAnnouncements:
-            json['emailSystemAnnouncements'] as bool? ?? true,
-        pushSystemAnnouncements:
-            json['pushSystemAnnouncements'] as bool? ?? true,
-        quietHoursEnabled: json['quietHoursEnabled'] as bool? ?? true,
-        quietHoursStartLocal:
-            json['quietHoursStartLocal'] as String? ?? '22:00:00',
-        quietHoursEndLocal: json['quietHoursEndLocal'] as String? ?? '08:00:00',
-      );
+  factory NotificationPreferencesDto.fromJson(
+    Map<String, dynamic> json,
+  ) => NotificationPreferencesDto(
+    emailEnabledMaster: json['emailEnabledMaster'] as bool? ?? true,
+    pushEnabledMaster: json['pushEnabledMaster'] as bool? ?? true,
+    smsEnabledMaster: json['smsEnabledMaster'] as bool? ?? false,
+    emailOrderUpdates: json['emailOrderUpdates'] as bool? ?? true,
+    pushOrderUpdates: json['pushOrderUpdates'] as bool? ?? true,
+    emailDeliveryUpdates: json['emailDeliveryUpdates'] as bool? ?? true,
+    pushDeliveryUpdates: json['pushDeliveryUpdates'] as bool? ?? true,
+    emailReelActivity: json['emailReelActivity'] as bool? ?? false,
+    pushReelActivity: json['pushReelActivity'] as bool? ?? false,
+    emailFriendActivity: json['emailFriendActivity'] as bool? ?? false,
+    pushFriendActivity: json['pushFriendActivity'] as bool? ?? false,
+    emailMarketing: json['emailMarketing'] as bool? ?? true,
+    pushMarketing: json['pushMarketing'] as bool? ?? true,
+    emailSystemAnnouncements: json['emailSystemAnnouncements'] as bool? ?? true,
+    pushSystemAnnouncements: json['pushSystemAnnouncements'] as bool? ?? true,
+    quietHoursEnabled: json['quietHoursEnabled'] as bool? ?? true,
+    quietHoursStartLocal: json['quietHoursStartLocal'] as String? ?? '22:00:00',
+    quietHoursEndLocal: json['quietHoursEndLocal'] as String? ?? '08:00:00',
+  );
 
   /// Body for `PATCH .../notification-preferences/toggles`
   /// (`UpdateNotificationTogglesVm`).

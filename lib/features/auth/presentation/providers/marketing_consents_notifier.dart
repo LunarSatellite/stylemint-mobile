@@ -27,7 +27,7 @@ abstract class MarketingConsentsState with _$MarketingConsentsState {
 
 class MarketingConsentsNotifier extends StateNotifier<MarketingConsentsState> {
   MarketingConsentsNotifier({required this.authRepository})
-      : super(const MarketingConsentsState.initial());
+    : super(const MarketingConsentsState.initial());
 
   final AuthRepository authRepository;
 
@@ -58,7 +58,7 @@ class MarketingConsentsNotifier extends StateNotifier<MarketingConsentsState> {
 
 final marketingConsentsProvider =
     StateNotifierProvider<MarketingConsentsNotifier, MarketingConsentsState>(
-  (ref) => MarketingConsentsNotifier(
-    authRepository: ref.watch(authRepositoryProvider),
-  ),
-);
+      (ref) => MarketingConsentsNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );

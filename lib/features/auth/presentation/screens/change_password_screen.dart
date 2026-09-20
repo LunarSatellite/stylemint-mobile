@@ -52,8 +52,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       return;
     }
     if (newPwd.isEmpty || newPwd.length < 8) {
-      SmSnackbar.error(
-          context, 'New password must be at least 8 characters');
+      SmSnackbar.error(context, 'New password must be at least 8 characters');
       return;
     }
     if (newPwd != confirm) {
@@ -62,15 +61,19 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     }
     if (newPwd == current) {
       SmSnackbar.error(
-          context, 'New password must differ from current password');
+        context,
+        'New password must differ from current password',
+      );
       return;
     }
 
     setState(() => _isLoading = true);
 
     final session = ref.read(sessionControllerProvider);
-    final accountId =
-        session.maybeWhen(authenticated: (id) => id, orElse: () => '');
+    final accountId = session.maybeWhen(
+      authenticated: (id) => id,
+      orElse: () => '',
+    );
 
     if (accountId.isEmpty) {
       if (!mounted) return;
@@ -79,7 +82,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       return;
     }
 
-    final result = await ref.read(authRepositoryProvider).changePassword(
+    final result = await ref
+        .read(authRepositoryProvider)
+        .changePassword(
           accountId: accountId,
           currentPassword: current,
           newPassword: newPwd,
@@ -108,8 +113,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
         title: const Text(
@@ -140,8 +148,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     hint: 'Current Password',
                     obscure: _obscureCurrent,
                     enabled: !_isLoading,
-                    onToggle: () => setState(
-                        () => _obscureCurrent = !_obscureCurrent),
+                    onToggle: () =>
+                        setState(() => _obscureCurrent = !_obscureCurrent),
                   ),
                   const SizedBox(height: DesignTokens.s16),
                   _PasswordField(
@@ -149,8 +157,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     hint: 'New Password',
                     obscure: _obscureNew,
                     enabled: !_isLoading,
-                    onToggle: () =>
-                        setState(() => _obscureNew = !_obscureNew),
+                    onToggle: () => setState(() => _obscureNew = !_obscureNew),
                     onChanged: _onNewPasswordChanged,
                   ),
                   const SizedBox(height: DesignTokens.s16),
@@ -160,8 +167,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     obscure: _obscureConfirm,
                     enabled: !_isLoading,
                     textInputAction: TextInputAction.done,
-                    onToggle: () => setState(
-                        () => _obscureConfirm = !_obscureConfirm),
+                    onToggle: () =>
+                        setState(() => _obscureConfirm = !_obscureConfirm),
                   ),
                   const SizedBox(height: DesignTokens.s12),
                   _StrengthBars(strength: _strength),
@@ -196,8 +203,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.primaryGreen,
                   foregroundColor: DesignTokens.textWhite,
-                  disabledBackgroundColor:
-                      DesignTokens.primaryGreen.withValues(alpha: 0.5),
+                  disabledBackgroundColor: DesignTokens.primaryGreen.withValues(
+                    alpha: 0.5,
+                  ),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999),
@@ -280,9 +288,7 @@ class _PasswordField extends StatelessWidget {
         ),
         suffixIcon: IconButton(
           icon: Icon(
-            obscure
-                ? Icons.visibility_off_rounded
-                : Icons.visibility_rounded,
+            obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
             color: DesignTokens.textMuted,
             size: DesignTokens.iconSmall,
           ),
@@ -311,8 +317,9 @@ class _StrengthBars extends StatelessWidget {
     return Row(
       children: List.generate(4, (i) {
         final filled = i < strength;
-        final color =
-            filled ? _colors[strength - 1] : DesignTokens.bgAppBodyLight;
+        final color = filled
+            ? _colors[strength - 1]
+            : DesignTokens.bgAppBodyLight;
         return Expanded(
           child: Container(
             margin: EdgeInsets.only(right: i < 3 ? DesignTokens.s8 : 0),

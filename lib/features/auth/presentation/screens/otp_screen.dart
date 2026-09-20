@@ -86,7 +86,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   Future<void> _onResend() async {
-    await ref.read(otpRequestProvider.notifier).requestOtp(
+    await ref
+        .read(otpRequestProvider.notifier)
+        .requestOtp(
           identifierType: widget.identifierType,
           identifier: widget.phone,
         );
@@ -117,7 +119,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       SmSnackbar.error(context, 'Please enter all 5 digits');
       return;
     }
-    await ref.read(otpVerificationProvider.notifier).verifyOtp(
+    await ref
+        .read(otpVerificationProvider.notifier)
+        .verifyOtp(
           identifierType: widget.identifierType,
           identifier: widget.phone,
           code: code,
@@ -128,23 +132,21 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   /// machine-readable `errorCode` (RFC 7807) — never HTTP status or English
   /// title.
   String _getErrorMessage(NetworkExceptions failure) => failure.maybeWhen(
-        validation: (code, _, __, ___) => switch (code) {
-          'validation.invalid_format' || 'validation.invalid_otp' =>
-            'The code you entered is incorrect. Please try again',
-          'validation.otp_expired' || 'validation.expired' =>
-            'This code has expired. Tap Resend to get a new one',
-          'system.rate_limited' =>
-            'Too many attempts. Please wait a moment and try again',
-          'system.account_locked' =>
-            'Too many attempts. Please try again later',
-          _ => 'Verification failed. Please try again',
-        },
-        serverUnavailable: () =>
-            'StyleMint is temporarily unavailable. Please try again in a moment',
-        noInternetConnection: () =>
-            'Network error. Please check your connection',
-        orElse: () => 'Verification failed. Please try again',
-      );
+    validation: (code, _, __, ___) => switch (code) {
+      'validation.invalid_format' || 'validation.invalid_otp' =>
+        'The code you entered is incorrect. Please try again',
+      'validation.otp_expired' || 'validation.expired' =>
+        'This code has expired. Tap Resend to get a new one',
+      'system.rate_limited' =>
+        'Too many attempts. Please wait a moment and try again',
+      'system.account_locked' => 'Too many attempts. Please try again later',
+      _ => 'Verification failed. Please try again',
+    },
+    serverUnavailable: () =>
+        'StyleMint is temporarily unavailable. Please try again in a moment',
+    noInternetConnection: () => 'Network error. Please check your connection',
+    orElse: () => 'Verification failed. Please try again',
+  );
 
   @override
   Widget build(BuildContext context) {

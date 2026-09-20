@@ -164,9 +164,9 @@ class MoneyDto {
   final String currency;
 
   factory MoneyDto.fromJson(Map<String, dynamic> json) => MoneyDto(
-        amount: (json['amount'] as num?)?.toDouble() ?? 0,
-        currency: (json['currency'] as String?) ?? 'NPR',
-      );
+    amount: (json['amount'] as num?)?.toDouble() ?? 0,
+    currency: (json['currency'] as String?) ?? 'NPR',
+  );
 
   String get label {
     final symbol = currency.toUpperCase() == 'NPR' ? 'Rs' : currency;
@@ -292,8 +292,7 @@ class BrandDetailDto {
     6: 'Non-Profit',
   };
 
-  String get businessTypeLabel =>
-      _businessTypeLabels[businessType] ?? '';
+  String get businessTypeLabel => _businessTypeLabels[businessType] ?? '';
 
   String get commissionRangeLabel =>
       '${commissionRangeMinPercent.toStringAsFixed(0)}-'
@@ -347,10 +346,10 @@ extension TermsSectionMapper on TermsSection {
 
 extension PartnershipTermsDtoMapper on PartnershipTermsDto {
   PartnershipTerms toDomain() => PartnershipTerms(
-        versionNumber: versionNumber,
-        whoCanJoin: whoCanJoin.toDomain(),
-        reelContentRules: reelContentRules.toDomain(),
-      );
+    versionNumber: versionNumber,
+    whoCanJoin: whoCanJoin.toDomain(),
+    reelContentRules: reelContentRules.toDomain(),
+  );
 }
 
 extension MoneyDtoMapper on MoneyDto {
@@ -360,22 +359,22 @@ extension MoneyDtoMapper on MoneyDto {
 
 extension PotentialEarningsDtoMapper on PotentialEarningsDto {
   PotentialEarnings toDomain() => PotentialEarnings(
-        partnershipId: partnershipId,
-        productVariantId: productVariantId,
-        commissionRate: commissionRate,
-        unitPrice: unitPrice.toDomain(),
-        perSale: perSale.toDomain(),
-        perFiftySales: perFiftySales.toDomain(),
-        salesAssumed: salesAssumed,
-      );
+    partnershipId: partnershipId,
+    productVariantId: productVariantId,
+    commissionRate: commissionRate,
+    unitPrice: unitPrice.toDomain(),
+    perSale: perSale.toDomain(),
+    perFiftySales: perFiftySales.toDomain(),
+    salesAssumed: salesAssumed,
+  );
 }
 
 extension RecipeAttachmentInfoDtoMapper on RecipeAttachmentInfoDto {
   RecipeAttachmentInfo toDomain() => RecipeAttachmentInfo(
-        recipeId: recipeId,
-        recipeVersion: recipeVersion,
-        isHidden: isHidden,
-        title: title,
-        thumbnailUrl: thumbnailUrl,
-      );
+    recipeId: recipeId,
+    recipeVersion: recipeVersion,
+    isHidden: isHidden,
+    title: title,
+    thumbnailUrl: thumbnailUrl,
+  );
 }

@@ -20,10 +20,9 @@ abstract class CreatorDashboardState with _$CreatorDashboardState {
       _LoadFailure;
 }
 
-class CreatorDashboardNotifier
-    extends StateNotifier<CreatorDashboardState> {
+class CreatorDashboardNotifier extends StateNotifier<CreatorDashboardState> {
   CreatorDashboardNotifier(this._repository)
-      : super(const CreatorDashboardState.initial()) {
+    : super(const CreatorDashboardState.initial()) {
     unawaited(fetch());
   }
 

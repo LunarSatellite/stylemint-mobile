@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
@@ -114,8 +114,7 @@ class _VendorPartnershipsScreenState
       return;
     }
 
-    final notifier =
-    ref.read(partnershipsListNotifierProvider.notifier);
+    final notifier = ref.read(partnershipsListNotifierProvider.notifier);
 
     switch (action) {
       case _PartnershipAction.viewAnalytics:
@@ -220,13 +219,13 @@ class _VendorPartnershipsScreenState
       }
 
       result.fold(
-            (failure) {
+        (failure) {
           SmSnackbar.error(
             context,
             'Failed to open conversation. Please try again.',
           );
         },
-            (thread) {
+        (thread) {
           setState(() {
             _chatWith = _ChatWith(
               threadId: thread.id,
@@ -256,7 +255,7 @@ class _VendorPartnershipsScreenState
 
     ref.listen<PartnershipsState>(
       partnershipsListNotifierProvider,
-          (_, next) {
+      (_, next) {
         next.maybeWhen(
           actionFailure: (_, __) {
             if (mounted) {
@@ -369,8 +368,7 @@ class _VendorPartnershipsScreenState
       body: Column(
         children: [
           _buildFilterChips(),
-          if (_searchQuery.isNotEmpty)
-            _buildSearchIndicator(),
+          if (_searchQuery.isNotEmpty) _buildSearchIndicator(),
           Expanded(
             child: state.maybeWhen(
               loadInProgress: () => const SmPageLoader(),
@@ -378,8 +376,8 @@ class _VendorPartnershipsScreenState
                 message: 'Failed to load partnerships.',
                 onRetry: () => ref
                     .read(
-                  partnershipsListNotifierProvider.notifier,
-                )
+                      partnershipsListNotifierProvider.notifier,
+                    )
                     .load(),
               ),
               orElse: () => TabBarView(
@@ -437,8 +435,8 @@ class _VendorPartnershipsScreenState
   }
 
   List<VendorPartnership> _applyFiltersAndSearch(
-      List<VendorPartnership> partnerships,
-      ) {
+    List<VendorPartnership> partnerships,
+  ) {
     Iterable<VendorPartnership> result = partnerships;
 
     if (_searchQuery.isNotEmpty) {
@@ -447,8 +445,7 @@ class _VendorPartnershipsScreenState
       result = result.where((partnership) {
         final name = partnership.creatorLabel.toLowerCase();
         final handle = partnership.creatorHandle.toLowerCase();
-        final profileId =
-        partnership.creatorProfileId.toLowerCase();
+        final profileId = partnership.creatorProfileId.toLowerCase();
 
         return name.contains(query) ||
             handle.contains(query) ||
@@ -462,15 +459,14 @@ class _VendorPartnershipsScreenState
 
       case _PartnershipFilter.activeOnly:
         result = result.where(
-              (partnership) =>
-          _TabKindX.of(partnership) == _TabKind.active,
+          (partnership) => _TabKindX.of(partnership) == _TabKind.active,
         );
         break;
 
       case _PartnershipFilter.needsAttention:
         result = result.where(
-              (partnership) =>
-          _TabKindX.of(partnership) == _TabKind.pending ||
+          (partnership) =>
+              _TabKindX.of(partnership) == _TabKind.pending ||
               _TabKindX.of(partnership) == _TabKind.invited,
         );
         break;
@@ -481,20 +477,20 @@ class _VendorPartnershipsScreenState
     switch (_sortBy) {
       case 'Commission':
         sorted.sort(
-              (a, b) => b.commissionMaxPercent.compareTo(
+          (a, b) => b.commissionMaxPercent.compareTo(
             a.commissionMaxPercent,
           ),
         );
 
       case 'Sales':
-      // Sales are not exposed by VendorPartnership yet.
-      // Keep the backend order until analytics data is available.
+        // Sales are not exposed by VendorPartnership yet.
+        // Keep the backend order until analytics data is available.
         break;
 
       case 'Revenue':
       default:
-      // Revenue is not exposed by VendorPartnership yet.
-      // Keep the backend order until analytics data is available.
+        // Revenue is not exposed by VendorPartnership yet.
+        // Keep the backend order until analytics data is available.
         break;
     }
 
@@ -557,8 +553,7 @@ class _VendorPartnershipsScreenState
         child: Row(
           children: [
             _OutlineChip(
-              assetIcon:
-              'assets/images/vendordashboard/icon_filter_alt.png',
+              assetIcon: 'assets/images/vendordashboard/icon_filter_alt.png',
               label: _filter == _PartnershipFilter.all
                   ? 'Filter'
                   : _filter.label,
@@ -569,8 +564,7 @@ class _VendorPartnershipsScreenState
             ),
             _OutlineChip(
               label: 'Sort By',
-              trailingIcon:
-              Icons.keyboard_arrow_down_rounded,
+              trailingIcon: Icons.keyboard_arrow_down_rounded,
               onTap: _showSortSheet,
             ),
             const SizedBox(
@@ -578,8 +572,7 @@ class _VendorPartnershipsScreenState
             ),
             _OutlineChip(
               label: _metric,
-              trailingIcon:
-              Icons.keyboard_arrow_down_rounded,
+              trailingIcon: Icons.keyboard_arrow_down_rounded,
               onTap: _showMetricSheet,
             ),
           ],
@@ -937,9 +930,7 @@ class _PartnershipCard extends StatelessWidget {
               ),
               _StatusChip(tab: tab),
               IconButton(
-                onPressed: isBusy
-                    ? null
-                    : () => onMenu(partnership),
+                onPressed: isBusy ? null : () => onMenu(partnership),
                 icon: const Icon(
                   Icons.more_vert_rounded,
                   size: 20,
@@ -977,8 +968,7 @@ class _PartnershipCard extends StatelessWidget {
             height: DesignTokens.s8,
           ),
           _StatRow(
-            assetIcon:
-            'assets/images/vendordashboard/Revenue Generated.png',
+            assetIcon: 'assets/images/vendordashboard/Revenue Generated.png',
             label: 'Revenue Generated',
             trailing: _blueChip(
               _placeholderRevenue(),
@@ -989,8 +979,7 @@ class _PartnershipCard extends StatelessWidget {
             height: 1,
           ),
           _StatRow(
-            assetIcon:
-            'assets/images/vendordashboard/icon_reels.png',
+            assetIcon: 'assets/images/vendordashboard/icon_reels.png',
             label: 'Reels Published',
             trailing: _plainValue('—'),
           ),
@@ -999,8 +988,7 @@ class _PartnershipCard extends StatelessWidget {
             height: 1,
           ),
           _StatRow(
-            assetIcon:
-            'assets/images/vendordashboard/icon_partnership.png',
+            assetIcon: 'assets/images/vendordashboard/icon_partnership.png',
             label: 'Sales',
             trailing: _plainValue('—'),
           ),
@@ -1009,8 +997,7 @@ class _PartnershipCard extends StatelessWidget {
             height: 1,
           ),
           _StatRow(
-            assetIcon:
-            'assets/images/vendordashboard/Views.png',
+            assetIcon: 'assets/images/vendordashboard/Views.png',
             label: 'Views',
             trailing: _plainValue('—'),
           ),
@@ -1020,12 +1007,12 @@ class _PartnershipCard extends StatelessWidget {
           ),
           _StatRow(
             assetIcon:
-            'assets/images/vendordashboard/icon_pending_inquiries.png',
+                'assets/images/vendordashboard/icon_pending_inquiries.png',
             label: 'Commission Paid',
             trailing: _plainValue(
               '${(partnership.commissionMinPercent * 100).round()}%'
-                  '–'
-                  '${(partnership.commissionMaxPercent * 100).round()}%',
+              '–'
+              '${(partnership.commissionMaxPercent * 100).round()}%',
             ),
           ),
           const Divider(
@@ -1033,8 +1020,7 @@ class _PartnershipCard extends StatelessWidget {
             height: 1,
           ),
           _StatRow(
-            assetIcon:
-            'assets/images/vendordashboard/Your ROI.png',
+            assetIcon: 'assets/images/vendordashboard/Your ROI.png',
             label: 'Your ROI',
             trailing: _plainValue('—'),
           ),
@@ -1121,13 +1107,12 @@ class _DashedDivider extends StatelessWidget {
         const dashWidth = 6.0;
         const dashGap = 4.0;
 
-        final count =
-        (constraints.maxWidth / (dashWidth + dashGap)).floor();
+        final count = (constraints.maxWidth / (dashWidth + dashGap)).floor();
 
         return Row(
           children: List.generate(
             count,
-                (_) => Container(
+            (_) => Container(
               width: dashWidth,
               height: 1,
               margin: const EdgeInsets.only(
@@ -1188,9 +1173,7 @@ class _Avatar extends StatelessWidget {
   Widget _initial(double size) {
     final value = fallback.trim();
 
-    final letter = value.isEmpty
-        ? '?'
-        : value.substring(0, 1).toUpperCase();
+    final letter = value.isEmpty ? '?' : value.substring(0, 1).toUpperCase();
 
     return Container(
       width: size,
@@ -1393,8 +1376,7 @@ class _OutlineChip extends StatelessWidget {
                   size: 14,
                   color: DesignTokens.textLight,
                 ),
-              if (assetIcon != null || icon != null)
-                const SizedBox(width: 6),
+              if (assetIcon != null || icon != null) const SizedBox(width: 6),
               Text(
                 label,
                 style: const TextStyle(
@@ -1452,8 +1434,7 @@ class _PickSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment:
-              MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   title,
@@ -1492,8 +1473,7 @@ class _PickSheet extends StatelessWidget {
                         child: Text(
                           option,
                           style: const TextStyle(
-                            fontFamily:
-                            DesignTokens.fontFamily,
+                            fontFamily: DesignTokens.fontFamily,
                             fontSize: 14,
                             color: DesignTokens.textWhite,
                           ),
@@ -1545,8 +1525,7 @@ class _SearchSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment:
-              MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
                   'Search partnerships',
@@ -1578,8 +1557,7 @@ class _SearchSheet extends StatelessWidget {
               ),
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText:
-                'Creator name, handle, or profile id',
+                hintText: 'Creator name, handle, or profile id',
                 hintStyle: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   color: DesignTokens.textMuted,
@@ -1590,12 +1568,12 @@ class _SearchSheet extends StatelessWidget {
                 ),
                 suffixIcon: controller.text.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(
-                    Icons.clear_rounded,
-                    color: DesignTokens.textMuted,
-                  ),
-                  onPressed: controller.clear,
-                )
+                        icon: const Icon(
+                          Icons.clear_rounded,
+                          color: DesignTokens.textMuted,
+                        ),
+                        onPressed: controller.clear,
+                      )
                     : null,
                 filled: true,
                 fillColor: const Color(0xFF27272A),
@@ -1605,8 +1583,7 @@ class _SearchSheet extends StatelessWidget {
                     Radius.circular(8),
                   ),
                 ),
-                contentPadding:
-                const EdgeInsets.symmetric(
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 12,
                 ),

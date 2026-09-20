@@ -6,7 +6,10 @@ import 'package:stylemint_mobile_frontend/features/settings/data/models/deletion
 import 'package:stylemint_mobile_frontend/features/settings/data/models/notification_prefs_dto.dart';
 
 class SettingsRemoteDataSource {
-  SettingsRemoteDataSource({required this.apiClient, required this.tokenStorage});
+  SettingsRemoteDataSource({
+    required this.apiClient,
+    required this.tokenStorage,
+  });
 
   final ApiClient apiClient;
   final TokenStorage tokenStorage;
@@ -22,7 +25,9 @@ class SettingsRemoteDataSource {
     final response = await apiClient.get(
       '/v1/accounts/$accountId/notification-preferences',
     );
-    return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
+    return NotificationPreferencesDto.fromJson(
+      response as Map<String, dynamic>,
+    );
   }
 
   Future<NotificationPreferencesDto> updateNotificationPreferences(
@@ -32,12 +37,16 @@ class SettingsRemoteDataSource {
     final response = await apiClient.patch(
       '/v1/accounts/$accountId/notification-preferences/toggles',
       data: prefs.toJson(),
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': const Uuid().v4(),
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': const Uuid().v4(),
+        },
+      ),
     );
-    return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
+    return NotificationPreferencesDto.fromJson(
+      response as Map<String, dynamic>,
+    );
   }
 
   /// PATCH `/v1/accounts/{accountId}/notification-preferences/quiet-hours`
@@ -60,10 +69,12 @@ class SettingsRemoteDataSource {
         'startLocal': NotificationPreferencesDto.hhmmss(startHhMm),
         'endLocal': NotificationPreferencesDto.hhmmss(endHhMm),
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': const Uuid().v4(),
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': const Uuid().v4(),
+        },
+      ),
     );
     return NotificationPreferencesDto.fromJson(
       response as Map<String, dynamic>,
@@ -102,9 +113,11 @@ class SettingsRemoteDataSource {
     await apiClient.post(
       '/v1/accounts/$accountId/deletion-requests',
       data: <String, dynamic>{'reason': reason},
-      options: Options(headers: {
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 

@@ -62,10 +62,12 @@ void main() {
 
     for (final icon in [Icons.remove, Icons.add]) {
       final target = tester.getSize(
-        find.ancestor(
-          of: find.byIcon(icon),
-          matching: find.byType(SizedBox),
-        ).first,
+        find
+            .ancestor(
+              of: find.byIcon(icon),
+              matching: find.byType(SizedBox),
+            )
+            .first,
       );
       expect(
         target.width,

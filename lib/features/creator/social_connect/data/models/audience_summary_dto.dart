@@ -23,8 +23,8 @@ class AudienceSummaryDto {
               platform: platform,
               handle: row['handle'] as String? ?? '',
               followerCount: (row['followerCount'] as num?)?.toInt(),
-              engagementRatePercent:
-                  (row['engagementRatePercent'] as num?)?.toDouble(),
+              engagementRatePercent: (row['engagementRatePercent'] as num?)
+                  ?.toDouble(),
               engagementBasis: row['engagementBasis'] as String?,
               postsSampled: (row['postsSampled'] as num?)?.toInt() ?? 0,
             ),

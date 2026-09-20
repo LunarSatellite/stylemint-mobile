@@ -4,10 +4,10 @@ enum InquiryStatus {
   expired;
 
   String get label => switch (this) {
-        InquiryStatus.open => 'Open',
-        InquiryStatus.replied => 'Replied',
-        InquiryStatus.expired => 'Expired',
-      };
+    InquiryStatus.open => 'Open',
+    InquiryStatus.replied => 'Replied',
+    InquiryStatus.expired => 'Expired',
+  };
 }
 
 class ProductInquiry {
@@ -62,12 +62,12 @@ class ProductInquiry {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        question,
-        status,
-        openedAt,
-        responseDeadlineAt,
-        reply,
-        repliedAt,
-      );
+    id,
+    question,
+    status,
+    openedAt,
+    responseDeadlineAt,
+    reply,
+    repliedAt,
+  );
 }

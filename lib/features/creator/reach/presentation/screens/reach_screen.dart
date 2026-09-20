@@ -37,8 +37,7 @@ class ReachScreen extends ConsumerWidget {
           }
           return RefreshIndicator(
             color: DesignTokens.primaryGreen,
-            onRefresh:
-                () => ref.read(reachNotifierProvider.notifier).load(),
+            onRefresh: () => ref.read(reachNotifierProvider.notifier).load(),
             child: ListView(
               padding: const EdgeInsets.all(DesignTokens.s16),
               children: [
@@ -100,8 +99,7 @@ class ReachScreen extends ConsumerWidget {
         },
         loadFailure: (failure) => SmErrorView(
           message: 'Failed to load reach data.',
-          onRetry:
-              () => ref.read(reachNotifierProvider.notifier).load(),
+          onRetry: () => ref.read(reachNotifierProvider.notifier).load(),
         ),
       ),
     );

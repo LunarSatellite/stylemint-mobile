@@ -25,9 +25,9 @@ class GroupBuyRepositoryImpl implements GroupBuyRepository {
   ) async {
     final either = await _call(() async {
       final data = await remoteDataSource.listActive(pageSize: 50);
-      return _itemsFrom(data)
-          .where((g) => g.productId == productId)
-          .toList(growable: false);
+      return _itemsFrom(
+        data,
+      ).where((g) => g.productId == productId).toList(growable: false);
     });
     return either;
   }
@@ -69,7 +69,9 @@ class GroupBuyRepositoryImpl implements GroupBuyRepository {
 
   List<GroupBuy> _itemsFrom(Map<String, dynamic> data) =>
       (data['items'] as List<dynamic>? ?? const <dynamic>[])
-          .map((e) => GroupBuyDto.fromJson(e as Map<String, dynamic>).toDomain())
+          .map(
+            (e) => GroupBuyDto.fromJson(e as Map<String, dynamic>).toDomain(),
+          )
           .toList(growable: false);
 
   Future<Either<NetworkExceptions, T>> _call<T>(

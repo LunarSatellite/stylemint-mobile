@@ -17,7 +17,9 @@ class ReelPoster extends StatelessWidget {
     final stored = reel.thumbnailUrl;
     if (stored != null && stored.isNotEmpty) return stored;
     final id = reel.platformVideoId;
-    if (reel.platform == SocialPlatform.youtube && id != null && id.isNotEmpty) {
+    if (reel.platform == SocialPlatform.youtube &&
+        id != null &&
+        id.isNotEmpty) {
       return 'https://i.ytimg.com/vi/${Uri.encodeComponent(id)}/hqdefault.jpg';
     }
     return null;

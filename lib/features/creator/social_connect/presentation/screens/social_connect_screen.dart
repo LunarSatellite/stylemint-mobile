@@ -129,8 +129,9 @@ class SocialConnectScreen extends ConsumerWidget {
                         horizontal: DesignTokens.s16,
                       ),
                       children: [
-                        if (ref.watch(audienceSummaryProvider)
-                            case AsyncData(:final value?)) ...[
+                        if (ref.watch(audienceSummaryProvider) case AsyncData(
+                          :final value?,
+                        )) ...[
                           AudienceSummaryCard(summary: value),
                           const SizedBox(height: DesignTokens.s16),
                         ],
@@ -158,8 +159,9 @@ class SocialConnectScreen extends ConsumerWidget {
                                 onConnect: () =>
                                     _connect(context, ref, a.platform),
                                 onDisconnect: () async {
-                                  final failure =
-                                      await notifier.disconnect(a.platform);
+                                  final failure = await notifier.disconnect(
+                                    a.platform,
+                                  );
                                   if (failure != null && context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(

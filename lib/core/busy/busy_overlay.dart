@@ -35,10 +35,12 @@ class BusyOverlay extends ConsumerWidget {
                   height: 3,
                   child: LinearProgressIndicator(
                     minHeight: 3,
-                    backgroundColor:
-                        DesignTokens.primaryGreen.withValues(alpha: 0.18),
+                    backgroundColor: DesignTokens.primaryGreen.withValues(
+                      alpha: 0.18,
+                    ),
                     valueColor: const AlwaysStoppedAnimation<Color>(
-                        DesignTokens.primaryGreen),
+                      DesignTokens.primaryGreen,
+                    ),
                   ),
                 ),
               ),

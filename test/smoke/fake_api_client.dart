@@ -29,8 +29,7 @@ class FakeApiClient extends ApiClient {
     String uri, {
     Map<String, dynamic>? queryParameters,
     Options? options,
-  }) async =>
-      _canned(uri);
+  }) async => _canned(uri);
 
   @override
   Future<dynamic> authGet(
@@ -38,8 +37,7 @@ class FakeApiClient extends ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
     Map<String, dynamic>? data,
-  }) async =>
-      _canned(uri);
+  }) async => _canned(uri);
 
   @override
   Future<dynamic> post(
@@ -47,8 +45,7 @@ class FakeApiClient extends ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
-  }) async =>
-      <String, dynamic>{};
+  }) async => <String, dynamic>{};
 
   @override
   Future<dynamic> authDelete(
@@ -56,6 +53,5 @@ class FakeApiClient extends ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
-  }) async =>
-      null;
+  }) async => null;
 }

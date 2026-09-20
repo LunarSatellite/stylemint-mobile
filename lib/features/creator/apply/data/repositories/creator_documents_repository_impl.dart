@@ -23,18 +23,17 @@ class CreatorDocumentsRepositoryImpl implements CreatorDocumentsRepository {
     required File file,
     required IdentityDocumentType type,
     IdentityDocumentSide side = IdentityDocumentSide.notApplicable,
-  }) =>
-      _guard(() async {
-        final session = await _ensureSession();
-        final blob = await remoteDataSource.uploadBlob(file);
-        return remoteDataSource.registerDocument(
-          sessionId: session.id,
-          type: type,
-          side: side,
-          blob: blob,
-          idempotencyKey: const Uuid().v4(),
-        );
-      });
+  }) => _guard(() async {
+    final session = await _ensureSession();
+    final blob = await remoteDataSource.uploadBlob(file);
+    return remoteDataSource.registerDocument(
+      sessionId: session.id,
+      type: type,
+      side: side,
+      blob: blob,
+      idempotencyKey: const Uuid().v4(),
+    );
+  });
 
   @override
   Future<NetworkEither<List<IdentityDocument>>> listSubmittedDocuments() =>
@@ -46,15 +45,15 @@ class CreatorDocumentsRepositoryImpl implements CreatorDocumentsRepository {
 
   @override
   Future<NetworkEither<Unit>> submitForReview() => _guard(() async {
-        final session = await remoteDataSource.getActiveSession();
-        if (session == null) {
-          throw const NetworkExceptions.validation(
-            code: 'Upload a document before submitting for review.',
-          );
-        }
-        await remoteDataSource.submitSession(session.id, const Uuid().v4());
-        return unit;
-      });
+    final session = await remoteDataSource.getActiveSession();
+    if (session == null) {
+      throw const NetworkExceptions.validation(
+        code: 'Upload a document before submitting for review.',
+      );
+    }
+    await remoteDataSource.submitSession(session.id, const Uuid().v4());
+    return unit;
+  });
 
   /// Reuses the open session so a creator uploading a front and a back does
   /// not end up with two sessions holding one document each.

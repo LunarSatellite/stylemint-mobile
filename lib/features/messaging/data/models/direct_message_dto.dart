@@ -32,18 +32,18 @@ class DirectMessageDto {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'threadId': threadId,
-        'senderAccountId': senderAccountId,
-        'body': body,
-        'sentUtc': sentUtc.toIso8601String(),
-      };
+    'id': id,
+    'threadId': threadId,
+    'senderAccountId': senderAccountId,
+    'body': body,
+    'sentUtc': sentUtc.toIso8601String(),
+  };
 
   DirectMessage toDomain() => DirectMessage(
-        id: id,
-        threadId: threadId,
-        senderAccountId: senderAccountId,
-        body: body,
-        sentUtc: sentUtc,
-      );
+    id: id,
+    threadId: threadId,
+    senderAccountId: senderAccountId,
+    body: body,
+    sentUtc: sentUtc,
+  );
 }

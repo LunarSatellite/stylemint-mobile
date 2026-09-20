@@ -50,7 +50,9 @@ class _EditProductImagesScreenState
         .read(addProductNotifierProvider.notifier)
         .loadExistingImages(widget.productId);
     if (!mounted) return;
-    final formState = ref.read(addProductNotifierProvider).maybeWhen(
+    final formState = ref
+        .read(addProductNotifierProvider)
+        .maybeWhen(
           loadSuccess: (fs) => fs,
           orElse: () => null,
         );
@@ -93,7 +95,9 @@ class _EditProductImagesScreenState
         .read(addProductNotifierProvider.notifier)
         .uploadImage(picked.path);
     if (!mounted) return;
-    final formState = ref.read(addProductNotifierProvider).maybeWhen(
+    final formState = ref
+        .read(addProductNotifierProvider)
+        .maybeWhen(
           loadSuccess: (fs) => fs,
           orElse: () => null,
         );
@@ -134,8 +138,13 @@ class _EditProductImagesScreenState
     // Sync the notifier's step2 with any local edits (remove/reorder-
     // primary) before persisting — uploadImage already kept it in sync for
     // additions, but removal/primary changes only touch local state above.
-    ref.read(addProductNotifierProvider.notifier).updateImages(
-          ImagesInfo(images: List.from(_images), primaryImageIndex: _primaryIndex),
+    ref
+        .read(addProductNotifierProvider.notifier)
+        .updateImages(
+          ImagesInfo(
+            images: List.from(_images),
+            primaryImageIndex: _primaryIndex,
+          ),
         );
     final ok = await ref
         .read(addProductNotifierProvider.notifier)
@@ -145,7 +154,9 @@ class _EditProductImagesScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(ok ? 'Images updated!' : 'Failed to update images.'),
-        backgroundColor: ok ? DesignTokens.primaryGreen : DesignTokens.colorError,
+        backgroundColor: ok
+            ? DesignTokens.primaryGreen
+            : DesignTokens.colorError,
       ),
     );
     if (ok) context.pop(true);
@@ -179,128 +190,130 @@ class _EditProductImagesScreenState
       body: _loading
           ? const SmPageLoader()
           : _loadFailed
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Failed to load product images.',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: DesignTokens.s8),
-                      TextButton(onPressed: _load, child: const Text('Retry')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Failed to load product images.',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
-                )
-              : Column(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(DesignTokens.s16),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: DesignTokens.bgAppBody,
-                            borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: DesignTokens.s8),
+                  TextButton(onPressed: _load, child: const Text('Retry')),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(DesignTokens.s16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: DesignTokens.bgAppBody,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s16,
+                        vertical: DesignTokens.s24,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${_images.length}/${ImagesInfo.minImages} minimum'
+                            '${_images.length < ImagesInfo.minImages ? ' — add ${ImagesInfo.minImages - _images.length} more' : ''}',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _images.length < ImagesInfo.minImages
+                                  ? DesignTokens.colorError
+                                  : DesignTokens.primaryGreen,
+                            ),
                           ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s16,
-                            vertical: DesignTokens.s24,
+                          const SizedBox(height: DesignTokens.s12),
+                          _OutlineButton(
+                            icon: Icons.upload_outlined,
+                            label: 'Upload Image',
+                            onTap:
+                                _uploading ||
+                                    _images.length >= ImagesInfo.maxImages
+                                ? null
+                                : () => _pickImage(ImageSource.gallery),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${_images.length}/${ImagesInfo.minImages} minimum'
-                                '${_images.length < ImagesInfo.minImages ? ' — add ${ImagesInfo.minImages - _images.length} more' : ''}',
-                                style: TextStyle(
-                                  fontFamily: DesignTokens.fontFamily,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: _images.length < ImagesInfo.minImages
-                                      ? DesignTokens.colorError
-                                      : DesignTokens.primaryGreen,
-                                ),
-                              ),
-                              const SizedBox(height: DesignTokens.s12),
-                              _OutlineButton(
-                                icon: Icons.upload_outlined,
-                                label: 'Upload Image',
-                                onTap: _uploading ||
-                                        _images.length >= ImagesInfo.maxImages
-                                    ? null
-                                    : () => _pickImage(ImageSource.gallery),
-                              ),
-                              const SizedBox(height: DesignTokens.s8),
-                              _SolidButton(
-                                icon: Icons.photo_camera_outlined,
-                                label: 'Capture Image',
-                                onTap: _uploading ||
-                                        _images.length >= ImagesInfo.maxImages
-                                    ? null
-                                    : () => _pickImage(ImageSource.camera),
-                              ),
-                              if (_images.isNotEmpty) ...[
-                                const SizedBox(height: DesignTokens.s16),
-                                Wrap(
-                                  spacing: DesignTokens.s12,
-                                  runSpacing: DesignTokens.s12,
-                                  children: _images.asMap().entries.map((e) {
-                                    return _ImageTile(
-                                      imageUrl: e.value,
-                                      isPrimary: e.key == _primaryIndex,
-                                      onSetPrimary: () => _setPrimary(e.key),
-                                      onRemove: () => _removeImage(e.key),
-                                    );
-                                  }).toList(),
-                                ),
-                              ],
-                              if (_uploading) ...[
-                                const SizedBox(height: DesignTokens.s12),
-                                const SmPageLoader(),
-                              ],
-                            ],
+                          const SizedBox(height: DesignTokens.s8),
+                          _SolidButton(
+                            icon: Icons.photo_camera_outlined,
+                            label: 'Capture Image',
+                            onTap:
+                                _uploading ||
+                                    _images.length >= ImagesInfo.maxImages
+                                ? null
+                                : () => _pickImage(ImageSource.camera),
                           ),
-                        ),
+                          if (_images.isNotEmpty) ...[
+                            const SizedBox(height: DesignTokens.s16),
+                            Wrap(
+                              spacing: DesignTokens.s12,
+                              runSpacing: DesignTokens.s12,
+                              children: _images.asMap().entries.map((e) {
+                                return _ImageTile(
+                                  imageUrl: e.value,
+                                  isPrimary: e.key == _primaryIndex,
+                                  onSetPrimary: () => _setPrimary(e.key),
+                                  onRemove: () => _removeImage(e.key),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                          if (_uploading) ...[
+                            const SizedBox(height: DesignTokens.s12),
+                            const SmPageLoader(),
+                          ],
+                        ],
                       ),
                     ),
-                    SafeArea(
-                      top: false,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          DesignTokens.s16,
-                          DesignTokens.s12,
-                          DesignTokens.s16,
-                          DesignTokens.s16,
-                        ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: DesignTokens.buttonHeight,
-                          child: ElevatedButton(
-                            onPressed: _saving ? null : _save,
-                            style: DesignTokens.primaryButtonStyle(),
-                            child: _saving
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.black,
-                                    ),
-                                  )
-                                : Text(
-                                    'Save Images',
-                                    style: DesignTokens.mediumSemibold.copyWith(
-                                      color: DesignTokens.buttonPrimaryText,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      DesignTokens.s16,
+                      DesignTokens.s12,
+                      DesignTokens.s16,
+                      DesignTokens.s16,
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: DesignTokens.buttonHeight,
+                      child: ElevatedButton(
+                        onPressed: _saving ? null : _save,
+                        style: DesignTokens.primaryButtonStyle(),
+                        child: _saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.black,
+                                ),
+                              )
+                            : Text(
+                                'Save Images',
+                                style: DesignTokens.mediumSemibold.copyWith(
+                                  color: DesignTokens.buttonPrimaryText,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
@@ -325,7 +338,9 @@ class _OutlineButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: Color(0xFF71717B)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
           foregroundColor: const Color(0xFFD4D4D8),
         ),
         child: Row(
@@ -371,7 +386,9 @@ class _SolidButton extends StatelessWidget {
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF52525C),
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -417,7 +434,9 @@ class _ImageTile extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(DesignTokens.s12),
           border: Border.all(
-            color: isPrimary ? DesignTokens.primaryGreen : DesignTokens.borderDefault,
+            color: isPrimary
+                ? DesignTokens.primaryGreen
+                : DesignTokens.borderDefault,
             width: isPrimary ? 2 : 1,
           ),
         ),
@@ -438,7 +457,10 @@ class _ImageTile extends StatelessWidget {
                 top: 4,
                 left: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: DesignTokens.primaryGreen,
                     borderRadius: BorderRadius.circular(4),

@@ -23,8 +23,8 @@ abstract class DeletionRequestDto with _$DeletionRequestDto {
       _$DeletionRequestDtoFromJson(json);
 
   DeletionRequest toDomain() => DeletionRequest(
-        id: id,
-        requestedAt: requestedUtc,
-        scheduledDeletionAt: executeAtUtc,
-      );
+    id: id,
+    requestedAt: requestedUtc,
+    scheduledDeletionAt: executeAtUtc,
+  );
 }

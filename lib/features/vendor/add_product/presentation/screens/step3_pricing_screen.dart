@@ -10,8 +10,7 @@ class Step3PricingScreen extends ConsumerStatefulWidget {
   const Step3PricingScreen({super.key});
 
   @override
-  ConsumerState<Step3PricingScreen> createState() =>
-      _Step3PricingScreenState();
+  ConsumerState<Step3PricingScreen> createState() => _Step3PricingScreenState();
 }
 
 class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
@@ -47,7 +46,9 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
 
   void _hydrateFromState() {
     if (!mounted) return;
-    final fs = ref.read(addProductNotifierProvider).maybeWhen(
+    final fs = ref
+        .read(addProductNotifierProvider)
+        .maybeWhen(
           loadSuccess: (s) => s,
           orElse: () => null,
         );
@@ -98,12 +99,9 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
     super.dispose();
   }
 
-  double get _basePrice =>
-      double.tryParse(_basePriceController.text) ?? 0;
-  double? get _discountPercent =>
-      double.tryParse(_discountController.text);
-  double? get _costPerItem =>
-      double.tryParse(_costPerItemController.text);
+  double get _basePrice => double.tryParse(_basePriceController.text) ?? 0;
+  double? get _discountPercent => double.tryParse(_discountController.text);
+  double? get _costPerItem => double.tryParse(_costPerItemController.text);
   double? get _commissionRate =>
       double.tryParse(_commissionRateController.text);
 
@@ -131,9 +129,9 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
       basePrice: Money(amount: _basePrice, currency: 'NPR'),
       compareAtPrice: _compareAtPriceController.text.isNotEmpty
           ? Money(
-              amount:
-                  double.tryParse(_compareAtPriceController.text) ?? 0,
-              currency: 'NPR')
+              amount: double.tryParse(_compareAtPriceController.text) ?? 0,
+              currency: 'NPR',
+            )
           : null,
       costPerItem: _costPerItem != null
           ? Money(amount: _costPerItem!, currency: 'NPR')
@@ -142,8 +140,7 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
       discountEnabled: disc != null && disc > 0,
       discountPercent: disc,
       sku: _skuController.text.trim(),
-      quantityOnHand:
-          int.tryParse(_quantityController.text.trim()) ?? 0,
+      quantityOnHand: int.tryParse(_quantityController.text.trim()) ?? 0,
       trackInventory: _trackInventory,
       allowOverselling: _allowOverselling,
       commissionRate: _commissionRate,
@@ -151,9 +148,7 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
   }
 
   void _onProceed() {
-    ref
-        .read(addProductNotifierProvider.notifier)
-        .updatePricing(_buildInfo());
+    ref.read(addProductNotifierProvider.notifier).updatePricing(_buildInfo());
     ref.read(addProductNotifierProvider.notifier).nextStep();
   }
 
@@ -247,8 +242,7 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
                   _YourProfitRow(profit: _profit),
                   const SizedBox(height: DesignTokens.s20),
 
-                  const Divider(
-                      color: DesignTokens.borderDefault, height: 1),
+                  const Divider(color: DesignTokens.borderDefault, height: 1),
                   const SizedBox(height: DesignTokens.s20),
 
                   // 3.7 Inventory section title
@@ -302,22 +296,21 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
                   _SpecCheckbox(
                     value: _allowOverselling,
                     title: 'Allow Overselling',
-                    description:
-                        'Sell product above the inventory stock',
+                    description: 'Sell product above the inventory stock',
                     onChanged: (v) =>
                         setState(() => _allowOverselling = v ?? false),
                   ),
                   const SizedBox(height: DesignTokens.s20),
 
-                  const Divider(
-                      color: DesignTokens.borderDefault, height: 1),
+                  const Divider(color: DesignTokens.borderDefault, height: 1),
                   const SizedBox(height: DesignTokens.s20),
 
                   // 3.13 Creator Commission info tag
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.s8,
-                        vertical: DesignTokens.s4),
+                      horizontal: DesignTokens.s8,
+                      vertical: DesignTokens.s4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFB8E6FE),
                       borderRadius: BorderRadius.circular(99),
@@ -356,88 +349,89 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
         SafeArea(
           top: false,
           child: Container(
-          padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16,
-            DesignTokens.s24,
-            DesignTokens.s16,
-            DesignTokens.s16,
-          ),
-          decoration: const BoxDecoration(
-            color: DesignTokens.bgAppFoundation,
-            border: Border(
-              top: BorderSide(color: DesignTokens.borderDefault),
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s24,
+              DesignTokens.s16,
+              DesignTokens.s16,
             ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: DesignTokens.buttonHeight,
-                  child: ElevatedButton(
-                    onPressed: notifier.prevStep,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DesignTokens.bgAppBodyLight,
-                      foregroundColor: DesignTokens.textWhite,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                            DesignTokens.buttonRadius),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.arrow_back, size: 16),
-                        SizedBox(width: DesignTokens.s8),
-                        Text(
-                          'Previous',
-                          style: TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+            decoration: const BoxDecoration(
+              color: DesignTokens.bgAppFoundation,
+              border: Border(
+                top: BorderSide(color: DesignTokens.borderDefault),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: DesignTokens.buttonHeight,
+                    child: ElevatedButton(
+                      onPressed: notifier.prevStep,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DesignTokens.bgAppBodyLight,
+                        foregroundColor: DesignTokens.textWhite,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.buttonRadius,
                           ),
                         ),
-                      ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.arrow_back, size: 16),
+                          SizedBox(width: DesignTokens.s8),
+                          Text(
+                            'Previous',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: DesignTokens.s16),
-              Expanded(
-                child: SizedBox(
-                  height: DesignTokens.buttonHeight,
-                  child: ElevatedButton(
-                    onPressed: canProceed ? _onProceed : null,
-                    style: DesignTokens.primaryButtonStyle(),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Proceed',
-                          style: TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                const SizedBox(width: DesignTokens.s16),
+                Expanded(
+                  child: SizedBox(
+                    height: DesignTokens.buttonHeight,
+                    child: ElevatedButton(
+                      onPressed: canProceed ? _onProceed : null,
+                      style: DesignTokens.primaryButtonStyle(),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Proceed',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: canProceed
+                                  ? DesignTokens.buttonPrimaryText
+                                  : DesignTokens.textMuted,
+                            ),
+                          ),
+                          const SizedBox(width: DesignTokens.s8),
+                          Icon(
+                            Icons.arrow_forward,
+                            size: 16,
                             color: canProceed
                                 ? DesignTokens.buttonPrimaryText
                                 : DesignTokens.textMuted,
                           ),
-                        ),
-                        const SizedBox(width: DesignTokens.s8),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 16,
-                          color: canProceed
-                              ? DesignTokens.buttonPrimaryText
-                              : DesignTokens.textMuted,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           ),
         ),
       ],
@@ -471,18 +465,19 @@ class _PricingField extends StatelessWidget {
       keyboardType: keyboardType,
       style: DesignTokens.bodyText,
       onChanged: onChanged,
-      decoration: DesignTokens.inputDecoration(
-        labelText: label,
-        hintText: hintText,
-      ).copyWith(
-        helperText: helperText,
-        helperStyle: const TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          color: DesignTokens.textLight,
-        ),
-      ),
+      decoration:
+          DesignTokens.inputDecoration(
+            labelText: label,
+            hintText: hintText,
+          ).copyWith(
+            helperText: helperText,
+            helperStyle: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: DesignTokens.textLight,
+            ),
+          ),
     );
   }
 }
@@ -524,8 +519,9 @@ class _YourProfitRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPositive = profit >= 0;
-    final color =
-        isPositive ? DesignTokens.primaryGreen : DesignTokens.colorError;
+    final color = isPositive
+        ? DesignTokens.primaryGreen
+        : DesignTokens.colorError;
     return Row(
       children: [
         const Text(

@@ -23,7 +23,8 @@ abstract class OrdersState with _$OrdersState {
     required bool hasMore,
     required String? activeFilter,
   }) = _OLoadSuccess;
-  const factory OrdersState.loadFailure(NetworkExceptions failure) = _OLoadFailure;
+  const factory OrdersState.loadFailure(NetworkExceptions failure) =
+      _OLoadFailure;
 }
 
 @freezed
@@ -38,13 +39,14 @@ abstract class OrderDetailState with _$OrderDetailState {
       _ODLoadFailure;
   const factory OrderDetailState.actionInProgress(VendorOrder order) =
       _ODActionInProgress;
-  const factory OrderDetailState.actionFailure(VendorOrder order, NetworkExceptions failure) =
-      _ODActionFailure;
+  const factory OrderDetailState.actionFailure(
+    VendorOrder order,
+    NetworkExceptions failure,
+  ) = _ODActionFailure;
 }
 
 class VendorOrdersNotifier extends StateNotifier<OrdersState> {
-  VendorOrdersNotifier(this._repository)
-      : super(const OrdersState.initial()) {
+  VendorOrdersNotifier(this._repository) : super(const OrdersState.initial()) {
     unawaited(loadOrders());
   }
 
@@ -152,7 +154,7 @@ class VendorOrdersNotifier extends StateNotifier<OrdersState> {
 
 class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
   VendorOrderDetailNotifier(this._repository)
-      : super(const OrderDetailState.initial());
+    : super(const OrderDetailState.initial());
 
   final VendorOrdersRepository _repository;
 
@@ -270,7 +272,10 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
     return either.fold((_) => null, (slip) => slip);
   }
 
-  Future<void> _onActionFailure(VendorOrder order, NetworkExceptions failure) async {
+  Future<void> _onActionFailure(
+    VendorOrder order,
+    NetworkExceptions failure,
+  ) async {
     state = OrderDetailState.actionFailure(order, failure);
     await Future<void>.delayed(const Duration(seconds: 2));
     state.maybeWhen(

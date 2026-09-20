@@ -20,10 +20,9 @@ abstract class CreatorFullReportState with _$CreatorFullReportState {
       _LoadFailure;
 }
 
-class CreatorFullReportNotifier
-    extends StateNotifier<CreatorFullReportState> {
+class CreatorFullReportNotifier extends StateNotifier<CreatorFullReportState> {
   CreatorFullReportNotifier(this._repository)
-      : super(const CreatorFullReportState.initial()) {
+    : super(const CreatorFullReportState.initial()) {
     unawaited(fetch());
   }
 

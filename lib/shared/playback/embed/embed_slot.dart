@@ -417,8 +417,7 @@ class EmbedSlot extends ChangeNotifier {
 
   /// TikTok's player can sit on its start screen instead of playing; the
   /// other platforms report blocked playback themselves.
-  bool get _watchesStart =>
-      _request?.source.platform == SocialPlatform.tiktok;
+  bool get _watchesStart => _request?.source.platform == SocialPlatform.tiktok;
 
   /// Times the start from the later of the play request and the player being
   /// ready: a player still loading is covered by [readyTimeout].

@@ -38,36 +38,33 @@ class StoryCircleAvatar extends StatelessWidget {
                     height: _avatarSize + _ringWidth * 4,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient:
-                          hasUnwatched
-                              ? const LinearGradient(
-                                  colors: [
-                                    DesignTokens.primaryGreen,
-                                    DesignTokens.secondaryYellow,
-                                    DesignTokens.colorError,
-                                  ],
-                                )
-                              : const LinearGradient(
-                                  colors: [
-                                    DesignTokens.borderDefault,
-                                    DesignTokens.borderDefault,
-                                  ],
-                                ),
+                      gradient: hasUnwatched
+                          ? const LinearGradient(
+                              colors: [
+                                DesignTokens.primaryGreen,
+                                DesignTokens.secondaryYellow,
+                                DesignTokens.colorError,
+                              ],
+                            )
+                          : const LinearGradient(
+                              colors: [
+                                DesignTokens.borderDefault,
+                                DesignTokens.borderDefault,
+                              ],
+                            ),
                     ),
                     padding: const EdgeInsets.all(_ringWidth),
                     child: CircleAvatar(
                       backgroundColor: DesignTokens.bgAppBodyLight,
-                      backgroundImage:
-                          avatarUrl.isNotEmpty
-                              ? CachedNetworkImageProvider(avatarUrl)
-                              : null,
-                      child:
-                          avatarUrl.isEmpty
-                              ? const Icon(
-                                  Icons.person,
-                                  color: DesignTokens.iconLight,
-                                )
-                              : null,
+                      backgroundImage: avatarUrl.isNotEmpty
+                          ? CachedNetworkImageProvider(avatarUrl)
+                          : null,
+                      child: avatarUrl.isEmpty
+                          ? const Icon(
+                              Icons.person,
+                              color: DesignTokens.iconLight,
+                            )
+                          : null,
                     ),
                   ),
             const SizedBox(height: DesignTokens.s4),

@@ -35,7 +35,8 @@ class BrandPartnershipRecordPanel extends ConsumerWidget {
     if (vendorAccountId.isEmpty) {
       return const _RecordMessage(
         title: 'No brand selected',
-        body: 'This screen was opened without a brand, so there is no record '
+        body:
+            'This screen was opened without a brand, so there is no record '
             'to look up.',
         icon: Icons.fact_check_outlined,
       );

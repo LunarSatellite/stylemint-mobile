@@ -99,9 +99,13 @@ class _BrandInfoScreenState extends ConsumerState<BrandInfoScreen>
       bottomNavigationBar: _ApplyButton(seed: widget.data),
       body: Column(
         children: [
-          _BrandHeader(seed: widget.data, expanded: _descExpanded, onToggle: () {
-            setState(() => _descExpanded = !_descExpanded);
-          }),
+          _BrandHeader(
+            seed: widget.data,
+            expanded: _descExpanded,
+            onToggle: () {
+              setState(() => _descExpanded = !_descExpanded);
+            },
+          ),
           TabBar(
             controller: _tabController,
             indicatorColor: DesignTokens.primaryGreen,
@@ -181,7 +185,8 @@ class _BrandHeader extends ConsumerWidget {
         : seed.name;
     final logoUrl = detail?.logoUrl ?? seed.logoUrl;
     final category = detail?.businessTypeLabel ?? '';
-    final commissionLabel = detail?.commissionRangeLabel ?? seed.seedCommissionLabel;
+    final commissionLabel =
+        detail?.commissionRangeLabel ?? seed.seedCommissionLabel;
     final description = detail?.description;
 
     return Padding(
@@ -197,7 +202,11 @@ class _BrandHeader extends ConsumerWidget {
           // Logo + name + category + commission
           Row(
             children: [
-              SizedBox(width: 64, height: 64, child: _BrandLogo(name: name, logoUrl: logoUrl)),
+              SizedBox(
+                width: 64,
+                height: 64,
+                child: _BrandLogo(name: name, logoUrl: logoUrl),
+              ),
               const SizedBox(width: DesignTokens.s16),
               Expanded(
                 child: Column(
@@ -546,7 +555,11 @@ class _TopProductsTab extends StatelessWidget {
       padding: const EdgeInsets.all(DesignTokens.s16),
       children: [
         const SizedBox(height: DesignTokens.s24),
-        Icon(Icons.inventory_2_outlined, size: 48, color: DesignTokens.textLight),
+        Icon(
+          Icons.inventory_2_outlined,
+          size: 48,
+          color: DesignTokens.textLight,
+        ),
         const SizedBox(height: DesignTokens.s12),
         const Text(
           'No top products yet',
@@ -588,8 +601,10 @@ class _ApplyButton extends ConsumerWidget {
 
     void apply() {
       context.push(
-        RouteNames.partnershipApply
-            .replaceFirst(':partnershipId', _slugify(seed.name)),
+        RouteNames.partnershipApply.replaceFirst(
+          ':partnershipId',
+          _slugify(seed.name),
+        ),
         extra: PartnershipApplyArgs(
           vendorProfileId: vendorProfileId,
           vendorName: seed.name,
@@ -604,9 +619,7 @@ class _ApplyButton extends ConsumerWidget {
     // The disabled state used to be a 40%-alpha fill and nothing else, so
     // "you cannot apply to this brand" was carried by colour alone. It now
     // carries a glyph and a word as well.
-    final label = canApply
-        ? 'Apply for Partnership  →'
-        : 'Apply unavailable';
+    final label = canApply ? 'Apply for Partnership  →' : 'Apply unavailable';
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(

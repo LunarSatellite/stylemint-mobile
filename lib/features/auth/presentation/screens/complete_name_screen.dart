@@ -68,13 +68,12 @@ class _CompleteNameScreenState extends ConsumerState<CompleteNameScreen> {
   }
 
   String _errorMessage(NetworkExceptions failure) => failure.maybeWhen(
-        validation: (_, __, ___, ____) => 'Please enter a valid name',
-        noInternetConnection: () =>
-            'Network error. Please check your connection',
-        serverUnavailable: () =>
-            'StyleMint is temporarily unavailable. Please try again in a moment',
-        orElse: () => 'Could not save your name. Please try again',
-      );
+    validation: (_, __, ___, ____) => 'Please enter a valid name',
+    noInternetConnection: () => 'Network error. Please check your connection',
+    serverUnavailable: () =>
+        'StyleMint is temporarily unavailable. Please try again in a moment',
+    orElse: () => 'Could not save your name. Please try again',
+  );
 
   @override
   Widget build(BuildContext context) {

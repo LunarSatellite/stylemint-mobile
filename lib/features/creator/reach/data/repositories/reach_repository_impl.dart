@@ -18,7 +18,8 @@ class ReachRepositoryImpl implements ReachRepository {
   final NetworkInfoConnectivity networkInfo;
 
   @override
-  Future<Either<NetworkExceptions, List<PublishTarget>>> getPublishTargets() async {
+  Future<Either<NetworkExceptions, List<PublishTarget>>>
+  getPublishTargets() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getPublishTargets();
@@ -67,7 +68,8 @@ class ReachRepositoryImpl implements ReachRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, List<BoostCampaign>>> getBoostCampaigns() async {
+  Future<Either<NetworkExceptions, List<BoostCampaign>>>
+  getBoostCampaigns() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getBoostCampaigns();

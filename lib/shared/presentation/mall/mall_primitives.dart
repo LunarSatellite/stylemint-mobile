@@ -148,9 +148,7 @@ class MallPlayMark extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: primed
-              ? DesignTokens.primaryGreen
-              : const Color(0x59000000),
+          color: primed ? DesignTokens.primaryGreen : const Color(0x59000000),
           shape: BoxShape.circle,
           border: Border.fromBorderSide(
             BorderSide(

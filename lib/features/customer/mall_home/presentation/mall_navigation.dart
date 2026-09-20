@@ -110,9 +110,10 @@ String mallCampaignHeroTag(String campaignId) => 'mall-campaign-$campaignId';
 MallDestination? destinationForCta(HomeCampaignCta cta, {String? heroTag}) {
   final value = cta.targetValue.trim();
   return switch (cta.targetKind) {
-    HomeCtaTargetKind.collection => value.isEmpty
-        ? null
-        : MallPush(MallRoutes.collection(value, heroTag: heroTag)),
+    HomeCtaTargetKind.collection =>
+      value.isEmpty
+          ? null
+          : MallPush(MallRoutes.collection(value, heroTag: heroTag)),
     HomeCtaTargetKind.reels =>
       value.isEmpty ? const MallShowReels() : MallPush(MallRoutes.reel(value)),
     HomeCtaTargetKind.creators =>

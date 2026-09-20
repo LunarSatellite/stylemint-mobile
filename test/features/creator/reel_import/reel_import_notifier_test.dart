@@ -119,14 +119,13 @@ typedef _Success = ({
 });
 
 _Success? _success(ReelImportState state) => state.maybeWhen(
-  loadSuccess: (reels, hasMore, _, freshness, blockedUntil, refreshFailure) =>
-      (
-        reels: reels,
-        hasMore: hasMore,
-        freshness: freshness,
-        blockedUntil: blockedUntil,
-        refreshFailure: refreshFailure,
-      ),
+  loadSuccess: (reels, hasMore, _, freshness, blockedUntil, refreshFailure) => (
+    reels: reels,
+    hasMore: hasMore,
+    freshness: freshness,
+    blockedUntil: blockedUntil,
+    refreshFailure: refreshFailure,
+  ),
   orElse: () => null,
 );
 

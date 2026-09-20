@@ -80,30 +80,36 @@ class _CreatorEditProfileScreenState
     final trimmedBio = _bioCtrl.text.trim();
     final bioChanged = trimmedBio != _originalBio;
 
-    ref.read(creatorProfileEditProvider.notifier).update(
-      displayName: _nicknameCtrl.text.trim(),
-      bio: bioChanged ? trimmedBio : _originalBio,
-      tags: List<String>.from(_tags),
-      niches: ref.read(creatorProfileEditProvider).niches,
-    );
+    ref
+        .read(creatorProfileEditProvider.notifier)
+        .update(
+          displayName: _nicknameCtrl.text.trim(),
+          bio: bioChanged ? trimmedBio : _originalBio,
+          tags: List<String>.from(_tags),
+          niches: ref.read(creatorProfileEditProvider).niches,
+        );
 
-    final accountId = ref.read(sessionControllerProvider).maybeWhen(
-      authenticated: (id) => id,
-      orElse: () => null,
-    );
+    final accountId = ref
+        .read(sessionControllerProvider)
+        .maybeWhen(
+          authenticated: (id) => id,
+          orElse: () => null,
+        );
     if (accountId == null || accountId.isEmpty) return;
 
     final rowVersion = ref
         .read(creatorProfileNotifierProvider(accountId))
         .maybeWhen(loadSuccess: (p) => p.rowVersion, orElse: () => '');
 
-    await ref.read(updateCreatorProfileNotifierProvider.notifier).submit(
-      accountId: accountId,
-      rowVersion: rowVersion,
-      displayName: _nicknameCtrl.text.trim(),
-      bio: bioChanged ? trimmedBio : null,
-      tags: List<String>.from(_tags),
-    );
+    await ref
+        .read(updateCreatorProfileNotifierProvider.notifier)
+        .submit(
+          accountId: accountId,
+          rowVersion: rowVersion,
+          displayName: _nicknameCtrl.text.trim(),
+          bio: bioChanged ? trimmedBio : null,
+          tags: List<String>.from(_tags),
+        );
   }
 
   @override
@@ -114,15 +120,15 @@ class _CreatorEditProfileScreenState
         (_, next) {
           next.maybeWhen(
             success: (_) {
-              final id = ref.read(sessionControllerProvider).maybeWhen(
-                authenticated: (id) => id,
-                orElse: () => null,
-              );
+              final id = ref
+                  .read(sessionControllerProvider)
+                  .maybeWhen(
+                    authenticated: (id) => id,
+                    orElse: () => null,
+                  );
               if (id != null) {
                 unawaited(
-                  ref
-                      .read(creatorProfileNotifierProvider(id).notifier)
-                      .load(),
+                  ref.read(creatorProfileNotifierProvider(id).notifier).load(),
                 );
               }
               if (mounted) context.popOrHome();
@@ -168,8 +174,11 @@ class _CreatorEditProfileScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
         title: const Text(
@@ -201,7 +210,9 @@ class _CreatorEditProfileScreenState
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.s16, vertical: DesignTokens.s20),
+            horizontal: DesignTokens.s16,
+            vertical: DesignTokens.s20,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -230,8 +241,13 @@ class _CreatorEditProfileScreenState
                 maxLines: 4,
                 maxLength: 300,
                 textInputAction: TextInputAction.newline,
-                buildCounter: (_, {required currentLength, required isFocused, maxLength}) =>
-                    Align(
+                buildCounter:
+                    (
+                      _, {
+                      required currentLength,
+                      required isFocused,
+                      maxLength,
+                    }) => Align(
                       alignment: Alignment.centerRight,
                       child: Text(
                         '$currentLength / $maxLength',
@@ -323,14 +339,14 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        text,
-        style: const TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: DesignTokens.textWhite,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontFamily: DesignTokens.fontFamily,
+      fontSize: 15,
+      fontWeight: FontWeight.w600,
+      color: DesignTokens.textWhite,
+    ),
+  );
 }
 
 class _TagsRow extends StatelessWidget {
@@ -349,7 +365,9 @@ class _TagsRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: DesignTokens.s12),
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s12,
+        ),
         decoration: BoxDecoration(
           color: DesignTokens.bgAppBody,
           borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
@@ -361,7 +379,9 @@ class _TagsRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    tags.isEmpty ? 'Add tags' : '${tags.length} tag${tags.length == 1 ? '' : 's'}',
+                    tags.isEmpty
+                        ? 'Add tags'
+                        : '${tags.length} tag${tags.length == 1 ? '' : 's'}',
                     style: const TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 14,
@@ -383,8 +403,11 @@ class _TagsRow extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 18, color: DesignTokens.textMuted),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: DesignTokens.textMuted,
+            ),
           ],
         ),
       ),

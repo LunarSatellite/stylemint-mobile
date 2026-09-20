@@ -7,15 +7,21 @@ void main() {
       "Glow & go\n\nWatch sumendra's reel on StyleMint: "
       'https://stylemint.voyageritnepal.com/reels/reel-1';
 
-  String decodedQuery(Uri uri, String key) =>
-      Uri.decodeComponent(uri.query.split('&').firstWhere(
-        (part) => part.startsWith('$key='),
-      ).substring(key.length + 1));
+  String decodedQuery(Uri uri, String key) => Uri.decodeComponent(
+    uri.query
+        .split('&')
+        .firstWhere(
+          (part) => part.startsWith('$key='),
+        )
+        .substring(key.length + 1),
+  );
 
   test('each target opens its own share link with the StyleMint message', () {
     final whatsApp = ReelShareTarget.whatsApp.uri(link: link, message: message);
-    expect('${whatsApp.scheme}://${whatsApp.host}${whatsApp.path}',
-        'https://wa.me/');
+    expect(
+      '${whatsApp.scheme}://${whatsApp.host}${whatsApp.path}',
+      'https://wa.me/',
+    );
     expect(decodedQuery(whatsApp, 'text'), message);
 
     final viber = ReelShareTarget.viber.uri(link: link, message: message);
@@ -42,16 +48,18 @@ void main() {
     expect(whatsApp.toString(), contains('%26'), reason: 'the & in the hook');
   });
 
-  test('WhatsApp and Viber wait for their apps, checked by their own scheme',
-      () {
-    expect(
-      [
-        for (final t in ReelShareTarget.values)
-          if (t.needsInstalledApp) t,
-      ],
-      [ReelShareTarget.whatsApp, ReelShareTarget.viber],
-    );
-    expect(ReelShareTarget.whatsApp.installedProbe?.scheme, 'whatsapp');
-    expect(ReelShareTarget.viber.installedProbe?.scheme, 'viber');
-  });
+  test(
+    'WhatsApp and Viber wait for their apps, checked by their own scheme',
+    () {
+      expect(
+        [
+          for (final t in ReelShareTarget.values)
+            if (t.needsInstalledApp) t,
+        ],
+        [ReelShareTarget.whatsApp, ReelShareTarget.viber],
+      );
+      expect(ReelShareTarget.whatsApp.installedProbe?.scheme, 'whatsapp');
+      expect(ReelShareTarget.viber.installedProbe?.scheme, 'viber');
+    },
+  );
 }

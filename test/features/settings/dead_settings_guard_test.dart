@@ -121,10 +121,11 @@ void main() {
   }
 
   final sources = <String, String>{
-    for (final file in Directory('lib')
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart')))
+    for (final file
+        in Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart')))
       file.path.replaceAll(r'\', '/'): stripComments(file.readAsStringSync()),
   };
 

@@ -84,12 +84,17 @@ class _BankVerificationScreenState extends State<BankVerificationScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
-        title: const Text('Bank Verification',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Bank Verification',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s24),
@@ -117,8 +122,10 @@ class _BankVerificationScreenState extends State<BankVerificationScreen> {
               "Find it in your bank's mobile app statement and enter the "
               "code from the transaction description",
               textAlign: TextAlign.center,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight, height: 1.6),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+                height: 1.6,
+              ),
             ),
             const SizedBox(height: DesignTokens.s32),
             Row(
@@ -144,8 +151,9 @@ class _BankVerificationScreenState extends State<BankVerificationScreen> {
               children: [
                 Text(
                   'Did not receive code? Resend in ',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textLight),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                  ),
                 ),
                 if (_secondsLeft > 0)
                   Text(
@@ -174,32 +182,45 @@ class _BankVerificationScreenState extends State<BankVerificationScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16, DesignTokens.s8,
-              DesignTokens.s16, DesignTokens.s16),
+            DesignTokens.s16,
+            DesignTokens.s8,
+            DesignTokens.s16,
+            DesignTokens.s16,
+          ),
           child: SizedBox(
             height: DesignTokens.buttonHeight,
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isFilled ? () => context.go(RouteNames.earnings) : null,
+              onPressed: _isFilled
+                  ? () => context.go(RouteNames.earnings)
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: DesignTokens.primaryGreen,
-                disabledBackgroundColor:
-                    DesignTokens.primaryGreen.withValues(alpha: 0.4),
+                disabledBackgroundColor: DesignTokens.primaryGreen.withValues(
+                  alpha: 0.4,
+                ),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Submit',
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.buttonPrimaryText)),
+                  Text(
+                    'Submit',
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.buttonPrimaryText,
+                    ),
+                  ),
                   const SizedBox(width: DesignTokens.s8),
-                  Icon(Icons.arrow_forward_rounded,
-                      size: 18, color: DesignTokens.buttonPrimaryText),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
                 ],
               ),
             ),
@@ -262,7 +283,9 @@ class _OtpBox extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(
-                  color: DesignTokens.primaryGreen, width: 1.5),
+                color: DesignTokens.primaryGreen,
+                width: 1.5,
+              ),
             ),
           ),
         ),

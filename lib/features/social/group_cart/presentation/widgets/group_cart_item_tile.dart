@@ -32,8 +32,10 @@ class GroupCartItemTile extends StatelessWidget {
               children: [
                 Text(item.productName, style: DesignTokens.mediumSemibold),
                 const SizedBox(height: 4),
-                Text('Added by ${item.addedByName}',
-                    style: DesignTokens.smallRegular),
+                Text(
+                  'Added by ${item.addedByName}',
+                  style: DesignTokens.smallRegular,
+                ),
               ],
             ),
           ),
@@ -42,16 +44,21 @@ class GroupCartItemTile extends StatelessWidget {
             children: [
               Text('x${item.quantity}', style: DesignTokens.mediumSemibold),
               const SizedBox(height: 4),
-              Text(formatMoney(item.unitPrice),
-                  style: DesignTokens.mediumRegular.copyWith(
-                      color: DesignTokens.primaryGreen)),
+              Text(
+                formatMoney(item.unitPrice),
+                style: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.primaryGreen,
+                ),
+              ),
             ],
           ),
           if (onRemove != null) ...[
             const SizedBox(width: DesignTokens.s8),
             IconButton(
-              icon: const Icon(Icons.remove_circle_outline,
-                  color: DesignTokens.colorError),
+              icon: const Icon(
+                Icons.remove_circle_outline,
+                color: DesignTokens.colorError,
+              ),
               iconSize: 20,
               onPressed: onRemove,
             ),

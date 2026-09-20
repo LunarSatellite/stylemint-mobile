@@ -24,8 +24,7 @@ void main() {
   test('turns StyleMint links into in-app routes', () {
     const cases = {
       'stylemint://product/prod-1': '/product/prod-1',
-      'https://stylemint.voyageritnepal.com/products/prod_1':
-          '/product/prod_1',
+      'https://stylemint.voyageritnepal.com/products/prod_1': '/product/prod_1',
       'https://stylemint.voyageritnepal.com/reels/reel-9': '/reels/reel-9',
       'https://stylemint.app/reels/reel-9/': '/reels/reel-9',
       'stylemint://creator-profile/acc-7': '/creator-profile/acc-7',

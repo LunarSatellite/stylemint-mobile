@@ -43,23 +43,22 @@ class CreatorDocumentsState {
     String? lastUploadedFilename,
     bool clearError = false,
     bool clearLastUploaded = false,
-  }) =>
-      CreatorDocumentsState(
-        documents: documents ?? this.documents,
-        isLoading: isLoading ?? this.isLoading,
-        isUploading: isUploading ?? this.isUploading,
-        isSubmitting: isSubmitting ?? this.isSubmitting,
-        errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-        lastUploadedFilename: clearLastUploaded
-            ? null
-            : (lastUploadedFilename ?? this.lastUploadedFilename),
-      );
+  }) => CreatorDocumentsState(
+    documents: documents ?? this.documents,
+    isLoading: isLoading ?? this.isLoading,
+    isUploading: isUploading ?? this.isUploading,
+    isSubmitting: isSubmitting ?? this.isSubmitting,
+    errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    lastUploadedFilename: clearLastUploaded
+        ? null
+        : (lastUploadedFilename ?? this.lastUploadedFilename),
+  );
 }
 
 /// Drives the identity-document step of the creator apply flow.
 class CreatorDocumentsNotifier extends StateNotifier<CreatorDocumentsState> {
   CreatorDocumentsNotifier(this._repository)
-      : super(const CreatorDocumentsState());
+    : super(const CreatorDocumentsState());
 
   final CreatorDocumentsRepository _repository;
 

@@ -10,5 +10,5 @@ class _DraftNotifier extends StateNotifier<VendorApplyDraft?> {
 
 final vendorApplyDraftProvider =
     StateNotifierProvider<_DraftNotifier, VendorApplyDraft?>(
-  (ref) => _DraftNotifier(),
-);
+      (ref) => _DraftNotifier(),
+    );

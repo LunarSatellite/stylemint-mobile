@@ -43,7 +43,8 @@ class SmPhoneNumberFieldState extends State<SmPhoneNumberField> {
   @override
   void initState() {
     super.initState();
-    _selectedCountry = widget.initialCountry ?? CountryParser.parseCountryCode('NP');
+    _selectedCountry =
+        widget.initialCountry ?? CountryParser.parseCountryCode('NP');
     _focusNode.addListener(() {
       if (mounted) setState(() => _focused = _focusNode.hasFocus);
     });
@@ -71,14 +72,17 @@ class SmPhoneNumberFieldState extends State<SmPhoneNumberField> {
           topRight: Radius.circular(40),
         ),
         backgroundColor: DesignTokens.bgAppFoundation,
-        textStyle: DesignTokens.mediumRegular
-            .copyWith(color: DesignTokens.textWhite),
-        searchTextStyle: DesignTokens.mediumRegular
-            .copyWith(color: DesignTokens.textWhite),
+        textStyle: DesignTokens.mediumRegular.copyWith(
+          color: DesignTokens.textWhite,
+        ),
+        searchTextStyle: DesignTokens.mediumRegular.copyWith(
+          color: DesignTokens.textWhite,
+        ),
         inputDecoration: InputDecoration(
           labelText: 'Search country',
-          labelStyle: DesignTokens.mediumRegular
-              .copyWith(color: DesignTokens.textLight),
+          labelStyle: DesignTokens.mediumRegular.copyWith(
+            color: DesignTokens.textLight,
+          ),
           prefixIcon: const Icon(Icons.search, color: DesignTokens.iconLight),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
@@ -115,8 +119,9 @@ class SmPhoneNumberFieldState extends State<SmPhoneNumberField> {
         if (widget.labelText != null) ...[
           Text(
             widget.labelText!,
-            style: DesignTokens.mediumRegular
-                .copyWith(color: DesignTokens.inputFieldLabel),
+            style: DesignTokens.mediumRegular.copyWith(
+              color: DesignTokens.inputFieldLabel,
+            ),
           ),
           const SizedBox(height: DesignTokens.s4),
         ],
@@ -142,7 +147,9 @@ class SmPhoneNumberFieldState extends State<SmPhoneNumberField> {
             prefixIcon: GestureDetector(
               onTap: _showCountryPicker,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s8,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -159,13 +166,16 @@ class SmPhoneNumberFieldState extends State<SmPhoneNumberField> {
                     const SizedBox(width: DesignTokens.s4),
                     Text(
                       _selectedCountry.phoneCode,
-                      style: DesignTokens.mediumRegular
-                          .copyWith(color: DesignTokens.inputFieldAddOnText),
+                      style: DesignTokens.mediumRegular.copyWith(
+                        color: DesignTokens.inputFieldAddOnText,
+                      ),
                     ),
                     Container(
                       width: 1,
                       height: 20,
-                      margin: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s8,
+                      ),
                       color: DesignTokens.inputFieldAddOnBorder,
                     ),
                   ],
@@ -181,11 +191,15 @@ class SmPhoneNumberFieldState extends State<SmPhoneNumberField> {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-              borderSide: const BorderSide(color: DesignTokens.inputFieldBorder),
+              borderSide: const BorderSide(
+                color: DesignTokens.inputFieldBorder,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-              borderSide: const BorderSide(color: DesignTokens.inputFieldBorder),
+              borderSide: const BorderSide(
+                color: DesignTokens.inputFieldBorder,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(DesignTokens.inputRadius),

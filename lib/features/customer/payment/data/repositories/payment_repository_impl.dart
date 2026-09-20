@@ -19,7 +19,8 @@ class PaymentRepositoryImpl implements PaymentRepository {
   static const _uuid = Uuid();
 
   @override
-  Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods() async {
+  Future<Either<NetworkExceptions, List<PaymentMethod>>>
+  getPaymentMethods() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getPaymentMethods();

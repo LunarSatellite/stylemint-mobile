@@ -126,10 +126,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       color: DesignTokens.textMuted,
                       size: DesignTokens.iconSmall,
                     ),
-                    onPressed:
-                        () => setState(
-                          () => _obscurePassword = !_obscurePassword,
-                        ),
+                    onPressed: () => setState(
+                      () => _obscurePassword = !_obscurePassword,
+                    ),
                   ),
                 ),
               ),
@@ -155,10 +154,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       color: DesignTokens.textMuted,
                       size: DesignTokens.iconSmall,
                     ),
-                    onPressed:
-                        () => setState(
-                          () => _obscureConfirm = !_obscureConfirm,
-                        ),
+                    onPressed: () => setState(
+                      () => _obscureConfirm = !_obscureConfirm,
+                    ),
                   ),
                 ),
               ),

@@ -14,7 +14,8 @@ class QrLoginRemoteDataSource {
   static String? parseToken(String raw) {
     final uri = Uri.tryParse(raw.trim());
     if (uri == null) return null;
-    final isQrLogin = (uri.scheme == 'stylemint' && uri.host == 'qr-login') ||
+    final isQrLogin =
+        (uri.scheme == 'stylemint' && uri.host == 'qr-login') ||
         uri.path.contains('qr-login');
     if (!isQrLogin) return null;
     final token = uri.queryParameters['token'];

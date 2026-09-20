@@ -18,11 +18,13 @@ abstract class LiveSessionsState with _$LiveSessionsState {
     required List<LiveSession> live,
     required List<LiveSession> upcoming,
   }) = _LoadSuccess;
-  const factory LiveSessionsState.loadFailure(NetworkExceptions failure) = _LoadFailure;
+  const factory LiveSessionsState.loadFailure(NetworkExceptions failure) =
+      _LoadFailure;
 }
 
 class LiveSessionsNotifier extends StateNotifier<LiveSessionsState> {
-  LiveSessionsNotifier(this._repository) : super(const LiveSessionsState.initial()) {
+  LiveSessionsNotifier(this._repository)
+    : super(const LiveSessionsState.initial()) {
     unawaited(load());
   }
 

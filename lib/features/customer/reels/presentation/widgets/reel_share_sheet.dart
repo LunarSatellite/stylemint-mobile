@@ -145,12 +145,11 @@ class _ReelShareSheetState extends State<ReelShareSheet> {
     for (final target in ReelShareTarget.values) {
       final probe = target.installedProbe;
       if (probe == null) continue;
-      widget.launcher
-          .canOpen(probe)
-          .catchError((Object _) => false)
-          .then((available) {
-            if (mounted) setState(() => _installed[target] = available);
-          });
+      widget.launcher.canOpen(probe).catchError((Object _) => false).then((
+        available,
+      ) {
+        if (mounted) setState(() => _installed[target] = available);
+      });
     }
   }
 

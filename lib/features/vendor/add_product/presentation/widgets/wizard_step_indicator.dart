@@ -22,7 +22,9 @@ class WizardStepIndicator extends StatelessWidget {
             margin: EdgeInsets.only(right: index < totalSteps - 1 ? 4 : 0),
             height: 4,
             decoration: BoxDecoration(
-              color: isDone ? DesignTokens.primaryGreen : DesignTokens.bgAppBodyLight,
+              color: isDone
+                  ? DesignTokens.primaryGreen
+                  : DesignTokens.bgAppBodyLight,
               borderRadius: BorderRadius.circular(2),
             ),
           ),

@@ -192,11 +192,14 @@ class ApiClient {
         uri,
         data: data,
         queryParameters: queryParameters,
-        options: options ??
-            Options(headers: {
-              "requiresToken": false,
-              if (token != null) 'Authorization': 'Bearer $token',
-            }),
+        options:
+            options ??
+            Options(
+              headers: {
+                "requiresToken": false,
+                if (token != null) 'Authorization': 'Bearer $token',
+              },
+            ),
       );
       return response.data;
     } on SocketException catch (e) {

@@ -26,7 +26,7 @@ abstract class BlockedUsersState with _$BlockedUsersState {
 
 class BlockedUsersNotifier extends StateNotifier<BlockedUsersState> {
   BlockedUsersNotifier({required this.authRepository})
-      : super(const BlockedUsersState.initial());
+    : super(const BlockedUsersState.initial());
 
   final AuthRepository authRepository;
 
@@ -55,6 +55,7 @@ class BlockedUsersNotifier extends StateNotifier<BlockedUsersState> {
 
 final blockedUsersProvider =
     StateNotifierProvider<BlockedUsersNotifier, BlockedUsersState>(
-  (ref) =>
-      BlockedUsersNotifier(authRepository: ref.watch(authRepositoryProvider)),
-);
+      (ref) => BlockedUsersNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );

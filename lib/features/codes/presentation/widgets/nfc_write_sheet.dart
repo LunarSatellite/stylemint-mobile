@@ -103,9 +103,7 @@ class _NfcWriteSheetState extends ConsumerState<NfcWriteSheet> {
     final outcome = _outcome;
     final written = outcome == NfcWriteOutcome.written;
     final canRetry =
-        outcome != null &&
-        !written &&
-        outcome != NfcWriteOutcome.notSupported;
+        outcome != null && !written && outcome != NfcWriteOutcome.notSupported;
 
     return SafeArea(
       child: Padding(

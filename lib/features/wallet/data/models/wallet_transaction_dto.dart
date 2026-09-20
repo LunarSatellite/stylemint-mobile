@@ -27,19 +27,19 @@ abstract class WalletTransactionDto with _$WalletTransactionDto {
       _$WalletTransactionDtoFromJson(json);
 
   WalletTransaction toDomain() => WalletTransaction(
-        id: id,
-        walletId: walletId,
-        currency: currency,
-        type: type,
-        source: source,
-        amount: amount,
-        balanceAfter: balanceAfter,
-        correlationId: correlationId,
-        correlationType: correlationType,
-        reversalOf: reversalOf,
-        description: description,
-        occurredUtc: occurredUtc.isNotEmpty
-            ? DateTime.parse(occurredUtc)
-            : DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-      );
+    id: id,
+    walletId: walletId,
+    currency: currency,
+    type: type,
+    source: source,
+    amount: amount,
+    balanceAfter: balanceAfter,
+    correlationId: correlationId,
+    correlationType: correlationType,
+    reversalOf: reversalOf,
+    description: description,
+    occurredUtc: occurredUtc.isNotEmpty
+        ? DateTime.parse(occurredUtc)
+        : DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+  );
 }

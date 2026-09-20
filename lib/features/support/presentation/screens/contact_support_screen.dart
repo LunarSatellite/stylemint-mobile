@@ -511,7 +511,10 @@ class _ChannelTile extends StatelessWidget {
 // ── Quick actions ─────────────────────────────────────────────────────────────
 
 class _QuickActions extends StatelessWidget {
-  const _QuickActions({required this.onTrackOrder, required this.onRefundReturns});
+  const _QuickActions({
+    required this.onTrackOrder,
+    required this.onRefundReturns,
+  });
   final VoidCallback onTrackOrder;
   final VoidCallback onRefundReturns;
 
@@ -1175,7 +1178,8 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
           if (index >= 0 && index < categories.length) {
             _appliedInitialCategory = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) setState(() => _selectedCategory = categories[index]);
+              if (mounted)
+                setState(() => _selectedCategory = categories[index]);
             });
           }
         },

@@ -19,13 +19,13 @@ class _FakeRepository implements CreatorDashboardRepository {
 }
 
 CreatorDashboard _dashboard() => const CreatorDashboard(
-      earnings: Money(amount: 250, currency: 'NPR'),
-      pendingBalance: Money(amount: 50, currency: 'NPR'),
-      totalSales: 12,
-      totalViews: 3400,
-      topReels: [],
-      earningsDeltaPercent: 12.5,
-    );
+  earnings: Money(amount: 250, currency: 'NPR'),
+  pendingBalance: Money(amount: 50, currency: 'NPR'),
+  totalSales: 12,
+  totalViews: 3400,
+  topReels: [],
+  earningsDeltaPercent: 12.5,
+);
 
 Future<CreatorDashboardNotifier> _settled(_FakeRepository repo) async {
   final notifier = CreatorDashboardNotifier(repo);
@@ -86,7 +86,9 @@ void main() {
     test('surfaces a load failure rather than an empty dashboard', () async {
       final notifier = await _settled(
         _FakeRepository(
-          dashboard: networkLeft(const NetworkExceptions.noInternetConnection()),
+          dashboard: networkLeft(
+            const NetworkExceptions.noInternetConnection(),
+          ),
         ),
       );
 

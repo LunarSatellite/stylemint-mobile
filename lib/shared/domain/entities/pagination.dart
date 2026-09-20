@@ -12,7 +12,7 @@ class PagedResult<T> {
   final List<T> items;
   final int totalCount;
   final int pageSize;
-  final String? nextCursor;     // opaque — send back as-is on next request
+  final String? nextCursor; // opaque — send back as-is on next request
   final String? previousCursor;
   final bool hasMore;
 }

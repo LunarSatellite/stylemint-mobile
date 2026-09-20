@@ -26,7 +26,9 @@ class VendorActivityRepositoryImpl implements VendorActivityRepository {
           pageSize: pageSize,
           cursor: cursor,
         );
-        return right(page.items.map((e) => e.toDomain()).toList(growable: false));
+        return right(
+          page.items.map((e) => e.toDomain()).toList(growable: false),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

@@ -227,9 +227,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                         child: MallTypeGround(
                                           seed: product.productId,
                                           monogram:
-                                              product.productName
-                                                  .trim()
-                                                  .isEmpty
+                                              product.productName.trim().isEmpty
                                               ? null
                                               : product.productName
                                                     .trim()[0]

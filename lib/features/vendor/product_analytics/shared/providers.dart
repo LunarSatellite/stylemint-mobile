@@ -20,16 +20,19 @@ final vendorProductAnalyticsRemoteDataSourceProvider =
 final vendorProductAnalyticsRepositoryProvider =
     Provider<VendorProductAnalyticsRepository>(
       (ref) => VendorProductAnalyticsRepositoryImpl(
-        remoteDataSource: ref.watch(vendorProductAnalyticsRemoteDataSourceProvider),
+        remoteDataSource: ref.watch(
+          vendorProductAnalyticsRemoteDataSourceProvider,
+        ),
         networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
       ),
     );
 
-final vendorProductAnalyticsNotifierProvider = StateNotifierProvider.autoDispose<
-  VendorProductAnalyticsNotifier,
-  VendorProductAnalyticsState
->(
-  (ref) => VendorProductAnalyticsNotifier(
-    ref.watch(vendorProductAnalyticsRepositoryProvider),
-  ),
-);
+final vendorProductAnalyticsNotifierProvider =
+    StateNotifierProvider.autoDispose<
+      VendorProductAnalyticsNotifier,
+      VendorProductAnalyticsState
+    >(
+      (ref) => VendorProductAnalyticsNotifier(
+        ref.watch(vendorProductAnalyticsRepositoryProvider),
+      ),
+    );

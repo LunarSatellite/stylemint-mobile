@@ -39,7 +39,9 @@ class StoriesRepositoryImpl implements StoriesRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, List<Story>>> getStories(String userId) async {
+  Future<Either<NetworkExceptions, List<Story>>> getStories(
+    String userId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getStories(userId);

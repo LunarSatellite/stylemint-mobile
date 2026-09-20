@@ -42,7 +42,8 @@ class _CreatorApprovedScreenState extends ConsumerState<CreatorApprovedScreen> {
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s32),
+                    horizontal: DesignTokens.s32,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -84,13 +85,14 @@ class _CreatorApprovedScreenState extends ConsumerState<CreatorApprovedScreen> {
               decoration: const BoxDecoration(
                 color: DesignTokens.bgAppFoundation,
                 border: Border(
-                  top: BorderSide(
-                      color: DesignTokens.borderDefault, width: 1),
+                  top: BorderSide(color: DesignTokens.borderDefault, width: 1),
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16, DesignTokens.s16,
-                DesignTokens.s16, DesignTokens.s32,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s32,
               ),
               child: SafeArea(
                 top: false,
@@ -98,15 +100,18 @@ class _CreatorApprovedScreenState extends ConsumerState<CreatorApprovedScreen> {
                   width: double.infinity,
                   child: Material(
                     color: DesignTokens.primaryGreen,
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                     child: InkWell(
                       onTap: _activating ? null : _onGoToDashboard,
-                      borderRadius:
-                          BorderRadius.circular(DesignTokens.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.buttonRadius,
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            vertical: DesignTokens.s16),
+                          vertical: DesignTokens.s16,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -125,7 +130,8 @@ class _CreatorApprovedScreenState extends ConsumerState<CreatorApprovedScreen> {
                               Text(
                                 'Go to Creator Dashboard',
                                 style: DesignTokens.oneLinerSemibold.copyWith(
-                                    color: DesignTokens.buttonPrimaryText),
+                                  color: DesignTokens.buttonPrimaryText,
+                                ),
                               ),
                             const SizedBox(width: DesignTokens.s8),
                             const Icon(

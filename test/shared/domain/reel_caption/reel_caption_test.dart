@@ -58,14 +58,22 @@ void main() {
     });
 
     test('three or more products collapse to "+ n more · from lowest"', () {
-      final lines = ReelCaption.productLinesFor(const [_tote, _aeroPods, _glow]);
+      final lines = ReelCaption.productLinesFor(const [
+        _tote,
+        _aeroPods,
+        _glow,
+      ]);
 
       expect(lines, hasLength(1));
       expect(lines.single.text, 'Nomad Canvas Tote + 2 more · from Rs 1,800');
     });
 
     test('lowest price is used even when the first product is pricier', () {
-      final lines = ReelCaption.productLinesFor(const [_aeroPods, _glow, _tote]);
+      final lines = ReelCaption.productLinesFor(const [
+        _aeroPods,
+        _glow,
+        _tote,
+      ]);
 
       expect(lines.single.text, 'AeroPods Air + 2 more · from Rs 1,800');
     });
@@ -94,7 +102,10 @@ void main() {
         aiGenerated: false,
       );
 
-      expect(caption.split('\n').first, 'Wireless sound that fits your commute');
+      expect(
+        caption.split('\n').first,
+        'Wireless sound that fits your commute',
+      );
     });
 
     test('non-whole prices keep two decimals via the shared formatter', () {
@@ -114,7 +125,10 @@ void main() {
 
     test('a blank product name falls back to "Product"', () {
       final lines = ReelCaption.productLinesFor(const [
-        CaptionProduct(name: '  ', price: Money(amount: 500, currency: 'NPR')),
+        CaptionProduct(
+          name: '  ',
+          price: Money(amount: 500, currency: 'NPR'),
+        ),
       ]);
 
       expect(lines.single.text, 'Product · Rs 500');
@@ -143,21 +157,24 @@ void main() {
       expect(tags.length, lessThanOrEqualTo(ReelCaption.maxHashtags));
     });
 
-    test('topic tags are letters/digits only, de-duplicated case-insensitively, '
-        'and never repeat the system tags', () {
-      final tags = ReelCaption.normalizeTopicTags(const [
-        '#tech deals',
-        'TECHDEALS',
-        'Tech-Deals!',
-        'stylemint',
-        '#AIgenerated',
-        'Skincare2026',
-        'OOTD',
-        'Extra',
-      ]);
+    test(
+      'topic tags are letters/digits only, de-duplicated case-insensitively, '
+      'and never repeat the system tags',
+      () {
+        final tags = ReelCaption.normalizeTopicTags(const [
+          '#tech deals',
+          'TECHDEALS',
+          'Tech-Deals!',
+          'stylemint',
+          '#AIgenerated',
+          'Skincare2026',
+          'OOTD',
+          'Extra',
+        ]);
 
-      expect(tags, ['techdeals', 'Skincare2026', 'OOTD']);
-    });
+        expect(tags, ['techdeals', 'Skincare2026', 'OOTD']);
+      },
+    );
 
     test('non-Latin topic tags keep their combining marks', () {
       expect(ReelCaption.normalizeTopicTag('#नेपाल'), 'नेपाल');
@@ -179,7 +196,12 @@ void main() {
         CaptionProductLine(label: 'AeroPods Air', price: 'Rs 8,999'),
       ]);
       expect(parsed.hasCta, isTrue);
-      expect(parsed.hashtags, ['StyleMint', 'Earbuds', 'TechDeals', 'AIgenerated']);
+      expect(parsed.hashtags, [
+        'StyleMint',
+        'Earbuds',
+        'TechDeals',
+        'AIgenerated',
+      ]);
       expect(parsed.topicTags, ['Earbuds', 'TechDeals']);
       expect(parsed.hasAiTag, isTrue);
     });
@@ -239,14 +261,17 @@ void main() {
       expect(parsed.isStandard, isFalse);
     });
 
-    test('a hashtag line that does not start with #StyleMint is non-standard', () {
-      final parsed = ReelCaption.parse(
-        'Wireless sound that fits your commute\n\n#Earbuds #StyleMint',
-      );
+    test(
+      'a hashtag line that does not start with #StyleMint is non-standard',
+      () {
+        final parsed = ReelCaption.parse(
+          'Wireless sound that fits your commute\n\n#Earbuds #StyleMint',
+        );
 
-      expect(parsed.isStandard, isFalse);
-      expect(parsed.hashtags, ['Earbuds', 'StyleMint']);
-    });
+        expect(parsed.isStandard, isFalse);
+        expect(parsed.hashtags, ['Earbuds', 'StyleMint']);
+      },
+    );
 
     test('more than two product lines is non-standard', () {
       final parsed = ReelCaption.parse(
@@ -280,15 +305,18 @@ void main() {
       expect(tags, ['AeroPods', 'commute', 'Music']);
     });
 
-    test('suggestHook uses the first sentence when it fits 20–70 characters', () {
-      expect(
-        ReelCaption.suggestHook(
-          'Wireless sound that fits your daily commute. Grab yours at '
-          'stylemint.app #earbuds',
-        ),
-        'Wireless sound that fits your daily commute.',
-      );
-    });
+    test(
+      'suggestHook uses the first sentence when it fits 20–70 characters',
+      () {
+        expect(
+          ReelCaption.suggestHook(
+            'Wireless sound that fits your daily commute. Grab yours at '
+            'stylemint.app #earbuds',
+          ),
+          'Wireless sound that fits your daily commute.',
+        );
+      },
+    );
 
     test('suggestHook skips hashtag-only lines', () {
       expect(
@@ -313,8 +341,14 @@ void main() {
 
     test('mentionsAiGenerated detects common AI disclosures only', () {
       expect(ReelCaption.mentionsAiGenerated('Demo reel #AIgenerated'), isTrue);
-      expect(ReelCaption.mentionsAiGenerated('This video is AI-generated'), isTrue);
-      expect(ReelCaption.mentionsAiGenerated('Made with AI in Kathmandu'), isTrue);
+      expect(
+        ReelCaption.mentionsAiGenerated('This video is AI-generated'),
+        isTrue,
+      );
+      expect(
+        ReelCaption.mentionsAiGenerated('Made with AI in Kathmandu'),
+        isTrue,
+      );
       expect(ReelCaption.mentionsAiGenerated('Said hi to my aide'), isFalse);
       expect(ReelCaption.mentionsAiGenerated('Generated more leads'), isFalse);
     });
@@ -337,7 +371,10 @@ void main() {
 
     test('a clean draft has no issues', () {
       expect(
-        issuesFor('Wireless sound that fits your daily commute 🎧', topicTags: const ['Earbuds']),
+        issuesFor(
+          'Wireless sound that fits your daily commute 🎧',
+          topicTags: const ['Earbuds'],
+        ),
         isEmpty,
       );
     });
@@ -448,8 +485,14 @@ void main() {
       final issues = issuesFor(
         'Wireless sound that fits your daily commute',
         products: [
-          CaptionProduct(name: longName, price: const Money(amount: 1, currency: 'NPR')),
-          CaptionProduct(name: longName, price: const Money(amount: 2, currency: 'NPR')),
+          CaptionProduct(
+            name: longName,
+            price: const Money(amount: 1, currency: 'NPR'),
+          ),
+          CaptionProduct(
+            name: longName,
+            price: const Money(amount: 2, currency: 'NPR'),
+          ),
         ],
       );
 

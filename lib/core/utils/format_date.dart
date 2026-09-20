@@ -8,9 +8,9 @@ void initTimezone() => tz_data.initializeTimeZones();
 String formatRelative(DateTime iso) {
   final diff = DateTime.now().difference(iso);
   if (diff.inMinutes < 1) return 'just now';
-  if (diff.inHours < 1)   return '${diff.inMinutes}m ago';
-  if (diff.inDays < 1)    return '${diff.inHours}h ago';
-  if (diff.inDays < 7)    return '${diff.inDays}d ago';
+  if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+  if (diff.inDays < 1) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
   return DateFormat.yMMMd().format(iso.toLocal());
 }
 

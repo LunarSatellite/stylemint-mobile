@@ -232,8 +232,7 @@ class ProductListingQuery {
     return text == null || text.isEmpty ? null : text;
   }
 
-  static String _formatNumber(double value) =>
-      value == value.truncateToDouble()
+  static String _formatNumber(double value) => value == value.truncateToDouble()
       ? value.toInt().toString()
       : value.toString();
 

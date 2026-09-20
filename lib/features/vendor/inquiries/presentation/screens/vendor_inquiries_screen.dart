@@ -18,9 +18,11 @@ class VendorInquiriesScreen extends ConsumerWidget {
     final state = ref.watch(inquiriesNotifierProvider);
 
     ref.listen<InquiriesState>(inquiriesNotifierProvider, (prev, next) {
-      if (next.errorMessage != null && next.errorMessage != prev?.errorMessage) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+      if (next.errorMessage != null &&
+          next.errorMessage != prev?.errorMessage) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
       }
     });
 
@@ -30,25 +32,36 @@ class VendorInquiriesScreen extends ConsumerWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
-        title: const Text('Customer Inquiries',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Customer Inquiries',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: state.isLoading
           ? const SmPageLoader()
           : RefreshIndicator(
               color: DesignTokens.primaryGreen,
-              onRefresh: () => ref.read(inquiriesNotifierProvider.notifier).load(),
+              onRefresh: () =>
+                  ref.read(inquiriesNotifierProvider.notifier).load(),
               child: state.items.isEmpty
-                  ? ListView(children: [
-                      const SizedBox(height: 120),
-                      Center(
-                          child: Text('No pending inquiries.',
-                              style: DesignTokens.bodyText)),
-                    ])
+                  ? ListView(
+                      children: [
+                        const SizedBox(height: 120),
+                        Center(
+                          child: Text(
+                            'No pending inquiries.',
+                            style: DesignTokens.bodyText,
+                          ),
+                        ),
+                      ],
+                    )
                   : ListView.separated(
                       padding: const EdgeInsets.all(DesignTokens.s16),
                       itemCount: state.items.length,
@@ -110,9 +123,12 @@ class _InquiryCardState extends State<_InquiryCard> {
               _StateBadge(status: inq.status),
               const Spacer(),
               if (inq.responseDeadlineAt != null && !answered)
-                Text('Reply by ${_date(inq.responseDeadlineAt!)}',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted)),
+                Text(
+                  'Reply by ${_date(inq.responseDeadlineAt!)}',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: DesignTokens.s8),
@@ -128,9 +144,15 @@ class _InquiryCardState extends State<_InquiryCard> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.reply, size: 16, color: DesignTokens.primaryGreen),
+                  const Icon(
+                    Icons.reply,
+                    size: 16,
+                    color: DesignTokens.primaryGreen,
+                  ),
                   const SizedBox(width: DesignTokens.s8),
-                  Expanded(child: Text(inq.reply!, style: DesignTokens.smallRegular)),
+                  Expanded(
+                    child: Text(inq.reply!, style: DesignTokens.smallRegular),
+                  ),
                 ],
               ),
             ),
@@ -139,9 +161,12 @@ class _InquiryCardState extends State<_InquiryCard> {
             if (!_expanded)
               GestureDetector(
                 onTap: () => setState(() => _expanded = true),
-                child: Text('Reply',
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.primaryGreen)),
+                child: Text(
+                  'Reply',
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.primaryGreen,
+                  ),
+                ),
               )
             else
               Column(
@@ -156,17 +181,20 @@ class _InquiryCardState extends State<_InquiryCard> {
                     cursorColor: DesignTokens.primaryGreen,
                     decoration: InputDecoration(
                       hintText: 'Type your reply…',
-                      hintStyle: DesignTokens.bodyText
-                          .copyWith(color: DesignTokens.textMuted),
+                      hintStyle: DesignTokens.bodyText.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
                       filled: true,
                       fillColor: DesignTokens.inputFieldFill,
                       counterText: '',
                       contentPadding: const EdgeInsets.all(DesignTokens.s12),
                       border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.inputRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.inputRadius,
+                        ),
                         borderSide: const BorderSide(
-                            color: DesignTokens.inputFieldBorder),
+                          color: DesignTokens.inputFieldBorder,
+                        ),
                       ),
                     ),
                   ),
@@ -176,8 +204,9 @@ class _InquiryCardState extends State<_InquiryCard> {
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: DesignTokens.primaryGreen),
+                            strokeWidth: 2,
+                            color: DesignTokens.primaryGreen,
+                          ),
                         )
                       : TextButton(
                           onPressed: () async {
@@ -186,9 +215,12 @@ class _InquiryCardState extends State<_InquiryCard> {
                               setState(() => _expanded = false);
                             }
                           },
-                          child: Text('Send reply',
-                              style: DesignTokens.mediumSemibold
-                                  .copyWith(color: DesignTokens.primaryGreen)),
+                          child: Text(
+                            'Send reply',
+                            style: DesignTokens.mediumSemibold.copyWith(
+                              color: DesignTokens.primaryGreen,
+                            ),
+                          ),
                         ),
                 ],
               ),
@@ -212,15 +244,18 @@ class _StateBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = switch (status) {
-      InquiryStatus.open => (DesignTokens.statusOngoingBg, DesignTokens.colorInfo),
+      InquiryStatus.open => (
+        DesignTokens.statusOngoingBg,
+        DesignTokens.colorInfo,
+      ),
       InquiryStatus.replied => (
-          DesignTokens.statusCompletedBg,
-          DesignTokens.colorSuccess,
-        ),
+        DesignTokens.statusCompletedBg,
+        DesignTokens.colorSuccess,
+      ),
       InquiryStatus.expired => (
-          DesignTokens.statusRemainingBg,
-          DesignTokens.textMuted,
-        ),
+        DesignTokens.statusRemainingBg,
+        DesignTokens.textMuted,
+      ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

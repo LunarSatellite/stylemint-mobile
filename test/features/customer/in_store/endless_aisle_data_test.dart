@@ -109,7 +109,7 @@ void main() {
         ..remove('productId')
         ..['reachNote'] =
             "You can browse and order this seller's whole catalogue from "
-                'here; it isn’t limited to what’s on the shelf.';
+            'here; it isn’t limited to what’s on the shelf.';
 
       final aisle = EndlessAisleDto.fromJson(json).toDomain();
 
@@ -124,7 +124,7 @@ void main() {
         ..['pickupOffered'] = false
         ..['pickupNote'] =
             "Mint Studio doesn't offer collection, so this would be "
-                'delivered to you.'
+            'delivered to you.'
         ..['pickupLocations'] = <Map<String, dynamic>>[];
 
       final aisle = EndlessAisleDto.fromJson(json).toDomain();

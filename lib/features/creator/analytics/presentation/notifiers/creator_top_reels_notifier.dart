@@ -21,10 +21,9 @@ abstract class CreatorTopReelsState with _$CreatorTopReelsState {
       _LoadFailure;
 }
 
-class CreatorTopReelsNotifier
-    extends StateNotifier<CreatorTopReelsState> {
+class CreatorTopReelsNotifier extends StateNotifier<CreatorTopReelsState> {
   CreatorTopReelsNotifier(this._repository)
-      : super(const CreatorTopReelsState.initial()) {
+    : super(const CreatorTopReelsState.initial()) {
     unawaited(fetch());
   }
 

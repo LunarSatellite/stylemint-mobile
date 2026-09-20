@@ -17,7 +17,8 @@ class WalletTransaction {
   final String id;
   final String walletId;
   final String currency;
-  final String type;   // Credit | Debit | PendingCredit | PendingClear | Reversal | Reservation…
+  final String
+  type; // Credit | Debit | PendingCredit | PendingClear | Reversal | Reservation…
   final String source; // Refund | AdminAdjustment | Payout | Other
   final double amount;
   final double balanceAfter;
@@ -27,6 +28,10 @@ class WalletTransaction {
   final String? description;
   final DateTime occurredUtc;
 
-  static const _hidden = {'Reservation', 'ReservationCommit', 'ReservationRelease'};
+  static const _hidden = {
+    'Reservation',
+    'ReservationCommit',
+    'ReservationRelease',
+  };
   bool get isVisible => !_hidden.contains(type);
 }

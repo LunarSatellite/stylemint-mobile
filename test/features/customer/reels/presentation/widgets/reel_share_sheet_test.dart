@@ -86,21 +86,27 @@ void main() {
     ]) {
       expect(find.byKey(ReelShareSheet.targetKey(target)), findsOneWidget);
     }
-    expect(find.byKey(ReelShareSheet.targetKey(ReelShareTarget.viber)),
-        findsNothing);
+    expect(
+      find.byKey(ReelShareSheet.targetKey(ReelShareTarget.viber)),
+      findsNothing,
+    );
     expect(find.byKey(ReelShareSheet.moreKey), findsOneWidget);
 
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
     await open(tester, _FakeLauncher(installed: {'whatsapp', 'viber'}))();
-    expect(find.byKey(ReelShareSheet.targetKey(ReelShareTarget.viber)),
-        findsOneWidget);
+    expect(
+      find.byKey(ReelShareSheet.targetKey(ReelShareTarget.viber)),
+      findsOneWidget,
+    );
 
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
     await open(tester, _FakeLauncher(installed: const {}))();
-    expect(find.byKey(ReelShareSheet.targetKey(ReelShareTarget.whatsApp)),
-        findsNothing);
+    expect(
+      find.byKey(ReelShareSheet.targetKey(ReelShareTarget.whatsApp)),
+      findsNothing,
+    );
     expect(
       find.byKey(ReelShareSheet.targetKey(ReelShareTarget.facebook)),
       findsOneWidget,

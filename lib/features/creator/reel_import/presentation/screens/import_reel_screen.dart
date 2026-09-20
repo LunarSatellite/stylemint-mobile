@@ -49,9 +49,7 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
   }
 
   Future<void> _openInitialPlatform() async {
-    final saved = await ref
-        .read(lastImportPlatformProvider.notifier)
-        .restored;
+    final saved = await ref.read(lastImportPlatformProvider.notifier).restored;
     if (!mounted || _platformResolved) return;
     final accounts = saved == null
         ? await _connectedAccounts()

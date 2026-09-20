@@ -95,8 +95,9 @@ class AuthRemoteDataSource {
   // ==========================================================================
 
   /// POST `/v1/auth/login-magic/request`
-  Future<MagicLoginRequestedDto> requestMagicLogin(
-      {required String email}) async {
+  Future<MagicLoginRequestedDto> requestMagicLogin({
+    required String email,
+  }) async {
     final response = await apiClient.authPost(
       '/v1/auth/login-magic/request',
       data: {'email': email},
@@ -268,10 +269,7 @@ class AuthRemoteDataSource {
         if (locale != null) 'locale': locale,
         if (timezone != null) 'timezone': timezone,
         if (dateOfBirth != null)
-          'dateOfBirth': dateOfBirth
-              .toIso8601String()
-              .split('T')
-              .first,
+          'dateOfBirth': dateOfBirth.toIso8601String().split('T').first,
         if (gender != null) 'gender': gender,
         if (avatarUrl != null) 'avatarUrl': avatarUrl,
         if (countryCode != null) 'countryCode': countryCode,
@@ -307,8 +305,9 @@ class AuthRemoteDataSource {
 
   /// POST `/v1/accounts/{accountId}/sessions/revoke-all` — returns count revoked.
   Future<int> revokeAllSessions(String accountId) async {
-    final response =
-    await apiClient.post('/v1/accounts/$accountId/sessions/revoke-all');
+    final response = await apiClient.post(
+      '/v1/accounts/$accountId/sessions/revoke-all',
+    );
     return response is int ? response : int.tryParse('$response') ?? 0;
   }
 
@@ -392,9 +391,11 @@ class AuthRemoteDataSource {
 
   /// POST `/v1/accounts/{accountId}/passkeys/authenticate/options`
   Future<PasskeyChallengeDto> beginPasskeyAuthentication(
-      String accountId) async {
-    final response = await apiClient
-        .authPost('/v1/accounts/$accountId/passkeys/authenticate/options');
+    String accountId,
+  ) async {
+    final response = await apiClient.authPost(
+      '/v1/accounts/$accountId/passkeys/authenticate/options',
+    );
     return PasskeyChallengeDto.fromJson(response as Map<String, dynamic>);
   }
 
@@ -423,15 +424,17 @@ class AuthRemoteDataSource {
     required String credentialId,
   }) async {
     await apiClient.authDelete(
-        '/v1/accounts/$accountId/passkeys/$credentialId');
+      '/v1/accounts/$accountId/passkeys/$credentialId',
+    );
   }
 
   // ── Usernameless passkey login (no accountId — discoverable credential) ────
 
   /// POST `/v1/auth/passkeys/authenticate/options` (anonymous)
   Future<PasskeyChallengeDto> beginUsernamelessPasskeyAuthentication() async {
-    final response =
-        await apiClient.authPost('/v1/auth/passkeys/authenticate/options');
+    final response = await apiClient.authPost(
+      '/v1/auth/passkeys/authenticate/options',
+    );
     return PasskeyChallengeDto.fromJson(response as Map<String, dynamic>);
   }
 
@@ -443,14 +446,16 @@ class AuthRemoteDataSource {
     required int devicePlatform,
     String? deviceOsVersion,
   }) async {
-    final response =
-        await apiClient.authPost('/v1/auth/passkeys/authenticate/complete', data: {
-      'challengeBase64Url': challengeBase64Url,
-      'clientResponseJson': clientResponseJson,
-      'deviceFingerprint': deviceFingerprint,
-      'devicePlatform': devicePlatform,
-      if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
-    });
+    final response = await apiClient.authPost(
+      '/v1/auth/passkeys/authenticate/complete',
+      data: {
+        'challengeBase64Url': challengeBase64Url,
+        'clientResponseJson': clientResponseJson,
+        'deviceFingerprint': deviceFingerprint,
+        'devicePlatform': devicePlatform,
+        if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
+      },
+    );
     return response is Map<String, dynamic> ? response : null;
   }
 
@@ -462,12 +467,14 @@ class AuthRemoteDataSource {
     String locale = 'en-US',
     String timezone = 'Asia/Kathmandu',
   }) async {
-    final response = await apiClient
-        .authPost('/v1/auth/passkeys/register/bootstrap/options', data: {
-      'displayName': displayName,
-      'locale': locale,
-      'timezone': timezone,
-    });
+    final response = await apiClient.authPost(
+      '/v1/auth/passkeys/register/bootstrap/options',
+      data: {
+        'displayName': displayName,
+        'locale': locale,
+        'timezone': timezone,
+      },
+    );
     return PasskeyBootstrapDto.fromJson(response as Map<String, dynamic>);
   }
 
@@ -481,16 +488,18 @@ class AuthRemoteDataSource {
     String? deviceOsVersion,
     String? nickname,
   }) async {
-    final response = await apiClient
-        .authPost('/v1/auth/passkeys/register/bootstrap/complete', data: {
-      'accountId': accountId,
-      'challengeBase64Url': challengeBase64Url,
-      'clientResponseJson': clientResponseJson,
-      'deviceFingerprint': deviceFingerprint,
-      'devicePlatform': devicePlatform,
-      if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
-      if (nickname != null) 'nickname': nickname,
-    });
+    final response = await apiClient.authPost(
+      '/v1/auth/passkeys/register/bootstrap/complete',
+      data: {
+        'accountId': accountId,
+        'challengeBase64Url': challengeBase64Url,
+        'clientResponseJson': clientResponseJson,
+        'deviceFingerprint': deviceFingerprint,
+        'devicePlatform': devicePlatform,
+        if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
+        if (nickname != null) 'nickname': nickname,
+      },
+    );
     return response is Map<String, dynamic> ? response : null;
   }
 
@@ -519,13 +528,16 @@ class AuthRemoteDataSource {
       },
     );
     return RegistrationStartResponseDto.fromJson(
-        response as Map<String, dynamic>);
+      response as Map<String, dynamic>,
+    );
   }
 
   /// POST `/v1/registration/{accountId}/verify-email` → 204
-  Future<void> verifyRegistrationEmail(String accountId,
-      String email,
-      String code,) async {
+  Future<void> verifyRegistrationEmail(
+    String accountId,
+    String email,
+    String code,
+  ) async {
     await apiClient.authPost(
       '/v1/registration/$accountId/verify-email',
       data: {'email': email, 'code': code},
@@ -533,9 +545,11 @@ class AuthRemoteDataSource {
   }
 
   /// POST `/v1/registration/{accountId}/verify-phone` → 204
-  Future<void> verifyRegistrationPhone(String accountId,
-      String phoneE164,
-      String code,) async {
+  Future<void> verifyRegistrationPhone(
+    String accountId,
+    String phoneE164,
+    String code,
+  ) async {
     await apiClient.authPost(
       '/v1/registration/$accountId/verify-phone',
       data: {'phoneE164': phoneE164, 'code': code},
@@ -543,8 +557,10 @@ class AuthRemoteDataSource {
   }
 
   /// POST `/v1/registration/{accountId}/set-password` → 204
-  Future<void> setRegistrationPassword(String accountId,
-      String password) async {
+  Future<void> setRegistrationPassword(
+    String accountId,
+    String password,
+  ) async {
     await apiClient.authPost(
       '/v1/registration/$accountId/set-password',
       data: {'password': password},
@@ -552,7 +568,8 @@ class AuthRemoteDataSource {
   }
 
   /// POST `/v1/registration/{accountId}/accept-terms`
-  Future<RegistrationCompletionDto> acceptRegistrationTerms(String accountId, {
+  Future<RegistrationCompletionDto> acceptRegistrationTerms(
+    String accountId, {
     required String consentVersion,
     String? ipAddress,
     String? userAgent,
@@ -622,8 +639,9 @@ class AuthRemoteDataSource {
 
   /// POST `/v1/accounts/{accountId}/mfa-methods/totp`
   Future<TotpEnrollmentDto> beginTotpEnrollment(String accountId) async {
-    final response =
-    await apiClient.post('/v1/accounts/$accountId/mfa-methods/totp');
+    final response = await apiClient.post(
+      '/v1/accounts/$accountId/mfa-methods/totp',
+    );
     return TotpEnrollmentDto.fromJson(response as Map<String, dynamic>);
   }
 
@@ -689,8 +707,9 @@ class AuthRemoteDataSource {
   /// activation). Shape is broad; extract a display name per item (a bare
   /// string, or a map with name/nameEn/displayName/category/code).
   Future<List<String>> getCreatorSpecializations(String accountId) async {
-    final response =
-        await apiClient.get('/v1/accounts/$accountId/creator-specializations');
+    final response = await apiClient.get(
+      '/v1/accounts/$accountId/creator-specializations',
+    );
     final list = response as List<dynamic>? ?? const <dynamic>[];
     return list
         .map<String>((e) {
@@ -831,8 +850,9 @@ class AuthRemoteDataSource {
 
   /// GET `/v1/accounts/{accountId}/external-ids`
   Future<List<ExternalIdDto>> listExternalIds(String accountId) async {
-    final response =
-    await apiClient.get('/v1/accounts/$accountId/external-ids');
+    final response = await apiClient.get(
+      '/v1/accounts/$accountId/external-ids',
+    );
     return (response as List)
         .map((e) => ExternalIdDto.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -870,9 +890,11 @@ class AuthRemoteDataSource {
 
   /// GET `/v1/accounts/{accountId}/marketing-consents`
   Future<List<MarketingConsentDto>> listMarketingConsents(
-      String accountId,) async {
-    final response =
-    await apiClient.get('/v1/accounts/$accountId/marketing-consents');
+    String accountId,
+  ) async {
+    final response = await apiClient.get(
+      '/v1/accounts/$accountId/marketing-consents',
+    );
     return (response as List)
         .map((e) => MarketingConsentDto.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -880,9 +902,9 @@ class AuthRemoteDataSource {
 
   /// GET `/v1/accounts/{accountId}/marketing-consents/current`
   Future<List<MarketingConsentDto>> getCurrentMarketingConsents(
-      String accountId,) async {
-    final response =
-    await apiClient.get(
+    String accountId,
+  ) async {
+    final response = await apiClient.get(
       '/v1/accounts/$accountId/marketing-consents/current',
     );
     return (response as List)
@@ -928,8 +950,7 @@ class AuthRemoteDataSource {
 
   /// GET `/v1/accounts/{accountId}/roles`
   Future<List<RoleProfileDto>> getRoles(String accountId) async {
-    final response =
-    await apiClient.get('/v1/accounts/$accountId/roles');
+    final response = await apiClient.get('/v1/accounts/$accountId/roles');
     return (response as List)
         .map((e) => RoleProfileDto.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -994,9 +1015,11 @@ class AuthRemoteDataSource {
     await apiClient.post(
       '/v1/accounts/$accountId/deletion-requests',
       data: <String, dynamic>{},
-      options: Options(headers: {
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 }

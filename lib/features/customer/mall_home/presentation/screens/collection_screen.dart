@@ -110,13 +110,7 @@ class _CollectionBody extends StatelessWidget {
   final String? heroTag;
   final VoidCallback onRetryMore;
 
-  static const TextStyle _descriptionStyle = TextStyle(
-    fontFamily: DesignTokens.fontFamily,
-    fontSize: 15,
-    fontWeight: FontWeight.w400,
-    height: 1.6,
-    color: DesignTokens.textLight,
-  );
+  static const TextStyle _descriptionStyle = DesignTokens.editorialBody;
 
   @override
   Widget build(BuildContext context) {
@@ -223,13 +217,7 @@ class _CollectionCover extends StatelessWidget {
   final String? heroTag;
   final ValueChanged<String> onOpenProduct;
 
-  static const TextStyle _subtitleStyle = TextStyle(
-    fontFamily: DesignTokens.fontFamily,
-    fontSize: 15,
-    fontWeight: FontWeight.w400,
-    height: 1.45,
-    color: DesignTokens.textLight,
-  );
+  static const TextStyle _subtitleStyle = DesignTokens.editorialBody;
 
   static const double _marker = DesignTokens.minTouchTarget;
 
@@ -289,7 +277,7 @@ class _CollectionCover extends StatelessWidget {
                         collectionEyebrow(collection.kind),
                         color: DesignTokens.textLight,
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: DesignTokens.s12),
                       Semantics(
                         header: true,
                         child: Text(

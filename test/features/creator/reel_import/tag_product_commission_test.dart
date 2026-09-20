@@ -188,7 +188,10 @@ void main() {
             status: TagProductCommissionStatus.noPartnership,
           ),
         },
-        products: [_product('a', name: 'Recorded zero'), _product('b')],
+        products: [
+          _product('a', name: 'Recorded zero'),
+          _product('b'),
+        ],
       );
 
       final text = _allText(tester);
@@ -378,8 +381,7 @@ void main() {
     test('asks for a whole list in one call', () async {
       final api = _RecordingApiClient(
         (ids) => [
-          for (final id in ids)
-            {'ProductId': id, 'Status': 'NoPartnership'},
+          for (final id in ids) {'ProductId': id, 'Status': 'NoPartnership'},
         ],
       );
       final dtos = await ReelImportRemoteDataSource(

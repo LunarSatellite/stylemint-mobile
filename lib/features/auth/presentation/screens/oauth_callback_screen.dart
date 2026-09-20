@@ -46,7 +46,9 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
 
   Future<void> _handleCallback() async {
     // ignore: avoid_print
-    print('[OAUTH-DEBUG] _handleCallback: hasCode=${widget.code.isNotEmpty} error=${widget.error}');
+    print(
+      '[OAUTH-DEBUG] _handleCallback: hasCode=${widget.code.isNotEmpty} error=${widget.error}',
+    );
     if (_started) return;
     _started = true;
 
@@ -63,7 +65,9 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     // flow. The server also validates server-side; this is defense in depth.
     final expected = ref.read(oauthFlowProvider).state;
     // ignore: avoid_print
-    print('[OAUTH-DEBUG] CSRF check: matches=${expected != null && expected == widget.state}');
+    print(
+      '[OAUTH-DEBUG] CSRF check: matches=${expected != null && expected == widget.state}',
+    );
     if (expected == null || expected != widget.state) {
       // ignore: avoid_print
       print('[OAUTH-DEBUG] bailing: CSRF mismatch');
@@ -73,7 +77,9 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
 
     // ignore: avoid_print
     print('[OAUTH-DEBUG] calling completeCallback...');
-    await ref.read(oauthSignInProvider.notifier).completeCallback(
+    await ref
+        .read(oauthSignInProvider.notifier)
+        .completeCallback(
           code: widget.code,
           oauthState: widget.state,
         );

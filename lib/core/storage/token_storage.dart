@@ -55,8 +55,8 @@ class TokenStorage {
 
   Future<void> saveIdentifier(String identifierType, String identifier) =>
       identifierType.toLowerCase() == 'email'
-          ? _write(_kEmail, identifier)
-          : _write(_kPhone, identifier);
+      ? _write(_kEmail, identifier)
+      : _write(_kPhone, identifier);
 
   Future<DateTime?> get refreshExpiresUtc async {
     final raw = await _safeRead(_kRefreshExpiry);
@@ -81,28 +81,31 @@ class TokenStorage {
   /// (`device.*`) so the same device is recognised after logout. We delete the
   /// known auth keys rather than `deleteAll()` for that reason.
   Future<void> clear() => Future.wait([
-        _storage.delete(key: _kAccessToken),
-        _storage.delete(key: _kRefreshToken),
-        _storage.delete(key: _kAccessExpiry),
-        _storage.delete(key: _kRefreshExpiry),
-        _storage.delete(key: _kAccountId),
-        _storage.delete(key: _kSessionId),
-        _storage.delete(key: _kEmail),
-        _storage.delete(key: _kPhone),
-      ]);
+    _storage.delete(key: _kAccessToken),
+    _storage.delete(key: _kRefreshToken),
+    _storage.delete(key: _kAccessExpiry),
+    _storage.delete(key: _kRefreshExpiry),
+    _storage.delete(key: _kAccountId),
+    _storage.delete(key: _kSessionId),
+    _storage.delete(key: _kEmail),
+    _storage.delete(key: _kPhone),
+  ]);
 
-  Future<void> _write(String key, String? value) =>
-      value == null ? _storage.delete(key: key) : _storage.write(key: key, value: value);
+  Future<void> _write(String key, String? value) => value == null
+      ? _storage.delete(key: key)
+      : _storage.write(key: key, value: value);
 }
 
 final tokenStorageProvider = Provider<TokenStorage>((ref) {
   // resetOnError: a corrupt/undecryptable Android keystore entry is wiped and
   // treated as empty instead of throwing on every read (which would otherwise
   // freeze the app on splash). EncryptedSharedPreferences is the modern store.
-  return TokenStorage(const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      resetOnError: true,
-      encryptedSharedPreferences: true,
+  return TokenStorage(
+    const FlutterSecureStorage(
+      aOptions: AndroidOptions(
+        resetOnError: true,
+        encryptedSharedPreferences: true,
+      ),
     ),
-  ));
+  );
 });

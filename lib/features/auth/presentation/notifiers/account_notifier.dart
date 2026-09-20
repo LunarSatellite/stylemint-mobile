@@ -13,7 +13,8 @@ abstract class AccountState with _$AccountState {
   const factory AccountState.initial() = _AccountInitial;
   const factory AccountState.loadInProgress() = _AccountInProgress;
   const factory AccountState.loadSuccess(AccountDto account) = _AccountSuccess;
-  const factory AccountState.loadFailure(NetworkExceptions failure) = _AccountNetworkExceptions;
+  const factory AccountState.loadFailure(NetworkExceptions failure) =
+      _AccountNetworkExceptions;
 
   bool get isLoading =>
       maybeWhen(loadInProgress: () => true, orElse: () => false);
@@ -21,7 +22,7 @@ abstract class AccountState with _$AccountState {
 
 class AccountNotifier extends StateNotifier<AccountState> {
   AccountNotifier({required this.authRepository})
-      : super(const AccountState.initial());
+    : super(const AccountState.initial());
 
   final AuthRepository authRepository;
 
@@ -72,8 +73,10 @@ class AccountNotifier extends StateNotifier<AccountState> {
     required String idempotencyKey,
   }) async {
     state = const AccountState.loadInProgress();
-    final result =
-        await authRepository.deleteAccount(accountId, idempotencyKey);
+    final result = await authRepository.deleteAccount(
+      accountId,
+      idempotencyKey,
+    );
     result.fold(
       (f) => state = AccountState.loadFailure(f),
       (_) => state = const AccountState.initial(),

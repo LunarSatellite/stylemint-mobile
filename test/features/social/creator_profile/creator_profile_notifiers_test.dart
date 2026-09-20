@@ -53,46 +53,41 @@ class _FakeCreatorProfileRepository implements CreatorProfileRepository {
   }
 
   @override
-  Future<NetworkEither<List<BadgeAward>>> listMyBadges() async => right(const []);
+  Future<NetworkEither<List<BadgeAward>>> listMyBadges() async =>
+      right(const []);
 
   @override
   Future<NetworkEither<List<BadgeAward>>> updateBadgeShowcase(
     List<String> awardIdsInOrder,
-  ) async =>
-      right(const []);
+  ) async => right(const []);
 
   @override
   Future<NetworkEither<List<String>>> listSpecializationCategoryIds(
     String accountId,
-  ) async =>
-      right(const []);
+  ) async => right(const []);
 
   @override
   Future<NetworkEither<void>> addSpecialization(
     String accountId,
     String categoryId,
-  ) async =>
-      right(null);
+  ) async => right(null);
 
   @override
   Future<NetworkEither<void>> removeSpecialization(
     String accountId,
     String categoryId,
-  ) async =>
-      right(null);
+  ) async => right(null);
 
   @override
   Future<NetworkEither<Map<String, bool>>> listSpecializationsWithPrimary(
     String accountId,
-  ) async =>
-      right(const {});
+  ) async => right(const {});
 
   @override
   Future<NetworkEither<void>> setPrimarySpecialization(
     String accountId,
     String categoryId,
-  ) async =>
-      right(null);
+  ) async => right(null);
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -117,8 +112,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadSuccess: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadSuccess: (_) => true, orElse: () => false),
         isTrue,
       );
     });
@@ -132,8 +126,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        notifier.state
-            .maybeWhen(loadFailure: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(loadFailure: (_) => true, orElse: () => false),
         isTrue,
       );
     });
@@ -141,26 +134,26 @@ void main() {
 
   group('UpdateCreatorProfileNotifier', () {
     test('starts in initial state', () {
-      final notifier =
-          UpdateCreatorProfileNotifier(_FakeCreatorProfileRepository());
+      final notifier = UpdateCreatorProfileNotifier(
+        _FakeCreatorProfileRepository(),
+      );
       addTearDown(notifier.dispose);
 
       expect(
-        notifier.state
-            .maybeWhen(initial: () => true, orElse: () => false),
+        notifier.state.maybeWhen(initial: () => true, orElse: () => false),
         isTrue,
       );
     });
 
     test('emits success with updated profile on repository success', () async {
-      final notifier =
-          UpdateCreatorProfileNotifier(_FakeCreatorProfileRepository());
+      final notifier = UpdateCreatorProfileNotifier(
+        _FakeCreatorProfileRepository(),
+      );
       addTearDown(notifier.dispose);
       await notifier.submit(accountId: 'acc-1', rowVersion: 'rv-1');
 
       expect(
-        notifier.state
-            .maybeWhen(success: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(success: (_) => true, orElse: () => false),
         isTrue,
       );
     });
@@ -173,12 +166,10 @@ void main() {
       await notifier.submit(accountId: 'acc-1', rowVersion: 'rv-1');
 
       expect(
-        notifier.state
-            .maybeWhen(failure: (_) => true, orElse: () => false),
+        notifier.state.maybeWhen(failure: (_) => true, orElse: () => false),
         isTrue,
       );
     });
-
   });
 
   group('AvatarImageNotifier', () {

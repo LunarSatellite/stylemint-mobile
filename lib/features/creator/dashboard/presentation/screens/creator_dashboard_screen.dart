@@ -12,7 +12,8 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/widgets/creator_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
-import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart' as partnerships;
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart'
+    as partnerships;
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
@@ -45,16 +46,16 @@ class CreatorDashboardScreen extends ConsumerWidget {
           child: isCreator.when(
             loading: _loader,
             error: (_, _) => const _BecomeCreatorCta(),
-            data: (creator) =>
-                creator ? const _CreatorDashboardView() : const _BecomeCreatorCta(),
+            data: (creator) => creator
+                ? const _CreatorDashboardView()
+                : const _BecomeCreatorCta(),
           ),
         ),
       ),
     );
   }
 
-  Widget _loader() =>
-      const SmPageLoader();
+  Widget _loader() => const SmPageLoader();
 }
 
 class _CreatorDashboardView extends ConsumerWidget {
@@ -63,7 +64,8 @@ class _CreatorDashboardView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(creatorDashboardNotifierProvider);
-    final accountId = ref.watch(sessionControllerProvider)
+    final accountId = ref
+        .watch(sessionControllerProvider)
         .maybeWhen(authenticated: (id) => id, orElse: () => '');
     final profile = ref.watch(resolvedCreatorProfileProvider(accountId));
     final firstName = profile?.displayName.isNotEmpty == true
@@ -78,17 +80,18 @@ class _CreatorDashboardView extends ConsumerWidget {
         firstName: firstName,
         accountId: accountId,
         avatarUrl: profile?.avatarUrl,
-        onRefresh: () => ref.read(creatorDashboardNotifierProvider.notifier).load(),
+        onRefresh: () =>
+            ref.read(creatorDashboardNotifierProvider.notifier).load(),
       ),
       loadFailure: (_) => SmErrorView(
         message: 'Failed to load your dashboard.',
-        onRetry: () => ref.read(creatorDashboardNotifierProvider.notifier).load(),
+        onRetry: () =>
+            ref.read(creatorDashboardNotifierProvider.notifier).load(),
       ),
     );
   }
 
-  Widget _loader() =>
-      const SmPageLoader();
+  Widget _loader() => const SmPageLoader();
 }
 
 class _BecomeCreatorCta extends StatelessWidget {
@@ -102,15 +105,24 @@ class _BecomeCreatorCta extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.auto_awesome, color: DesignTokens.primaryGreen, size: 48),
+            const Icon(
+              Icons.auto_awesome,
+              color: DesignTokens.primaryGreen,
+              size: 48,
+            ),
             const SizedBox(height: DesignTokens.s16),
-            Text('Become a Creator',
-                style: DesignTokens.sectionInnerTitle, textAlign: TextAlign.center),
+            Text(
+              'Become a Creator',
+              style: DesignTokens.sectionInnerTitle,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: DesignTokens.s8),
             Text(
               'Start earning by sharing reels and tagging products. '
               'It only takes a moment to get set up.',
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: DesignTokens.s24),
@@ -219,8 +231,9 @@ class _Header extends StatelessWidget {
             final localPath = ref.watch(avatarImagePathProvider);
             // Rotate the connected platforms' pictures; the existing avatar
             // is the fallback when none of them has one.
-            final platformAvatars =
-                ref.watch(creatorPlatformAvatarUrlsProvider(accountId));
+            final platformAvatars = ref.watch(
+              creatorPlatformAvatarUrlsProvider(accountId),
+            );
             return PlatformAvatarCarousel(
               imageUrls: platformAvatars,
               size: 40,
@@ -228,12 +241,12 @@ class _Header extends StatelessWidget {
               fallback: localPath != null
                   ? Image.file(File(localPath), fit: BoxFit.cover)
                   : (avatarUrl != null && avatarUrl!.isNotEmpty)
-                      ? Image.network(
-                          avatarUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _avatarPlaceholder(),
-                        )
-                      : _avatarPlaceholder(),
+                  ? Image.network(
+                      avatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _avatarPlaceholder(),
+                    )
+                  : _avatarPlaceholder(),
             );
           },
         ),
@@ -255,25 +268,39 @@ class _Header extends StatelessWidget {
               const SizedBox(height: DesignTokens.s4),
               Text(
                 'Quick insights to your progress and earnings',
-                style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(width: DesignTokens.s8),
         _HeaderIconBtn(
-          iconWidget: const Icon(Icons.search_rounded, size: 20, color: DesignTokens.textWhite),
+          iconWidget: const Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: DesignTokens.textWhite,
+          ),
           onTap: () => context.push(RouteNames.creatorSearch),
         ),
         const SizedBox(width: DesignTokens.s8),
         _HeaderIconBtn(
-          iconWidget: const Icon(Icons.notifications_none_rounded, size: 20, color: DesignTokens.textWhite),
+          iconWidget: const Icon(
+            Icons.notifications_none_rounded,
+            size: 20,
+            color: DesignTokens.textWhite,
+          ),
           onTap: () => context.push(RouteNames.creatorActivity),
         ),
         const SizedBox(width: DesignTokens.s8),
         Consumer(
           builder: (ctx, ref, _) => _HeaderIconBtn(
-            iconWidget: const Icon(Icons.menu_rounded, size: 20, color: DesignTokens.textWhite),
+            iconWidget: const Icon(
+              Icons.menu_rounded,
+              size: 20,
+              color: DesignTokens.textWhite,
+            ),
             onTap: () => showCreatorMoreMenu(ctx, ref),
           ),
         ),
@@ -282,11 +309,14 @@ class _Header extends StatelessWidget {
   }
 
   Widget _avatarPlaceholder() => Container(
-        color: DesignTokens.bgAppBodyLight,
-        alignment: Alignment.center,
-        child: const Icon(Icons.person_rounded,
-            size: 22, color: DesignTokens.textMuted),
-      );
+    color: DesignTokens.bgAppBodyLight,
+    alignment: Alignment.center,
+    child: const Icon(
+      Icons.person_rounded,
+      size: 22,
+      color: DesignTokens.textMuted,
+    ),
+  );
 }
 
 class _HeaderIconBtn extends StatelessWidget {
@@ -340,7 +370,9 @@ class _QuickMetricsCard extends StatelessWidget {
 
     return Container(
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(DesignTokens.cardRadius)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      ),
       child: Column(
         children: [
           // ── Top half — dark ───────────────────────────────────────────────
@@ -348,59 +380,61 @@ class _QuickMetricsCard extends StatelessWidget {
             onTap: () => context.push(RouteNames.earnings),
             behavior: HitTestBehavior.opaque,
             child: Container(
-            width: double.infinity,
-            color: DesignTokens.bgAppBody,
-            padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.s16,
-              vertical: DesignTokens.s20,
-            ),
-            child: Column(
-              children: [
-                _MetricRow(
-                  iconBg: DesignTokens.primaryGreenDark,
-                  iconChild: Image.asset(
-                    'assets/images/creatordash/material-symbols_money-bag-rounded.png',
-                    width: 28, height: 28, fit: BoxFit.contain,
-                  ),
-                  labelWidget: Row(
-                    children: [
-                      Text(
-                        'Total Earned ',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textLight,
-                        ),
-                      ),
-                      if (delta != null)
+              width: double.infinity,
+              color: DesignTokens.bgAppBody,
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s16,
+                vertical: DesignTokens.s20,
+              ),
+              child: Column(
+                children: [
+                  _MetricRow(
+                    iconBg: DesignTokens.primaryGreenDark,
+                    iconChild: Image.asset(
+                      'assets/images/creatordash/material-symbols_money-bag-rounded.png',
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.contain,
+                    ),
+                    labelWidget: Row(
+                      children: [
                         Text(
-                          '($delta vs last)',
+                          'Total Earned ',
                           style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.primaryGreen,
-                            fontWeight: FontWeight.w600,
+                            color: DesignTokens.textLight,
                           ),
                         ),
-                    ],
-                  ),
-                  value: amount,
-                ),
-                const SizedBox(height: DesignTokens.s16),
-                _MetricRow(
-                  iconBg: const Color(0xFF3A2F03),
-                  iconChild: Image.asset(
-                    'assets/images/creatordash/material-symbols_hourglass-top-rounded.png',
-                    width: 28,
-                    height: 28,
-                  ),
-                  labelWidget: Text(
-                    'Pending Balance',
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textLight,
+                        if (delta != null)
+                          Text(
+                            '($delta vs last)',
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.primaryGreen,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
                     ),
+                    value: amount,
                   ),
-                  value: pending,
-                ),
-              ],
+                  const SizedBox(height: DesignTokens.s16),
+                  _MetricRow(
+                    iconBg: const Color(0xFF3A2F03),
+                    iconChild: Image.asset(
+                      'assets/images/creatordash/material-symbols_hourglass-top-rounded.png',
+                      width: 28,
+                      height: 28,
+                    ),
+                    labelWidget: Text(
+                      'Pending Balance',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textLight,
+                      ),
+                    ),
+                    value: pending,
+                  ),
+                ],
+              ),
             ),
-          ),
           ),
           // ── Bottom half — yellow scalloped ───────────────────────────────
           GestureDetector(
@@ -408,57 +442,62 @@ class _QuickMetricsCard extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: ClipPath(
               clipper: const _ScallopedTopClipper(),
-            child: Container(
-              width: double.infinity,
-              color: DesignTokens.secondaryYellow,
-              padding: const EdgeInsets.fromLTRB(DesignTokens.s16, 22, DesignTokens.s16, DesignTokens.s16),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/images/creatordash/Payout.png',
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(width: DesignTokens.s12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Request Payout Withdrawal',
-                          style: TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            height: 1.3,
-                            color: DesignTokens.textDark,
-                          ),
-                        ),
-                        const SizedBox(height: DesignTokens.s4),
-                        const Text(
-                          'Payouts are processed weekly on fridays. '
-                          'The minimum withdraw amount is Rs 5,000.00',
-                          style: TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            height: 1.3,
-                            color: DesignTokens.textDark,
-                          ),
-                        ),
-                      ],
+              child: Container(
+                width: double.infinity,
+                color: DesignTokens.secondaryYellow,
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  22,
+                  DesignTokens.s16,
+                  DesignTokens.s16,
+                ),
+                child: Row(
+                  children: [
+                    Image.asset(
+                      'assets/images/creatordash/Payout.png',
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.contain,
                     ),
-                  ),
-                  const SizedBox(width: DesignTokens.s8),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: DesignTokens.iconDark,
-                    size: 16,
-                  ),
-                ],
+                    const SizedBox(width: DesignTokens.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Request Payout Withdrawal',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                              color: DesignTokens.textDark,
+                            ),
+                          ),
+                          const SizedBox(height: DesignTokens.s4),
+                          const Text(
+                            'Payouts are processed weekly on fridays. '
+                            'The minimum withdraw amount is Rs 5,000.00',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              height: 1.3,
+                              color: DesignTokens.textDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: DesignTokens.s8),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: DesignTokens.iconDark,
+                      size: 16,
+                    ),
+                  ],
+                ),
               ),
-            ),
             ),
           ),
         ],
@@ -549,7 +588,8 @@ class _StatsSection extends StatelessWidget {
             const SizedBox(width: DesignTokens.s8),
             Expanded(
               child: _StatCard(
-                imagePath: 'assets/images/creatordash/person-heart-outline-rounded.png',
+                imagePath:
+                    'assets/images/creatordash/person-heart-outline-rounded.png',
                 label: 'Reels',
                 value: '$reels',
               ),
@@ -621,7 +661,9 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: DesignTokens.s4),
           Text(
             label,
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
           ),
         ],
       ),
@@ -766,7 +808,6 @@ class _TotalViewsCard extends StatelessWidget {
               ),
             ),
           ),
-          
         ],
       ),
     );
@@ -801,21 +842,28 @@ class _BrandInvites extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
             child: Text(
               'No brand invites yet — check back soon.',
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
           )
         else
-          ...invites.take(3).map(
-            (invite) => Padding(
-              padding: const EdgeInsets.only(bottom: DesignTokens.s12),
-              child: GestureDetector(
-                onTap: () => context.push(
-                  RouteNames.brandDetail.replaceFirst(':partnershipId', invite.id),
+          ...invites
+              .take(3)
+              .map(
+                (invite) => Padding(
+                  padding: const EdgeInsets.only(bottom: DesignTokens.s12),
+                  child: GestureDetector(
+                    onTap: () => context.push(
+                      RouteNames.brandDetail.replaceFirst(
+                        ':partnershipId',
+                        invite.id,
+                      ),
+                    ),
+                    child: _BrandInviteCard(invite: invite),
+                  ),
                 ),
-                child: _BrandInviteCard(invite: invite),
               ),
-            ),
-          ),
       ],
     );
   }
@@ -856,27 +904,36 @@ class _BrandInviteCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(invite.vendorName,
-                    style: DesignTokens.oneLinerSemibold,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  invite.vendorName,
+                  style: DesignTokens.oneLinerSemibold,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: DesignTokens.s4),
-                Text(invite.campaignBrief,
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  invite.campaignBrief,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: DesignTokens.s8),
                 Text(
                   '${invite.commissionRate.toStringAsFixed(0)}% commission',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.primaryGreen),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.primaryGreen,
+                  ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right,
-              size: 20, color: DesignTokens.iconLight),
+          const Icon(
+            Icons.chevron_right,
+            size: 20,
+            color: DesignTokens.iconLight,
+          ),
         ],
       ),
     );
@@ -903,7 +960,9 @@ class _TopPerformingReels extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
             child: Text(
               'No reels yet — import one to get started.',
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
           )
         else
@@ -1013,19 +1072,25 @@ class _TopReelCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: DesignTokens.s12),
-          const Divider(color: DesignTokens.borderDefault, height: 1, thickness: 1),
+          const Divider(
+            color: DesignTokens.borderDefault,
+            height: 1,
+            thickness: 1,
+          ),
           const SizedBox(height: DesignTokens.s8),
           // Stats row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _ReelStat(imagePath: 'assets/images/creatordash/universal-currency.png', value: reel.sales),
+              _ReelStat(
+                imagePath: 'assets/images/creatordash/universal-currency.png',
+                value: reel.sales,
+              ),
               _ReelStat(icon: Icons.favorite_rounded, value: reel.likes),
               _ReelStat(icon: Icons.visibility_rounded, value: reel.views),
               _ReelStat(icon: Icons.shopping_bag_rounded, value: reel.sales),
               _ReelStat(icon: Icons.share_rounded, value: reel.shares),
               _ReelStat(icon: Icons.chat_bubble_rounded, value: reel.comments),
-              
             ],
           ),
           // Chevron — visual affordance for expand/navigate
@@ -1047,7 +1112,7 @@ class _TopReelCard extends StatelessWidget {
 
 class _ReelStat extends StatelessWidget {
   const _ReelStat({this.icon, this.imagePath, required this.value})
-      : assert(icon != null || imagePath != null);
+    : assert(icon != null || imagePath != null);
 
   final IconData? icon;
   final String? imagePath;
@@ -1113,12 +1178,15 @@ class _RecentActivity extends ConsumerWidget {
             loading: () => const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: DesignTokens.s8),
-                child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+                child: CircularProgressIndicator(
+                  color: DesignTokens.primaryGreen,
+                ),
               ),
             ),
             error: (_, _) => const _EmptyActivity(),
-            data: (items) =>
-                items.isEmpty ? const _EmptyActivity() : _GroupedActivityList(items: items),
+            data: (items) => items.isEmpty
+                ? const _EmptyActivity()
+                : _GroupedActivityList(items: items),
           ),
         ),
       ],
@@ -1136,7 +1204,9 @@ class _GroupedActivityList extends StatelessWidget {
     final grouped = <String, List<ActivityItem>>{};
     for (final item in items) {
       if (item.occurredAt == null) continue;
-      final key = DateFormat('EEE d MMM yyyy').format(item.occurredAt!.toLocal());
+      final key = DateFormat(
+        'EEE d MMM yyyy',
+      ).format(item.occurredAt!.toLocal());
       (grouped[key] ??= []).add(item);
     }
 
@@ -1148,7 +1218,9 @@ class _GroupedActivityList extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: DesignTokens.s12),
             child: Text(
               entry.key,
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
           ),
           for (var i = 0; i < entry.value.length; i++)
@@ -1285,7 +1357,9 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textLight),
+          style: DesignTokens.mediumRegular.copyWith(
+            color: DesignTokens.textLight,
+          ),
         ),
         GestureDetector(
           onTap: onViewAll,
@@ -1319,7 +1393,8 @@ class _CreatorBottomNav extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accountId = ref.watch(sessionControllerProvider)
+    final accountId = ref
+        .watch(sessionControllerProvider)
         .maybeWhen(authenticated: (id) => id, orElse: () => '');
     // SmBottomNavBar sits on the bottom SafeArea, so the system nav bar —
     // 3-button or gesture — never overlaps these buttons.
@@ -1423,18 +1498,21 @@ class _MyRecentReels extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
             child: Text(
               '$e'.replaceFirst('Exception: ', ''),
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
           ),
           data: (reels) => reels.isEmpty
               ? Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: DesignTokens.s16,
+                  ),
                   child: Text(
                     'No reels yet — import one to get started.',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 )
               : SizedBox(
@@ -1504,8 +1582,9 @@ class _MyReelTile extends StatelessWidget {
               '${reel.views} views',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
           ],
         ),

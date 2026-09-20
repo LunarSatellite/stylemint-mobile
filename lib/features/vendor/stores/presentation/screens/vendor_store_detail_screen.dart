@@ -301,8 +301,7 @@ class _DetailAction extends StatelessWidget {
                     title,
                     style: DesignTokens.mediumRegular.copyWith(color: color),
                   ),
-                  if (sub != null)
-                    Text(sub, style: DesignTokens.smallRegular),
+                  if (sub != null) Text(sub, style: DesignTokens.smallRegular),
                 ],
               ),
             ),

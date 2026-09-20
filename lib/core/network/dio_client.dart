@@ -20,13 +20,15 @@ Dio dioClient(Ref ref) {
   final tokenStorage = ref.watch(tokenStorageProvider);
   final busy = ref.read(busyControllerProvider.notifier);
 
-  final dio = Dio(BaseOptions(
-    baseUrl: ApiConfig.baseUrl,
-    connectTimeout: ApiConfig.connectTimeout,
-    receiveTimeout: ApiConfig.receiveTimeout,
-    sendTimeout: ApiConfig.sendTimeout,
-    headers: ApiConfig.defaultHeaders,
-  ));
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: ApiConfig.baseUrl,
+      connectTimeout: ApiConfig.connectTimeout,
+      receiveTimeout: ApiConfig.receiveTimeout,
+      sendTimeout: ApiConfig.sendTimeout,
+      headers: ApiConfig.defaultHeaders,
+    ),
+  );
 
   dio.interceptors.addAll([
     // Outermost: drives the global busy indicator. begin() on request, end()
@@ -41,17 +43,19 @@ Dio dioClient(Ref ref) {
   // Pretty-print requests/responses in debug builds only; kept last so it
   // logs the final headers (auth token, idempotency/correlation ids).
   if (kDebugMode) {
-    dio.interceptors.add(PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseHeader: true,
-      responseBody: true,
-      error: true,
-      maxWidth: 120,
-      // Route through dart:developer so long JSON bodies aren't truncated or
-      // dropped the way raw print() lines are on Android/iOS.
-      logPrint: (obj) => developer.log(obj.toString(), name: ''),
-    ));
+    dio.interceptors.add(
+      PrettyDioLogger(
+        requestHeader: true,
+        requestBody: true,
+        responseHeader: true,
+        responseBody: true,
+        error: true,
+        maxWidth: 120,
+        // Route through dart:developer so long JSON bodies aren't truncated or
+        // dropped the way raw print() lines are on Android/iOS.
+        logPrint: (obj) => developer.log(obj.toString(), name: ''),
+      ),
+    );
   }
 
   return dio;
@@ -138,18 +142,21 @@ class _AuthInterceptor extends Interceptor {
   /// request awaits the same Completer — so a refresh call that hangs with
   /// no timeout freezes every authenticated action in the app forever, with
   /// no error ever surfaced to the user.
-  late final Dio _refreshDio = Dio(BaseOptions(
-    baseUrl: baseUrl,
-    headers: {'Accept': 'application/json'},
-    connectTimeout: ApiConfig.connectTimeout,
-    receiveTimeout: ApiConfig.receiveTimeout,
-    sendTimeout: ApiConfig.sendTimeout,
-  ));
+  late final Dio _refreshDio = Dio(
+    BaseOptions(
+      baseUrl: baseUrl,
+      headers: {'Accept': 'application/json'},
+      connectTimeout: ApiConfig.connectTimeout,
+      receiveTimeout: ApiConfig.receiveTimeout,
+      sendTimeout: ApiConfig.sendTimeout,
+    ),
+  );
 
   static const _retriedKey = 'auth_retried';
   Completer<String?>? _refreshing;
 
-  bool _requiresToken(RequestOptions opts) => opts.headers['requiresToken'] != false;
+  bool _requiresToken(RequestOptions opts) =>
+      opts.headers['requiresToken'] != false;
 
   /// Refresh this much before actual expiry so a request that starts right
   /// at the boundary still lands with a valid token.
@@ -227,9 +234,12 @@ class _AuthInterceptor extends Interceptor {
 
     final completer = Completer<String?>();
     _refreshing = completer;
-    _performRefresh().then(completer.complete).catchError((_) {
-      completer.complete(null);
-    }).whenComplete(() => _refreshing = null);
+    _performRefresh()
+        .then(completer.complete)
+        .catchError((_) {
+          completer.complete(null);
+        })
+        .whenComplete(() => _refreshing = null);
     return completer.future;
   }
 
@@ -249,11 +259,15 @@ class _AuthInterceptor extends Interceptor {
       accessToken: accessToken,
       refreshToken: data['refreshToken'] as String?,
       accessExpiresUtc:
-          DateTime.tryParse(data['accessExpiresUtc'] as String? ?? '')?.toUtc() ??
-              DateTime.now().toUtc(),
+          DateTime.tryParse(
+            data['accessExpiresUtc'] as String? ?? '',
+          )?.toUtc() ??
+          DateTime.now().toUtc(),
       refreshExpiresUtc:
-          DateTime.tryParse(data['refreshExpiresUtc'] as String? ?? '')?.toUtc() ??
-              DateTime.now().toUtc(),
+          DateTime.tryParse(
+            data['refreshExpiresUtc'] as String? ?? '',
+          )?.toUtc() ??
+          DateTime.now().toUtc(),
       accountId: data['accountId'] as String? ?? '',
       sessionId: data['sessionId'] as String? ?? '',
     );

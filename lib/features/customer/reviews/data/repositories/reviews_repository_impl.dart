@@ -35,14 +35,16 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
         final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
             .map((e) => _reviewFromApi(e as Map<String, dynamic>))
             .toList(growable: false);
-        return right(PagedResult<Review>(
-          items: items,
-          totalCount: data['totalCount'] as int? ?? 0,
-          pageSize: data['pageSize'] as int? ?? limit,
-          nextCursor: data['nextCursor'] as String?,
-          previousCursor: data['previousCursor'] as String?,
-          hasMore: data['hasMore'] as bool? ?? false,
-        ));
+        return right(
+          PagedResult<Review>(
+            items: items,
+            totalCount: data['totalCount'] as int? ?? 0,
+            pageSize: data['pageSize'] as int? ?? limit,
+            nextCursor: data['nextCursor'] as String?,
+            previousCursor: data['previousCursor'] as String?,
+            hasMore: data['hasMore'] as bool? ?? false,
+          ),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

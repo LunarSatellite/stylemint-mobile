@@ -34,8 +34,8 @@ class SmEmptyState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: kTextSecondary,
-                  ),
+                color: kTextSecondary,
+              ),
             ),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 20),

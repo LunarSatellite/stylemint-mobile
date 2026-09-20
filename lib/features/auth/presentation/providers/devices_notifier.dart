@@ -25,14 +25,17 @@ abstract class DevicesListState with _$DevicesListState {
 
 class DevicesListNotifier extends StateNotifier<DevicesListState> {
   DevicesListNotifier({required this.authRepository})
-      : super(const DevicesListState.initial());
+    : super(const DevicesListState.initial());
 
   final AuthRepository authRepository;
 
   Future<void> load(String accountId) async {
     state = const DevicesListState.loadInProgress();
     final result = await authRepository.listDevices(accountId);
-    state = result.fold(DevicesListState.loadFailure, DevicesListState.loadSuccess);
+    state = result.fold(
+      DevicesListState.loadFailure,
+      DevicesListState.loadSuccess,
+    );
   }
 }
 
@@ -52,7 +55,7 @@ abstract class DeviceActionState with _$DeviceActionState {
 
 class DeviceActionNotifier extends StateNotifier<DeviceActionState> {
   DeviceActionNotifier({required this.authRepository})
-      : super(const DeviceActionState.initial());
+    : super(const DeviceActionState.initial());
 
   final AuthRepository authRepository;
 
@@ -123,12 +126,14 @@ class DeviceActionNotifier extends StateNotifier<DeviceActionState> {
 
 final devicesListProvider =
     StateNotifierProvider<DevicesListNotifier, DevicesListState>(
-  (ref) =>
-      DevicesListNotifier(authRepository: ref.watch(authRepositoryProvider)),
-);
+      (ref) => DevicesListNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );
 
 final deviceActionProvider =
     StateNotifierProvider<DeviceActionNotifier, DeviceActionState>(
-  (ref) =>
-      DeviceActionNotifier(authRepository: ref.watch(authRepositoryProvider)),
-);
+      (ref) => DeviceActionNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      ),
+    );

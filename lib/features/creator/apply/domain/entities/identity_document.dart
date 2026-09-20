@@ -15,13 +15,13 @@ enum IdentityDocumentType {
   final int wireValue;
 
   String get label => switch (this) {
-        IdentityDocumentType.passport => 'Passport',
-        IdentityDocumentType.nationalIdCard => 'National ID card',
-        IdentityDocumentType.driversLicense => "Driver's license",
-        IdentityDocumentType.residencePermit => 'Residence permit',
-        IdentityDocumentType.selfiePhoto => 'Selfie photo',
-        IdentityDocumentType.addressProof => 'Proof of address',
-      };
+    IdentityDocumentType.passport => 'Passport',
+    IdentityDocumentType.nationalIdCard => 'National ID card',
+    IdentityDocumentType.driversLicense => "Driver's license",
+    IdentityDocumentType.residencePermit => 'Residence permit',
+    IdentityDocumentType.selfiePhoto => 'Selfie photo',
+    IdentityDocumentType.addressProof => 'Proof of address',
+  };
 
   /// Passport, selfie and address proof are single-page; ID cards and
   /// licenses need both sides.

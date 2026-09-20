@@ -58,14 +58,23 @@ void main() {
   test('a narrow video between black side bars reads as its own shape', () {
     final narrow = thumbnail(160, 120, sidePanelValue: 0);
 
-    expect(VideoShape.pillarboxedAspect(narrow, 160, 120), closeTo(80 / 120, 0.02));
-    expect(VideoShape.aspectFromBlackBars(narrow, 160, 120), closeTo(80 / 120, 0.02));
+    expect(
+      VideoShape.pillarboxedAspect(narrow, 160, 120),
+      closeTo(80 / 120, 0.02),
+    );
+    expect(
+      VideoShape.aspectFromBlackBars(narrow, 160, 120),
+      closeTo(80 / 120, 0.02),
+    );
   });
 
   test('a letterboxed wide video is read from its top and bottom bars', () {
     final wide = thumbnail(160, 120, bars: 15);
 
-    expect(VideoShape.aspectFromBlackBars(wide, 160, 120), closeTo(16 / 9, 0.01));
+    expect(
+      VideoShape.aspectFromBlackBars(wide, 160, 120),
+      closeTo(16 / 9, 0.01),
+    );
   });
 
   test('a thin dark edge line is not a letterbox', () {

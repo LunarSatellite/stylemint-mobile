@@ -24,5 +24,5 @@ final referralsRepositoryProvider = Provider<ReferralsRepository>(
 
 final referralsNotifierProvider =
     StateNotifierProvider.autoDispose<ReferralsNotifier, ReferralsState>(
-  (ref) => ReferralsNotifier(ref.watch(referralsRepositoryProvider)),
-);
+      (ref) => ReferralsNotifier(ref.watch(referralsRepositoryProvider)),
+    );

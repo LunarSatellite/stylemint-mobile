@@ -26,9 +26,10 @@ class LiveSessionDto {
     status: json['status'] as String? ?? '',
     scheduledStartUtc: DateTime.parse(json['scheduledStartUtc'] as String),
     currentViewerCount: json['currentViewerCount'] as int? ?? 0,
-    featuredProductIds: (json['featuredProductIds'] as List<dynamic>? ?? const [])
-        .map((e) => e as String)
-        .toList(growable: false),
+    featuredProductIds:
+        (json['featuredProductIds'] as List<dynamic>? ?? const [])
+            .map((e) => e as String)
+            .toList(growable: false),
   );
 
   LiveSession toDomain() => LiveSession(

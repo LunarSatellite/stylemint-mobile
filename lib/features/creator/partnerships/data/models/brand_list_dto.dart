@@ -10,7 +10,8 @@ class BrandListItemDto {
     required this.commissionRangeMaxPercent,
   });
 
-  factory BrandListItemDto.fromJson(Map<String, dynamic> json) => BrandListItemDto(
+  factory BrandListItemDto.fromJson(Map<String, dynamic> json) =>
+      BrandListItemDto(
         vendorAccountId: json['accountId'] as String? ?? '',
         businessName: json['businessName'] as String? ?? '',
         logoUrl: json['logoUrl'] as String?,
@@ -32,10 +33,10 @@ class BrandListItemDto {
 
 extension BrandListItemDtoMapper on BrandListItemDto {
   Brand toDomain() => Brand(
-        vendorAccountId: vendorAccountId,
-        businessName: businessName,
-        commissionRangeMinPercent: commissionRangeMinPercent,
-        commissionRangeMaxPercent: commissionRangeMaxPercent,
-        logoUrl: logoUrl,
-      );
+    vendorAccountId: vendorAccountId,
+    businessName: businessName,
+    commissionRangeMinPercent: commissionRangeMinPercent,
+    commissionRangeMaxPercent: commissionRangeMaxPercent,
+    logoUrl: logoUrl,
+  );
 }

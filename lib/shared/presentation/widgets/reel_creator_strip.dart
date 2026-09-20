@@ -60,9 +60,7 @@ class _ReelCreatorStripState extends ConsumerState<ReelCreatorStrip> {
       // during init/build), matching [CreatorInfo].
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ref
-              .read(followNotifierProvider.notifier)
-              .seed(id, following: seed);
+          ref.read(followNotifierProvider.notifier).seed(id, following: seed);
         }
       });
     }
@@ -132,8 +130,9 @@ class _ReelCreatorStripState extends ConsumerState<ReelCreatorStrip> {
                     displayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.textWhite),
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                   if (widget.creatorHandle.isNotEmpty) ...[
                     const SizedBox(height: 2),
@@ -141,8 +140,9 @@ class _ReelCreatorStripState extends ConsumerState<ReelCreatorStrip> {
                       '@${widget.creatorHandle}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textLight),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textLight,
+                      ),
                     ),
                   ],
                 ],
@@ -198,21 +198,24 @@ class _FollowButton extends StatelessWidget {
                 width: 14,
                 height: 14,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: DesignTokens.textWhite),
+                  strokeWidth: 2,
+                  color: DesignTokens.textWhite,
+                ),
               )
             : Text(
                 isFollowing ? 'Following' : 'Follow',
                 // Spec: 12/600/130%, #52525C (Button-White-Text).
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                ).copyWith(
-                  color: isFollowing
-                      ? DesignTokens.textWhite
-                      : const Color(0xFF52525C),
-                ),
+                style:
+                    const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    ).copyWith(
+                      color: isFollowing
+                          ? DesignTokens.textWhite
+                          : const Color(0xFF52525C),
+                    ),
               ),
       ),
     );

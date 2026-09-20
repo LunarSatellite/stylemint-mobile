@@ -68,7 +68,9 @@ class PlatformCard extends StatelessWidget {
                 backgroundColor: DesignTokens.primaryGreen,
                 foregroundColor: DesignTokens.textDark,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: DesignTokens.s16,

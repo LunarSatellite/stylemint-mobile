@@ -23,7 +23,7 @@ abstract class CreatorOverviewState with _$CreatorOverviewState {
 
 class CreatorOverviewNotifier extends StateNotifier<CreatorOverviewState> {
   CreatorOverviewNotifier(this._repository)
-      : super(const CreatorOverviewState.initial()) {
+    : super(const CreatorOverviewState.initial()) {
     unawaited(fetch());
   }
 

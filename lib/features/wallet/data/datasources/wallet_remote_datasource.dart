@@ -27,10 +27,12 @@ class WalletRemoteDataSource {
     final accountId = await _accountId();
     final response = await apiClient.get(
       '/v1/accounts/$accountId/wallet/NPR',
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': _uuid.v4(),
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': _uuid.v4(),
+        },
+      ),
     );
     return WalletBalanceDto.fromJson(response as Map<String, dynamic>);
   }

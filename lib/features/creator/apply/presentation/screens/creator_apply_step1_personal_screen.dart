@@ -108,7 +108,9 @@ class CreatorApplyStep1PersonalScreenState
 
   Future<bool> save() async {
     final cats = _selectedCategories;
-    ref.read(creatorFormProvider.notifier).saveStep1(
+    ref
+        .read(creatorFormProvider.notifier)
+        .saveStep1(
           fullName: _fullNameController.text.trim(),
           categories: cats.values.toSet(),
           categoryIds: cats.keys.toSet(),

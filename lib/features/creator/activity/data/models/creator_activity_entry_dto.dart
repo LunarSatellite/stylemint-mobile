@@ -17,7 +17,8 @@ class CreatorActivityEntryDto {
         headline: json['headline'] as String?,
         body: json['body'] as String?,
         actionUrl: json['actionUrl'] as String?,
-        occurredUtc: DateTime.tryParse(json['occurredUtc'] as String? ?? '') ??
+        occurredUtc:
+            DateTime.tryParse(json['occurredUtc'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       );
 
@@ -29,13 +30,13 @@ class CreatorActivityEntryDto {
   final DateTime occurredUtc;
 
   CreatorActivityEntry toDomain() => CreatorActivityEntry(
-        id: id,
-        kind: kind,
-        headline: headline,
-        body: body,
-        actionUrl: actionUrl,
-        occurredUtc: occurredUtc,
-      );
+    id: id,
+    kind: kind,
+    headline: headline,
+    body: body,
+    actionUrl: actionUrl,
+    occurredUtc: occurredUtc,
+  );
 }
 
 class CreatorActivityPageDto {
@@ -44,8 +45,10 @@ class CreatorActivityPageDto {
   factory CreatorActivityPageDto.fromJson(Map<String, dynamic> json) =>
       CreatorActivityPageDto(
         items: (json['items'] as List<dynamic>? ?? [])
-            .map((e) =>
-                CreatorActivityEntryDto.fromJson(e as Map<String, dynamic>))
+            .map(
+              (e) =>
+                  CreatorActivityEntryDto.fromJson(e as Map<String, dynamic>),
+            )
             .toList(),
         nextCursor: json['nextCursor'] as String?,
       );

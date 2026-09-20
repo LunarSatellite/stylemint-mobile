@@ -98,8 +98,7 @@ void main() {
     }
   });
 
-  test('without a host origin only the player resources load at top level',
-      () {
+  test('without a host origin only the player resources load at top level', () {
     expect(_topLevel('$_appOrigin/', hostOrigin: null), isFalse);
     expect(
       _topLevel('https://www.youtube.com/iframe_api', hostOrigin: null),
@@ -131,8 +130,7 @@ void main() {
     expect(_topLevel(player), isTrue);
   });
 
-  test('TikTok asset, media and site pages are never top-level destinations',
-      () {
+  test('TikTok asset, media and site pages are never top-level destinations', () {
     const cancelled = [
       'https://sf16-website-login.neutral.ttwstatic.com/obj/tiktok_web_login_static/x.js',
       'https://v16-webapp-prime.tiktok.com/video/tos/alisg/abc/',

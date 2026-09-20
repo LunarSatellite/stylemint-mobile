@@ -33,7 +33,9 @@ class LiveCommerceRepositoryImpl implements LiveCommerceRepository {
   Future<Either<NetworkExceptions, LiveSession>> getById(String id) =>
       _call(() async => (await remoteDataSource.getById(id)).toDomain());
 
-  Future<Either<NetworkExceptions, T>> _call<T>(Future<T> Function() body) async {
+  Future<Either<NetworkExceptions, T>> _call<T>(
+    Future<T> Function() body,
+  ) async {
     if (!await networkInfo.isConnected) {
       return left(NetworkExceptions.noInternetConnection());
     }

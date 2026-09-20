@@ -21,5 +21,5 @@ final savedItemsRepositoryProvider = Provider<SavedItemsRepository>(
 
 final savedItemsNotifierProvider =
     StateNotifierProvider<SavedItemsNotifier, SavedItemsState>(
-  (ref) => SavedItemsNotifier(ref.watch(savedItemsRepositoryProvider)),
-);
+      (ref) => SavedItemsNotifier(ref.watch(savedItemsRepositoryProvider)),
+    );

@@ -77,6 +77,7 @@ class ReviewSummary {
 
   final double averageRating;
   final int totalReviews;
+
   /// Key = star count (1-5), value = number of reviews with that rating.
   final Map<int, int> ratingDistribution;
 

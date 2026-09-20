@@ -10,10 +10,10 @@ import 'package:stylemint_mobile_frontend/features/creator/search/presentation/n
 
 final creatorSearchRemoteDataSourceProvider =
     Provider<CreatorSearchRemoteDataSource>(
-  (ref) => CreatorSearchRemoteDataSource(
-    apiClient: ref.watch(apiClientProvider),
-  ),
-);
+      (ref) => CreatorSearchRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
 
 final creatorSearchRepositoryProvider = Provider<CreatorSearchRepository>(
   (ref) => CreatorSearchRepositoryImpl(
@@ -23,6 +23,10 @@ final creatorSearchRepositoryProvider = Provider<CreatorSearchRepository>(
 );
 
 final creatorSearchNotifierProvider =
-    StateNotifierProvider.autoDispose<CreatorSearchNotifier, CreatorSearchState>(
-  (ref) => CreatorSearchNotifier(ref.watch(creatorSearchRepositoryProvider)),
-);
+    StateNotifierProvider.autoDispose<
+      CreatorSearchNotifier,
+      CreatorSearchState
+    >(
+      (ref) =>
+          CreatorSearchNotifier(ref.watch(creatorSearchRepositoryProvider)),
+    );

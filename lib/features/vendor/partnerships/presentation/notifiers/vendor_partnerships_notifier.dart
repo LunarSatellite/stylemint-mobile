@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:fpdart/fpdart.dart';
@@ -125,11 +125,9 @@ class CampaignDetailNotifier extends StateNotifier<CampaignDetailState> {
     );
   }
 
-  Future<void> lock() =>
-      _mutate((b) => _repository.lockCampaign(b.id));
+  Future<void> lock() => _mutate((b) => _repository.lockCampaign(b.id));
 
-  Future<void> retire() =>
-      _mutate((b) => _repository.retireCampaign(b.id));
+  Future<void> retire() => _mutate((b) => _repository.retireCampaign(b.id));
 
   Future<void> recomputeRoi() async {
     final current = _currentBrief;

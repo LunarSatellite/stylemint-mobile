@@ -103,7 +103,8 @@ class SmTextField extends HookWidget {
                   children: [
                     TextSpan(
                       text: label!,
-                      style: labelStyle ??
+                      style:
+                          labelStyle ??
                           theme.textTheme.labelMedium?.copyWith(
                             fontWeight: FontWeight.w500,
                             color: kTextColor,
@@ -157,20 +158,28 @@ class SmTextField extends HookWidget {
                 ? GestureDetector(
                     onTap: () => obscure.value = !obscure.value,
                     child: Icon(
-                      obscure.value ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      obscure.value
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: kGrey400,
                       size: 20,
                     ),
                   )
                 : suffixIcon,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
               borderSide: const BorderSide(color: kBorderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: BorderSide(color: focusedBorderColor ?? kPrimaryColor, width: 1.5),
+              borderSide: BorderSide(
+                color: focusedBorderColor ?? kPrimaryColor,
+                width: 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),

@@ -312,8 +312,11 @@ void main() {
             // over a tiny caption, no pill, no glyph, no frame.
             Column(
               children: [
-                Text('12.5', key: measuredValueKey,
-                    style: storePulseNumeralStyle),
+                Text(
+                  '12.5',
+                  key: measuredValueKey,
+                  style: storePulseNumeralStyle,
+                ),
                 Text(
                   'Conversion',
                   style: DesignTokens.smallRegular.copyWith(
@@ -475,9 +478,10 @@ void main() {
       // node — the name has to ride in the announced value, which is what
       // `semanticFormatterCallback` is for. A slider that announces only
       // "25%" names no control.
-      final sliders = semanticsUnder(tester, find.byType(MaterialApp))
-          .where((n) => n.hasAction(SemanticsAction.increase))
-          .toList();
+      final sliders = semanticsUnder(
+        tester,
+        find.byType(MaterialApp),
+      ).where((n) => n.hasAction(SemanticsAction.increase)).toList();
       expect(sliders, hasLength(3));
       for (final label in ['Demand surge', 'Inventory loss', 'Capacity loss']) {
         expect(find.text(label), findsOneWidget, reason: 'no visible name');

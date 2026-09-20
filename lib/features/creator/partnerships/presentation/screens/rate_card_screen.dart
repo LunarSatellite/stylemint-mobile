@@ -20,18 +20,19 @@ class _TierEntry {
     double price = 0,
     int reels = 1,
     String description = '',
-  })  : nameCtrl = TextEditingController(text: name),
-        priceCtrl =
-            TextEditingController(text: price > 0 ? price.toStringAsFixed(0) : ''),
-        reelsCtrl = TextEditingController(text: reels.toString()),
-        descCtrl = TextEditingController(text: description);
+  }) : nameCtrl = TextEditingController(text: name),
+       priceCtrl = TextEditingController(
+         text: price > 0 ? price.toStringAsFixed(0) : '',
+       ),
+       reelsCtrl = TextEditingController(text: reels.toString()),
+       descCtrl = TextEditingController(text: description);
 
   factory _TierEntry.from(RateTier tier) => _TierEntry(
-        name: tier.tierName,
-        price: tier.price,
-        reels: tier.includedReels,
-        description: tier.description ?? '',
-      );
+    name: tier.tierName,
+    price: tier.price,
+    reels: tier.includedReels,
+    description: tier.description ?? '',
+  );
 
   final TextEditingController nameCtrl;
   final TextEditingController priceCtrl;
@@ -134,12 +135,17 @@ class _RateCardScreenState extends ConsumerState<RateCardScreen> {
     }
     final tiers = _tiers.map((t) => t.toTier()).toList();
     if (tiers.any((t) => t == null)) {
-      SmSnackbar.error(context, 'Complete all tier fields (name, price, reels).');
+      SmSnackbar.error(
+        context,
+        'Complete all tier fields (name, price, reels).',
+      );
       return;
     }
 
     setState(() => _saving = true);
-    final result = await ref.read(partnershipsRepositoryProvider).publishRateCard(
+    final result = await ref
+        .read(partnershipsRepositoryProvider)
+        .publishRateCard(
           baseRate: baseRate,
           rates: tiers.cast<RateTier>(),
           commissionPreference: _commission,
@@ -165,8 +171,9 @@ class _RateCardScreenState extends ConsumerState<RateCardScreen> {
         backgroundColor: DesignTokens.bgAppBodyLight,
         title: Text(
           'Deactivate Rate Card',
-          style: DesignTokens.mediumSemibold
-              .copyWith(color: DesignTokens.textWhite),
+          style: DesignTokens.mediumSemibold.copyWith(
+            color: DesignTokens.textWhite,
+          ),
         ),
         content: Text(
           'Brands will no longer see your rate card.',
@@ -175,21 +182,27 @@ class _RateCardScreenState extends ConsumerState<RateCardScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancel',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textLight)),
+            child: Text(
+              'Cancel',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Deactivate',
-                style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'Deactivate',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
     );
     if (confirm != true || !mounted) return;
-    final result =
-        await ref.read(partnershipsRepositoryProvider).deactivateRateCard();
+    final result = await ref
+        .read(partnershipsRepositoryProvider)
+        .deactivateRateCard();
     if (!mounted) return;
     result.fold(
       (e) => SmSnackbar.error(context, NetworkExceptions.getMessage(e)),
@@ -212,8 +225,11 @@ class _RateCardScreenState extends ConsumerState<RateCardScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () {
             if (_editing) {
               setState(() => _editing = false);
@@ -236,8 +252,11 @@ class _RateCardScreenState extends ConsumerState<RateCardScreen> {
             rateCardAsync.maybeWhen(
               data: (card) => card != null && card.isActive
                   ? IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded,
-                          color: Colors.redAccent, size: 22),
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: Colors.redAccent,
+                        size: 22,
+                      ),
                       onPressed: () => unawaited(_delete()),
                     )
                   : const SizedBox.shrink(),
@@ -248,9 +267,12 @@ class _RateCardScreenState extends ConsumerState<RateCardScreen> {
       body: rateCardAsync.when(
         loading: () => const SmPageLoader(),
         error: (_, __) => Center(
-          child: Text('Failed to load rate card.',
-              style: DesignTokens.bodyText
-                  .copyWith(color: DesignTokens.textMuted)),
+          child: Text(
+            'Failed to load rate card.',
+            style: DesignTokens.bodyText.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
         ),
         data: (card) {
           if (_editing) {
@@ -311,20 +333,25 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.price_change_outlined,
-                size: 64, color: DesignTokens.textLight),
+            const Icon(
+              Icons.price_change_outlined,
+              size: 64,
+              color: DesignTokens.textLight,
+            ),
             const SizedBox(height: DesignTokens.s16),
             Text(
               'No Rate Card Yet',
-              style: DesignTokens.mediumSemibold
-                  .copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.textWhite,
+              ),
             ),
             const SizedBox(height: DesignTokens.s8),
             Text(
               'Publish your rate card so brands know what to expect when partnering with you.',
               textAlign: TextAlign.center,
-              style:
-                  DesignTokens.bodyText.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.bodyText.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
             const SizedBox(height: DesignTokens.s24),
             SizedBox(
@@ -336,14 +363,16 @@ class _EmptyState extends StatelessWidget {
                   backgroundColor: DesignTokens.primaryGreen,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                 ),
                 child: Text(
                   'Create Rate Card',
-                  style: DesignTokens.oneLinerSemibold
-                      .copyWith(color: DesignTokens.buttonPrimaryText),
+                  style: DesignTokens.oneLinerSemibold.copyWith(
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
                 ),
               ),
             ),
@@ -386,13 +415,18 @@ class _CardView extends StatelessWidget {
             const SizedBox(width: DesignTokens.s8),
             Text(
               'Active since ${fmt.format(card.effectiveFromUtc.toLocal())}',
-              style:
-                  DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
             ),
           ],
         ),
         const SizedBox(height: DesignTokens.s16),
-        const Divider(height: 1, thickness: 1, color: DesignTokens.borderDefault),
+        const Divider(
+          height: 1,
+          thickness: 1,
+          color: DesignTokens.borderDefault,
+        ),
         const SizedBox(height: DesignTokens.s16),
 
         // Base rate
@@ -417,8 +451,9 @@ class _CardView extends StatelessWidget {
         // Rate tiers
         Text(
           'Rate Tiers',
-          style: DesignTokens.mediumSemibold
-              .copyWith(color: DesignTokens.textWhite),
+          style: DesignTokens.mediumSemibold.copyWith(
+            color: DesignTokens.textWhite,
+          ),
         ),
         const SizedBox(height: DesignTokens.s12),
         for (final tier in card.rates) _TierCard(tier: tier),
@@ -426,9 +461,12 @@ class _CardView extends StatelessWidget {
         // Notes
         if (card.notes != null && card.notes!.isNotEmpty) ...[
           const SizedBox(height: DesignTokens.s16),
-          Text('Notes',
-              style: DesignTokens.mediumSemibold
-                  .copyWith(color: DesignTokens.textWhite)),
+          Text(
+            'Notes',
+            style: DesignTokens.mediumSemibold.copyWith(
+              color: DesignTokens.textWhite,
+            ),
+          ),
           const SizedBox(height: DesignTokens.s8),
           Text(card.notes!, style: DesignTokens.bodyText),
         ],
@@ -448,8 +486,9 @@ class _CardView extends StatelessWidget {
             ),
             child: Text(
               'Edit Rate Card',
-              style: DesignTokens.oneLinerSemibold
-                  .copyWith(color: DesignTokens.buttonPrimaryText),
+              style: DesignTokens.oneLinerSemibold.copyWith(
+                color: DesignTokens.buttonPrimaryText,
+              ),
             ),
           ),
         ),
@@ -480,22 +519,25 @@ class _TierCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   tier.tierName,
-                  style: DesignTokens.mediumSemibold
-                      .copyWith(color: DesignTokens.textWhite),
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
                 ),
               ),
               Text(
                 'Rs ${_fmt(tier.price)}',
-                style: DesignTokens.mediumSemibold
-                    .copyWith(color: DesignTokens.primaryGreen),
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.primaryGreen,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
             '${tier.includedReels} reel${tier.includedReels != 1 ? 's' : ''} included',
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textLight),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
           ),
           if (tier.description != null && tier.description!.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -577,11 +619,17 @@ class _EditForm extends StatelessWidget {
               const _SectionLabel(label: 'Rate Tiers'),
               TextButton.icon(
                 onPressed: onAddTier,
-                icon: const Icon(Icons.add_rounded,
-                    size: 18, color: DesignTokens.primaryGreen),
-                label: Text('Add Tier',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.primaryGreen)),
+                icon: const Icon(
+                  Icons.add_rounded,
+                  size: 18,
+                  color: DesignTokens.primaryGreen,
+                ),
+                label: Text(
+                  'Add Tier',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.primaryGreen,
+                  ),
+                ),
               ),
             ],
           ),
@@ -607,8 +655,7 @@ class _EditForm extends StatelessWidget {
               thumbColor: DesignTokens.primaryGreen,
               overlayColor: DesignTokens.primaryGreen.withOpacity(0.15),
               trackHeight: 3,
-              thumbShape:
-                  const RoundSliderThumbShape(enabledThumbRadius: 8),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
             ),
             child: Slider(
               min: 0,
@@ -623,12 +670,18 @@ class _EditForm extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('0%',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textLight)),
-                Text('50%',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textLight)),
+                Text(
+                  '0%',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                  ),
+                ),
+                Text(
+                  '50%',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                  ),
+                ),
               ],
             ),
           ),
@@ -647,7 +700,9 @@ class _EditForm extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: selected
                         ? DesignTokens.primaryGreen
@@ -701,8 +756,9 @@ class _EditForm extends StatelessWidget {
                 backgroundColor: DesignTokens.primaryGreen,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
               ),
               child: saving
@@ -710,12 +766,15 @@ class _EditForm extends StatelessWidget {
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: DesignTokens.textWhite),
+                        strokeWidth: 2,
+                        color: DesignTokens.textWhite,
+                      ),
                     )
                   : Text(
                       'Publish Rate Card',
-                      style: DesignTokens.oneLinerSemibold
-                          .copyWith(color: DesignTokens.buttonPrimaryText),
+                      style: DesignTokens.oneLinerSemibold.copyWith(
+                        color: DesignTokens.buttonPrimaryText,
+                      ),
                     ),
             ),
           ),
@@ -754,15 +813,19 @@ class _TierFormCard extends StatelessWidget {
             children: [
               Text(
                 'Tier ${index + 1}',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
               const Spacer(),
               if (canRemove)
                 GestureDetector(
                   onTap: onRemove,
-                  child: const Icon(Icons.close_rounded,
-                      size: 18, color: DesignTokens.textMuted),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
             ],
           ),
@@ -831,21 +894,20 @@ class _CompactField extends StatelessWidget {
         ),
         filled: true,
         fillColor: DesignTokens.bgAppFoundation,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
         border: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(DesignTokens.cardRadius / 2),
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius / 2),
           borderSide: const BorderSide(color: DesignTokens.borderDefault),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(DesignTokens.cardRadius / 2),
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius / 2),
           borderSide: const BorderSide(color: DesignTokens.borderDefault),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(DesignTokens.cardRadius / 2),
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius / 2),
           borderSide: const BorderSide(color: DesignTokens.primaryGreen),
         ),
       ),
@@ -863,8 +925,9 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style:
-          DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
+      style: DesignTokens.mediumSemibold.copyWith(
+        color: DesignTokens.textWhite,
+      ),
     );
   }
 }
@@ -876,15 +939,19 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s8,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: DesignTokens.chipsSelectedFill,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: DesignTokens.smallRegular
-            .copyWith(color: DesignTokens.primaryGreen),
+        style: DesignTokens.smallRegular.copyWith(
+          color: DesignTokens.primaryGreen,
+        ),
       ),
     );
   }
@@ -900,13 +967,20 @@ class _RowStat extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label,
-              style: DesignTokens.bodyText
-                  .copyWith(color: DesignTokens.textLight)),
-        ),
-        Text(value,
+          child: Text(
+            label,
             style: DesignTokens.bodyText.copyWith(
-                color: DesignTokens.textWhite, fontWeight: FontWeight.w600)),
+              color: DesignTokens.textLight,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: DesignTokens.bodyText.copyWith(
+            color: DesignTokens.textWhite,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }

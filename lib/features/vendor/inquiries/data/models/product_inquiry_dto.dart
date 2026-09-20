@@ -11,9 +11,10 @@ enum ProductInquiryState {
   final int value;
   final String label;
 
-  static ProductInquiryState fromValue(int v) =>
-      values.firstWhere((e) => e.value == v,
-          orElse: () => ProductInquiryState.open);
+  static ProductInquiryState fromValue(int v) => values.firstWhere(
+    (e) => e.value == v,
+    orElse: () => ProductInquiryState.open,
+  );
 }
 
 class ProductInquiryDto {
@@ -39,26 +40,29 @@ class ProductInquiryDto {
     return ProductInquiryDto(
       id: (json['id'] as String?) ?? '',
       question: (json['question'] as String?) ?? '',
-      state: ProductInquiryState.fromValue((json['state'] as num?)?.toInt() ?? 1),
+      state: ProductInquiryState.fromValue(
+        (json['state'] as num?)?.toInt() ?? 1,
+      ),
       openedUtc: DateTime.tryParse(json['openedUtc'] as String? ?? ''),
-      responseDeadlineUtc:
-          DateTime.tryParse(json['responseDeadlineUtc'] as String? ?? ''),
+      responseDeadlineUtc: DateTime.tryParse(
+        json['responseDeadlineUtc'] as String? ?? '',
+      ),
       reply: json['reply'] as String?,
       repliedUtc: DateTime.tryParse(json['repliedUtc'] as String? ?? ''),
     );
   }
 
   ProductInquiry toDomain() => ProductInquiry(
-        id: id,
-        question: question,
-        status: switch (state) {
-          ProductInquiryState.open => InquiryStatus.open,
-          ProductInquiryState.replied => InquiryStatus.replied,
-          ProductInquiryState.expired => InquiryStatus.expired,
-        },
-        openedAt: openedUtc,
-        responseDeadlineAt: responseDeadlineUtc,
-        reply: reply,
-        repliedAt: repliedUtc,
-      );
+    id: id,
+    question: question,
+    status: switch (state) {
+      ProductInquiryState.open => InquiryStatus.open,
+      ProductInquiryState.replied => InquiryStatus.replied,
+      ProductInquiryState.expired => InquiryStatus.expired,
+    },
+    openedAt: openedUtc,
+    responseDeadlineAt: responseDeadlineUtc,
+    reply: reply,
+    repliedAt: repliedUtc,
+  );
 }

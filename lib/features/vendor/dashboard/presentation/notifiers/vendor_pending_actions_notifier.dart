@@ -38,8 +38,11 @@ class VendorPendingActionCounts {
 
 class VendorPendingActionsNotifier
     extends StateNotifier<VendorPendingActionCounts> {
-  VendorPendingActionsNotifier(this._orders, this._inquiries, this._partnerships)
-      : super(const VendorPendingActionCounts()) {
+  VendorPendingActionsNotifier(
+    this._orders,
+    this._inquiries,
+    this._partnerships,
+  ) : super(const VendorPendingActionCounts()) {
     unawaited(load());
   }
 

@@ -210,15 +210,13 @@ class CommerceExecutionPlan {
   List<ExecutionStep> get stepsNeedingYou =>
       steps.where((step) => step.needsOwnApproval).toList(growable: false);
 
-  bool get hasRecordedEvidence =>
-      steps.any((step) => step.hasRecordedEvidence);
+  bool get hasRecordedEvidence => steps.any((step) => step.hasRecordedEvidence);
 
   /// Evidence exists against a plan the shopper never approved — work that
   /// appears to have happened without them. The backend cannot produce this
   /// (`UpdateProgress` refuses unless the plan is Ready or InProgress, and
   /// only `Approve` reaches Ready), so it is a tripwire, not a state.
-  bool get isUnapprovedCommitment =>
-      hasRecordedEvidence && approvedUtc == null;
+  bool get isUnapprovedCommitment => hasRecordedEvidence && approvedUtc == null;
 
   /// Any step whose recorded evidence outran its own approval gate.
   bool get hasUnapprovedStep =>

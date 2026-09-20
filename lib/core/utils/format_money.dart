@@ -27,9 +27,7 @@ String formatMoney(Money money, {String? locale, int decimalDigits = 2}) {
 String formatMoneyCompact(Money money) {
   final prefix = money.currency == 'NPR' ? 'Rs ' : '${money.currency} ';
   final text = formatCompactNumber(money.amount);
-  return text.startsWith('-')
-      ? '-$prefix${text.substring(1)}'
-      : '$prefix$text';
+  return text.startsWith('-') ? '-$prefix${text.substring(1)}' : '$prefix$text';
 }
 
 /// Short form of [value]: 950, 1K, 1.8K, 12.5K, 125K, 3.4M, 2B.

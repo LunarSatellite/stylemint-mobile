@@ -85,153 +85,156 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
     return RootBackGuard(
       fallback: RouteNames.vendorHome,
       child: Scaffold(
-      backgroundColor: DesignTokens.bgAppFoundation,
-      appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        elevation: 0,
-        // Reached via context.go() from the dashboard's bottom nav, which
-        // clears back history — GoRouter has nothing to auto-detect a
-        // leading arrow from, so it's explicit here instead.
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: DesignTokens.textWhite, size: 20),
-          onPressed: () => context.canPop()
-              ? context.popOrHome()
-              : context.go(RouteNames.vendorHome),
-        ),
-        titleSpacing: DesignTokens.s16,
-        title: _searching
-            ? TextField(
-                controller: _searchCtrl,
-                autofocus: true,
-                style: DesignTokens.oneLinerRegular,
-                decoration: const InputDecoration(
-                  hintText: 'Search products...',
-                  hintStyle: TextStyle(color: DesignTokens.textMuted),
-                  border: InputBorder.none,
-                ),
-                onChanged: (v) => setState(() => _query = v.trim()),
-              )
-            : const CircleAvatar(
-                radius: 18,
-                backgroundColor: DesignTokens.bgAppBodyLight,
-                child: Icon(
-                  Icons.store_outlined,
-                  color: DesignTokens.textMuted,
-                  size: 20,
-                ),
-              ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _searching ? Icons.close : Icons.search,
-              color: DesignTokens.iconLight,
-            ),
-            onPressed: () => setState(() {
-              _searching = !_searching;
-              if (!_searching) {
-                _searchCtrl.clear();
-                _query = '';
-              }
-            }),
-          ),
-          IconButton(
+        appBar: AppBar(
+          backgroundColor: DesignTokens.bgAppFoundation,
+          elevation: 0,
+          // Reached via context.go() from the dashboard's bottom nav, which
+          // clears back history — GoRouter has nothing to auto-detect a
+          // leading arrow from, so it's explicit here instead.
+          automaticallyImplyLeading: false,
+          leading: IconButton(
             icon: const Icon(
-              Icons.notifications_outlined,
-              color: DesignTokens.iconLight,
+              Icons.arrow_back_ios_new_rounded,
+              color: DesignTokens.textWhite,
+              size: 20,
             ),
-            onPressed: () => context.push(RouteNames.vendorRecentActivity),
+            onPressed: () => context.canPop()
+                ? context.popOrHome()
+                : context.go(RouteNames.vendorHome),
           ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          indicatorColor: DesignTokens.primaryGreen,
-          indicatorWeight: 2,
-          labelColor: DesignTokens.primaryGreen,
-          unselectedLabelColor: DesignTokens.textMuted,
-          labelStyle: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+          titleSpacing: DesignTokens.s16,
+          title: _searching
+              ? TextField(
+                  controller: _searchCtrl,
+                  autofocus: true,
+                  style: DesignTokens.oneLinerRegular,
+                  decoration: const InputDecoration(
+                    hintText: 'Search products...',
+                    hintStyle: TextStyle(color: DesignTokens.textMuted),
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (v) => setState(() => _query = v.trim()),
+                )
+              : const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: DesignTokens.bgAppBodyLight,
+                  child: Icon(
+                    Icons.store_outlined,
+                    color: DesignTokens.textMuted,
+                    size: 20,
+                  ),
+                ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                _searching ? Icons.close : Icons.search,
+                color: DesignTokens.iconLight,
+              ),
+              onPressed: () => setState(() {
+                _searching = !_searching;
+                if (!_searching) {
+                  _searchCtrl.clear();
+                  _query = '';
+                }
+              }),
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.notifications_outlined,
+                color: DesignTokens.iconLight,
+              ),
+              onPressed: () => context.push(RouteNames.vendorRecentActivity),
+            ),
+          ],
+          bottom: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            indicatorColor: DesignTokens.primaryGreen,
+            indicatorWeight: 2,
+            labelColor: DesignTokens.primaryGreen,
+            unselectedLabelColor: DesignTokens.textMuted,
+            labelStyle: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+            dividerColor: Colors.transparent,
+            tabs: _tabs.map((t) => Tab(text: t.$2)).toList(),
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
-          dividerColor: Colors.transparent,
-          tabs: _tabs.map((t) => Tab(text: t.$2)).toList(),
         ),
-      ),
-      body: state.when(
-        initial: _loader,
-        loadInProgress: _loader,
-        loadSuccess: (products, _, hasMore, __) => _ProductList(
-          products: _filtered(products),
-          hasMore: _query.isEmpty && hasMore,
-          onRefresh: () => ref
-              .read(vendorProductsNotifierProvider.notifier)
-              .loadProducts(status: _tabs[_tabController.index].$1),
-          onLoadMore: () => ref
-              .read(vendorProductsNotifierProvider.notifier)
-              .loadMoreProducts(),
-          onMore: (p) => showVendorProductActions(context, ref, p),
-        ),
-        loadFailure: (_) => SmErrorView(
-          message: 'Failed to load products.',
-          onRetry: () => ref
-              .read(vendorProductsNotifierProvider.notifier)
-              .loadProducts(status: _tabs[_tabController.index].$1),
-        ),
-        actionInProgress: (products) => _ProductList(
-          products: _filtered(products),
-          hasMore: false,
-          onRefresh: () {},
-          onLoadMore: () {},
-          onMore: (p) => showVendorProductActions(context, ref, p),
-        ),
-        actionFailure: (products, _) => _ProductList(
-          products: _filtered(products),
-          hasMore: false,
-          onRefresh: () {},
-          onLoadMore: () {},
-          onMore: (p) => showVendorProductActions(context, ref, p),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: DesignTokens.primaryGreen,
-        shape: const StadiumBorder(),
-        onPressed: () async {
-          // The wizard is one route (IndexedStack over its 5 steps), so
-          // popping back here doesn't remount this screen — without an
-          // explicit refresh, a just-published product wouldn't show up
-          // until a manual pull-to-refresh or leaving/reentering the tab.
-          final published = await context.push<bool>(RouteNames.addProduct);
-          if (published == true && context.mounted) {
-            ref
+        body: state.when(
+          initial: _loader,
+          loadInProgress: _loader,
+          loadSuccess: (products, _, hasMore, __) => _ProductList(
+            products: _filtered(products),
+            hasMore: _query.isEmpty && hasMore,
+            onRefresh: () => ref
                 .read(vendorProductsNotifierProvider.notifier)
-                .loadProducts(status: _tabs[_tabController.index].$1);
-          }
-        },
-        icon: const Icon(Icons.add, color: DesignTokens.textDark),
-        label: Text(
-          'Add Product',
-          style: DesignTokens.oneLinerSemibold.copyWith(
-            color: DesignTokens.textDark,
+                .loadProducts(status: _tabs[_tabController.index].$1),
+            onLoadMore: () => ref
+                .read(vendorProductsNotifierProvider.notifier)
+                .loadMoreProducts(),
+            onMore: (p) => showVendorProductActions(context, ref, p),
+          ),
+          loadFailure: (_) => SmErrorView(
+            message: 'Failed to load products.',
+            onRetry: () => ref
+                .read(vendorProductsNotifierProvider.notifier)
+                .loadProducts(status: _tabs[_tabController.index].$1),
+          ),
+          actionInProgress: (products) => _ProductList(
+            products: _filtered(products),
+            hasMore: false,
+            onRefresh: () {},
+            onLoadMore: () {},
+            onMore: (p) => showVendorProductActions(context, ref, p),
+          ),
+          actionFailure: (products, _) => _ProductList(
+            products: _filtered(products),
+            hasMore: false,
+            onRefresh: () {},
+            onLoadMore: () {},
+            onMore: (p) => showVendorProductActions(context, ref, p),
           ),
         ),
-      ),
-      bottomNavigationBar: VendorBottomNav(
-        selectedIndex: 2,
-        onTap: (i) {
-          if (i == 0) context.go(RouteNames.vendorHome);
-          if (i == 1) context.go(RouteNames.vendorOrders);
+        floatingActionButton: FloatingActionButton.extended(
+          backgroundColor: DesignTokens.primaryGreen,
+          shape: const StadiumBorder(),
+          onPressed: () async {
+            // The wizard is one route (IndexedStack over its 5 steps), so
+            // popping back here doesn't remount this screen — without an
+            // explicit refresh, a just-published product wouldn't show up
+            // until a manual pull-to-refresh or leaving/reentering the tab.
+            final published = await context.push<bool>(RouteNames.addProduct);
+            if (published == true && context.mounted) {
+              ref
+                  .read(vendorProductsNotifierProvider.notifier)
+                  .loadProducts(status: _tabs[_tabController.index].$1);
+            }
+          },
+          icon: const Icon(Icons.add, color: DesignTokens.textDark),
+          label: Text(
+            'Add Product',
+            style: DesignTokens.oneLinerSemibold.copyWith(
+              color: DesignTokens.textDark,
+            ),
+          ),
+        ),
+        bottomNavigationBar: VendorBottomNav(
+          selectedIndex: 2,
+          onTap: (i) {
+            if (i == 0) context.go(RouteNames.vendorHome);
+            if (i == 1) context.go(RouteNames.vendorOrders);
             if (i == 3) context.push(RouteNames.vendorProfile);
-        },
-      ),
+          },
+        ),
       ),
     );
   }

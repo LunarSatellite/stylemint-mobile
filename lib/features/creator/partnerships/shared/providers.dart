@@ -29,10 +29,7 @@ export 'package:stylemint_mobile_frontend/features/creator/partnerships/data/mod
         PotentialEarningsDto,
         RecipeAttachmentInfoDto;
 export 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_partnership_record_dto.dart'
-    show
-        BrandPartnershipCountsDto,
-        BrandPartnershipRecordDto,
-        MeasuredRateDto;
+    show BrandPartnershipCountsDto, BrandPartnershipRecordDto, MeasuredRateDto;
 export 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart'
     show CreatorRateCard, RateTier;
 

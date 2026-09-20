@@ -43,8 +43,10 @@ enum SocialPlatform {
       return switch (key) {
         'instagram' || 'ig' || 'insta' => SocialPlatform.instagram,
         'tiktok' => SocialPlatform.tiktok,
-        'youtubeshorts' || 'youtube' || 'shorts' || 'yt' =>
-          SocialPlatform.youtube,
+        'youtubeshorts' ||
+        'youtube' ||
+        'shorts' ||
+        'yt' => SocialPlatform.youtube,
         'facebook' || 'fb' => SocialPlatform.facebook,
         _ => null,
       };
@@ -57,35 +59,35 @@ enum SocialPlatform {
   /// `values[code - 1]`: that couples the wire contract to this enum's
   /// declaration order and breaks silently if a member is ever reordered.
   static SocialPlatform? _fromCode(int code) => switch (code) {
-        1 => SocialPlatform.instagram,
-        2 => SocialPlatform.tiktok,
-        3 => SocialPlatform.youtube,
-        4 => SocialPlatform.facebook,
-        _ => null,
-      };
+    1 => SocialPlatform.instagram,
+    2 => SocialPlatform.tiktok,
+    3 => SocialPlatform.youtube,
+    4 => SocialPlatform.facebook,
+    _ => null,
+  };
 }
 
 extension SocialPlatformX on SocialPlatform {
   String get displayName => switch (this) {
-        SocialPlatform.instagram => 'Instagram',
-        SocialPlatform.tiktok => 'TikTok',
-        SocialPlatform.youtube => 'YouTube',
-        SocialPlatform.facebook => 'Facebook',
-      };
+    SocialPlatform.instagram => 'Instagram',
+    SocialPlatform.tiktok => 'TikTok',
+    SocialPlatform.youtube => 'YouTube',
+    SocialPlatform.facebook => 'Facebook',
+  };
 
   IconData get icon => switch (this) {
-        SocialPlatform.instagram => Icons.camera_alt,
-        SocialPlatform.tiktok => Icons.music_note,
-        SocialPlatform.youtube => Icons.play_circle,
-        SocialPlatform.facebook => Icons.facebook,
-      };
+    SocialPlatform.instagram => Icons.camera_alt,
+    SocialPlatform.tiktok => Icons.music_note,
+    SocialPlatform.youtube => Icons.play_circle,
+    SocialPlatform.facebook => Icons.facebook,
+  };
 
   Color get color => switch (this) {
-        SocialPlatform.instagram => const Color(0xFFE4405F),
-        SocialPlatform.tiktok => const Color(0xFF000000),
-        SocialPlatform.youtube => const Color(0xFFFF0000),
-        SocialPlatform.facebook => const Color(0xFF1877F2),
-      };
+    SocialPlatform.instagram => const Color(0xFFE4405F),
+    SocialPlatform.tiktok => const Color(0xFF000000),
+    SocialPlatform.youtube => const Color(0xFFFF0000),
+    SocialPlatform.facebook => const Color(0xFF1877F2),
+  };
 }
 
 /// First leg of the OAuth dance: the provider authorize URL the app opens in a

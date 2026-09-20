@@ -10,8 +10,7 @@ class BlockedUsersScreen extends ConsumerStatefulWidget {
   const BlockedUsersScreen({super.key});
 
   @override
-  ConsumerState<BlockedUsersScreen> createState() =>
-      _BlockedUsersScreenState();
+  ConsumerState<BlockedUsersScreen> createState() => _BlockedUsersScreenState();
 }
 
 class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
@@ -36,10 +35,12 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
 
   Future<void> _unblockUser(String blockedAccountId) async {
     if (_accountId == null) return;
-    await ref.read(blockedUsersProvider.notifier).unblockUser(
-      accountId: _accountId!,
-      blockedAccountId: blockedAccountId,
-    );
+    await ref
+        .read(blockedUsersProvider.notifier)
+        .unblockUser(
+          accountId: _accountId!,
+          blockedAccountId: blockedAccountId,
+        );
     SmSnackbar.success(context, 'User unblocked');
   }
 
@@ -53,12 +54,17 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded,
-              color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            color: DesignTokens.textWhite,
+            size: DesignTokens.iconMedium,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Blocked Users',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Blocked Users',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
       ),
       body: SafeArea(
         child: state.when(
@@ -69,8 +75,10 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(DesignTokens.s32),
-                  child: Text('No blocked users',
-                      style: TextStyle(color: DesignTokens.textMuted)),
+                  child: Text(
+                    'No blocked users',
+                    style: TextStyle(color: DesignTokens.textMuted),
+                  ),
                 ),
               );
             }
@@ -85,8 +93,9 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
                   padding: const EdgeInsets.all(DesignTokens.s16),
                   decoration: BoxDecoration(
                     color: DesignTokens.bgAppBody,
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.cardRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.cardRadius,
+                    ),
                     border: Border.all(color: DesignTokens.borderDefault),
                   ),
                   child: Row(
@@ -94,14 +103,15 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
                       CircleAvatar(
                         radius: DesignTokens.avatarSmall / 2,
                         backgroundColor: DesignTokens.bgAppBodyLight,
-                        backgroundImage:
-                            user.blockedUserAvatarUrl != null
-                                ? NetworkImage(user.blockedUserAvatarUrl!)
-                                : null,
+                        backgroundImage: user.blockedUserAvatarUrl != null
+                            ? NetworkImage(user.blockedUserAvatarUrl!)
+                            : null,
                         child: user.blockedUserAvatarUrl == null
-                            ? const Icon(Icons.person,
+                            ? const Icon(
+                                Icons.person,
                                 size: DesignTokens.iconSmall,
-                                color: DesignTokens.textMuted)
+                                color: DesignTokens.textMuted,
+                              )
                             : null,
                       ),
                       const SizedBox(width: DesignTokens.s12),
@@ -125,9 +135,12 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
                       ),
                       GestureDetector(
                         onTap: () => _unblockUser(user.blockedAccountId),
-                        child: Text('Unblock',
-                            style: DesignTokens.mediumSemibold.copyWith(
-                                color: DesignTokens.primaryGreen)),
+                        child: Text(
+                          'Unblock',
+                          style: DesignTokens.mediumSemibold.copyWith(
+                            color: DesignTokens.primaryGreen,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -139,16 +152,23 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: DesignTokens.colorError, size: 48),
+                const Icon(
+                  Icons.error_outline,
+                  color: DesignTokens.colorError,
+                  size: 48,
+                ),
                 const SizedBox(height: DesignTokens.s16),
-                Text('Failed to load blocked users',
-                    style: DesignTokens.bodyText),
+                Text(
+                  'Failed to load blocked users',
+                  style: DesignTokens.bodyText,
+                ),
                 const SizedBox(height: DesignTokens.s16),
                 GestureDetector(
                   onTap: _load,
-                  child: Text('Retry',
-                      style: TextStyle(color: DesignTokens.primaryGreen)),
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(color: DesignTokens.primaryGreen),
+                  ),
                 ),
               ],
             ),
@@ -158,6 +178,5 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
     );
   }
 
-  Widget _loader() =>
-      const SmPageLoader();
+  Widget _loader() => const SmPageLoader();
 }

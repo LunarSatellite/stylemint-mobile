@@ -4,9 +4,11 @@ import 'package:stylemint_mobile_frontend/features/settings/domain/entities/dele
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/notification_prefs.dart';
 
 abstract interface class SettingsRepository {
-  Future<Either<NetworkExceptions, NotificationPreferences>> getNotificationPreferences();
+  Future<Either<NetworkExceptions, NotificationPreferences>>
+  getNotificationPreferences();
 
-  Future<Either<NetworkExceptions, NotificationPreferences>> updateNotificationPreferences(
+  Future<Either<NetworkExceptions, NotificationPreferences>>
+  updateNotificationPreferences(
     NotificationPreferences prefs,
   );
 
@@ -22,7 +24,10 @@ abstract interface class SettingsRepository {
 
   Future<Either<NetworkExceptions, Unit>> setLanguage(String languageCode);
 
-  Future<Either<NetworkExceptions, Unit>> deleteAccount(String idempotencyKey, String reason);
+  Future<Either<NetworkExceptions, Unit>> deleteAccount(
+    String idempotencyKey,
+    String reason,
+  );
 
   /// Returns null if there is no pending deletion request.
   Future<Either<NetworkExceptions, DeletionRequest?>> getPendingDeletion();

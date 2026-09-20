@@ -8,7 +8,10 @@ class GroupBuyRemoteDataSource {
 
   /// GET `api/v1/group-buys` — global active list, no product filter
   /// server-side. Callers filter by productId client-side.
-  Future<Map<String, dynamic>> listActive({String? cursor, int pageSize = 50}) async {
+  Future<Map<String, dynamic>> listActive({
+    String? cursor,
+    int pageSize = 50,
+  }) async {
     final response = await apiClient.get(
       '/api/v1/group-buys',
       queryParameters: {
@@ -19,7 +22,10 @@ class GroupBuyRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> listMine({String? cursor, int pageSize = 25}) async {
+  Future<Map<String, dynamic>> listMine({
+    String? cursor,
+    int pageSize = 25,
+  }) async {
     final response = await apiClient.get(
       '/api/v1/group-buys/mine',
       queryParameters: {

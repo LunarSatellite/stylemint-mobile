@@ -49,11 +49,13 @@ class SocialPlatformPopup extends ConsumerWidget {
       orElse: () => kCreatorPlatforms.first,
     );
     final isConnected = summary != null;
-    final youtubeChannelId = platformId == 'youtube' ? summary?.providerUserId ?? '' : '';
+    final youtubeChannelId = platformId == 'youtube'
+        ? summary?.providerUserId ?? ''
+        : '';
     final AsyncValue<YouTubeChannel?> channelAsync =
         platformId == 'youtube' && isConnected
-            ? ref.watch(youtubeChannelProvider(youtubeChannelId))
-            : const AsyncValue<YouTubeChannel?>.data(null);
+        ? ref.watch(youtubeChannelProvider(youtubeChannelId))
+        : const AsyncValue<YouTubeChannel?>.data(null);
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
@@ -90,16 +92,16 @@ class SocialPlatformPopup extends ConsumerWidget {
   }
 
   Widget _grabber(BuildContext context) => Center(
-        child: Container(
-          width: 40,
-          height: 4,
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: DesignTokens.borderDefault,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-      );
+    child: Container(
+      width: 40,
+      height: 4,
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: DesignTokens.borderDefault,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    ),
+  );
 }
 
 // ── Not connected ──────────────────────────────────────────────────────────
@@ -160,7 +162,9 @@ class _NotConnectedBody extends ConsumerWidget {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
               ),
             ),
@@ -207,7 +211,9 @@ class _ConnectedBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final channel = channelAsync.maybeWhen(data: (c) => c, orElse: () => null);
     final title = channel?.title ?? summary.displayName ?? platform.name;
-    final handle = channel?.handle ?? (summary.handle.isNotEmpty ? '@${summary.handle}' : '');
+    final handle =
+        channel?.handle ??
+        (summary.handle.isNotEmpty ? '@${summary.handle}' : '');
     final description = channel?.description ?? '';
     final avatarUrl = channel?.avatarUrl ?? summary.avatarUrl;
     final bannerUrl = channel?.bannerUrl ?? '';
@@ -310,10 +316,14 @@ class _ConnectedBody extends ConsumerWidget {
                   label: const Text('Disconnect'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: DesignTokens.colorError,
-                    side: BorderSide(color: DesignTokens.colorError.withOpacity(0.5)),
+                    side: BorderSide(
+                      color: DesignTokens.colorError.withOpacity(0.5),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.buttonRadius,
+                      ),
                     ),
                   ),
                 ),
@@ -344,7 +354,9 @@ class _ConnectedBody extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: DesignTokens.colorError),
+            style: TextButton.styleFrom(
+              foregroundColor: DesignTokens.colorError,
+            ),
             child: const Text('Disconnect'),
           ),
         ],
@@ -448,33 +460,33 @@ class _StatsRow extends StatelessWidget {
   }
 
   Widget _stat(String label, String value) => Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: DesignTokens.textWhite,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 11,
-              color: DesignTokens.textMuted,
-            ),
-          ),
-        ],
-      );
+    children: [
+      Text(
+        value,
+        style: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: DesignTokens.textWhite,
+        ),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        label,
+        style: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 11,
+          color: DesignTokens.textMuted,
+        ),
+      ),
+    ],
+  );
 
   Widget _vDivider() => Container(
-        width: 1,
-        height: 36,
-        color: DesignTokens.borderDefault,
-      );
+    width: 1,
+    height: 36,
+    color: DesignTokens.borderDefault,
+  );
 
   static String _fmt(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
@@ -502,11 +514,10 @@ class SvgThumb extends StatelessWidget {
   }
 }
 
-
 SocialPlatform? _slugToPlatform(String slug) => switch (slug) {
-      'instagram' => SocialPlatform.instagram,
-      'tiktok' => SocialPlatform.tiktok,
-      'youtube' => SocialPlatform.youtube,
-      'facebook' => SocialPlatform.facebook,
-      _ => null,
-    };
+  'instagram' => SocialPlatform.instagram,
+  'tiktok' => SocialPlatform.tiktok,
+  'youtube' => SocialPlatform.youtube,
+  'facebook' => SocialPlatform.facebook,
+  _ => null,
+};

@@ -49,8 +49,7 @@ class FeedPostCard extends StatelessWidget {
                 style: DesignTokens.mediumRegular,
               ),
             ),
-          if (post.images.isNotEmpty)
-            _ImageCarousel(images: post.images),
+          if (post.images.isNotEmpty) _ImageCarousel(images: post.images),
           if (post.taggedProducts.isNotEmpty)
             _TaggedProductsRow(
               products: post.taggedProducts,
@@ -89,14 +88,16 @@ class _UserHeader extends StatelessWidget {
           CircleAvatar(
             radius: DesignTokens.avatarSmall / 2,
             backgroundColor: DesignTokens.bgAppBodyLight,
-            backgroundImage:
-                post.userAvatarUrl.isNotEmpty
-                    ? CachedNetworkImageProvider(post.userAvatarUrl)
-                    : null,
-            child:
-                post.userAvatarUrl.isEmpty
-                    ? const Icon(Icons.person, color: DesignTokens.iconLight, size: DesignTokens.iconSmall)
-                    : null,
+            backgroundImage: post.userAvatarUrl.isNotEmpty
+                ? CachedNetworkImageProvider(post.userAvatarUrl)
+                : null,
+            child: post.userAvatarUrl.isEmpty
+                ? const Icon(
+                    Icons.person,
+                    color: DesignTokens.iconLight,
+                    size: DesignTokens.iconSmall,
+                  )
+                : null,
           ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
@@ -175,7 +176,9 @@ class _TaggedProductsRow extends StatelessWidget {
       child: Wrap(
         spacing: DesignTokens.s8,
         runSpacing: DesignTokens.s8,
-        children: products.map((p) => _TaggedProductChip(product: p, onTap: onTap)).toList(),
+        children: products
+            .map((p) => _TaggedProductChip(product: p, onTap: onTap))
+            .toList(),
       ),
     );
   }

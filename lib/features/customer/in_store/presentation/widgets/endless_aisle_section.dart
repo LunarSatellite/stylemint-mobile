@@ -57,8 +57,7 @@ class EndlessAisleSection extends ConsumerWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton(
-                onPressed: () =>
-                    unawaited(ref.read(provider.notifier).load()),
+                onPressed: () => unawaited(ref.read(provider.notifier).load()),
                 style: DesignTokens.textButtonStyle(),
                 child: const Text(retryLabel),
               ),

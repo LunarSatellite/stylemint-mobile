@@ -15,7 +15,8 @@ class MarketingConsentsScreen extends ConsumerStatefulWidget {
       _MarketingConsentsScreenState();
 }
 
-class _MarketingConsentsScreenState extends ConsumerState<MarketingConsentsScreen> {
+class _MarketingConsentsScreenState
+    extends ConsumerState<MarketingConsentsScreen> {
   String? _accountId;
 
   @override
@@ -37,11 +38,13 @@ class _MarketingConsentsScreenState extends ConsumerState<MarketingConsentsScree
 
   Future<void> _toggle(String category, bool currentValue) async {
     if (_accountId == null) return;
-    await ref.read(marketingConsentsProvider.notifier).toggle(
-      accountId: _accountId!,
-      category: category,
-      consented: !currentValue,
-    );
+    await ref
+        .read(marketingConsentsProvider.notifier)
+        .toggle(
+          accountId: _accountId!,
+          category: category,
+          consented: !currentValue,
+        );
   }
 
   String _categoryLabel(String category) {
@@ -80,12 +83,17 @@ class _MarketingConsentsScreenState extends ConsumerState<MarketingConsentsScree
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded,
-              color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            color: DesignTokens.textWhite,
+            size: DesignTokens.iconMedium,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Marketing Preferences',
-            style: TextStyle(color: DesignTokens.textWhite)),
+        title: const Text(
+          'Marketing Preferences',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
       ),
       body: SafeArea(
         child: state.when(
@@ -105,26 +113,30 @@ class _MarketingConsentsScreenState extends ConsumerState<MarketingConsentsScree
                       const SizedBox(height: DesignTokens.s24),
                       ...consents.map((c) {
                         return Container(
-                          margin:
-                              const EdgeInsets.only(bottom: DesignTokens.s8),
+                          margin: const EdgeInsets.only(
+                            bottom: DesignTokens.s8,
+                          ),
                           padding: const EdgeInsets.all(DesignTokens.s16),
                           decoration: BoxDecoration(
                             color: DesignTokens.bgAppBody,
                             borderRadius: BorderRadius.circular(
-                                DesignTokens.cardRadius),
+                              DesignTokens.cardRadius,
+                            ),
                             border: Border.all(
-                                color: DesignTokens.borderDefault),
+                              color: DesignTokens.borderDefault,
+                            ),
                           ),
                           child: Row(
                             children: [
-                              Icon(_categoryIcon(c.category),
-                                  size: DesignTokens.iconMedium,
-                                  color: DesignTokens.textLight),
+                              Icon(
+                                _categoryIcon(c.category),
+                                size: DesignTokens.iconMedium,
+                                color: DesignTokens.textLight,
+                              ),
                               const SizedBox(width: DesignTokens.s16),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       _categoryLabel(c.category),
@@ -149,9 +161,7 @@ class _MarketingConsentsScreenState extends ConsumerState<MarketingConsentsScree
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          c.consented
-                                              ? 'Agreed'
-                                              : 'Not agreed',
+                                          c.consented ? 'Agreed' : 'Not agreed',
                                           style: DesignTokens.smallRegular
                                               .copyWith(
                                                 color: c.consented
@@ -195,12 +205,16 @@ class _MarketingConsentsScreenState extends ConsumerState<MarketingConsentsScree
                     color: DesignTokens.bgAppFoundation,
                     border: Border(
                       top: BorderSide(
-                          color: DesignTokens.borderDefault, width: 1),
+                        color: DesignTokens.borderDefault,
+                        width: 1,
+                      ),
                     ),
                   ),
                   child: SmPrimaryButton(
                     label: 'Back',
-                    onPressed: () async { Navigator.pop(context); },
+                    onPressed: () async {
+                      Navigator.pop(context);
+                    },
                     height: DesignTokens.buttonHeight,
                     borderRadius: DesignTokens.buttonRadius,
                     color: DesignTokens.buttonGrayFill,
@@ -214,16 +228,23 @@ class _MarketingConsentsScreenState extends ConsumerState<MarketingConsentsScree
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: DesignTokens.colorError, size: 48),
+                const Icon(
+                  Icons.error_outline,
+                  color: DesignTokens.colorError,
+                  size: 48,
+                ),
                 const SizedBox(height: DesignTokens.s16),
-                Text('Failed to load preferences',
-                    style: DesignTokens.bodyText),
+                Text(
+                  'Failed to load preferences',
+                  style: DesignTokens.bodyText,
+                ),
                 const SizedBox(height: DesignTokens.s16),
                 GestureDetector(
                   onTap: _load,
-                  child: Text('Retry',
-                      style: TextStyle(color: DesignTokens.primaryGreen)),
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(color: DesignTokens.primaryGreen),
+                  ),
                 ),
               ],
             ),
@@ -233,6 +254,5 @@ class _MarketingConsentsScreenState extends ConsumerState<MarketingConsentsScree
     );
   }
 
-  Widget _loader() =>
-      const SmPageLoader();
+  Widget _loader() => const SmPageLoader();
 }

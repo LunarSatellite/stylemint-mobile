@@ -24,20 +24,18 @@ class CreatorSearchRepositoryImpl implements CreatorSearchRepository {
   @override
   Future<NetworkEither<List<SearchProductResult>>> searchProducts(
     String query,
-  ) =>
-      _guard(() async {
-        final dtos = await remoteDataSource.searchProducts(query);
-        return dtos.map((d) => d.toDomain()).toList(growable: false);
-      });
+  ) => _guard(() async {
+    final dtos = await remoteDataSource.searchProducts(query);
+    return dtos.map((d) => d.toDomain()).toList(growable: false);
+  });
 
   @override
   Future<NetworkEither<List<SearchCreatorResult>>> searchCreators(
     String query,
-  ) =>
-      _guard(() async {
-        final dtos = await remoteDataSource.searchCreators(query);
-        return dtos.map((d) => d.toDomain()).toList(growable: false);
-      });
+  ) => _guard(() async {
+    final dtos = await remoteDataSource.searchCreators(query);
+    return dtos.map((d) => d.toDomain()).toList(growable: false);
+  });
 
   /// All three searches hit the same endpoint with the same failure modes, so
   /// the connectivity check and exception mapping live in one place.

@@ -142,8 +142,10 @@ class ProductReviewSummaryDto {
       ProductReviewSummaryDto(
         reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
         averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0,
-        starDistribution: (json['starDistribution'] as Map<String, dynamic>?)
-                ?.map((k, v) => MapEntry(int.tryParse(k) ?? 0, (v as num).toInt())) ??
+        starDistribution:
+            (json['starDistribution'] as Map<String, dynamic>?)?.map(
+              (k, v) => MapEntry(int.tryParse(k) ?? 0, (v as num).toInt()),
+            ) ??
             const {},
       );
 

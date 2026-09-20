@@ -13,9 +13,11 @@ export 'package:stylemint_mobile_frontend/features/social/live_commerce/domain/e
 export 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/notifiers/live_sessions_notifier.dart';
 export 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/services/live_commerce_realtime_service.dart';
 
-final liveCommerceRemoteDataSourceProvider = Provider<LiveCommerceRemoteDataSource>(
-  (ref) => LiveCommerceRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
-);
+final liveCommerceRemoteDataSourceProvider =
+    Provider<LiveCommerceRemoteDataSource>(
+      (ref) =>
+          LiveCommerceRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+    );
 
 final liveCommerceRepositoryProvider = Provider<LiveCommerceRepository>(
   (ref) => LiveCommerceRepositoryImpl(
@@ -26,8 +28,8 @@ final liveCommerceRepositoryProvider = Provider<LiveCommerceRepository>(
 
 final liveSessionsNotifierProvider =
     StateNotifierProvider.autoDispose<LiveSessionsNotifier, LiveSessionsState>(
-  (ref) => LiveSessionsNotifier(ref.watch(liveCommerceRepositoryProvider)),
-);
+      (ref) => LiveSessionsNotifier(ref.watch(liveCommerceRepositoryProvider)),
+    );
 
 /// One realtime connection per live-room visit — created when the room
 /// screen mounts, disposed when it's popped. Deliberately NOT a
@@ -35,7 +37,7 @@ final liveSessionsNotifierProvider =
 /// ever in at most one room at a time.
 final liveCommerceRealtimeServiceProvider =
     Provider.autoDispose<LiveCommerceRealtimeService>((ref) {
-  final service = LiveCommerceRealtimeService();
-  ref.onDispose(service.dispose);
-  return service;
-});
+      final service = LiveCommerceRealtimeService();
+      ref.onDispose(service.dispose);
+      return service;
+    });

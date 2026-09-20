@@ -44,7 +44,8 @@ class GroupBuyDto {
     commitCount: commitCount,
     // Backend GroupBuyState is 1-based (Open=1..Cancelled=5); the Dart enum
     // reserves index 0 for "unknown" so the ordinals line up directly.
-    state: GroupBuyState.values[state.clamp(0, GroupBuyState.values.length - 1)],
+    state:
+        GroupBuyState.values[state.clamp(0, GroupBuyState.values.length - 1)],
     expiresAt: expiresUtc,
   );
 }

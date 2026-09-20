@@ -164,13 +164,15 @@ class ProductListingScreen extends ConsumerWidget {
                   child: Container(
                     constraints: const BoxConstraints(minHeight: 142),
                     padding: const EdgeInsetsDirectional.fromSTEB(
-                      20,
-                      20,
-                      20,
-                      18,
+                      DesignTokens.s20,
+                      DesignTokens.s20,
+                      DesignTokens.s20,
+                      DesignTokens.s20,
                     ),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(26),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.radiusLarge,
+                      ),
                       border: Border.all(color: DesignTokens.glassStroke),
                       gradient: const LinearGradient(
                         begin: AlignmentDirectional.topStart,
@@ -201,11 +203,9 @@ class ProductListingScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const Text(
+                            Text(
                               'STYLEMINT EDIT',
-                              style: TextStyle(
-                                fontFamily: DesignTokens.fontFamily,
-                                fontSize: 11,
+                              style: DesignTokens.eyebrow.copyWith(
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 1.8,
                                 color: DesignTokens.primaryGreen,
@@ -338,18 +338,13 @@ class _FilterButton extends StatelessWidget {
             children: [
               const Icon(
                 Icons.tune_rounded,
-                size: 18,
+                size: DesignTokens.iconSmall,
                 color: DesignTokens.textWhite,
               ),
               const SizedBox(width: DesignTokens.s8),
               const Text(
                 'Filter',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: DesignTokens.textWhite,
-                ),
+                style: DesignTokens.mediumSemibold,
               ),
               if (count > 0) ...[
                 const SizedBox(width: DesignTokens.s8),

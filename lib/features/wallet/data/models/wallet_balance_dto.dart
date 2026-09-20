@@ -39,14 +39,14 @@ abstract class WalletBalanceDto with _$WalletBalanceDto {
       _$WalletBalanceDtoFromJson(json);
 
   WalletBalance toDomain() => WalletBalance(
-        id: id,
-        accountId: accountId,
-        currency: currency,
-        available: available,
-        pending: pending,
-        status: status,
-        updatedUtc: updatedUtc.isNotEmpty
-            ? DateTime.parse(updatedUtc)
-            : DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-      );
+    id: id,
+    accountId: accountId,
+    currency: currency,
+    available: available,
+    pending: pending,
+    status: status,
+    updatedUtc: updatedUtc.isNotEmpty
+        ? DateTime.parse(updatedUtc)
+        : DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+  );
 }

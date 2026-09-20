@@ -276,7 +276,8 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
               "Couldn't get a fix — that happens indoors. Step outside and "
               'try again, or paste a Maps link instead.';
         case LocationCaptureFailed(:final message):
-          _locationMessage = "Couldn't read your location ($message). "
+          _locationMessage =
+              "Couldn't read your location ($message). "
               'Try again, or paste a Maps link instead.';
       }
     });
@@ -1054,14 +1055,15 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
             color: DesignTokens.inputFieldData,
           ),
           onChanged: (_) => setState(() => _mapsLinkError = null),
-          decoration: DesignTokens.inputDecoration(
-            labelText: 'Maps link (optional)',
-            hintText: 'https://maps.app.goo.gl/…',
-          ).copyWith(
-            counterText: '',
-            errorText: _mapsLinkError,
-            errorMaxLines: 4,
-          ),
+          decoration:
+              DesignTokens.inputDecoration(
+                labelText: 'Maps link (optional)',
+                hintText: 'https://maps.app.goo.gl/…',
+              ).copyWith(
+                counterText: '',
+                errorText: _mapsLinkError,
+                errorMaxLines: 4,
+              ),
         ),
         const SizedBox(height: DesignTokens.s8),
         Align(

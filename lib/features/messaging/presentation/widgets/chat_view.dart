@@ -101,7 +101,8 @@ class _ChatViewState extends ConsumerState<ChatView> {
         if (!mounted) return;
         setState(() {
           _opening = false;
-          _openError = 'Could not open this conversation. Please try again later.';
+          _openError =
+              'Could not open this conversation. Please try again later.';
         });
         return;
       }
@@ -172,9 +173,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
                   final body = _msgCtrl.text;
                   if (body.trim().isEmpty) return;
                   _msgCtrl.clear();
-                  await ref
-                      .read(chatNotifierProvider(id).notifier)
-                      .send(body);
+                  await ref.read(chatNotifierProvider(id).notifier).send(body);
                   _scrollToBottom();
                 },
         ),
@@ -254,8 +253,14 @@ class _MessageList extends ConsumerWidget {
 enum _RowKind { header, message }
 
 class _RowEntry {
-  const _RowEntry.header(DateTime date) : kind = _RowKind.header, date = date, message = null;
-  const _RowEntry.message(DirectMessage message) : kind = _RowKind.message, date = null, message = message;
+  const _RowEntry.header(DateTime date)
+    : kind = _RowKind.header,
+      date = date,
+      message = null;
+  const _RowEntry.message(DirectMessage message)
+    : kind = _RowKind.message,
+      date = null,
+      message = message;
   final _RowKind kind;
   final DateTime? date;
   final DirectMessage? message;
@@ -267,7 +272,8 @@ int _rowCountFor(List<DirectMessage> messages) {
   for (var i = 0; i < messages.length; i++) {
     final m = messages[i];
     final d = (m.sentUtc).toLocal();
-    final showHeader = i == 0 || !_sameDay(messages[i - 1].sentUtc.toLocal(), d);
+    final showHeader =
+        i == 0 || !_sameDay(messages[i - 1].sentUtc.toLocal(), d);
     if (showHeader) count++;
   }
   return count;
@@ -278,7 +284,8 @@ _RowEntry _entryAt(List<DirectMessage> messages, int i) {
   for (var k = 0; k < messages.length; k++) {
     final m = messages[k];
     final d = (m.sentUtc).toLocal();
-    final showHeader = k == 0 || !_sameDay(messages[k - 1].sentUtc.toLocal(), d);
+    final showHeader =
+        k == 0 || !_sameDay(messages[k - 1].sentUtc.toLocal(), d);
     if (showHeader) {
       if (consumed == i) return _RowEntry.header((m.sentUtc));
       consumed++;
@@ -342,9 +349,7 @@ class _MessageBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: const BoxConstraints(maxWidth: 320),
         decoration: BoxDecoration(
-          color: isSent
-              ? DesignTokens.primaryGreen
-              : const Color(0xFF27272A),
+          color: isSent ? DesignTokens.primaryGreen : const Color(0xFF27272A),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(14),
             topRight: const Radius.circular(14),
@@ -353,8 +358,9 @@ class _MessageBubble extends StatelessWidget {
           ),
         ),
         child: Column(
-          crossAxisAlignment:
-              isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isSent
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(
               message.body,
@@ -511,16 +517,16 @@ class _ErrorBanner extends StatelessWidget {
   final String message;
   @override
   Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        color: const Color(0xFF7F1D1D),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 12,
-            color: DesignTokens.textWhite,
-          ),
-        ),
-      );
+    width: double.infinity,
+    color: const Color(0xFF7F1D1D),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    child: Text(
+      message,
+      style: const TextStyle(
+        fontFamily: DesignTokens.fontFamily,
+        fontSize: 12,
+        color: DesignTokens.textWhite,
+      ),
+    ),
+  );
 }

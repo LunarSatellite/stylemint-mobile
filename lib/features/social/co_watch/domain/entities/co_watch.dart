@@ -1,4 +1,5 @@
 enum CoWatchSessionStatus { waiting, live, ended }
+
 enum CoWatchContentType { reel, product }
 
 class CoWatchSession {

@@ -110,19 +110,29 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
                   const ColoredBox(
                     color: DesignTokens.baseBlack,
                     child: Center(
-                      child: Icon(Icons.podcasts, size: 64, color: DesignTokens.iconLight),
+                      child: Icon(
+                        Icons.podcasts,
+                        size: 64,
+                        color: DesignTokens.iconLight,
+                      ),
                     ),
                   ),
                   Positioned(
                     top: DesignTokens.s12,
                     left: DesignTokens.s12,
-                    child: _LiveBadge(viewerCount: _viewerCount, joining: _joining),
+                    child: _LiveBadge(
+                      viewerCount: _viewerCount,
+                      joining: _joining,
+                    ),
                   ),
                   Positioned(
                     top: DesignTokens.s12,
                     right: DesignTokens.s12,
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: DesignTokens.iconWhite),
+                      icon: const Icon(
+                        Icons.close,
+                        color: DesignTokens.iconWhite,
+                      ),
                       onPressed: () => Navigator.of(context).maybePop(),
                     ),
                   ),
@@ -134,17 +144,26 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(DesignTokens.s12),
                         decoration: BoxDecoration(
-                          color: DesignTokens.bgAppFoundation.withValues(alpha: 0.9),
+                          color: DesignTokens.bgAppFoundation.withValues(
+                            alpha: 0.9,
+                          ),
                           borderRadius: BorderRadius.circular(DesignTokens.s8),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.push_pin, size: 16, color: DesignTokens.primaryGreen),
+                            const Icon(
+                              Icons.push_pin,
+                              size: 16,
+                              color: DesignTokens.primaryGreen,
+                            ),
                             const SizedBox(width: DesignTokens.s8),
                             const Expanded(
                               child: Text(
                                 'Featured product pinned by host',
-                                style: TextStyle(color: DesignTokens.textWhite, fontSize: 13),
+                                style: TextStyle(
+                                  color: DesignTokens.textWhite,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
@@ -177,7 +196,10 @@ class _LiveBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s8,
+        vertical: 4,
+      ),
       decoration: BoxDecoration(
         color: DesignTokens.colorError,
         borderRadius: BorderRadius.circular(DesignTokens.s4),
@@ -187,13 +209,27 @@ class _LiveBadge extends StatelessWidget {
         children: [
           const Text(
             'LIVE',
-            style: TextStyle(color: DesignTokens.textWhite, fontWeight: FontWeight.w700, fontSize: 12),
+            style: TextStyle(
+              color: DesignTokens.textWhite,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
           ),
           if (!joining && viewerCount != null) ...[
             const SizedBox(width: DesignTokens.s8),
-            const Icon(Icons.visibility, size: 12, color: DesignTokens.textWhite),
+            const Icon(
+              Icons.visibility,
+              size: 12,
+              color: DesignTokens.textWhite,
+            ),
             const SizedBox(width: 2),
-            Text('$viewerCount', style: const TextStyle(color: DesignTokens.textWhite, fontSize: 12)),
+            Text(
+              '$viewerCount',
+              style: const TextStyle(
+                color: DesignTokens.textWhite,
+                fontSize: 12,
+              ),
+            ),
           ],
         ],
       ),
@@ -243,7 +279,9 @@ class _ChatAndReactions extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Text(
                     m.message,
-                    style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                 );
               },
@@ -252,13 +290,18 @@ class _ChatAndReactions extends StatelessWidget {
           const SizedBox(height: DesignTokens.s8),
           Row(
             children: _reactions
-                .map((r) => Padding(
-                      padding: const EdgeInsets.only(right: DesignTokens.s8),
-                      child: IconButton(
-                        icon: Icon(_reactionIcons[r], color: DesignTokens.primaryGreen),
-                        onPressed: () => onReact(r),
+                .map(
+                  (r) => Padding(
+                    padding: const EdgeInsets.only(right: DesignTokens.s8),
+                    child: IconButton(
+                      icon: Icon(
+                        _reactionIcons[r],
+                        color: DesignTokens.primaryGreen,
                       ),
-                    ))
+                      onPressed: () => onReact(r),
+                    ),
+                  ),
+                )
                 .toList(growable: false),
           ),
           Row(

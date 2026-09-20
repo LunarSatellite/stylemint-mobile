@@ -55,14 +55,13 @@ abstract class UpdateShowcaseState with _$UpdateShowcaseState {
 
 class UpdateShowcaseNotifier extends StateNotifier<UpdateShowcaseState> {
   UpdateShowcaseNotifier(this._repository)
-      : super(const UpdateShowcaseState.initial());
+    : super(const UpdateShowcaseState.initial());
 
   final CreatorProfileRepository _repository;
 
   Future<void> submit(List<String> awardIdsInOrder) async {
     state = const UpdateShowcaseState.submitting();
-    final either =
-        await _repository.updateBadgeShowcase(awardIdsInOrder);
+    final either = await _repository.updateBadgeShowcase(awardIdsInOrder);
     state = either.fold(
       UpdateShowcaseState.failure,
       UpdateShowcaseState.success,

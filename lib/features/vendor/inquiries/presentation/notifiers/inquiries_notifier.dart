@@ -46,7 +46,9 @@ class InquiriesNotifier extends StateNotifier<InquiriesState> {
     final either = await _repository.listVendor();
     state = either.fold(
       (_) => state.copyWith(
-          isLoading: false, errorMessage: 'Could not load inquiries.'),
+        isLoading: false,
+        errorMessage: 'Could not load inquiries.',
+      ),
       (items) => state.copyWith(isLoading: false, items: items),
     );
   }
@@ -58,7 +60,9 @@ class InquiriesNotifier extends StateNotifier<InquiriesState> {
     return either.fold(
       (_) {
         state = state.copyWith(
-            clearReplying: true, errorMessage: 'Could not send your reply.');
+          clearReplying: true,
+          errorMessage: 'Could not send your reply.',
+        );
         return false;
       },
       (updated) {

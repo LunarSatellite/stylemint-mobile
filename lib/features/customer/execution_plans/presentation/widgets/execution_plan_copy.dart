@@ -53,8 +53,7 @@ abstract final class ExecutionPlanCopy {
       "Couldn't read your plans. Pull down to try again.";
 
   static const String stepsTitle = 'The steps it wrote down';
-  static const String noSteps =
-      'This plan has no steps recorded against it.';
+  static const String noSteps = 'This plan has no steps recorded against it.';
 
   static const String approvePlanLabel = 'Give this plan the go-ahead';
   static const String approvePlanMeaning =
@@ -127,15 +126,14 @@ abstract final class ExecutionPlanCopy {
   /// The strongest thing this app will say about a step is that StyleMint
   /// holds evidence for it — which is exactly what the backend stores, and
   /// exactly as much as it can honestly claim.
-  static String stepStatusLabel(ExecutionStepStatus status) =>
-      switch (status) {
-        ExecutionStepStatus.pending => 'Not started',
-        ExecutionStepStatus.inProgress => 'Reported under way',
-        ExecutionStepStatus.completed => 'Evidence recorded',
-        ExecutionStepStatus.failed => 'Reported as failed',
-        ExecutionStepStatus.skipped => 'Skipped',
-        ExecutionStepStatus.unrecognised => 'Unrecognised status',
-      };
+  static String stepStatusLabel(ExecutionStepStatus status) => switch (status) {
+    ExecutionStepStatus.pending => 'Not started',
+    ExecutionStepStatus.inProgress => 'Reported under way',
+    ExecutionStepStatus.completed => 'Evidence recorded',
+    ExecutionStepStatus.failed => 'Reported as failed',
+    ExecutionStepStatus.skipped => 'Skipped',
+    ExecutionStepStatus.unrecognised => 'Unrecognised status',
+  };
 
   static MallStatusTone stepStatusTone(ExecutionStepStatus status) =>
       switch (status) {
@@ -191,12 +189,14 @@ abstract final class ExecutionPlanCopy {
     required bool planApproved,
   }) => switch (step.approval) {
     ExecutionApproval.none => null,
-    ExecutionApproval.customerBeforeExecution => planApproved
-        ? 'Covered by the go-ahead you gave this plan.'
-        : 'Waiting on the go-ahead for the whole plan.',
-    ExecutionApproval.customerAtTask => step.approvedOnWire
-        ? 'You gave this step its own go-ahead.'
-        : 'Needs its own go-ahead from you.',
+    ExecutionApproval.customerBeforeExecution =>
+      planApproved
+          ? 'Covered by the go-ahead you gave this plan.'
+          : 'Waiting on the go-ahead for the whole plan.',
+    ExecutionApproval.customerAtTask =>
+      step.approvedOnWire
+          ? 'You gave this step its own go-ahead.'
+          : 'Needs its own go-ahead from you.',
     ExecutionApproval.unrecognised =>
       'This app does not recognise this step’s approval rule, so it offers '
           'you no button for it.',

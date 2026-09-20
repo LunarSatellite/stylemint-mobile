@@ -14,12 +14,17 @@ void main() {
   });
 
   test('reads the backend platform in any wire shape', () {
-    const tiktok = 'https://www.tiktok.com/@scout2015/video/6718335390845095173';
+    const tiktok =
+        'https://www.tiktok.com/@scout2015/video/6718335390845095173';
 
-    expect(LinkedReel.playable(url: tiktok, platform: 2)?.platform,
-        SocialPlatform.tiktok);
-    expect(LinkedReel.playable(url: tiktok, platform: 'TikTok')?.platform,
-        SocialPlatform.tiktok);
+    expect(
+      LinkedReel.playable(url: tiktok, platform: 2)?.platform,
+      SocialPlatform.tiktok,
+    );
+    expect(
+      LinkedReel.playable(url: tiktok, platform: 'TikTok')?.platform,
+      SocialPlatform.tiktok,
+    );
     expect(
       LinkedReel.playable(
         url: 'https://www.youtube.com/watch?v=I1bYtU4F2AQ',

@@ -245,23 +245,29 @@ void main() {
       expect(dto.kind, CodeKind.store);
     });
 
-    test('the profile code is get-or-created and rotated under /v1/me', () async {
-      final api = RecordingApiClient(
-        (_) => _codeJson(kind: 'Profile', code: '7K9M2PQR'),
-      );
-      final source = CodesRemoteDataSource(apiClient: api);
+    test(
+      'the profile code is get-or-created and rotated under /v1/me',
+      () async {
+        final api = RecordingApiClient(
+          (_) => _codeJson(kind: 'Profile', code: '7K9M2PQR'),
+        );
+        final source = CodesRemoteDataSource(apiClient: api);
 
-      final current = await source.getMyProfileCode(idempotencyKey: 'k-1');
-      final rotated = await source.rotateMyProfileCode(idempotencyKey: 'k-2');
+        final current = await source.getMyProfileCode(idempotencyKey: 'k-1');
+        final rotated = await source.rotateMyProfileCode(idempotencyKey: 'k-2');
 
-      expect(api.calls.map((c) => '${c.method} ${c.uri}'), [
-        'POST /v1/me/profile-code',
-        'POST /v1/me/profile-code/rotate',
-      ]);
-      expect(api.calls.map((c) => c.header('Idempotency-Key')), ['k-1', 'k-2']);
-      expect(current.kind, CodeKind.profile);
-      expect(rotated.code, '7K9M2PQR');
-    });
+        expect(api.calls.map((c) => '${c.method} ${c.uri}'), [
+          'POST /v1/me/profile-code',
+          'POST /v1/me/profile-code/rotate',
+        ]);
+        expect(api.calls.map((c) => c.header('Idempotency-Key')), [
+          'k-1',
+          'k-2',
+        ]);
+        expect(current.kind, CodeKind.profile);
+        expect(rotated.code, '7K9M2PQR');
+      },
+    );
 
     test('a body that is not an object is a format error', () async {
       final api = RecordingApiClient((_) => <dynamic>[]);

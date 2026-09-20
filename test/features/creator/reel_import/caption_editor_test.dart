@@ -111,7 +111,9 @@ void main() {
     expect(find.byKey(CaptionEditor.tagFieldKey), findsNothing);
     expect(_preview(tester), endsWith('#StyleMint #Earbuds #techdeals #Music'));
 
-    await tester.tap(find.byKey(const ValueKey('caption_editor_remove_tag_Music')));
+    await tester.tap(
+      find.byKey(const ValueKey('caption_editor_remove_tag_Music')),
+    );
     await tester.pump();
 
     expect(changes.last.topicTags, ['Earbuds', 'techdeals']);

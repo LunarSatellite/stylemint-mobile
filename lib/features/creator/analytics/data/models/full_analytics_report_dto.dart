@@ -34,12 +34,12 @@ abstract class ContentPerformancePointDto with _$ContentPerformancePointDto {
       _$ContentPerformancePointDtoFromJson(json);
 
   ContentPerformancePoint toDomain() => ContentPerformancePoint(
-        reelId: reelId,
-        title: title,
-        thumbnailUrl: thumbnailUrl,
-        earnings: earnings.toDomain(),
-        sales: sales,
-      );
+    reelId: reelId,
+    title: title,
+    thumbnailUrl: thumbnailUrl,
+    earnings: earnings.toDomain(),
+    sales: sales,
+  );
 }
 
 @freezed
@@ -57,14 +57,14 @@ abstract class ConversionMetricsDto with _$ConversionMetricsDto {
       _$ConversionMetricsDtoFromJson(json);
 
   ConversionMetrics toDomain() => ConversionMetrics(
-        totalClicks: totalClicks,
-        totalOrders: totalOrders,
-        // `distinctOrderCount / totalViews` on the backend — a ratio, and
-        // the report prints it as `'${...toStringAsFixed(2)}%'` in two
-        // places. Unscaled, a real 3.4 % conversion read "0.03%".
-        conversionRate: conversionRate * 100,
-        averageOrderValue: averageOrderValue.toDomain(),
-      );
+    totalClicks: totalClicks,
+    totalOrders: totalOrders,
+    // `distinctOrderCount / totalViews` on the backend — a ratio, and
+    // the report prints it as `'${...toStringAsFixed(2)}%'` in two
+    // places. Unscaled, a real 3.4 % conversion read "0.03%".
+    conversionRate: conversionRate * 100,
+    averageOrderValue: averageOrderValue.toDomain(),
+  );
 }
 
 @freezed
@@ -98,11 +98,11 @@ abstract class ConversionFunnelDto with _$ConversionFunnelDto {
       _$ConversionFunnelDtoFromJson(json);
 
   ConversionFunnel toDomain() => ConversionFunnel(
-        views: views.toDomain(),
-        clicks: clicks.toDomain(),
-        addedToCart: addedToCart.toDomain(),
-        orders: orders.toDomain(),
-      );
+    views: views.toDomain(),
+    clicks: clicks.toDomain(),
+    addedToCart: addedToCart.toDomain(),
+    orders: orders.toDomain(),
+  );
 }
 
 @freezed
@@ -135,10 +135,10 @@ abstract class GenderDistributionDto with _$GenderDistributionDto {
       _$GenderDistributionDtoFromJson(json);
 
   GenderDistribution toDomain() => GenderDistribution(
-        femalePercent: femalePercent,
-        malePercent: malePercent,
-        otherPercent: otherPercent,
-      );
+    femalePercent: femalePercent,
+    malePercent: malePercent,
+    otherPercent: otherPercent,
+  );
 }
 
 @freezed
@@ -153,8 +153,7 @@ abstract class AudienceLocationDto with _$AudienceLocationDto {
   factory AudienceLocationDto.fromJson(Map<String, dynamic> json) =>
       _$AudienceLocationDtoFromJson(json);
 
-  AudienceLocation toDomain() =>
-      AudienceLocation(city: city, percent: percent);
+  AudienceLocation toDomain() => AudienceLocation(city: city, percent: percent);
 }
 
 @freezed
@@ -172,11 +171,11 @@ abstract class BestPostingWindowDto with _$BestPostingWindowDto {
       _$BestPostingWindowDtoFromJson(json);
 
   BestPostingWindow toDomain() => BestPostingWindow(
-        dayOfWeekLabel: dayOfWeekLabel,
-        startHourLocal: startHourLocal,
-        endHourLocal: endHourLocal,
-        annotation: annotation,
-      );
+    dayOfWeekLabel: dayOfWeekLabel,
+    startHourLocal: startHourLocal,
+    endHourLocal: endHourLocal,
+    annotation: annotation,
+  );
 }
 
 @freezed
@@ -197,14 +196,14 @@ abstract class TopProductDto with _$TopProductDto {
       _$TopProductDtoFromJson(json);
 
   TopProduct toDomain() => TopProduct(
-        productId: productId,
-        name: name,
-        thumbnailUrl: thumbnailUrl,
-        totalSales: totalSales,
-        totalCommission: totalCommission.toDomain(),
-        commissionRatePercent: commissionRatePercent,
-        avgCommissionPerSale: avgCommissionPerSale.toDomain(),
-      );
+    productId: productId,
+    name: name,
+    thumbnailUrl: thumbnailUrl,
+    totalSales: totalSales,
+    totalCommission: totalCommission.toDomain(),
+    commissionRatePercent: commissionRatePercent,
+    avgCommissionPerSale: avgCommissionPerSale.toDomain(),
+  );
 }
 
 // ── Root DTO ──────────────────────────────────────────────────────────────────
@@ -213,7 +212,8 @@ abstract class TopProductDto with _$TopProductDto {
 abstract class FullAnalyticsReportDto with _$FullAnalyticsReportDto {
   const factory FullAnalyticsReportDto({
     required AnalyticsWindowDto window,
-    @Default(<EarningsTrendPointDto>[]) List<EarningsTrendPointDto> earningsTrend,
+    @Default(<EarningsTrendPointDto>[])
+    List<EarningsTrendPointDto> earningsTrend,
     @Default(<ContentPerformancePointDto>[])
     List<ContentPerformancePointDto> contentPerformance,
     required ConversionMetricsDto conversionMetrics,
@@ -233,21 +233,23 @@ abstract class FullAnalyticsReportDto with _$FullAnalyticsReportDto {
       _$FullAnalyticsReportDtoFromJson(json);
 
   FullAnalyticsReport toDomain() => FullAnalyticsReport(
-        window: window.toDomain(),
-        earningsTrend:
-            earningsTrend.map((e) => e.toDomain()).toList(growable: false),
-        contentPerformance:
-            contentPerformance.map((e) => e.toDomain()).toList(growable: false),
-        conversionMetrics: conversionMetrics.toDomain(),
-        conversionFunnel: conversionFunnel.toDomain(),
-        audienceDemographic:
-            audienceDemographic.map((e) => e.toDomain()).toList(growable: false),
-        bestPostingTimes:
-            bestPostingTimes.map((e) => e.toDomain()).toList(growable: false),
-        genderDistribution: genderDistribution.toDomain(),
-        topProducts:
-            topProducts.map((e) => e.toDomain()).toList(growable: false),
-        topLocations:
-            topLocations.map((e) => e.toDomain()).toList(growable: false),
-      );
+    window: window.toDomain(),
+    earningsTrend: earningsTrend
+        .map((e) => e.toDomain())
+        .toList(growable: false),
+    contentPerformance: contentPerformance
+        .map((e) => e.toDomain())
+        .toList(growable: false),
+    conversionMetrics: conversionMetrics.toDomain(),
+    conversionFunnel: conversionFunnel.toDomain(),
+    audienceDemographic: audienceDemographic
+        .map((e) => e.toDomain())
+        .toList(growable: false),
+    bestPostingTimes: bestPostingTimes
+        .map((e) => e.toDomain())
+        .toList(growable: false),
+    genderDistribution: genderDistribution.toDomain(),
+    topProducts: topProducts.map((e) => e.toDomain()).toList(growable: false),
+    topLocations: topLocations.map((e) => e.toDomain()).toList(growable: false),
+  );
 }

@@ -87,7 +87,7 @@ class _SignInMethodSelectionScreenState
           SmSnackbar.error(
             context,
             'Passkey sign-in timed out. Your device may not support this — '
-                'try Email or Phone instead.',
+            'try Email or Phone instead.',
           );
           return;
         }
@@ -105,7 +105,9 @@ class _SignInMethodSelectionScreenState
       isScrollControlled: true,
       backgroundColor: DesignTokens.bgAppBody,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(DesignTokens.s16)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.s16),
+        ),
       ),
       builder: (_) => const _DisplayNameSheet(),
     );
@@ -118,13 +120,17 @@ class _SignInMethodSelectionScreenState
     if (!mounted) return;
     setState(() => _busy = false);
 
-    ref.read(passkeyBootstrapProvider).maybeWhen(
+    ref
+        .read(passkeyBootstrapProvider)
+        .maybeWhen(
           // Success: session is persisted + rechecked. Navigate explicitly.
           loadSuccess: (auth) => _routeAfterAuth(auth),
           loadFailure: (failure) {
             if (failure.isAuth) return;
             SmSnackbar.error(
-                context, 'Could not create your account. Please try again.');
+              context,
+              'Could not create your account. Please try again.',
+            );
           },
           orElse: () {},
         );
@@ -138,8 +144,9 @@ class _SignInMethodSelectionScreenState
   Future<void> _startSocial(String provider) async {
     if (_busy) return;
     setState(() => _busy = true);
-    final url =
-        await ref.read(oauthSignInProvider.notifier).authorize(provider);
+    final url = await ref
+        .read(oauthSignInProvider.notifier)
+        .authorize(provider);
     if (!mounted) return;
     setState(() => _busy = false);
 
@@ -217,8 +224,9 @@ class _SignInMethodSelectionScreenState
                         onPressed: () => setState(() => _showMore = true),
                         child: Text(
                           'More ways to continue',
-                          style: DesignTokens.mediumSemibold
-                              .copyWith(color: DesignTokens.primaryGreen),
+                          style: DesignTokens.mediumSemibold.copyWith(
+                            color: DesignTokens.primaryGreen,
+                          ),
                         ),
                       ),
                     ] else ...[
@@ -298,6 +306,7 @@ class _PlanB extends StatelessWidget {
           onTap: () => context.push(RouteNames.login),
         ),
         const SizedBox(height: DesignTokens.s16),
+
         //
         // // Create account — smart-start: a new email/phone provisions an
         // // account automatically on OTP verify, so "create" and "sign in" are
@@ -326,19 +335,18 @@ class _PlanB extends StatelessWidget {
         //   ),
         // ),
         // const SizedBox(height: DesignTokens.s24),
-
         Row(
           children: [
             const Expanded(
               child: Divider(color: DesignTokens.borderDefault, height: 1),
             ),
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
+              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
               child: Text(
                 'Or Continue With',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textLight),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
               ),
             ),
             const Expanded(
@@ -468,7 +476,11 @@ class _MethodRow extends StatelessWidget {
                 color: iconTileColor,
                 borderRadius: BorderRadius.circular(DesignTokens.s8),
               ),
-              child: Icon(icon, color: iconColor, size: DesignTokens.iconMedium),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: DesignTokens.iconMedium,
+              ),
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
@@ -477,8 +489,9 @@ class _MethodRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: DesignTokens.mediumRegular
-                        .copyWith(color: DesignTokens.textWhite),
+                    style: DesignTokens.mediumRegular.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(description, style: DesignTokens.smallDescription),
@@ -564,7 +577,9 @@ class _DisplayNameSheetState extends State<_DisplayNameSheet> {
               fillColor: DesignTokens.inputFieldFill,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                borderSide: const BorderSide(color: DesignTokens.inputFieldBorder),
+                borderSide: const BorderSide(
+                  color: DesignTokens.inputFieldBorder,
+                ),
               ),
             ),
           ),
@@ -592,10 +607,12 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final regular =
-        DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite);
-    final link =
-        DesignTokens.mediumSemibold.copyWith(color: DesignTokens.primaryGreen);
+    final regular = DesignTokens.mediumRegular.copyWith(
+      color: DesignTokens.textWhite,
+    );
+    final link = DesignTokens.mediumSemibold.copyWith(
+      color: DesignTokens.primaryGreen,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         DesignTokens.s16,

@@ -32,22 +32,21 @@ abstract class ReelHeaderDto with _$ReelHeaderDto {
       _$ReelHeaderDtoFromJson(json);
 
   ReelHeader toDomain() => ReelHeader(
-        reelId: reelId,
-        title: title,
-        thumbnailUrl: thumbnailUrl,
-        sourcePlatform: sourcePlatform,
-        sourceUrl: sourceUrl,
-        durationSeconds: durationSeconds,
-        publishedAtUtc: publishedAtUtc,
-        views: views,
-        likes: likes,
-        comments: comments,
-      );
+    reelId: reelId,
+    title: title,
+    thumbnailUrl: thumbnailUrl,
+    sourcePlatform: sourcePlatform,
+    sourceUrl: sourceUrl,
+    durationSeconds: durationSeconds,
+    publishedAtUtc: publishedAtUtc,
+    views: views,
+    likes: likes,
+    comments: comments,
+  );
 }
 
 @freezed
-abstract class ReelProductEarningsSliceDto
-    with _$ReelProductEarningsSliceDto {
+abstract class ReelProductEarningsSliceDto with _$ReelProductEarningsSliceDto {
   const factory ReelProductEarningsSliceDto({
     required String productId,
     String? name,
@@ -63,13 +62,13 @@ abstract class ReelProductEarningsSliceDto
       _$ReelProductEarningsSliceDtoFromJson(json);
 
   ReelProductEarningsSlice toDomain() => ReelProductEarningsSlice(
-        productId: productId,
-        name: name,
-        thumbnailUrl: thumbnailUrl,
-        amount: amount.toDomain(),
-        quantity: quantity,
-        percentOfTotal: percentOfTotal,
-      );
+    productId: productId,
+    name: name,
+    thumbnailUrl: thumbnailUrl,
+    amount: amount.toDomain(),
+    quantity: quantity,
+    percentOfTotal: percentOfTotal,
+  );
 }
 
 @freezed
@@ -94,11 +93,11 @@ abstract class ReelStatisticsDto with _$ReelStatisticsDto {
   /// that 62 % of viewers watched to the end read "Completion rate:
   /// 0.62%", and one converting 3.4 % of them read "0.03%".
   ReelStatistics toDomain() => ReelStatistics(
-        conversionRate: conversionRate * 100,
-        clickThroughRate: clickThroughRate * 100,
-        completionRate: completionRate * 100,
-        uniqueViewersEstimate: uniqueViewersEstimate,
-      );
+    conversionRate: conversionRate * 100,
+    clickThroughRate: clickThroughRate * 100,
+    completionRate: completionRate * 100,
+    uniqueViewersEstimate: uniqueViewersEstimate,
+  );
 }
 
 @freezed
@@ -125,21 +124,21 @@ abstract class CreatorReelAnalyticsDto with _$CreatorReelAnalyticsDto {
       _$CreatorReelAnalyticsDtoFromJson(json);
 
   CreatorReelAnalytics toDomain() => CreatorReelAnalytics(
-        window: window.toDomain(),
-        reel: reel.toDomain(),
-        totalEarnings: totalEarnings.toDomain(),
-        earningsDistribution: earningsDistribution
-            .map((e) => e.toDomain())
-            .toList(growable: false),
-        statistics: statistics.toDomain(),
-        watchTimeMinutes: watchTimeMinutes,
-        earningsTrend:
-            earningsTrend.map((e) => e.toDomain()).toList(growable: false),
-        audienceDemographic: audienceDemographic
-            .map((e) => e.toDomain())
-            .toList(growable: false),
-        genderDistribution: genderDistribution.toDomain(),
-        topLocations:
-            topLocations.map((e) => e.toDomain()).toList(growable: false),
-      );
+    window: window.toDomain(),
+    reel: reel.toDomain(),
+    totalEarnings: totalEarnings.toDomain(),
+    earningsDistribution: earningsDistribution
+        .map((e) => e.toDomain())
+        .toList(growable: false),
+    statistics: statistics.toDomain(),
+    watchTimeMinutes: watchTimeMinutes,
+    earningsTrend: earningsTrend
+        .map((e) => e.toDomain())
+        .toList(growable: false),
+    audienceDemographic: audienceDemographic
+        .map((e) => e.toDomain())
+        .toList(growable: false),
+    genderDistribution: genderDistribution.toDomain(),
+    topLocations: topLocations.map((e) => e.toDomain()).toList(growable: false),
+  );
 }

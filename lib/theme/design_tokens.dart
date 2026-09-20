@@ -262,6 +262,18 @@ class DesignTokens {
     color: textMuted,
   );
 
+  /// Editorial Body — 15 / 400 / 1.6. Collection and campaign prose, set a
+  /// step above UI body and looser, because it is read rather than scanned.
+  /// One line-height for every editorial paragraph — collection_screen
+  /// previously carried two near-identical styles at 1.45 and 1.6.
+  static const TextStyle editorialBody = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
+    height: 1.6,
+    color: textLight,
+  );
+
   // --- Money ---------------------------------------------------------------
   // Prices are the one thing a shopper scans for, so they get their own scale
   // rather than borrowing a body style. Tabular figures keep columns of
@@ -431,10 +443,6 @@ class DesignTokens {
   static const double thumbCompact = 64;
   static const double thumbSmall = 72;
   static const double thumbMedium = 88;
-
-  /// Portrait product imagery ratio (w/h). Every product image on the shopper
-  /// journey uses this so grids never jump as cards load.
-  static const double productAspectRatio = 3 / 4;
 
   // Avatars
   static const double avatarSmall = 32;

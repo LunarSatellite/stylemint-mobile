@@ -286,9 +286,9 @@ void main() {
         const NetworkExceptions.serverUnavailable(),
       );
       expect(
-        (await repo(connected: false).getStats('ABCD2345'))
-            .getLeft()
-            .toNullable(),
+        (await repo(
+          connected: false,
+        ).getStats('ABCD2345')).getLeft().toNullable(),
         const NetworkExceptions.noInternetConnection(),
       );
     });

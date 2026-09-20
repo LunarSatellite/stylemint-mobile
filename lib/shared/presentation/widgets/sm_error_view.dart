@@ -23,8 +23,8 @@ class SmErrorView extends StatelessWidget {
                 message!,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: kTextSecondary,
-                    ),
+                  color: kTextSecondary,
+                ),
               ),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
@@ -36,8 +36,8 @@ class SmErrorView extends StatelessWidget {
                     Text(
                       'Tap to retry',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: kPrimaryColor,
-                          ),
+                        color: kPrimaryColor,
+                      ),
                     ),
                     const SizedBox(width: 4),
                     const Icon(Icons.refresh, size: 16, color: kPrimaryColor),

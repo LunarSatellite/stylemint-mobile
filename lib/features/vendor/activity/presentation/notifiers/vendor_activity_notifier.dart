@@ -12,8 +12,9 @@ part 'vendor_activity_notifier.freezed.dart';
 abstract class VendorActivityState with _$VendorActivityState {
   const factory VendorActivityState.initial() = _Initial;
   const factory VendorActivityState.loadInProgress() = _LoadInProgress;
-  const factory VendorActivityState.loadSuccess(List<VendorActivityEntry> entries) =
-      _LoadSuccess;
+  const factory VendorActivityState.loadSuccess(
+    List<VendorActivityEntry> entries,
+  ) = _LoadSuccess;
   const factory VendorActivityState.loadFailure(NetworkExceptions failure) =
       _LoadFailure;
 }

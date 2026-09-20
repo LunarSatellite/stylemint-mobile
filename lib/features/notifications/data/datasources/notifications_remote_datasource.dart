@@ -37,15 +37,17 @@ class NotificationsRemoteDataSource {
     );
     final json = response as Map<String, dynamic>;
     final items = json['items'] as List<dynamic>? ?? const <dynamic>[];
-    return items.map((e) {
-      final entry = e as Map<String, dynamic>;
-      return ActivityItem(
-        id: (entry['id'] ?? '').toString(),
-        title: entry['headline'] as String? ?? '',
-        occurredAt: _parseDate(entry['occurredUtc']),
-        isRead: false,
-      );
-    }).toList(growable: false);
+    return items
+        .map((e) {
+          final entry = e as Map<String, dynamic>;
+          return ActivityItem(
+            id: (entry['id'] ?? '').toString(),
+            title: entry['headline'] as String? ?? '',
+            occurredAt: _parseDate(entry['occurredUtc']),
+            isRead: false,
+          );
+        })
+        .toList(growable: false);
   }
 
   static DateTime? _parseDate(dynamic v) =>

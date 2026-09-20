@@ -18,7 +18,8 @@ class SocialConnectRepositoryImpl implements SocialConnectRepository {
   final NetworkInfoConnectivity networkInfo;
 
   @override
-  Future<Either<NetworkExceptions, List<SocialAccount>>> getConnectedAccounts() async {
+  Future<Either<NetworkExceptions, List<SocialAccount>>>
+  getConnectedAccounts() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getConnectedAccounts();
@@ -38,7 +39,8 @@ class SocialConnectRepositoryImpl implements SocialConnectRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, AudienceSummary>> getAudienceSummary() async {
+  Future<Either<NetworkExceptions, AudienceSummary>>
+  getAudienceSummary() async {
     if (await networkInfo.isConnected) {
       try {
         return right(await remoteDataSource.getAudienceSummary());

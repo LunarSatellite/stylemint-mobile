@@ -157,8 +157,12 @@ void main() {
       expect(plan.approvedUtc, isNull);
       expect(
         plan.steps.map((s) => s.taskKey),
-        <String>['discover', 'compose_basket', 'prepare_checkout',
-          'place_order'],
+        <String>[
+          'discover',
+          'compose_basket',
+          'prepare_checkout',
+          'place_order',
+        ],
       );
       expect(plan.steps.first.approval, ExecutionApproval.none);
       expect(
@@ -166,22 +170,26 @@ void main() {
         ExecutionApproval.customerBeforeExecution,
       );
       expect(plan.steps[3].approval, ExecutionApproval.customerAtTask);
-      expect(plan.steps.every((s) => s.status == ExecutionStepStatus.pending),
-          isTrue);
+      expect(
+        plan.steps.every((s) => s.status == ExecutionStepStatus.pending),
+        isTrue,
+      );
     });
 
-    test('string enum names parse too, so a later converter cannot break it',
-        () {
-      final json = _planJson()..['status'] = 'AwaitingCustomerApproval';
-      final tasks =
-          (json['definition']! as Map<String, dynamic>)['tasks']! as List;
-      (tasks[3] as Map<String, dynamic>)['approval'] = 'CustomerAtTask';
+    test(
+      'string enum names parse too, so a later converter cannot break it',
+      () {
+        final json = _planJson()..['status'] = 'AwaitingCustomerApproval';
+        final tasks =
+            (json['definition']! as Map<String, dynamic>)['tasks']! as List;
+        (tasks[3] as Map<String, dynamic>)['approval'] = 'CustomerAtTask';
 
-      final plan = parseCommerceExecutionPlan(json);
+        final plan = parseCommerceExecutionPlan(json);
 
-      expect(plan.status, ExecutionPlanStatus.awaitingCustomerApproval);
-      expect(plan.steps[3].approval, ExecutionApproval.customerAtTask);
-    });
+        expect(plan.status, ExecutionPlanStatus.awaitingCustomerApproval);
+        expect(plan.steps[3].approval, ExecutionApproval.customerAtTask);
+      },
+    );
 
     test('an unrecognised status names itself rather than hiding', () {
       final plan = parseCommerceExecutionPlan(_planJson()..['status'] = 99);
@@ -189,31 +197,34 @@ void main() {
       expect(plan.status, ExecutionPlanStatus.unrecognised);
       expect(plan.rawStatus, 99);
       expect(
-        ExecutionPlanCopy.planStatusLabel(plan.status,
-            rawStatus: plan.rawStatus),
+        ExecutionPlanCopy.planStatusLabel(
+          plan.status,
+          rawStatus: plan.rawStatus,
+        ),
         contains('99'),
       );
     });
 
     test('no spending limit stays null, never zero', () {
-      final plan =
-          parseCommerceExecutionPlan(_planJson(maximumSpend: null));
+      final plan = parseCommerceExecutionPlan(_planJson(maximumSpend: null));
 
       expect(plan.spendLimit, isNull);
       expect(plan.steps[2].budgetCap, isNull);
     });
 
-    test('the step that reserves stock and freezes a price is marked as such',
-        () {
-      final plan = parseCommerceExecutionPlan(_planJson());
-      final prepare = plan.steps[2];
+    test(
+      'the step that reserves stock and freezes a price is marked as such',
+      () {
+        final plan = parseCommerceExecutionPlan(_planJson());
+        final prepare = plan.steps[2];
 
-      expect(prepare.commitments, <ExecutionCommitment>{
-        ExecutionCommitment.price,
-        ExecutionCommitment.stock,
-      });
-      expect(prepare.isCommitting, isTrue);
-    });
+        expect(prepare.commitments, <ExecutionCommitment>{
+          ExecutionCommitment.price,
+          ExecutionCommitment.stock,
+        });
+        expect(prepare.isCommitting, isTrue);
+      },
+    );
 
     test('the step that would move money is marked as such', () {
       final plan = parseCommerceExecutionPlan(_planJson());
@@ -231,8 +242,7 @@ void main() {
       expect(plan.steps[1].isCommitting, isFalse);
     });
 
-    test('the pre-set approved bit is never read as the shopper approving',
-        () {
+    test('the pre-set approved bit is never read as the shopper approving', () {
       final plan = parseCommerceExecutionPlan(_planJson());
 
       // The backend sets approved=true on every step whose gate is not
@@ -371,13 +381,17 @@ void main() {
       // `POST {planId}/tasks/{taskKey}/evidence` is the only route in this
       // family that turns a proposed step into a recorded one. §5.9 keeps it
       // off this client, and this asserts the door stays shut.
-      final code = File(
-        'lib/features/customer/execution_plans/data/datasources/'
-        'execution_plans_datasource.dart',
-      ).readAsLinesSync().where((line) {
-        final trimmed = line.trimLeft();
-        return !trimmed.startsWith('//');
-      }).join('\n');
+      final code =
+          File(
+                'lib/features/customer/execution_plans/data/datasources/'
+                'execution_plans_datasource.dart',
+              )
+              .readAsLinesSync()
+              .where((line) {
+                final trimmed = line.trimLeft();
+                return !trimmed.startsWith('//');
+              })
+              .join('\n');
 
       expect(
         code.contains('evidence'),

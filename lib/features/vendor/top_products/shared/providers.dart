@@ -27,6 +27,7 @@ final vendorTopProductsRepositoryProvider =
 
 final vendorTopProductsNotifierProvider =
     StateNotifierProvider<VendorTopProductsNotifier, VendorTopProductsState>(
-      (ref) =>
-          VendorTopProductsNotifier(ref.watch(vendorTopProductsRepositoryProvider)),
+      (ref) => VendorTopProductsNotifier(
+        ref.watch(vendorTopProductsRepositoryProvider),
+      ),
     );

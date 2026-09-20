@@ -41,7 +41,8 @@ final creatorApplyNotifierProvider =
 /// Single-step creator activation (replaces the old multi-step apply flow).
 final creatorActivateNotifierProvider =
     StateNotifierProvider<CreatorActivateNotifier, CreatorActivateState>(
-      (ref) => CreatorActivateNotifier(ref.watch(creatorRepositoryProvider), ref),
+      (ref) =>
+          CreatorActivateNotifier(ref.watch(creatorRepositoryProvider), ref),
     );
 
 /// Active creator content categories for the apply form, fetched live from
@@ -49,10 +50,14 @@ final creatorActivateNotifierProvider =
 /// show loading/error/retry; the value list drives the category chips.
 final creatorContentCategoriesProvider =
     FutureProvider<List<CreatorContentCategory>>((ref) async {
-  final either =
-      await ref.watch(creatorRepositoryProvider).getContentCategories();
-  return either.fold((failure) => throw failure, (categories) => categories);
-});
+      final either = await ref
+          .watch(creatorRepositoryProvider)
+          .getContentCategories();
+      return either.fold(
+        (failure) => throw failure,
+        (categories) => categories,
+      );
+    });
 
 // ── Identity documents (KYC) ─────────────────────────────────────────────────
 // Backed by the Identity module's account-scoped verification-document and
@@ -61,11 +66,11 @@ final creatorContentCategoriesProvider =
 
 final creatorDocumentsRemoteDataSourceProvider =
     Provider<CreatorDocumentsRemoteDataSource>(
-  (ref) => CreatorDocumentsRemoteDataSource(
-    apiClient: ref.watch(apiClientProvider),
-    tokenStorage: ref.watch(tokenStorageProvider),
-  ),
-);
+      (ref) => CreatorDocumentsRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+        tokenStorage: ref.watch(tokenStorageProvider),
+      ),
+    );
 
 final creatorDocumentsRepositoryProvider = Provider<CreatorDocumentsRepository>(
   (ref) => CreatorDocumentsRepositoryImpl(
@@ -74,9 +79,9 @@ final creatorDocumentsRepositoryProvider = Provider<CreatorDocumentsRepository>(
   ),
 );
 
-final creatorDocumentsNotifierProvider = StateNotifierProvider<
-    CreatorDocumentsNotifier, CreatorDocumentsState>(
-  (ref) => CreatorDocumentsNotifier(
-    ref.watch(creatorDocumentsRepositoryProvider),
-  ),
-);
+final creatorDocumentsNotifierProvider =
+    StateNotifierProvider<CreatorDocumentsNotifier, CreatorDocumentsState>(
+      (ref) => CreatorDocumentsNotifier(
+        ref.watch(creatorDocumentsRepositoryProvider),
+      ),
+    );

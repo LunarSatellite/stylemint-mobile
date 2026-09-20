@@ -9,8 +9,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/ent
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/repositories/add_product_repository.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 
-final addProductRemoteDataSourceProvider =
-    Provider<AddProductRemoteDataSource>(
+final addProductRemoteDataSourceProvider = Provider<AddProductRemoteDataSource>(
   (ref) => AddProductRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
 );
 
@@ -23,13 +22,15 @@ final addProductRepositoryProvider = Provider<AddProductRepository>(
 
 final addProductNotifierProvider =
     StateNotifierProvider<AddProductNotifier, AddProductState>(
-  (ref) => AddProductNotifier(ref.watch(addProductRepositoryProvider)),
-);
+      (ref) => AddProductNotifier(ref.watch(addProductRepositoryProvider)),
+    );
 
 /// Real catalog categories for the Step-1 picker (GET /v1/public/categories).
-final productCategoriesProvider =
-    FutureProvider<List<CategoryOption>>((ref) async {
-  final either =
-      await ref.watch(addProductRepositoryProvider).fetchCategories();
+final productCategoriesProvider = FutureProvider<List<CategoryOption>>((
+  ref,
+) async {
+  final either = await ref
+      .watch(addProductRepositoryProvider)
+      .fetchCategories();
   return either.fold((failure) => throw failure, (categories) => categories);
 });

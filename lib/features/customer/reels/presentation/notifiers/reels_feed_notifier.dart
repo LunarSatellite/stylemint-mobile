@@ -15,7 +15,8 @@ abstract class ReelsFeedState with _$ReelsFeedState {
   const factory ReelsFeedState.initial() = _Initial;
   const factory ReelsFeedState.loadInProgress() = _LoadInProgress;
   const factory ReelsFeedState.loadSuccess(List<Reel> reels) = _LoadSuccess;
-  const factory ReelsFeedState.loadFailure(NetworkExceptions failure) = _LoadFailure;
+  const factory ReelsFeedState.loadFailure(NetworkExceptions failure) =
+      _LoadFailure;
 }
 
 class ReelsFeedNotifier extends StateNotifier<ReelsFeedState> {

@@ -17,7 +17,8 @@ class CreatorSearchScreen extends ConsumerStatefulWidget {
   const CreatorSearchScreen({super.key});
 
   @override
-  ConsumerState<CreatorSearchScreen> createState() => _CreatorSearchScreenState();
+  ConsumerState<CreatorSearchScreen> createState() =>
+      _CreatorSearchScreenState();
 }
 
 class _CreatorSearchScreenState extends ConsumerState<CreatorSearchScreen> {
@@ -48,8 +49,11 @@ class _CreatorSearchScreenState extends ConsumerState<CreatorSearchScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
         title: const Text('Search', style: DesignTokens.sectionInnerTitle),
@@ -68,8 +72,10 @@ class _CreatorSearchScreenState extends ConsumerState<CreatorSearchScreen> {
                 hintStyle: const TextStyle(color: DesignTokens.textMuted),
                 filled: true,
                 fillColor: DesignTokens.bgAppBodyLight,
-                prefixIcon: const Icon(Icons.search_rounded,
-                    color: DesignTokens.iconLight),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: DesignTokens.iconLight,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
                   borderSide: BorderSide.none,
@@ -113,10 +119,10 @@ class _CreatorSearchScreenState extends ConsumerState<CreatorSearchScreen> {
   }
 
   String _label(CreatorSearchType type) => switch (type) {
-        CreatorSearchType.brands => 'Brands',
-        CreatorSearchType.products => 'Products',
-        CreatorSearchType.creators => 'Creators',
-      };
+    CreatorSearchType.brands => 'Brands',
+    CreatorSearchType.products => 'Products',
+    CreatorSearchType.creators => 'Creators',
+  };
 }
 
 class _Results extends StatelessWidget {
@@ -129,43 +135,53 @@ class _Results extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (state) {
       CreatorSearchIdle() => const _HintMessage(
-          'Search for brands to partner with, products to feature, or other creators.'),
+        'Search for brands to partner with, products to feature, or other creators.',
+      ),
       CreatorSearchLoading() => const SmPageLoader(),
       CreatorSearchFailed(message: final m) => _HintMessage(m),
-      CreatorSearchBrandsLoaded(results: final results) => results.isEmpty
-          ? const _HintMessage('No brands found.')
-          : ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-              itemCount: results.length,
-              separatorBuilder: (_, _i) =>
-                  const SizedBox(height: DesignTokens.s8),
-              itemBuilder: (_, i) => _BrandTile(
-                brand: results[i],
-                onTap: () => onBrandTap(results[i].name),
+      CreatorSearchBrandsLoaded(results: final results) =>
+        results.isEmpty
+            ? const _HintMessage('No brands found.')
+            : ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
+                itemCount: results.length,
+                separatorBuilder: (_, _i) =>
+                    const SizedBox(height: DesignTokens.s8),
+                itemBuilder: (_, i) => _BrandTile(
+                  brand: results[i],
+                  onTap: () => onBrandTap(results[i].name),
+                ),
               ),
-            ),
-      CreatorSearchProductsLoaded(results: final results) => results.isEmpty
-          ? const _HintMessage('No products found.')
-          : GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: DesignTokens.s8,
-                mainAxisSpacing: DesignTokens.s8,
-                childAspectRatio: 0.75,
+      CreatorSearchProductsLoaded(results: final results) =>
+        results.isEmpty
+            ? const _HintMessage('No products found.')
+            : GridView.builder(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: DesignTokens.s8,
+                  mainAxisSpacing: DesignTokens.s8,
+                  childAspectRatio: 0.75,
+                ),
+                itemCount: results.length,
+                itemBuilder: (_, i) => _ProductTile(product: results[i]),
               ),
-              itemCount: results.length,
-              itemBuilder: (_, i) => _ProductTile(product: results[i]),
-            ),
-      CreatorSearchCreatorsLoaded(results: final results) => results.isEmpty
-          ? const _HintMessage('No creators found.')
-          : ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-              itemCount: results.length,
-              separatorBuilder: (_, _i) =>
-                  const SizedBox(height: DesignTokens.s8),
-              itemBuilder: (_, i) => _CreatorTile(creator: results[i]),
-            ),
+      CreatorSearchCreatorsLoaded(results: final results) =>
+        results.isEmpty
+            ? const _HintMessage('No creators found.')
+            : ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
+                itemCount: results.length,
+                separatorBuilder: (_, _i) =>
+                    const SizedBox(height: DesignTokens.s8),
+                itemBuilder: (_, i) => _CreatorTile(creator: results[i]),
+              ),
     };
   }
 }
@@ -176,15 +192,17 @@ class _HintMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(DesignTokens.s24),
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
-          ),
+    child: Padding(
+      padding: const EdgeInsets.all(DesignTokens.s24),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: DesignTokens.smallRegular.copyWith(
+          color: DesignTokens.textMuted,
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _BrandTile extends StatelessWidget {
@@ -209,9 +227,12 @@ class _BrandTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 child: (brand.logoUrl?.isNotEmpty ?? false)
-                    ? Image.network(brand.logoUrl!, fit: BoxFit.cover,
+                    ? Image.network(
+                        brand.logoUrl!,
+                        fit: BoxFit.cover,
                         errorBuilder: (_, _e, _s) =>
-                            const ColoredBox(color: DesignTokens.bgAppBody))
+                            const ColoredBox(color: DesignTokens.bgAppBody),
+                      )
                     : const ColoredBox(color: DesignTokens.bgAppBody),
               ),
             ),
@@ -224,8 +245,9 @@ class _BrandTile extends StatelessWidget {
                   const SizedBox(height: DesignTokens.s4),
                   Text(
                     '${brand.productCount} products · ${brand.commissionRange} commission',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 ],
               ),
@@ -254,21 +276,29 @@ class _ProductTile extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
               child: product.heroImageUrl.isNotEmpty
-                  ? Image.network(product.heroImageUrl,
-                      fit: BoxFit.cover, width: double.infinity,
+                  ? Image.network(
+                      product.heroImageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
                       errorBuilder: (_, _e, _s) =>
-                          const ColoredBox(color: DesignTokens.bgAppBodyLight))
+                          const ColoredBox(color: DesignTokens.bgAppBodyLight),
+                    )
                   : const ColoredBox(color: DesignTokens.bgAppBodyLight),
             ),
           ),
           const SizedBox(height: DesignTokens.s4),
-          Text(product.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: DesignTokens.smallRegular),
-          Text('${product.currency} ${product.price.toStringAsFixed(0)}',
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.primaryGreen)),
+          Text(
+            product.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: DesignTokens.smallRegular,
+          ),
+          Text(
+            '${product.currency} ${product.price.toStringAsFixed(0)}',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.primaryGreen,
+            ),
+          ),
         ],
       ),
     );
@@ -283,7 +313,10 @@ class _CreatorTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => context.push(
-        RouteNames.creatorProfile.replaceFirst(':accountId', creator.creatorProfileId),
+        RouteNames.creatorProfile.replaceFirst(
+          ':accountId',
+          creator.creatorProfileId,
+        ),
       ),
       child: Container(
         padding: const EdgeInsets.all(DesignTokens.s12),
@@ -298,9 +331,12 @@ class _CreatorTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 child: (creator.avatarUrl?.isNotEmpty ?? false)
-                    ? Image.network(creator.avatarUrl!, fit: BoxFit.cover,
+                    ? Image.network(
+                        creator.avatarUrl!,
+                        fit: BoxFit.cover,
                         errorBuilder: (_, _e, _s) =>
-                            const ColoredBox(color: DesignTokens.bgAppBody))
+                            const ColoredBox(color: DesignTokens.bgAppBody),
+                      )
                     : const ColoredBox(color: DesignTokens.bgAppBody),
               ),
             ),
@@ -309,12 +345,16 @@ class _CreatorTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(creator.displayName, style: DesignTokens.oneLinerSemibold),
+                  Text(
+                    creator.displayName,
+                    style: DesignTokens.oneLinerSemibold,
+                  ),
                   const SizedBox(height: DesignTokens.s4),
                   Text(
                     '@${creator.handle} · ${creator.followerCount} followers · ${creator.reelCount} reels',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 ],
               ),

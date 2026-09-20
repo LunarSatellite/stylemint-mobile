@@ -94,8 +94,8 @@ Money? _money(Object? amount, Object? currency) {
 }
 
 ExecutionPlanStatus _planStatus(Object? raw) => switch (raw) {
-  1 || 'awaitingcustomerapproval' =>
-    ExecutionPlanStatus.awaitingCustomerApproval,
+  1 ||
+  'awaitingcustomerapproval' => ExecutionPlanStatus.awaitingCustomerApproval,
   2 || 'ready' => ExecutionPlanStatus.ready,
   3 || 'inprogress' => ExecutionPlanStatus.inProgress,
   4 || 'completed' => ExecutionPlanStatus.completed,

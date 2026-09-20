@@ -12,19 +12,19 @@ class RateTier {
   final String? description;
 
   factory RateTier.fromJson(Map<String, dynamic> json) => RateTier(
-        tierName: (json['tierName'] as String?) ?? '',
-        price: (json['price'] as num?)?.toDouble() ?? 0,
-        includedReels: (json['includedReels'] as num?)?.toInt() ?? 0,
-        description: json['description'] as String?,
-      );
+    tierName: (json['tierName'] as String?) ?? '',
+    price: (json['price'] as num?)?.toDouble() ?? 0,
+    includedReels: (json['includedReels'] as num?)?.toInt() ?? 0,
+    description: json['description'] as String?,
+  );
 
   Map<String, dynamic> toJson() => {
-        'tierName': tierName,
-        'price': price,
-        'includedReels': includedReels,
-        if (description != null && description!.isNotEmpty)
-          'description': description,
-      };
+    'tierName': tierName,
+    'price': price,
+    'includedReels': includedReels,
+    if (description != null && description!.isNotEmpty)
+      'description': description,
+  };
 }
 
 class CreatorRateCard {
@@ -50,12 +50,13 @@ class CreatorRateCard {
   final bool isActive;
   final String? notes;
 
-  factory CreatorRateCard.fromJson(Map<String, dynamic> json) => CreatorRateCard(
+  factory CreatorRateCard.fromJson(Map<String, dynamic> json) =>
+      CreatorRateCard(
         id: (json['id'] as String?) ?? '',
         version: (json['version'] as num?)?.toInt() ?? 1,
         effectiveFromUtc: json['effectiveFromUtc'] is String
             ? DateTime.tryParse(json['effectiveFromUtc'] as String) ??
-                DateTime.now()
+                  DateTime.now()
             : DateTime.now(),
         baseRate: (json['baseRate'] as num?)?.toDouble() ?? 0,
         rates: (json['rates'] as List<dynamic>? ?? const [])

@@ -16,7 +16,8 @@ class EditProfileTagsScreen extends ConsumerStatefulWidget {
   final List<String> initialTags;
 
   @override
-  ConsumerState<EditProfileTagsScreen> createState() => _EditProfileTagsScreenState();
+  ConsumerState<EditProfileTagsScreen> createState() =>
+      _EditProfileTagsScreenState();
 }
 
 class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
@@ -51,10 +52,12 @@ class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
-      final accountId = ref.read(sessionControllerProvider).maybeWhen(
-        authenticated: (id) => id,
-        orElse: () => null,
-      );
+      final accountId = ref
+          .read(sessionControllerProvider)
+          .maybeWhen(
+            authenticated: (id) => id,
+            orElse: () => null,
+          );
       if (accountId == null || accountId.isEmpty) {
         if (mounted) context.pop(List<String>.from(_tags));
         return;
@@ -66,11 +69,15 @@ class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
       );
       if (profile == null) {
         // Profile not loaded yet - load it to get rowVersion.
-        final result = await ref.read(creatorProfileNotifierProvider(accountId).notifier).load();
-        profile = ref.read(creatorProfileNotifierProvider(accountId)).maybeWhen(
-          loadSuccess: (p) => p,
-          orElse: () => null,
-        );
+        final result = await ref
+            .read(creatorProfileNotifierProvider(accountId).notifier)
+            .load();
+        profile = ref
+            .read(creatorProfileNotifierProvider(accountId))
+            .maybeWhen(
+              loadSuccess: (p) => p,
+              orElse: () => null,
+            );
       }
       if (profile == null) {
         if (mounted) {
@@ -90,18 +97,22 @@ class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
       final displayName = editData.displayName.isNotEmpty
           ? editData.displayName
           : profile.displayName;
-      await ref.read(updateCreatorProfileNotifierProvider.notifier).submit(
-        accountId: accountId,
-        rowVersion: rowVersion,
-        displayName: displayName,
-        tags: List<String>.from(_tags),
-      );
+      await ref
+          .read(updateCreatorProfileNotifierProvider.notifier)
+          .submit(
+            accountId: accountId,
+            rowVersion: rowVersion,
+            displayName: displayName,
+            tags: List<String>.from(_tags),
+          );
       final state = ref.read(updateCreatorProfileNotifierProvider);
       state.whenOrNull(
         success: (_) {
           if (!mounted) return;
           // refresh profile so tags are reflected everywhere
-          unawaited(ref.read(creatorProfileNotifierProvider(accountId).notifier).load());
+          unawaited(
+            ref.read(creatorProfileNotifierProvider(accountId).notifier).load(),
+          );
           context.pop(List<String>.from(_tags));
         },
         failure: (f) {
@@ -128,8 +139,11 @@ class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
         title: const Text(
@@ -147,8 +161,7 @@ class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              keyboardDismissBehavior:
-                  ScrollViewKeyboardDismissBehavior.onDrag,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.all(DesignTokens.s16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,10 +181,12 @@ class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
                       spacing: DesignTokens.s8,
                       runSpacing: DesignTokens.s8,
                       children: _tags
-                          .map((t) => _TagChip(
-                                label: t,
-                                onRemove: () => _removeTag(t),
-                              ))
+                          .map(
+                            (t) => _TagChip(
+                              label: t,
+                              onRemove: () => _removeTag(t),
+                            ),
+                          )
                           .toList(),
                     ),
                   const SizedBox(height: DesignTokens.s20),
@@ -194,8 +209,11 @@ class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
                     height: 52,
                     child: ElevatedButton.icon(
                       onPressed: _addTag,
-                      icon: const Icon(Icons.add_rounded,
-                          size: 18, color: DesignTokens.textWhite),
+                      icon: const Icon(
+                        Icons.add_rounded,
+                        size: 18,
+                        color: DesignTokens.textWhite,
+                      ),
                       label: const Text(
                         'Add Tag',
                         style: TextStyle(
@@ -212,7 +230,8 @@ class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(999),
                           side: const BorderSide(
-                              color: DesignTokens.borderDefault),
+                            color: DesignTokens.borderDefault,
+                          ),
                         ),
                       ),
                     ),
@@ -248,7 +267,8 @@ class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              DesignTokens.textWhite),
+                            DesignTokens.textWhite,
+                          ),
                         ),
                       )
                     : const Row(
@@ -303,8 +323,11 @@ class _TagChip extends StatelessWidget {
           const SizedBox(width: 6),
           GestureDetector(
             onTap: onRemove,
-            child: const Icon(Icons.close_rounded,
-                size: 14, color: DesignTokens.textMuted),
+            child: const Icon(
+              Icons.close_rounded,
+              size: 14,
+              color: DesignTokens.textMuted,
+            ),
           ),
         ],
       ),

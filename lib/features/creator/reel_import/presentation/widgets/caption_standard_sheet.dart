@@ -73,8 +73,7 @@ class CaptionStandardSheet extends StatelessWidget {
             const _Rule(
               number: '2',
               title: 'Products',
-              body:
-                  'Name and price of each tagged product. Added for you.',
+              body: 'Name and price of each tagged product. Added for you.',
             ),
             const _Rule(
               number: '3',

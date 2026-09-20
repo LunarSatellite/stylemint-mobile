@@ -27,8 +27,7 @@ class _FakeDriver implements EmbedSlotDriver {
   );
 
   /// The host page reports [type] for the current reel.
-  void report(String type) =>
-      slot.handleEvent({'type': type, 'token': _token});
+  void report(String type) => slot.handleEvent({'type': type, 'token': _token});
 
   int get retries => scripts.where((s) => s == 'smPlayer.retryStart()').length;
 }
@@ -154,46 +153,50 @@ void main() {
     },
   );
 
-  test('a TikTok player that pauses before its first frame restarts at once',
-      () {
-    final metrics = EmbedStartupMetrics();
-    final d = _slot(metrics: metrics);
+  test(
+    'a TikTok player that pauses before its first frame restarts at once',
+    () {
+      final metrics = EmbedStartupMetrics();
+      final d = _slot(metrics: metrics);
 
-    d.slot.assign(tikTok, origin: _web, play: true, muted: false);
-    d
-      ..finishLoad()
-      ..report('ready')
-      ..report('paused');
-    expect(d.retries, 1);
+      d.slot.assign(tikTok, origin: _web, play: true, muted: false);
+      d
+        ..finishLoad()
+        ..report('ready')
+        ..report('paused');
+      expect(d.retries, 1);
 
-    d.report('paused');
-    expect(d.retries, 1);
-    expect(d.slot.hasStarted, isFalse);
+      d.report('paused');
+      expect(d.retries, 1);
+      expect(d.slot.hasStarted, isFalse);
 
-    d.report('playing');
-    expect(metrics.samples.single.startRetry, 'paused');
-    expect(metrics.startRetries, 1);
-  });
+      d.report('playing');
+      expect(metrics.samples.single.startRetry, 'paused');
+      expect(metrics.startRetries, 1);
+    },
+  );
 
-  test('a start whose video time never moves is retried, even if "playing"',
-      () async {
-    final metrics = EmbedStartupMetrics();
-    final d = _slot(
-      metrics: metrics,
-      startTimeout: const Duration(milliseconds: 40),
-    );
+  test(
+    'a start whose video time never moves is retried, even if "playing"',
+    () async {
+      final metrics = EmbedStartupMetrics();
+      final d = _slot(
+        metrics: metrics,
+        startTimeout: const Duration(milliseconds: 40),
+      );
 
-    d.slot.assign(tikTok, origin: _web, play: true, muted: false);
-    d
-      ..finishLoad()
-      ..report('ready')
-      ..report('playing');
-    await Future<void>.delayed(const Duration(milliseconds: 60));
+      d.slot.assign(tikTok, origin: _web, play: true, muted: false);
+      d
+        ..finishLoad()
+        ..report('ready')
+        ..report('playing');
+      await Future<void>.delayed(const Duration(milliseconds: 60));
 
-    expect(d.retries, 1);
-    expect(metrics.samples.single.startRetry, isNull, reason: 'timed at 1');
-    expect(metrics.startRetries, 1);
-  });
+      expect(d.retries, 1);
+      expect(metrics.samples.single.startRetry, isNull, reason: 'timed at 1');
+      expect(metrics.startRetries, 1);
+    },
+  );
 
   test('moving video time ends the start watch', () async {
     final d = _slot(startTimeout: const Duration(milliseconds: 20));

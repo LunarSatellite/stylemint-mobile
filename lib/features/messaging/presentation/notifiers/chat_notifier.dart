@@ -44,9 +44,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
     required MessagingRepository repository,
     required MessagingRealtimeService realtime,
     required this.currentAccountId,
-  })  : _repository = repository,
-        _realtime = realtime,
-        super(const ChatState()) {
+  }) : _repository = repository,
+       _realtime = realtime,
+       super(const ChatState()) {
     _subscription = _realtime.onMessage.listen(_onRealtimeMessage);
     unawaited(load());
   }
@@ -55,7 +55,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
   final MessagingRepository _repository;
   final MessagingRealtimeService _realtime;
   final String currentAccountId;
-  late final StreamSubscription<({String threadId, DirectMessageDto message})> _subscription;
+  late final StreamSubscription<({String threadId, DirectMessageDto message})>
+  _subscription;
 
   Future<void> load() async {
     state = state.copyWith(loading: true, error: null);
@@ -77,7 +78,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (body.trim().isEmpty) return;
     if (state.sending) return;
     state = state.copyWith(sending: true, error: null);
-    final result = await _repository.postMessage(threadId: threadId, body: body);
+    final result = await _repository.postMessage(
+      threadId: threadId,
+      body: body,
+    );
     state = result.fold(
       (f) => state.copyWith(
         sending: false,
@@ -103,8 +107,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     );
   }
 
-  void _onRealtimeMessage(
-      ({String threadId, DirectMessageDto message}) event) {
+  void _onRealtimeMessage(({String threadId, DirectMessageDto message}) event) {
     if (event.threadId != threadId) return;
     // Dedup by id (sender + recipient both get the realtime push).
     if (state.messages.any((m) => m.id == event.message.id)) return;

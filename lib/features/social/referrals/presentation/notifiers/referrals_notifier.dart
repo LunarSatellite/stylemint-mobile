@@ -18,7 +18,8 @@ abstract class ReferralsState with _$ReferralsState {
     required InviteLink link,
     required List<InviteRedemption> redemptions,
   }) = _LoadSuccess;
-  const factory ReferralsState.loadFailure(NetworkExceptions failure) = _LoadFailure;
+  const factory ReferralsState.loadFailure(NetworkExceptions failure) =
+      _LoadFailure;
 }
 
 class ReferralsNotifier extends StateNotifier<ReferralsState> {

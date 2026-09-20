@@ -43,7 +43,13 @@ void main() {
       profileUrl: _url,
     );
 
-    expect(card, contains(r'FN:Rai\, Asha\; Mint\\Shop\nKTM' '\r\n'));
+    expect(
+      card,
+      contains(
+        r'FN:Rai\, Asha\; Mint\\Shop\nKTM'
+        '\r\n',
+      ),
+    );
     expect(escapeVCardText('a\r\nb'), r'a\nb');
   });
 

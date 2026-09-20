@@ -85,7 +85,8 @@ void main() {
         topSearches: [DemandQuery(query: 'wool coat', count: 88)],
         unmetSearches: [],
       );
-      final pendingSeven = Completer<Either<NetworkExceptions, DemandSignals>>();
+      final pendingSeven =
+          Completer<Either<NetworkExceptions, DemandSignals>>();
       when(
         () => repository.getDemandSignals(days: 7, limit: 20),
       ).thenAnswer((_) => pendingSeven.future);

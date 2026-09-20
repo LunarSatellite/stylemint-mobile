@@ -242,8 +242,10 @@ void main() {
     });
 
     test('reviews need both a score and a count', () {
-      expect(signal(_product(rating: 4.6, reviewCount: 12))?.label,
-          '12 reviews');
+      expect(
+        signal(_product(rating: 4.6, reviewCount: 12))?.label,
+        '12 reviews',
+      );
       expect(signal(_product(rating: 4.6))?.label, isNull);
       expect(signal(_product(reviewCount: 12))?.label, isNull);
     });
@@ -356,8 +358,10 @@ void main() {
         ),
         isEmpty,
       );
-      expect(mallSectionMeta(const HomeTrustSection(id: 't'), _strings),
-          isEmpty);
+      expect(
+        mallSectionMeta(const HomeTrustSection(id: 't'), _strings),
+        isEmpty,
+      );
     });
   });
 }
