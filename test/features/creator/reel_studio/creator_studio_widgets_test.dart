@@ -39,8 +39,21 @@ void main() {
     expect(find.text('Growing'), findsOneWidget);
     expect(find.text('Publish 25 reels'), findsOneWidget);
     expect(find.text('48%'), findsOneWidget);
-    expect(find.textContaining('NPR 5000'), findsOneWidget);
     expect(find.textContaining('Make a stronger hook'), findsOneWidget);
+
+    // The Launchpad used to close with "Revenue forecast" over
+    // "NPR <projectedMonthlyEarnings> · <month>". `LaunchpadService` built
+    // that figure from two literals — 50 per reel, 10 reels — down a
+    // branch that is the only reachable branch, because
+    // `CreatorJourney.UpdateStats` has no callers anywhere in lead360. So
+    // it was NPR 500 for every creator on the platform, styled as a
+    // prediction about their own income. The month and the advice stay;
+    // the number is gone.
+    expect(find.textContaining('Your next step'), findsOneWidget);
+    expect(find.textContaining('October 2026'), findsOneWidget);
+    expect(find.text('Publish twice a week.'), findsOneWidget);
+    expect(find.textContaining('Revenue forecast'), findsNothing);
+    expect(find.textContaining('NPR'), findsNothing);
   });
 
   testWidgets('personalised ideas render all live insight kinds', (
@@ -195,11 +208,7 @@ const _launchpad = LaunchpadDto(
     ),
   ],
   forecast: LaunchpadForecastDto(
-    projectedMonthlyEarnings: 5000,
     projectedMonthLabel: 'October 2026',
-    growthRatePercent: 12.5,
-    projectedReels: 8,
-    projectedFollowers: 1100,
     recommendation: 'Publish twice a week.',
   ),
 );

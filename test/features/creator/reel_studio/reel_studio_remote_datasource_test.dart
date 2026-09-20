@@ -79,6 +79,9 @@ class _FakeApiClient extends ApiClient {
           'unlockPhase': 'Growing',
         },
       ],
+      // The four removed keys are still sent here on purpose: an older
+      // host may carry them, and the parser must ignore them rather than
+      // hand them to a renderer.
       'forecast': {
         'projectedMonthlyEarnings': 5000,
         'projectedMonthLabel': 'October 2026',
@@ -247,6 +250,7 @@ void main() {
     expect(launchpad.journey.totalRevenue, 3450.5);
     expect(launchpad.milestones.single.completionPercent, 48);
     expect(launchpad.lessons.single.readingTimeMinutes, 4);
-    expect(launchpad.forecast?.projectedMonthlyEarnings, 5000);
+    expect(launchpad.forecast?.projectedMonthLabel, 'October 2026');
+    expect(launchpad.forecast?.recommendation, 'Publish twice a week.');
   });
 }

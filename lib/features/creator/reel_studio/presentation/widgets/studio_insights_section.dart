@@ -242,11 +242,17 @@ class _LaunchpadCard extends StatelessWidget {
                 const SizedBox(height: DesignTokens.s16),
                 const Divider(color: DesignTokens.borderDefault),
                 const SizedBox(height: DesignTokens.s8),
-                Text('Revenue forecast', style: DesignTokens.mediumSemibold),
-                const SizedBox(height: DesignTokens.s4),
+                // This said "Revenue forecast" over a money line built
+                // from `projectedMonthlyEarnings`, and that figure was the
+                // literal 500 for every creator on the platform — see
+                // `LaunchpadForecastDto`. The heading now names what this
+                // block actually is: advice for the month ahead, with no
+                // number attached to it.
                 Text(
-                  'NPR ${forecast.projectedMonthlyEarnings.toStringAsFixed(0)} · ${forecast.projectedMonthLabel}',
-                  style: DesignTokens.oneLinerSemibold,
+                  forecast.projectedMonthLabel.isEmpty
+                      ? 'Your next step'
+                      : 'Your next step · ${forecast.projectedMonthLabel}',
+                  style: DesignTokens.mediumSemibold,
                 ),
                 if (forecast.recommendation.isNotEmpty) ...[
                   const SizedBox(height: DesignTokens.s4),
