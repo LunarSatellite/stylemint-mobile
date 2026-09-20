@@ -83,7 +83,9 @@ class SearchResultCreator {
   final String handle;
   final String displayName;
   final String? avatarUrl;
-  final int followerCount;
+  /// Follower total, or null when it was not measured. Null renders as
+  /// absent rather than as a zero.
+  final int? followerCount;
 }
 
 class CustomerSearchResults {

@@ -219,7 +219,7 @@ class CustomerSearchRemoteDataSource {
             handle: c['handle'] as String? ?? '',
             displayName: c['displayName'] as String? ?? '',
             avatarUrl: c['avatarUrl'] as String?,
-            followerCount: (c['followerCount'] as num?)?.toInt() ?? 0,
+            followerCount: (c['followerCount'] as num?)?.toInt(),
           ),
         )
         .toList(growable: false);

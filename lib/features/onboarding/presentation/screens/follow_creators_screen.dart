@@ -155,6 +155,7 @@ class _CreatorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final avatar = creator.avatarUrl;
+    final followers = creator.followerCount;
     final name = creator.displayName.isEmpty
         ? '@${creator.handle}'
         : creator.displayName;
@@ -210,15 +211,19 @@ class _CreatorCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: DesignTokens.s12),
-          // Stats
+          // Stats. The follower tile is dropped entirely when the backend
+          // could not measure the total -- a "0 / Followers" tile reads as
+          // "nobody follows this creator", which is a claim we cannot make.
           Row(
             children: [
-              _Stat(
-                  icon: Icons.person,
-                  iconColor: const Color(0xFF9F9FA9), // Icon-Light
-                  value: _compact(creator.followerCount),
-                  label: 'Followers'),
-              const SizedBox(width: DesignTokens.s16),
+              if (followers != null) ...[
+                _Stat(
+                    icon: Icons.person,
+                    iconColor: const Color(0xFF9F9FA9), // Icon-Light
+                    value: _compact(followers),
+                    label: 'Followers'),
+                const SizedBox(width: DesignTokens.s16),
+              ],
               _Stat(
                   icon: Icons.video_library_outlined,
                   iconColor: const Color(0xFF9F9FA9),

@@ -80,7 +80,7 @@ abstract class DiscoverCreatorDto with _$DiscoverCreatorDto {
     @Default('') String category,
     @Default('') String description,
     @Default(0) double rating,
-    @Default(0) int followers,
+    int? followers,
     @Default(false) bool isFollowing,
   }) = _DiscoverCreatorDto;
 

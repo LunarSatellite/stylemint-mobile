@@ -178,6 +178,7 @@ class _CreatorRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final avatar = creator.avatarUrl;
+    final followers = creator.followerCount;
     return Row(
       children: [
         GestureDetector(
@@ -228,7 +229,13 @@ class _CreatorRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_compact(creator.followerCount)} followers • ${creator.reelCount} reels',
+                  // Follower total is omitted when the backend could not
+                  // measure it, leaving the reel count on its own. Printing
+                  // "0 followers" would assert that nobody follows them.
+                  followers == null
+                      ? '${creator.reelCount} reels'
+                      : '${_compact(followers)} followers • '
+                          '${creator.reelCount} reels',
                   style: DesignTokens.smallRegular.copyWith(
                     color: DesignTokens.textMuted,
                   ),

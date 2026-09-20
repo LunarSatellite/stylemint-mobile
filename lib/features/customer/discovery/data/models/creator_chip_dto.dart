@@ -19,7 +19,10 @@ class CreatorChipDto {
   final String handle;
   final String displayName;
   final String? avatarUrl;
-  final int followerCount;
+  /// Follower total from the follow graph, or null when the backend could
+  /// not measure it. Null must render as absent: a 0 is the claim that
+  /// nobody follows this creator, which is a different statement.
+  final int? followerCount;
   final int reelCount;
 
   factory CreatorChipDto.fromJson(Map<String, dynamic> json) {
@@ -30,7 +33,7 @@ class CreatorChipDto {
       handle: (json['handle'] as String?) ?? '',
       displayName: (json['displayName'] as String?) ?? '',
       avatarUrl: json['avatarUrl'] as String?,
-      followerCount: (json['followerCount'] as num?)?.toInt() ?? 0,
+      followerCount: (json['followerCount'] as num?)?.toInt(),
       reelCount: (json['reelCount'] as num?)?.toInt() ?? 0,
     );
   }
