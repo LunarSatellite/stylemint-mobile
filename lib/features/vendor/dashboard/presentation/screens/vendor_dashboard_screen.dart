@@ -8,9 +8,9 @@ import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/provid
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/vendor_dashboard.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/store_digital_twin.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/digital_twin_scenario_button.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_menu_button.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/store_actions/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -69,16 +69,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
               ),
               onPressed: () => context.push(RouteNames.vendorRecentActivity),
             ),
-            Consumer(
-              builder: (ctx, ref, _) => IconButton(
-                icon: const Icon(
-                  Icons.menu_rounded,
-                  color: DesignTokens.textWhite,
-                  size: 22,
-                ),
-                onPressed: () => showVendorMoreMenu(ctx, ref),
-              ),
-            ),
+            const VendorMenuButton(),
           ],
         ),
         body: SafeArea(

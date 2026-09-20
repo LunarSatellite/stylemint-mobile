@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/widgets/vendor_product_tile.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_menu_button.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
@@ -144,6 +145,10 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
             ),
             onPressed: () => context.push(RouteNames.vendorRecentActivity),
           ),
+          // The store tools (Partnerships, Brand Studio, Payouts, …) used to
+          // hang off the Home tab alone, so a vendor standing here had to go
+          // back Home to reach any of them.
+          const VendorMenuButton(color: DesignTokens.iconLight),
         ],
         bottom: TabBar(
           controller: _tabController,
