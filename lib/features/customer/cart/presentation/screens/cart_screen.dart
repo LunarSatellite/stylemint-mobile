@@ -218,36 +218,48 @@ class _PromoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.5,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            border: Border.all(color: DesignTokens.primaryGreen, width: 1.5),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _applied ? 'Promo Code Applied' : 'Have a Promo Code?',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.primaryGreen,
-                    fontWeight: FontWeight.w600,
+      child: Material(
+        color: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: DesignTokens.primaryGreen, width: 1.5),
+          borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            // 12 + 12 around a 12sp line clears the 44dp minimum; the old
+            // 9dp padding made this a ~34dp target.
+            constraints: const BoxConstraints(
+              minHeight: DesignTokens.minTouchTarget,
+            ),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.s16,
+              vertical: DesignTokens.s12,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _applied ? 'Promo Code Applied' : 'Have a Promo Code?',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 6),
-              Icon(
-                _applied
-                    ? Icons.check_circle_outline_rounded
-                    : Icons.arrow_forward_ios_rounded,
-                size: 13,
-                color: DesignTokens.primaryGreen,
-              ),
-            ],
+                const SizedBox(width: DesignTokens.s6),
+                Icon(
+                  _applied
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.arrow_forward_ios_rounded,
+                  size: 13,
+                  color: DesignTokens.primaryGreen,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -268,9 +280,9 @@ class _TicketCard extends StatelessWidget {
   final Money? promoDiscount;
 
   static const _scallopsRadius = 9.0;
-  static const _cardRadius = 16.0;
+  static const _cardRadius = DesignTokens.cardRadius;
   static const _topColor = DesignTokens.bgAppBody;
-  static const _stubColor = Color(0xFF2A2A2A);
+  static const _stubColor = DesignTokens.bgAppBodyLight;
 
   @override
   Widget build(BuildContext context) {
@@ -282,13 +294,19 @@ class _TicketCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _topColor,
         borderRadius: BorderRadius.circular(_cardRadius),
+        boxShadow: DesignTokens.shadowCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Bill details ─────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s20,
+              DesignTokens.s16,
+              DesignTokens.s16,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -372,12 +390,7 @@ class _TicketCard extends StatelessWidget {
                         alignment: Alignment.centerRight,
                         child: Text(
                           formatMoney(cart.total),
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: DesignTokens.textWhite,
-                          ),
+                          style: DesignTokens.moneyLarge,
                         ),
                       ),
                     ),
@@ -412,43 +425,44 @@ class _TicketCard extends StatelessWidget {
                   bottomRight: Radius.circular(_cardRadius),
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: DesignTokens.minTouchTarget,
+                    height: DesignTokens.minTouchTarget,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE53935),
-                      borderRadius: BorderRadius.circular(10),
+                      color: DesignTokens.accentHeart,
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.radiusMedium,
+                      ),
                     ),
                     child: const Icon(
                       Icons.favorite,
-                      size: 22,
-                      color: Colors.white,
+                      size: DesignTokens.iconMedium,
+                      color: DesignTokens.iconWhite,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: DesignTokens.s12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'You are appreciated',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textWhite,
-                          ),
+                          style: DesignTokens.mediumSemibold,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Thank you so much! you are supporting '
                           '${cart.supportedCreatorsCount} creators with this order',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textLight,
-                            fontSize: 11,
-                            height: 1.5,
-                          ),
+                          style: DesignTokens.smallDescription,
                         ),
                       ],
                     ),
@@ -696,7 +710,9 @@ class _PromoBottomSheetState extends State<_PromoBottomSheet> {
                   foregroundColor: Colors.black,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(26),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                 ),
                 onPressed: _loading ? null : _apply,
@@ -748,6 +764,9 @@ class _CheckoutBar extends StatelessWidget {
         border: Border(
           top: BorderSide(color: DesignTokens.borderDefault, width: 1),
         ),
+        // The bar is the only surface that floats over the scrolling list;
+        // the lift is what separates it from a footer glued to the page.
+        boxShadow: DesignTokens.shadowLifted,
       ),
       child: SafeArea(
         child: Column(
@@ -768,8 +787,8 @@ class _CheckoutBar extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.shopping_cart_outlined,
-                      size: 18,
-                      color: DesignTokens.textWhite,
+                      size: DesignTokens.iconSmall,
+                      color: DesignTokens.textMuted,
                     ),
                     SizedBox(width: DesignTokens.s8),
                     // Flexible so a scaled-up label wraps inside the run
@@ -777,16 +796,16 @@ class _CheckoutBar extends StatelessWidget {
                     Flexible(
                       child: Text(
                         'Total Order',
-                        style: DesignTokens.mediumSemibold,
+                        // A quiet label so the amount beside it is what the
+                        // eye lands on.
+                        style: DesignTokens.smallRegular,
                       ),
                     ),
                   ],
                 ),
                 Text(
                   formatMoney(cart.total),
-                  style: DesignTokens.oneLinerSemibold.copyWith(
-                    color: DesignTokens.textWhite,
-                  ),
+                  style: DesignTokens.moneyLarge,
                 ),
               ],
             ),
@@ -801,7 +820,9 @@ class _CheckoutBar extends StatelessWidget {
                   // A minimum rather than a fixed 52: the label stays at its
                   // legible 16sp and the button grows when the text scales or
                   // wraps, instead of clipping it.
-                  minimumSize: const Size.fromHeight(52),
+                  minimumSize: const Size.fromHeight(
+                    DesignTokens.buttonHeight,
+                  ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: DesignTokens.s16,
                     vertical: DesignTokens.s12,
@@ -819,18 +840,13 @@ class _CheckoutBar extends StatelessWidget {
                       child: Text(
                         'Proceed to checkout',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: DesignTokens.buttonPrimaryText,
-                        ),
+                        style: DesignTokens.oneLinerSemibold,
                       ),
                     ),
                     SizedBox(width: DesignTokens.s8),
                     Icon(
                       Icons.arrow_forward_rounded,
-                      size: 18,
+                      size: DesignTokens.iconSmall,
                       color: DesignTokens.buttonPrimaryText,
                     ),
                   ],

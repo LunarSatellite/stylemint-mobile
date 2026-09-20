@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class CartItemTile extends StatelessWidget {
@@ -38,106 +39,106 @@ class CartItemTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: DesignTokens.s16,
-                vertical: DesignTokens.s12,
+                vertical: DesignTokens.s16,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Product image
+                  // Product image — fixed square so every row's text column
+                  // starts on the same left edge, with a branded placeholder
+                  // that occupies the box before the bitmap lands so nothing
+                  // reflows on load.
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(DesignTokens.s12),
-                    child: Image.network(
-                      item.productImageUrl,
-                      width: 72,
-                      height: 72,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        width: 72,
-                        height: 72,
-                        color: DesignTokens.bgAppBodyLight,
-                        child: const Icon(
-                          Icons.image_not_supported_outlined,
-                          color: DesignTokens.iconLight,
-                        ),
-                      ),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.radiusMedium,
+                    ),
+                    child: SizedBox(
+                      width: DesignTokens.thumbSmall,
+                      height: DesignTokens.thumbSmall,
+                      child: MallNetworkImage(url: item.productImageUrl),
                     ),
                   ),
                   const SizedBox(width: DesignTokens.s12),
-                  // Product info
+                  // Everything to the right of the thumbnail is one column:
+                  // name + price share the top line (the two things a shopper
+                  // checks), details step down beneath them, and the controls
+                  // sit at the bottom with room to be real targets.
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          item.productName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textWhite,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.productName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: DesignTokens.mediumSemibold,
+                              ),
+                            ),
+                            const SizedBox(width: DesignTokens.s8),
+                            // The price shrinks to fit rather than
+                            // ellipsising or pushing past the tile — the same
+                            // treatment the cart's Grand Total gets.
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  formatMoney(item.unitPrice),
+                                  style: DesignTokens.moneyMedium,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: DesignTokens.s4),
                         Text(
                           item.variantName,
-                          style: DesignTokens.smallRegular.copyWith(
-                            fontSize: 11,
-                            color: DesignTokens.textMuted,
-                          ),
+                          style: DesignTokens.smallRegular,
                         ),
                         if (item.creatorHandle != null) ...[
                           const SizedBox(height: DesignTokens.s4),
                           Text(
                             'From: @${item.creatorHandle}'
                             '${item.commissionRate != null ? ' (${(item.commissionRate! * 100).round()}% Commission)' : ''}',
-                            style: DesignTokens.smallRegular.copyWith(
-                              fontSize: 11,
-                              color: DesignTokens.textLight,
+                            style: DesignTokens.tiny.copyWith(
+                              color: DesignTokens.textMuted,
                             ),
                           ),
                         ],
-                        const SizedBox(height: DesignTokens.s4),
-                        GestureDetector(
-                          onTap: onSaveForLater,
-                          child: Text(
-                            'Save for later',
-                            style: DesignTokens.smallRegular.copyWith(
-                              fontSize: 12,
-                              color: DesignTokens.primaryGreen,
-                            ),
-                          ),
-                        ),
                         if (!item.isInStock) ...[
-                          const SizedBox(height: DesignTokens.s4),
+                          const SizedBox(height: DesignTokens.s6),
                           Text(
                             'Out of stock',
                             style: DesignTokens.smallRegular.copyWith(
                               color: DesignTokens.colorError,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
+                        const SizedBox(height: DesignTokens.s12),
+                        // Wrap, not Row: at 320dp x 1.3 the stepper and the
+                        // link no longer share a line, and a Row would
+                        // overflow rather than stack them.
+                        Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: DesignTokens.s8,
+                          runSpacing: DesignTokens.s8,
+                          children: [
+                            _QuantityStepper(
+                              quantity: item.quantity,
+                              onIncrement: item.isInStock ? onIncrement : null,
+                              onDecrement: onDecrement,
+                            ),
+                            _SaveForLaterButton(onTap: onSaveForLater),
+                          ],
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: DesignTokens.s8),
-                  // Stepper + price stacked on the right
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      _QuantityStepper(
-                        quantity: item.quantity,
-                        onIncrement: item.isInStock ? onIncrement : null,
-                        onDecrement: onDecrement,
-                      ),
-                      const SizedBox(height: DesignTokens.s8),
-                      Text(
-                        formatMoney(item.unitPrice),
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textWhite,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -150,6 +151,36 @@ class CartItemTile extends StatelessWidget {
               endIndent: DesignTokens.s16,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SaveForLaterButton extends StatelessWidget {
+  const _SaveForLaterButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: DesignTokens.s8,
+            horizontal: DesignTokens.s6,
+          ),
+          child: Text(
+            'Save for later',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.primaryGreen,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );
@@ -169,24 +200,19 @@ class _QuantityStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      decoration: BoxDecoration(
-        color: DesignTokens.buttonGrayFill,
-        borderRadius: BorderRadius.circular(999),
-      ),
+    return Material(
+      color: DesignTokens.bgAppBodyLight,
+      borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _StepperButton(icon: Icons.remove, onPressed: onDecrement),
-          SizedBox(
-            width: 28,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: DesignTokens.s24),
             child: Text(
               '$quantity',
               textAlign: TextAlign.center,
-              style: DesignTokens.mediumSemibold.copyWith(
-                color: DesignTokens.textWhite,
-              ),
+              style: DesignTokens.mediumSemibold,
             ),
           ),
           _StepperButton(icon: Icons.add, onPressed: onIncrement),
@@ -204,14 +230,16 @@ class _StepperButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return InkResponse(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(DesignTokens.s4),
-      child: Padding(
-        padding: const EdgeInsets.all(6),
+      radius: DesignTokens.minTouchTarget / 2,
+      child: SizedBox(
+        // iOS HIG minimum — the old 28dp pill was a hairline target.
+        width: DesignTokens.minTouchTarget,
+        height: DesignTokens.minTouchTarget,
         child: Icon(
           icon,
-          size: 16,
+          size: DesignTokens.iconSmall,
           color: onPressed != null
               ? DesignTokens.textWhite
               : DesignTokens.iconLight,
