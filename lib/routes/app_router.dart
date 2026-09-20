@@ -14,6 +14,9 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/lin
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/login_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/complete_name_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/magic_link_screen.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/forgot_password_screen.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/password_login_screen.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/marketing_consents_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/mfa_setup_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/oauth_callback_screen.dart';
@@ -271,6 +274,9 @@ const _publicPaths = {
   RouteNames.passkeyFingerprint,
   RouteNames.otp,
   RouteNames.magicLink,
+  RouteNames.passwordLogin,
+  RouteNames.forgotPassword,
+  RouteNames.resetPassword,
   RouteNames.completeName,
   RouteNames.socialLogin,
   RouteNames.oauthCallback,
@@ -336,6 +342,11 @@ const _authOnlyPaths = {
   RouteNames.email,
   RouteNames.otp,
   RouteNames.magicLink,
+  RouteNames.passwordLogin,
+  RouteNames.forgotPassword,
+  // RouteNames.resetPassword is deliberately absent. It is reached from an
+  // emailed link, which a signed-in user can perfectly well tap - bouncing
+  // them to home would leave them unable to finish the reset they asked for.
 };
 
 // Vendor management screens (dashboard, orders, products, earnings, ...) all
@@ -488,6 +499,32 @@ GoRouter appRouter(Ref ref) {
           final token = state.uri.queryParameters['token'] ?? '';
           return MagicLinkScreen(token: token);
         },
+      ),
+      // Password auth: all three screens existed and none was registered, so
+      // every path into them resolved to go_router's error page.
+      //
+      // The one that was actually reachable is the emailed reset link. The
+      // backend is configured to send it - Identity's AuthLinkOptions sets
+      // PasswordResetUrl to https://<app-links host>/reset-password, and its
+      // own comment says to keep that in lockstep with the app - so anyone who
+      // requested a reset followed the mail into a dead route.
+      //
+      // ResetPasswordScreen then does context.go(passwordLogin) on success,
+      // which is why that one is registered too: registering the reset alone
+      // would fix the arrival and break the exit.
+      GoRoute(
+        path: RouteNames.passwordLogin,
+        builder: (ctx, state) => const PasswordLoginScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.forgotPassword,
+        builder: (ctx, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.resetPassword,
+        builder: (ctx, state) => ResetPasswordScreen(
+          token: state.uri.queryParameters['token'] ?? '',
+        ),
       ),
       GoRoute(
         path: RouteNames.completeName,
