@@ -1207,10 +1207,24 @@ class _StorePulseSkeleton extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           SmShimmer.text(width: 110, enabled: on),
-          const SizedBox(height: DesignTokens.s16),
-          Expanded(child: SmSkeleton.statRow(count: 3, enabled: on)),
+          Row(
+            children: [
+              for (var i = 0; i < 3; i++) ...[
+                if (i > 0) const SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: SmShimmer.rectangle(
+                    height: DesignTokens.s20,
+                    radius: DesignTokens.s4,
+                    enabled: on,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          SmShimmer.text(width: 160, enabled: on),
         ],
       ),
     );

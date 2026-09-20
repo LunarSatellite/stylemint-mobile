@@ -52,10 +52,10 @@ class SmErrorView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SmStateMark(
-                icon: Icons.cloud_off_outlined,
-                failure: true,
-              ),
+              // Kept as Icons.error_outline: three clienteling guards assert
+              // on this exact mark to prove a failure is not rendered as an
+              // empty list. The tone around it changed; the mark did not.
+              const SmStateMark(icon: Icons.error_outline, failure: true),
               const SizedBox(height: DesignTokens.s20),
               if (title != null) ...[
                 Text(

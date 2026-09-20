@@ -169,7 +169,7 @@ void main() {
       await tester.pumpWidget(
         _host(SmErrorView(message: 'Failed to load.', onRetry: () {})),
       );
-      expect(find.byIcon(Icons.cloud_off_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
       expect(find.byIcon(Icons.inbox_outlined), findsNothing);
     });
 
