@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -48,7 +49,61 @@ const _product = ProductDetail(
   isInCart: false,
 );
 
+final _inCartProduct = _product.copyWith(isInCart: true);
+
+Future<void> _pump(WidgetTester tester, ProductDetail product) async {
+  final repository = _MockDiscoveryRepository();
+  when(
+    () => repository.getProductDetail(any()),
+  ).thenAnswer((_) async => right(product));
+
+  await tester.binding.setSurfaceSize(const Size(320, 3000));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        apiClientProvider.overrideWithValue(FakeApiClient()),
+        productDetailNotifierProvider.overrideWith(
+          (ref, id) => ProductDetailNotifier(repository),
+        ),
+      ],
+      child: const MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(
+            size: Size(320, 3000),
+            textScaler: TextScaler.linear(1.3),
+          ),
+          child: ProductDetailScreen(productId: 'p1'),
+        ),
+      ),
+    ),
+  );
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 60));
+  }
+}
+
 void main() {
+  testWidgets(
+    'the in-cart bar fits its 44dp steppers at 320dp with text at 1.3x',
+    (tester) async {
+      await _pump(tester, _inCartProduct);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Buy Now'), findsOneWidget);
+      // Both quantity controls clear the iOS HIG minimum.
+      for (final icon in [Icons.remove_rounded, Icons.add_rounded]) {
+        final box = tester.getSize(
+          find
+              .ancestor(of: find.byIcon(icon), matching: find.byType(SizedBox))
+              .first,
+        );
+        expect(box.width, greaterThanOrEqualTo(DesignTokens.minTouchTarget));
+        expect(box.height, greaterThanOrEqualTo(DesignTokens.minTouchTarget));
+      }
+    },
+  );
+
   testWidgets(
     'ProductDetailScreen does not overflow at 320dp with text at 1.3x',
     (tester) async {

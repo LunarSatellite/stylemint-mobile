@@ -309,13 +309,12 @@ class _ProductBody extends StatelessWidget {
                       alignment: Alignment.bottomCenter,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [Color(0x9909090B), Colors.transparent],
-                          ),
+                          gradient: DesignTokens.imageScrim,
                         ),
-                        child: SizedBox(height: 72, width: double.infinity),
+                        child: SizedBox(
+                          height: DesignTokens.thumbSmall,
+                          width: double.infinity,
+                        ),
                       ),
                     ),
                   ],
@@ -500,11 +499,8 @@ class _NamePriceRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          product.name,
-          style: DesignTokens.titleMedium.copyWith(fontSize: 20),
-        ),
-        const SizedBox(height: DesignTokens.s6),
+        Text(product.name, style: DesignTokens.titleMedium),
+        const SizedBox(height: DesignTokens.s8),
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
@@ -517,7 +513,7 @@ class _NamePriceRow extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   '${formatMoney(product.price)}$unitLabel',
-                  style: DesignTokens.oneLinerSemibold,
+                  style: DesignTokens.moneyLarge,
                 ),
               ),
             ),
@@ -529,9 +525,11 @@ class _NamePriceRow extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     '${formatMoney(product.compareAtPrice!)}$unitLabel',
-                    style: DesignTokens.smallRegular.copyWith(
+                    // Muted, not red: a struck-through original is history,
+                    // not a fault.
+                    style: DesignTokens.moneySmall.copyWith(
                       decoration: TextDecoration.lineThrough,
-                      color: DesignTokens.colorError,
+                      color: DesignTokens.textMuted,
                     ),
                   ),
                 ),
@@ -1606,46 +1604,62 @@ class _InCartBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    // Two lines, not one: the amount reads on its own row and the controls
+    // get the full width beneath it. A single Row could not hold a quiet
+    // label, a price, two 44dp steppers and a CTA at 320dp x 1.3 — it
+    // overflowed by 117px.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: DesignTokens.s8,
+          runSpacing: DesignTokens.s4,
           children: [
             Text('Item Total', style: DesignTokens.smallRegular),
             Text(
               price,
-              style: DesignTokens.mediumSemibold.copyWith(
+              style: DesignTokens.moneyLarge.copyWith(
                 color: DesignTokens.primaryGreen,
               ),
             ),
           ],
         ),
-        const SizedBox(width: DesignTokens.s12),
-        _StepperButton(
-          icon: Icons.remove_rounded,
-          onTap: quantity > 1 ? () => onQuantityChanged(quantity - 1) : null,
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
-          child: Text('$quantity', style: DesignTokens.mediumSemibold),
-        ),
-        _StepperButton(
-          icon: Icons.add_rounded,
-          onTap: () => onQuantityChanged(quantity + 1),
-        ),
-        const SizedBox(width: DesignTokens.s12),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: onBuyNow,
-            style: DesignTokens.primaryButtonStyle(),
-            child: Text(
-              'Buy Now',
-              style: DesignTokens.mediumSemibold.copyWith(
-                color: DesignTokens.buttonPrimaryText,
+        const SizedBox(height: DesignTokens.s12),
+        Row(
+          children: [
+            _StepperButton(
+              icon: Icons.remove_rounded,
+              onTap: quantity > 1
+                  ? () => onQuantityChanged(quantity - 1)
+                  : null,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s12,
+              ),
+              child: Text('$quantity', style: DesignTokens.mediumSemibold),
+            ),
+            _StepperButton(
+              icon: Icons.add_rounded,
+              onTap: () => onQuantityChanged(quantity + 1),
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: onBuyNow,
+                style: DesignTokens.primaryButtonStyle(),
+                child: Text(
+                  'Buy Now',
+                  style: DesignTokens.oneLinerSemibold.copyWith(
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ],
     );
@@ -1660,19 +1674,29 @@ class _StepperButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: onTap != null
-              ? DesignTokens.bgAppBodyLight
-              : DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.circular(DesignTokens.s8),
-          border: Border.all(color: DesignTokens.borderDefault),
+    return Material(
+      color: onTap != null
+          ? DesignTokens.bgAppBodyLight
+          : DesignTokens.bgAppBody,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
+        side: const BorderSide(color: DesignTokens.borderDefault),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          // 32dp was a hairline target; iOS HIG floor is 44.
+          width: DesignTokens.minTouchTarget,
+          height: DesignTokens.minTouchTarget,
+          child: Icon(
+            icon,
+            size: DesignTokens.iconSmall,
+            color: onTap != null
+                ? DesignTokens.textWhite
+                : DesignTokens.iconLight,
+          ),
         ),
-        child: Icon(icon, size: 16, color: DesignTokens.textWhite),
       ),
     );
   }
