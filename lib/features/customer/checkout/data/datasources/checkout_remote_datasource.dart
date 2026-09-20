@@ -57,6 +57,8 @@ class CheckoutRemoteDataSource {
               sellerName: item['sellerName'] as String?,
               selected: item['selected'] as bool? ?? false,
               recommended: item['recommended'] as bool? ?? false,
+              distance: _parseDistance(item['distance']),
+              emissions: _parseEmissions(item['emissions']),
             );
           })
           .toList(growable: false),
@@ -67,6 +69,89 @@ class CheckoutRemoteDataSource {
       pickupLocations: _parsePickupLocations(data['pickupLocations']),
       pickupLocationsNote: data['pickupLocationsNote'] as String?,
     );
+  }
+
+  /// The server's `DeliveryDistanceSummary`, or null when the field is absent
+  /// — which is what every response carried before the field existed, and
+  /// which means the same thing a withheld figure does: unknown, never zero.
+  ///
+  /// Two invariants are re-imposed here rather than trusted, because a figure
+  /// that escapes its state is the one defect this shape exists to prevent:
+  ///
+  ///   * a distance is kept **only** when the state is `Measured`. Any figure
+  ///     arriving beside a withheld state is dropped, not rounded, not shown.
+  ///   * a state that this build cannot read is treated as withheld. An
+  ///     unrecognised word is not evidence that something was measured.
+  static DeliveryDistanceSummary? _parseDistance(Object? raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    final state = _parseDistanceState(raw['state']);
+    if (state == null) return null;
+    final method = _blankToNull(raw['method']);
+    // The method never travels separately from the figure. Without it there is
+    // nothing honest to render, so the whole summary is dropped.
+    if (method == null) return null;
+    final rawKm = raw['straightLineKm'];
+    final km = rawKm is num ? rawKm.toDouble() : null;
+    return DeliveryDistanceSummary(
+      state: state,
+      journeys: _nonNegativeInt(raw['journeys']),
+      journeysMeasured: _nonNegativeInt(raw['journeysMeasured']),
+      // Null unless measured. Never 0 in place of null.
+      straightLineKm: state == DeliveryDistanceState.measured ? km : null,
+      method: method,
+      withheldReason: state == DeliveryDistanceState.measured
+          ? null
+          : _blankToNull(raw['withheldReason']),
+    );
+  }
+
+  /// A word, per the server's `JsonStringEnumConverter`. The numeric forms are
+  /// accepted only because an older serialiser setting could emit them; an
+  /// unrecognised value returns null so the caller drops the summary rather
+  /// than guessing it into `Measured`.
+  static DeliveryDistanceState? _parseDistanceState(Object? raw) {
+    if (raw == null) return null;
+    final token = raw.toString().toLowerCase();
+    for (final value in DeliveryDistanceState.values) {
+      if (value.wire.toLowerCase() == token) return value;
+    }
+    return switch (token) {
+      '1' => DeliveryDistanceState.measured,
+      '2' => DeliveryDistanceState.originUnknown,
+      '3' => DeliveryDistanceState.destinationUnknown,
+      '4' => DeliveryDistanceState.bothEndsUnknown,
+      '5' => DeliveryDistanceState.noDeliveryJourney,
+      _ => null,
+    };
+  }
+
+  /// Emissions arrive only where a reviewed factor is configured, which is
+  /// nowhere. Parsed anyway so that a deployment which configures one is not
+  /// silently dropped — and refused outright when the citation is incomplete,
+  /// because a mass with no factor version, source or method is a number
+  /// nobody can check.
+  static DeliveryEmissionsEstimate? _parseEmissions(Object? raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    final mass = raw['kgCo2e'];
+    if (mass is! num) return null;
+    final estimate = DeliveryEmissionsEstimate(
+      kgCo2e: mass.toDouble(),
+      factorVersion: _blankToNull(raw['factorVersion']) ?? '',
+      factorSourceUri: _blankToNull(raw['factorSourceUri']) ?? '',
+      method: _blankToNull(raw['method']) ?? '',
+      factorEffectiveUtc: DateTime.tryParse(
+        raw['factorEffectiveUtc']?.toString() ?? '',
+      ),
+    );
+    return estimate.isRenderable ? estimate : null;
+  }
+
+  /// A count is a count. A negative or unreadable one is not evidence of a
+  /// journey, so it reads as none.
+  static int _nonNegativeInt(Object? raw) {
+    final value = raw is num ? raw.toInt() : int.tryParse('$raw');
+    if (value == null || value < 0) return 0;
+    return value;
   }
 
   /// The server sends `pickupLocations: null` whenever collection is not on
