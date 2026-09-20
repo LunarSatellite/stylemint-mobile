@@ -65,6 +65,28 @@ class VendorProductsRepositoryImpl implements VendorProductsRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, VendorProduct>> getProduct(
+    String productId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final data = await remoteDataSource.getProduct(productId);
+        return right(VendorProductDto.fromJson(data).toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, Unit>> updateProductStatus(
     String productId,
     VendorProductStatus status,

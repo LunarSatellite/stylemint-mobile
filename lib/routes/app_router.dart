@@ -1327,6 +1327,7 @@ GoRouter appRouter(Ref ref) {
               ? state.extra! as VendorProduct
               : null;
           return UnitMarkerProvisionScreen(
+            productId: state.pathParameters['productId']!,
             productVariantId: product?.variantId ?? '',
             productName: product?.name,
           );

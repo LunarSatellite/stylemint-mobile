@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_appbar.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
@@ -27,13 +28,22 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// seller read it as stock.
 class UnitMarkerProvisionScreen extends ConsumerStatefulWidget {
   const UnitMarkerProvisionScreen({
+    required this.productId,
     required this.productVariantId,
     this.productName,
     super.key,
   });
 
+  /// The listing being tagged. Always known - it is in the route path - so
+  /// the variant can be recovered from it when the caller had none.
+  final String productId;
+
   /// The variant these tags will belong to. A marker minted for the Medium
   /// can never become the identity of a Large.
+  ///
+  /// Empty when the caller did not have it: go_router's `extra` is gone on a
+  /// deep link and after the process is restored, and that is an ordinary
+  /// case, not an error. [productId] is used to fetch it instead.
   final String productVariantId;
 
   /// Shown when the caller knew it. Absent renders as absent.
@@ -64,6 +74,11 @@ class UnitMarkerProvisionScreen extends ConsumerStatefulWidget {
   static const String noVariantBody =
       'This listing has no variant yet, so there is nothing to tag. Finish '
       'the pricing and inventory step first.';
+  static const String variantLookupFailedBody =
+      'Could not load this listing, so there is nothing to mint against '
+      'yet. Check your connection and try again.';
+  static const String retryLabel = 'Try again';
+  static const String loadingVariantLabel = 'Loading listing';
 
   @override
   ConsumerState<UnitMarkerProvisionScreen> createState() =>
@@ -75,69 +90,109 @@ class _UnitMarkerProvisionScreenState
   int _quantity = 1;
 
   @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(unitMarkerProvisionNotifierProvider);
-    final hasVariant = widget.productVariantId.isNotEmpty;
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: DesignTokens.bgAppFoundation,
+    appBar: const SmAppBar(title: UnitMarkerProvisionScreen.title),
+    body: SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.productName case final name?
+                when name.trim().isNotEmpty) ...[
+              Text(name, style: DesignTokens.h3),
+              const SizedBox(height: DesignTokens.s12),
+            ],
+            _variantGate(),
+          ],
+        ),
+      ),
+    ),
+  );
 
-    return Scaffold(
-      backgroundColor: DesignTokens.bgAppFoundation,
-      appBar: const SmAppBar(title: UnitMarkerProvisionScreen.title),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(DesignTokens.s16),
-          child: Column(
+  /// Resolves the variant the tags will belong to, then hands off to
+  /// [_mintBody].
+  ///
+  /// The caller usually hands the variant over with the route. When it did
+  /// not, the listing is fetched and its default variant used: a missing
+  /// variant id means the product did not travel with the navigation, not
+  /// that the listing has no variant, and the two must not be confused -
+  /// telling a seller with a priced, stocked listing that it "has no variant
+  /// yet" leaves them with no button to press and nothing to fix.
+  Widget _variantGate() {
+    if (widget.productVariantId.isNotEmpty) {
+      return _mintBody(widget.productVariantId);
+    }
+    return ref
+        .watch(vendorProductProvider(widget.productId))
+        .when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: DesignTokens.s48),
+            child: Center(
+              child: SmBrandLoader(
+                semanticLabel: UnitMarkerProvisionScreen.loadingVariantLabel,
+              ),
+            ),
+          ),
+          error: (_, _) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (widget.productName case final name?
-                  when name.trim().isNotEmpty) ...[
-                Text(name, style: DesignTokens.h3),
-                const SizedBox(height: DesignTokens.s12),
-              ],
-              if (!hasVariant)
-                const _Notice(
+              const _Notice(
+                icon: Icons.error_outline_rounded,
+                tone: _NoticeTone.error,
+                body: UnitMarkerProvisionScreen.variantLookupFailedBody,
+              ),
+              const SizedBox(height: DesignTokens.s16),
+              SmOutlinedButton(
+                label: UnitMarkerProvisionScreen.retryLabel,
+                onPressed: () =>
+                    ref.invalidate(vendorProductProvider(widget.productId)),
+              ),
+            ],
+          ),
+          // Only now is "no variant" a statement about the listing rather
+          // than about how this screen was reached.
+          data: (product) => product.variantId.isEmpty
+              ? const _Notice(
                   icon: Icons.info_outline_rounded,
                   body: UnitMarkerProvisionScreen.noVariantBody,
                 )
-              else
-                switch (state) {
-                  UnitMarkerProvisionIdle() ||
-                  UnitMarkerProvisionFailed() => _MintForm(
-                    quantity: _quantity,
-                    onQuantity: (value) => setState(() => _quantity = value),
-                    onMint: _mint,
-                    failure: state is UnitMarkerProvisionFailed
-                        ? state.failure
-                        : null,
-                  ),
-                  UnitMarkerProvisioning() => const Padding(
-                    padding: EdgeInsets.symmetric(vertical: DesignTokens.s48),
-                    child: Center(
-                      child: SmBrandLoader(semanticLabel: 'Minting tags'),
-                    ),
-                  ),
-                  UnitMarkersRevealed(:final markers) => _Reveal(
-                    markers: markers,
-                    onExport: () => unawaited(_export(markers)),
-                    onSaved: () => ref
-                        .read(unitMarkerProvisionNotifierProvider.notifier)
-                        .discardSecrets(),
-                  ),
-                  UnitMarkerSecretsDiscarded(:final markers) => _Discarded(
-                    markers: markers,
-                  ),
-                },
-            ],
-          ),
-        ),
-      ),
-    );
+              : _mintBody(product.variantId),
+        );
   }
 
-  void _mint() => unawaited(
+  Widget _mintBody(String productVariantId) {
+    final state = ref.watch(unitMarkerProvisionNotifierProvider);
+    return switch (state) {
+      UnitMarkerProvisionIdle() || UnitMarkerProvisionFailed() => _MintForm(
+        quantity: _quantity,
+        onQuantity: (value) => setState(() => _quantity = value),
+        onMint: () => _mint(productVariantId),
+        failure: state is UnitMarkerProvisionFailed ? state.failure : null,
+      ),
+      UnitMarkerProvisioning() => const Padding(
+        padding: EdgeInsets.symmetric(vertical: DesignTokens.s48),
+        child: Center(child: SmBrandLoader(semanticLabel: 'Minting tags')),
+      ),
+      UnitMarkersRevealed(:final markers) => _Reveal(
+        markers: markers,
+        onExport: () => unawaited(_export(markers)),
+        onSaved: () => ref
+            .read(unitMarkerProvisionNotifierProvider.notifier)
+            .discardSecrets(),
+      ),
+      UnitMarkerSecretsDiscarded(:final markers) => _Discarded(
+        markers: markers,
+      ),
+    };
+  }
+
+  void _mint(String productVariantId) => unawaited(
     ref
         .read(unitMarkerProvisionNotifierProvider.notifier)
         .provision(
-          productVariantId: widget.productVariantId,
+          productVariantId: productVariantId,
           quantity: _quantity,
         ),
   );

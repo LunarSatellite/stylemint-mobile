@@ -10,6 +10,14 @@ abstract interface class VendorProductsRepository {
     String? status,
   });
 
+  /// One listing the vendor owns, variants included. Screens that were
+  /// handed the product on the route do not need this; screens that were
+  /// not — a deep link, or a route restored after the process died — do,
+  /// because without it they have no variant to act on.
+  Future<Either<NetworkExceptions, VendorProduct>> getProduct(
+    String productId,
+  );
+
   Future<Either<NetworkExceptions, Unit>> updateProductStatus(
     String productId,
     VendorProductStatus status,

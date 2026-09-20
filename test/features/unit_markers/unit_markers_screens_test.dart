@@ -13,6 +13,10 @@ import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/scr
 import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_marker_provision_screen.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_tag_passport_screen.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/domain/repositories/vendor_products_repository.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
 const String kMarker = 'ABCDEFGHJKMNPQRSTVWXYZ0123';
@@ -49,11 +53,16 @@ class _FakeRepo implements UnitMarkersRepository {
   String? lastCorrectionReason;
   int correctCalls = 0;
 
+  String? lastProvisionVariantId;
+
   @override
   Future<Either<NetworkExceptions, List<ProvisionedUnitMarker>>> provision({
     required String productVariantId,
     required int quantity,
-  }) async => provisionAnswer ?? right(const []);
+  }) async {
+    lastProvisionVariantId = productVariantId;
+    return provisionAnswer ?? right(const []);
+  }
 
   @override
   Future<Either<NetworkExceptions, PagedResult<UnitMarker>>> listMarkers({
@@ -123,10 +132,63 @@ class _FakeRepo implements UnitMarkersRepository {
 const Size _narrow = Size(320, 900);
 const Size _narrowTall = Size(320, 2600);
 
+/// Only [getProduct] matters here: it is the path the provisioning screen
+/// takes when the route did not carry the listing.
+class _FakeProductsRepo implements VendorProductsRepository {
+  _FakeProductsRepo({this.answer});
+
+  final Either<NetworkExceptions, VendorProduct>? answer;
+  int getCalls = 0;
+
+  @override
+  Future<Either<NetworkExceptions, VendorProduct>> getProduct(
+    String productId,
+  ) async {
+    getCalls++;
+    return answer ?? left(const NetworkExceptions.unexpectedError());
+  }
+
+  @override
+  Future<Either<NetworkExceptions, PagedResult<VendorProduct>>> getProducts({
+    int limit = 20,
+    String? cursor,
+    String? status,
+  }) async => left(const NetworkExceptions.unexpectedError());
+
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> updateProductStatus(
+    String productId,
+    VendorProductStatus status,
+  ) async => left(const NetworkExceptions.unexpectedError());
+
+  @override
+  Future<Either<NetworkExceptions, VendorProduct>> updateStock({
+    required String productId,
+    required String variantId,
+    required int newQuantity,
+    required bool alertCustomersOnRestock,
+    DateTime? restockUtc,
+  }) async => left(const NetworkExceptions.unexpectedError());
+}
+
+VendorProduct _listing({required String variantId}) => VendorProduct(
+  id: 'p1',
+  variantId: variantId,
+  name: 'Trail Jacket',
+  imageUrl: '',
+  price: const Money(amount: 1, currency: 'NPR'),
+  stockCount: 4,
+  status: VendorProductStatus.active,
+  rating: 0,
+  createdAt: DateTime.utc(2026, 9, 2),
+);
+
 Future<void> _pump(
   WidgetTester tester,
   Widget screen, {
   required _FakeRepo repo,
+  _FakeProductsRepo? productsRepo,
   Size size = _narrow,
 }) async {
   tester.view.physicalSize = size;
@@ -134,9 +196,15 @@ Future<void> _pump(
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
+  final overrides = [
+    unitMarkersRepositoryProvider.overrideWithValue(repo),
+    if (productsRepo != null)
+      vendorProductsRepositoryProvider.overrideWithValue(productsRepo),
+  ];
+
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [unitMarkersRepositoryProvider.overrideWithValue(repo)],
+      overrides: overrides,
       child: const MediaQuery(
         data: MediaQueryData(textScaler: TextScaler.linear(1.3)),
         child: SizedBox.shrink(),
@@ -145,7 +213,7 @@ Future<void> _pump(
   );
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [unitMarkersRepositoryProvider.overrideWithValue(repo)],
+      overrides: overrides,
       child: MediaQuery(
         data: const MediaQueryData(textScaler: TextScaler.linear(1.3)),
         child: MaterialApp(home: screen),
@@ -196,6 +264,7 @@ void main() {
       await _pump(
         tester,
         const UnitMarkerProvisionScreen(
+          productId: 'p1',
           productVariantId: 'v1',
           productName: 'Trail Jacket',
         ),
@@ -231,7 +300,10 @@ void main() {
       final repo = _FakeRepo(provisionAnswer: right([_provisioned()]));
       await _pump(
         tester,
-        const UnitMarkerProvisionScreen(productVariantId: 'v1'),
+        const UnitMarkerProvisionScreen(
+          productId: 'p1',
+          productVariantId: 'v1',
+        ),
         repo: repo,
         size: _narrowTall,
       );
@@ -254,14 +326,75 @@ void main() {
       final repo = _FakeRepo();
       await _pump(
         tester,
-        const UnitMarkerProvisionScreen(productVariantId: ''),
+        const UnitMarkerProvisionScreen(
+          productId: 'p1',
+          productVariantId: '',
+        ),
         repo: repo,
+        productsRepo: _FakeProductsRepo(
+          answer: right(_listing(variantId: '')),
+        ),
       );
       expect(
         find.text(UnitMarkerProvisionScreen.noVariantBody),
         findsOneWidget,
       );
       expect(find.text(UnitMarkerProvisionScreen.mintLabel), findsNothing);
+    });
+
+    // The screen used to read a missing variant id as "this listing has no
+    // variant", which is a different fact. Arriving by deep link or after the
+    // process was restored drops go_router's `extra`, so a seller with a
+    // priced, stocked listing was shown a dead end with no button.
+    testWidgets('recovers the variant when the route did not carry it', (
+      tester,
+    ) async {
+      final repo = _FakeRepo(provisionAnswer: right([_provisioned()]));
+      final products = _FakeProductsRepo(
+        answer: right(_listing(variantId: 'v1')),
+      );
+      await _pump(
+        tester,
+        const UnitMarkerProvisionScreen(
+          productId: 'p1',
+          productVariantId: '',
+        ),
+        repo: repo,
+        productsRepo: products,
+        size: _narrowTall,
+      );
+
+      expect(products.getCalls, 1);
+      expect(find.text(UnitMarkerProvisionScreen.noVariantBody), findsNothing);
+      expect(find.text(UnitMarkerProvisionScreen.mintLabel), findsOneWidget);
+
+      // And the recovered variant is the one that gets minted against.
+      await tester.tap(find.text(UnitMarkerProvisionScreen.mintLabel));
+      await tester.pumpAndSettle();
+      expect(repo.lastProvisionVariantId, 'v1');
+    });
+
+    testWidgets('a failed lookup offers a retry, not a wrong explanation', (
+      tester,
+    ) async {
+      final repo = _FakeRepo();
+      await _pump(
+        tester,
+        const UnitMarkerProvisionScreen(
+          productId: 'p1',
+          productVariantId: '',
+        ),
+        repo: repo,
+        productsRepo: _FakeProductsRepo(),
+        size: _narrowTall,
+      );
+
+      expect(
+        find.text(UnitMarkerProvisionScreen.variantLookupFailedBody),
+        findsOneWidget,
+      );
+      expect(find.text(UnitMarkerProvisionScreen.noVariantBody), findsNothing);
+      expect(find.text(UnitMarkerProvisionScreen.retryLabel), findsOneWidget);
     });
   });
 

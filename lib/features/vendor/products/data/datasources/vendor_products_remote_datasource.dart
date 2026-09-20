@@ -22,6 +22,16 @@ class VendorProductsRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
+  /// GET /v1/vendor/products/{productId} — the vendor's own listing with
+  /// its variants. The list response already carries variants, so this is
+  /// only for screens reached without the product travelling on the route
+  /// (a deep link, or a restored process, where go_router's `extra` is
+  /// gone). Without it those screens have no variant id and dead-end.
+  Future<Map<String, dynamic>> getProduct(String productId) async {
+    final response = await apiClient.get('/v1/vendor/products/$productId');
+    return response as Map<String, dynamic>;
+  }
+
   /// Maps the UI tab filter key to the backend's numeric `ProductState`
   /// enum (1=Draft, 2=Active, 3=OutOfStock, 4=Archived, 5=Suspended) — the
   /// `state` query param is an integer, not the string codes the tabs use.
