@@ -1423,7 +1423,14 @@ class _BottomNav extends ConsumerWidget {
       items: [
         SmBottomNavItem.glyph(SmNavIcons.home, label: 'Home'),
         SmBottomNavItem.glyph(SmNavIcons.analytics, label: 'Analytics'),
-        SmBottomNavItem.glyph(SmNavIcons.compass, label: 'Explore'),
+        // Slot 2 used to be Explore -> creatorSearch here, and Brands ->
+        // partnerships on the other three creator tabs. One slot, three
+        // different icons, labels and destinations depending on which tab you
+        // happened to be standing on. It also made Brands unreachable from
+        // Profile, while duplicating a search affordance the other headers
+        // already carry - so the slot was spending itself on a door that
+        // exists elsewhere, standing where the only door to Brands should be.
+        SmBottomNavItem.glyph(SmNavIcons.tag, label: 'Brands'),
         SmBottomNavItem.glyph(
           SmNavIcons.person,
           label: 'Profile',
@@ -1433,11 +1440,20 @@ class _BottomNav extends ConsumerWidget {
       onTap: (index) {
         switch (index) {
           case 0:
-            if (context.canPop()) context.popOrHome();
+            // Was `if (context.canPop()) context.popOrHome();`, which is two
+            // bugs wearing one line. The guard defeats the helper:
+            // popOrHome() already handles an empty stack by going to
+            // backFallbackFor(path), so wrapping it in canPop() means the one
+            // case it exists for - nothing to pop - is the case where nothing
+            // happens, and Home is silently dead on a Profile opened as root.
+            // And when there *is* something to pop, popping lands on whatever
+            // came before, so a creator arriving from Earnings taps Home and
+            // gets Earnings. The sibling tabs just go to creatorHome.
+            unawaited(context.push(RouteNames.creatorHome));
           case 1:
             unawaited(context.push(RouteNames.creatorAnalytics));
           case 2:
-            unawaited(context.push(RouteNames.creatorSearch));
+            unawaited(context.push(RouteNames.partnerships));
         }
       },
     );

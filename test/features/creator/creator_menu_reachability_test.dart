@@ -75,6 +75,19 @@ void main() {
           path: RouteNames.reach,
           builder: (_, _) => const ReachScreen(),
         ),
+        // Sentinels for the bottom-nav destinations. Real screens would drag
+        // in their own repositories; what is under test is where the tap
+        // lands, so a marker is the honest assertion and a cheap one. The
+        // strings are deliberately unlike any nav label - 'Home' and 'Brands'
+        // both appear in the bar itself.
+        GoRoute(
+          path: RouteNames.creatorHome,
+          builder: (_, _) => const Text('ARRIVED-CREATOR-HOME'),
+        ),
+        GoRoute(
+          path: RouteNames.partnerships,
+          builder: (_, _) => const Text('ARRIVED-PARTNERSHIPS'),
+        ),
       ],
     );
     return ProviderScope(
@@ -208,6 +221,51 @@ void main() {
       findsNothing,
       reason: "my Rate Card, Earnings and Log Out are not on someone else's "
           'profile',
+    );
+  });
+
+  /// Slot 2 of the creator bottom nav carried a different icon, a different
+  /// label and a different destination on Profile than on the other three
+  /// tabs: Explore -> creatorSearch instead of Brands -> partnerships. So
+  /// Brands had no door from Profile at all, while the slot duplicated a
+  /// search affordance every other creator header already carries.
+  testWidgets('the Profile tab agrees with its siblings about slot 2', (
+    tester,
+  ) async {
+    await pumpScreen(tester, ownProfile());
+
+    expect(find.text('Explore'), findsNothing);
+
+    await tester.tap(find.text('Brands'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(
+      find.text('ARRIVED-PARTNERSHIPS'),
+      findsOneWidget,
+      reason: 'slot 2 must reach Brands, the one door Profile did not have',
+    );
+  });
+
+  /// `if (context.canPop()) context.popOrHome()` was two bugs in one line.
+  /// The guard skips the empty-stack case popOrHome() exists to handle, so
+  /// Home did nothing at all on a Profile opened as root; and where there was
+  /// something to pop it unwound to whatever came before, so a creator
+  /// arriving from Earnings tapped Home and landed back on Earnings.
+  testWidgets('Home names its destination instead of unwinding the stack', (
+    tester,
+  ) async {
+    // Pumped as the root, which is exactly the case the old guard skipped.
+    await pumpScreen(tester, ownProfile());
+
+    await tester.tap(find.text('Home'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(
+      find.text('ARRIVED-CREATOR-HOME'),
+      findsOneWidget,
+      reason: 'Home was silently dead when Profile had nothing to pop to',
     );
   });
 
