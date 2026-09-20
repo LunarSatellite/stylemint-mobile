@@ -9,6 +9,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_skeleton.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -167,20 +169,25 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
     List<_ActivityGroup> groups,
   ) {
     return activityState.maybeWhen(
-      loadInProgress: () => const SmPageLoader(),
+      loadInProgress: () => const SmListSkeleton(itemCount: 6),
       loadFailure: (_) => SmErrorView(
+        title: 'Could not load recent activity',
         message: 'Failed to load recent activity.',
         onRetry: () => ref.read(vendorActivityNotifierProvider.notifier).load(),
       ),
       orElse: () => groups.isEmpty
-          ? Center(
-              child: Text(
-                _activeFilters.isEmpty
-                    ? 'No recent activity yet.'
-                    : 'No activity matches the selected filters.',
-                style: const TextStyle(color: DesignTokens.textMuted),
-              ),
-            )
+          ? (_activeFilters.isEmpty
+                ? const SmEmptyState(
+                    title: 'Recent activity',
+                    message: 'No recent activity yet.',
+                    icon: Icons.history_toggle_off_outlined,
+                  )
+                : SmEmptyState(
+                    message: 'No activity matches the selected filters.',
+                    icon: Icons.filter_alt_outlined,
+                    actionLabel: 'Clear filters',
+                    onAction: () => setState(_activeFilters.clear),
+                  ))
           : ListView.separated(
               padding: const EdgeInsets.symmetric(
                 horizontal: DesignTokens.s16,

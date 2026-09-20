@@ -8,6 +8,8 @@ import 'package:stylemint_mobile_frontend/features/creator/analytics/presentatio
 import 'package:stylemint_mobile_frontend/features/creator/analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_skeleton.dart';
 
 // ── Time filter enum (local UX only — maps to fromUtc/toUtc for API) ──────────
 
@@ -104,15 +106,12 @@ class _TopReelsScreenState extends ConsumerState<TopReelsScreen> {
           // ── List ────────────────────────────────────────────────────────
           Expanded(
             child: state.maybeWhen(
-              loadInProgress: () => const SmPageLoader(),
+              loadInProgress: () => const SmListSkeleton(itemCount: 6),
               orElse: () => reels.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No reels yet.',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
-                        ),
-                      ),
+                  ? const SmEmptyState(
+                      title: 'Your reels',
+                      message: 'No reels yet.',
+                      icon: Icons.video_library_outlined,
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(

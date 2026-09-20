@@ -14,6 +14,9 @@ import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_
 import 'package:stylemint_mobile_frontend/features/vendor/store_actions/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_skeleton.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_shimmer.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -98,6 +101,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
               },
             ),
             loadFailure: (_) => SmErrorView(
+              title: 'Could not load your dashboard',
               message: 'Failed to load dashboard.',
               onRetry: () =>
                   ref.read(vendorDashboardNotifierProvider.notifier).load(),
@@ -116,7 +120,42 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
     );
   }
 
-  Widget _loader() => const SmPageLoader();
+  Widget _loader() => const _VendorDashboardSkeleton();
+}
+
+/// Shaped like the vendor dashboard that follows: a greeting line, the store
+/// pulse card, the revenue card and the pending-actions list.
+class _VendorDashboardSkeleton extends StatelessWidget {
+  const _VendorDashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final on = !MediaQuery.disableAnimationsOf(context);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s32,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SmSkeleton.row(enabled: on),
+          const SizedBox(height: DesignTokens.s20),
+          const _StorePulseSkeleton(),
+          const SizedBox(height: DesignTokens.s16),
+          SmShimmer.rectangle(
+            height: 140,
+            radius: DesignTokens.cardRadius,
+            enabled: on,
+          ),
+          const SizedBox(height: DesignTokens.s20),
+          SmSkeleton.rows(count: 4, enabled: on),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Main content ──────────────────────────────────────────────────────────────
@@ -341,6 +380,7 @@ class _DashboardContent extends StatelessWidget {
           fallback: 'Review and ship pending orders',
         ),
         route: RouteNames.vendorOrdersReadyToShip,
+        isClear: pendingActionCounts.readyToShip == 0,
       ),
       _Alert(
         assetIcon: 'assets/images/vendordashboard/icon_order_waiting.png',
@@ -353,6 +393,7 @@ class _DashboardContent extends StatelessWidget {
           fallback: 'Assign tracking numbers to shipped orders',
         ),
         route: RouteNames.vendorOrdersWaitingTracking,
+        isClear: pendingActionCounts.waitingTracking == 0,
       ),
       _Alert(
         assetIcon: 'assets/images/vendordashboard/icon_chat.png',
@@ -365,6 +406,7 @@ class _DashboardContent extends StatelessWidget {
           fallback: 'Reply to open product questions',
         ),
         route: RouteNames.vendorPendingInquiries,
+        isClear: pendingActionCounts.pendingInquiries == 0,
       ),
       _Alert(
         assetIcon: 'assets/images/vendordashboard/icon_partnership.png',
@@ -377,6 +419,7 @@ class _DashboardContent extends StatelessWidget {
           fallback: 'Review requests from creators',
         ),
         route: RouteNames.vendorCreatorPartnershipRequests,
+        isClear: pendingActionCounts.pendingCreatorRequests == 0,
       ),
       _Alert(
         title: 'Store to-do',
@@ -388,6 +431,7 @@ class _DashboardContent extends StatelessWidget {
           fallback: 'Restock, photo and slow-stock suggestions',
         ),
         route: RouteNames.vendorStoreActions,
+        isClear: storeActionCount == 0,
       ),
     ];
 
@@ -407,33 +451,43 @@ class _DashboardContent extends StatelessWidget {
                   Material(
                     color: Colors.transparent,
                     child: ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: DesignTokens.bgAppBodyLight,
-                          borderRadius: BorderRadius.circular(
-                            DesignTokens.inputRadius,
+                      // A cleared row is toned down rather than emptied: the
+                      // sentence is unchanged, it just stops competing with
+                      // the rows that still want something.
+                      leading: Opacity(
+                        opacity: alert.isClear ? 0.6 : 1,
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: alert.isClear
+                                ? DesignTokens.stateNeutralMarkFill
+                                : DesignTokens.bgAppBodyLight,
+                            borderRadius: BorderRadius.circular(
+                              DesignTokens.inputRadius,
+                            ),
                           ),
-                        ),
-                        child: alert.assetIcon != null
-                            ? Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Image.asset(
-                                  alert.assetIcon!,
-                                  fit: BoxFit.contain,
+                          child: alert.assetIcon != null
+                              ? Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Image.asset(
+                                    alert.assetIcon!,
+                                    fit: BoxFit.contain,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.notifications_outlined,
+                                  color: DesignTokens.textWhite,
+                                  size: 20,
                                 ),
-                              )
-                            : const Icon(
-                                Icons.notifications_outlined,
-                                color: DesignTokens.textWhite,
-                                size: 20,
-                              ),
+                        ),
                       ),
                       title: Text(
                         alert.title,
                         style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textWhite,
+                          color: alert.isClear
+                              ? DesignTokens.textLight
+                              : DesignTokens.textWhite,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -444,10 +498,14 @@ class _DashboardContent extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
-                      trailing: const Icon(
-                        Icons.arrow_forward_ios,
-                        color: DesignTokens.textMuted,
-                        size: 14,
+                      trailing: Icon(
+                        alert.isClear
+                            ? Icons.check_rounded
+                            : Icons.arrow_forward_ios,
+                        color: alert.isClear
+                            ? DesignTokens.primaryGreen
+                            : DesignTokens.textMuted,
+                        size: alert.isClear ? 18 : 14,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: DesignTokens.s16,
@@ -592,14 +650,10 @@ class _DashboardContent extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.s12),
         if (_activityGroups().isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s12),
-            child: Text(
-              'No recent activity yet.',
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textMuted,
-              ),
-            ),
+          const SmEmptyState(
+            compact: true,
+            message: 'No recent activity yet.',
+            icon: Icons.history_toggle_off_outlined,
           )
         else
           ..._activityGroups().expand(
@@ -1141,23 +1195,26 @@ class _PulseSignal extends StatelessWidget {
 class _StorePulseSkeleton extends StatelessWidget {
   const _StorePulseSkeleton();
   @override
-  Widget build(BuildContext context) => Container(
-    height: 138,
-    decoration: BoxDecoration(
-      color: const Color(0xFF171A22),
-      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      border: Border.all(color: const Color(0x18FFFFFF)),
-    ),
-    alignment: Alignment.center,
-    child: const SizedBox(
-      width: 22,
-      height: 22,
-      child: CircularProgressIndicator(
-        strokeWidth: 2,
-        color: DesignTokens.primaryGreen,
+  Widget build(BuildContext context) {
+    final on = !MediaQuery.disableAnimationsOf(context);
+    return Container(
+      height: 138,
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.surfaceRaised,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        border: Border.all(color: DesignTokens.stateNeutralMarkBorder),
       ),
-    ),
-  );
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SmShimmer.text(width: 110, enabled: on),
+          const SizedBox(height: DesignTokens.s16),
+          Expanded(child: SmSkeleton.statRow(count: 3, enabled: on)),
+        ],
+      ),
+    );
+  }
 }
 // ── Data models ───────────────────────────────────────────────────────────────
 
@@ -1167,11 +1224,18 @@ class _Alert {
     required this.subtitle,
     this.assetIcon,
     this.route,
+    this.isClear = false,
   });
   final String? assetIcon;
   final String title;
   final String subtitle;
   final String? route;
+
+  /// True only when the count came back as a measured zero. An unknown count
+  /// is NOT clear — it falls back to the generic subtitle and stays neutral,
+  /// because "we did not get a number" and "the number is nought" are
+  /// different facts and must not look the same.
+  final bool isClear;
 }
 
 class _TopProduct {

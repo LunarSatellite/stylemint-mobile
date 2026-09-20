@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_s
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_skeleton.dart';
 
 class AllPayoutHistoryScreen extends ConsumerWidget {
   const AllPayoutHistoryScreen({super.key});
@@ -40,6 +41,7 @@ class AllPayoutHistoryScreen extends ConsumerWidget {
         initial: _loader,
         loadInProgress: _loader,
         loadFailure: (failure) => SmErrorView(
+          title: 'Could not load payout history',
           message: 'Failed to load payout history.',
           onRetry: () =>
               ref.read(payoutHistoryNotifierProvider.notifier).load(),
@@ -47,6 +49,7 @@ class AllPayoutHistoryScreen extends ConsumerWidget {
         loadSuccess: (payouts, hasMore) {
           if (payouts.isEmpty) {
             return const SmEmptyState(
+              title: 'Payout history',
               message: 'No payouts yet.',
               icon: Icons.account_balance_wallet_outlined,
             );
@@ -108,7 +111,7 @@ class AllPayoutHistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const SmPageLoader();
+  Widget _loader() => const SmListSkeleton(itemCount: 6);
 
   Map<String, List<VendorPayout>> _groupByMonth(List<VendorPayout> payouts) {
     final byMonth = <String, List<VendorPayout>>{};

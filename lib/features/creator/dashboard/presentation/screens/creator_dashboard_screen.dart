@@ -28,6 +28,9 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_nav_ico
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_skeleton.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_shimmer.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -81,14 +84,49 @@ class _CreatorDashboardView extends ConsumerWidget {
         onRefresh: () => ref.read(creatorDashboardNotifierProvider.notifier).load(),
       ),
       loadFailure: (_) => SmErrorView(
+        title: 'Could not load your dashboard',
         message: 'Failed to load your dashboard.',
         onRetry: () => ref.read(creatorDashboardNotifierProvider.notifier).load(),
       ),
     );
   }
 
-  Widget _loader() =>
-      const SmPageLoader();
+  Widget _loader() => const _CreatorDashboardSkeleton();
+}
+
+/// Shaped like the dashboard that follows: a header line, the metrics card,
+/// the stat row and two activity rows. Nothing here is a number.
+class _CreatorDashboardSkeleton extends StatelessWidget {
+  const _CreatorDashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final on = !MediaQuery.disableAnimationsOf(context);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s32,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SmSkeleton.row(enabled: on),
+          const SizedBox(height: DesignTokens.s20),
+          SmShimmer.rectangle(
+            height: 120,
+            radius: DesignTokens.cardRadius,
+            enabled: on,
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          SmSkeleton.statRow(enabled: on),
+          const SizedBox(height: DesignTokens.s20),
+          SmSkeleton.rows(count: 3, enabled: on),
+        ],
+      ),
+    );
+  }
 }
 
 class _BecomeCreatorCta extends StatelessWidget {
@@ -1110,13 +1148,18 @@ class _RecentActivity extends ConsumerWidget {
           padding: const EdgeInsets.all(DesignTokens.s16),
           decoration: DesignTokens.cardDecoration(),
           child: activity.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: DesignTokens.s8),
-                child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-              ),
+            loading: () => SmSkeleton.rows(
+              count: 3,
+              enabled: !MediaQuery.disableAnimationsOf(context),
             ),
-            error: (_, _) => const _EmptyActivity(),
+            // This used to render the empty state, so a creator whose request
+            // failed saw the same screen as one who simply has no activity.
+            // They are different facts and only one of them is retryable.
+            error: (_, _) => SmErrorView(
+              compact: true,
+              message: 'Could not load recent activity.',
+              onRetry: () => ref.invalidate(recentActivityProvider),
+            ),
             data: (items) =>
                 items.isEmpty ? const _EmptyActivity() : _GroupedActivityList(items: items),
           ),
@@ -1264,9 +1307,10 @@ class _EmptyActivity extends StatelessWidget {
   const _EmptyActivity();
 
   @override
-  Widget build(BuildContext context) => Text(
-    'No recent activity yet.',
-    style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+  Widget build(BuildContext context) => const SmEmptyState(
+    compact: true,
+    message: 'No recent activity yet.',
+    icon: Icons.history_toggle_off_outlined,
   );
 }
 
@@ -1415,27 +1459,23 @@ class _MyRecentReels extends ConsumerWidget {
         ),
         const SizedBox(height: DesignTokens.s12),
         async.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
-            child: const SmPageLoader(),
+          loading: () => SmSkeleton.rows(
+            count: 2,
+            enabled: !MediaQuery.disableAnimationsOf(context),
           ),
-          error: (e, _s) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
-            child: Text(
-              '$e'.replaceFirst('Exception: ', ''),
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted),
-            ),
+          // The error text is the server's own message, still verbatim — it
+          // just now sits in the failure state and offers the retry it always
+          // deserved.
+          error: (e, _s) => SmErrorView(
+            compact: true,
+            message: '$e'.replaceFirst('Exception: ', ''),
+            onRetry: () => ref.invalidate(creatorReelSummariesProvider(_recent)),
           ),
           data: (reels) => reels.isEmpty
-              ? Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: DesignTokens.s16),
-                  child: Text(
-                    'No reels yet — import one to get started.',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted),
-                  ),
+              ? const SmEmptyState(
+                  compact: true,
+                  message: 'No reels yet — import one to get started.',
+                  icon: Icons.video_library_outlined,
                 )
               : SizedBox(
                   height: 132,

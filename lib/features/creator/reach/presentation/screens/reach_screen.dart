@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_s
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_skeleton.dart';
 
 class ReachScreen extends ConsumerWidget {
   const ReachScreen({super.key});
@@ -31,6 +32,7 @@ class ReachScreen extends ConsumerWidget {
         loadSuccess: (targets, campaigns, analytics) {
           if (targets.isEmpty && campaigns.isEmpty) {
             return const SmEmptyState(
+              title: 'Reach',
               message: 'No publish targets or boost campaigns yet.',
               icon: Icons.rocket_launch_outlined,
             );
@@ -107,7 +109,7 @@ class ReachScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const SmPageLoader();
+  Widget _loader() => const SmListSkeleton(itemCount: 5);
 
   String _formatDateTime(DateTime dt) {
     return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '

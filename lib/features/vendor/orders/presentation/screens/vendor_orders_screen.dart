@@ -17,6 +17,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_skeleton.dart';
 
 class VendorOrdersScreen extends ConsumerStatefulWidget {
   const VendorOrdersScreen({super.key});
@@ -236,7 +237,7 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
           ),
         ),
         body: state.maybeWhen(
-          loadInProgress: () => const SmPageLoader(),
+          loadInProgress: () => const SmListSkeleton(itemCount: 6),
           loadFailure: (_) => Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
