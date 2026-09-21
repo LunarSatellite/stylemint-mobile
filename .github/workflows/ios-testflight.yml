@@ -1,0 +1,132 @@
+# Build the iOS app on a macOS runner and upload it to TestFlight.
+#
+# This exists because iOS archiving and upload need macOS and Xcode, and the
+# team's development machine is Windows. GitHub's macOS runners are the only
+# Apple hardware in the loop.
+#
+# Before the first run, four repository secrets must exist. Create them under
+# Settings -> Secrets and variables -> Actions. Nobody but you should handle
+# these values.
+#
+#   APP_STORE_CONNECT_KEY_ID        The key's ID, e.g. 2X9ABC3DEF
+#   APP_STORE_CONNECT_ISSUER_ID     The issuer UUID shown above the key list
+#   APP_STORE_CONNECT_PRIVATE_KEY   The whole .p8 file, including the
+#                                   -----BEGIN PRIVATE KEY----- and
+#                                   -----END PRIVATE KEY----- lines
+#   APPLE_TEAM_ID                   YBSBPFR23X
+#
+# Generate the key at App Store Connect -> Users and Access -> Integrations ->
+# App Store Connect API, with the "App Manager" role. Apple lets you download
+# the .p8 exactly once.
+#
+# Automatic signing is used deliberately: it has Xcode fetch the distribution
+# certificate and provisioning profile from App Store Connect with that API
+# key. The alternative is storing a .p12 certificate and a .mobileprovision in
+# secrets and importing them into a temporary keychain, which is more moving
+# parts and expires on its own schedule.
+
+name: iOS TestFlight
+
+on:
+  # Manual, so a build only goes to testers when someone asks for one.
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: >
+          Build number. Must be higher than any build already uploaded for
+          this version or App Store Connect rejects it. Leave empty to use the
+          run number.
+        required: false
+        type: string
+
+jobs:
+  build:
+    # macos-15 ships Xcode 16. Pinning the major version keeps a runner image
+    # update from changing the toolchain under a release.
+    runs-on: macos-15
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.2.app
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # Match the version the project is developed against rather than
+          # tracking "stable", so CI and the desk build the same way.
+          flutter-version: 3.41.9
+          channel: stable
+          cache: true
+
+      - name: Resolve Dart dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        # freezed and json_serializable output is gitignored, so it does not
+        # exist on a fresh checkout and the build fails without this.
+        run: dart run build_runner build
+
+      - name: Analyze
+        # A build that ships to testers should at least be free of analyzer
+        # errors. Info-level lints are not gated on.
+        run: flutter analyze lib/
+
+      - name: Test
+        run: flutter test
+
+      - name: Write App Store Connect API key
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          # xcodebuild looks for the key in this exact location and filename.
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "$PRIVATE_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
+
+      - name: Build IPA
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
+        run: |
+          flutter build ipa \
+            --release \
+            --build-number="$BUILD_NUMBER" \
+            --export-options-plist=ios/ExportOptions.plist \
+            -- \
+            -allowProvisioningUpdates \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID" \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_"$KEY_ID".p8
+
+      - name: Upload to TestFlight
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          IPA=$(ls build/ios/ipa/*.ipa | head -1)
+          echo "Uploading $IPA"
+          # Validate first: altool reports most rejections (missing usage
+          # strings, bad entitlements, a duplicate build number) here, where
+          # the message is readable, rather than silently failing processing
+          # twenty minutes later.
+          xcrun altool --validate-app \
+            --type ios --file "$IPA" \
+            --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID"
+          xcrun altool --upload-app \
+            --type ios --file "$IPA" \
+            --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID"
+
+      - name: Keep the IPA and the build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: |
+            build/ios/ipa/*.ipa
+            build/ios/archive/**/*.xcarchive/Info.plist
+          retention-days: 14
+          if-no-files-found: warn

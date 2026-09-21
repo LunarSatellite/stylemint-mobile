@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- app-store-connect is the method for TestFlight and the App Store.
+	     "ad-hoc" would build a device-limited IPA that never reaches
+	     TestFlight, and "development" is not accepted for upload at all. -->
+	<key>method</key>
+	<string>app-store-connect</string>
+
+	<!-- The Apple Developer team already set on the Xcode targets. -->
+	<key>teamID</key>
+	<string>YBSBPFR23X</string>
+
+	<!-- Let Xcode fetch the distribution certificate and provisioning
+	     profile from App Store Connect using the API key the workflow
+	     provides, instead of expecting them to exist on the runner. A fresh
+	     CI machine has neither. -->
+	<key>signingStyle</key>
+	<string>automatic</string>
+
+	<!-- Symbols go up with the build so crash reports are readable. -->
+	<key>uploadSymbols</key>
+	<true/>
+
+	<!-- Bitcode has been removed from Xcode; leaving this true makes newer
+	     Xcode versions warn and strip it anyway. -->
+	<key>compileBitcode</key>
+	<false/>
+
+	<!-- Keep the app thinned per device rather than shipping one fat binary. -->
+	<key>thinning</key>
+	<string>&lt;thin-for-all-variants&gt;</string>
+</dict>
+</plist>

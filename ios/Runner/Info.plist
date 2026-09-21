@@ -10,6 +10,21 @@
 	<string>Style Mint uses the camera to scan the QR code shown on the web login page.</string>
 	<key>NFCReaderUsageDescription</key>
 	<string>StyleMint uses NFC to write your shelf-code link to an NFC tag and check it.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>StyleMint opens your photo library so you can attach a photo — a KYC document, a return's condition evidence, a profile picture, or a screenshot to search with.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>StyleMint saves an image to your photo library only when you tap Save — for example a StyleMint code you want to keep or share.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>StyleMint uses Face ID to unlock your passkey so you can sign in without typing a password.</string>
+	<!-- Declares that the app uses only exempt encryption: HTTPS/TLS, the
+	     iOS Keychain via flutter_secure_storage, and platform passkeys. All
+	     three are standard OS-provided cryptography and exempt under the
+	     export rules. Without this key App Store Connect blocks every
+	     TestFlight build on the export-compliance question until someone
+	     answers it by hand. Change this to <true/> if the app ever ships its
+	     own (non-OS) cryptography. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
