@@ -188,6 +188,14 @@ abstract class RouteNames {
   static const socialConnect = '/creator/social-connect';
   static const reelStudio = '/creator/reel-studio';
   static const reelStudioCreateDraft = '/creator/reel-studio/create';
+  /// Campaigns a vendor published and opened to creators, the one a creator is
+  /// reading, and the creator's own applications. The detail path carries the
+  /// brief id, not the root id: a creator applies to a specific version, and
+  /// the application records which one.
+  static const creatorCampaigns = '/creator/campaigns';
+  static const creatorCampaignDetail = '/creator/campaigns/:briefId';
+  static const creatorMyApplications = '/creator/campaigns/applications';
+
   static const partnerships = '/creator/partnerships';
   static const brandDetail = '/creator/partnerships/:partnershipId';
   static const partnershipApply = '/creator/partnerships/:partnershipId/apply';
@@ -275,6 +283,9 @@ abstract class RouteNames {
   static const vendorStoreDetail = '/vendor/stores/:storeId';
   static const vendorStoreEdit = '/vendor/stores/:storeId/edit';
   static const vendorRecentActivity = '/vendor/activity';
+  /// Campaign reels waiting on this vendor's answer.
+  static const vendorReelApprovals = '/vendor/reel-approvals';
+
   static const vendorPartnerships = '/vendor/partnerships';
   static const vendorSendPartnershipRequest = '/vendor/partnerships/send';
   static const vendorPartnershipsInvite =

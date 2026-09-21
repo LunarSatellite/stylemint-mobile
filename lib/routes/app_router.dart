@@ -58,6 +58,9 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_messaging_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brands_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/campaigns/presentation/screens/campaign_proposal_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/campaigns/presentation/screens/campaign_proposals_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/campaigns/presentation/screens/my_applications_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/rate_card_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reach/presentation/screens/reach_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
@@ -224,6 +227,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/sc
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_order_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_orders_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/adjust_commission_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/reel_approvals/presentation/screens/reel_approvals_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_brief_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_workspace_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_briefs_screen.dart';
@@ -1218,6 +1222,39 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.settingsChangePassword,
         builder: (ctx, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorReelApprovals,
+        builder: (ctx, state) => const ReelApprovalsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.creatorCampaigns,
+        builder: (ctx, state) => const CampaignProposalsScreen(),
+        routes: [
+          // `applications` MUST come before `:briefId`. go_router takes the
+          // first sub-route that matches, and `:briefId` matches any single
+          // segment — registered first it would swallow /applications and
+          // send the creator to a campaign-detail screen looking up a brief
+          // whose id is the literal string "applications". The backend keeps
+          // the same two apart the same way, by making the literal segment
+          // unmatchable against `{briefId:guid}`.
+          GoRoute(
+            path: _subPath(
+              RouteNames.creatorCampaigns,
+              RouteNames.creatorMyApplications,
+            ),
+            builder: (ctx, state) => const MyApplicationsScreen(),
+          ),
+          GoRoute(
+            path: _subPath(
+              RouteNames.creatorCampaigns,
+              RouteNames.creatorCampaignDetail,
+            ),
+            builder: (ctx, state) => CampaignProposalDetailScreen(
+              briefId: state.pathParameters['briefId'] ?? '',
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.partnerships,

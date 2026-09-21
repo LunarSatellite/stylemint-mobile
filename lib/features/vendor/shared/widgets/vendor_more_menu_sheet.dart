@@ -78,6 +78,16 @@ class _VendorMoreMenu extends StatelessWidget {
                 },
               ),
               const _MoreDivider(),
+              // The other end of Brand Studio: a campaign reel does not
+              // publish until the brand answers here. Without an entry point
+              // the gate would hold every submission indefinitely, until the
+              // expiry sweep returned each reel to draft.
+              _MoreItem(
+                icon: Icons.inbox_outlined,
+                title: 'Reel Approvals',
+                onTap: () => _go(context, RouteNames.vendorReelApprovals),
+              ),
+              const _MoreDivider(),
               _MoreItem(
                 icon: Icons.groups_outlined,
                 title: 'Creator Partnerships',

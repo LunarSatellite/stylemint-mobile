@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_creator_strip.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/reel_approvals/presentation/screens/submit_for_approval_sheet.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_layout_policy.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
@@ -546,6 +547,14 @@ class _ReelActionsMenu extends ConsumerWidget {
                         : _ReelAction.publish,
                     child: Text(isPublished ? 'Unpublish' : 'Publish'),
                   ),
+                  // Campaign reels do not publish on the creator's own
+                  // authority. The item is always offered because only the
+                  // server knows whether this reel belongs to a campaign; it
+                  // answers 404 when it does not, and the sheet says so.
+                  const PopupMenuItem(
+                    value: _ReelAction.submitForApproval,
+                    child: Text('Submit for brand approval'),
+                  ),
                   const PopupMenuItem(
                     value: _ReelAction.editCaption,
                     child: Text('Edit caption'),
@@ -576,6 +585,15 @@ class _ReelActionsMenu extends ConsumerWidget {
         if (await notifier.unpublish(reel.id)) {
           ref.invalidate(creatorReelDetailProvider(reel.id));
         }
+      case _ReelAction.submitForApproval:
+        if (!context.mounted) return;
+        await showModalBottomSheet<void>(
+          context: context,
+          backgroundColor: DesignTokens.baseBlack,
+          isScrollControlled: true,
+          builder: (_) => SubmitForApprovalSheet(reelId: reel.id),
+        );
+        ref.invalidate(creatorReelDetailProvider(reel.id));
       case _ReelAction.editCaption:
         if (!context.mounted) return;
         await showModalBottomSheet<void>(
@@ -596,7 +614,13 @@ class _ReelActionsMenu extends ConsumerWidget {
   }
 }
 
-enum _ReelAction { publish, unpublish, editCaption, manageTags }
+enum _ReelAction {
+  publish,
+  unpublish,
+  submitForApproval,
+  editCaption,
+  manageTags,
+}
 
 /// "Edit caption": the same structured [CaptionEditor] used on Review Reel,
 /// pre-filled by parsing the current caption and the reel's tagged products.

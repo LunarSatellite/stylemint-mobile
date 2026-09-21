@@ -81,6 +81,21 @@ class _CreatorMoreMenu extends StatelessWidget {
                 onTap: () => _go(context, RouteNames.earnings),
               ),
               const _MoreDivider(),
+              // Campaigns a brand published and opened to creators. Sits
+              // above Partnerships because applying to one is how a
+              // partnership now begins.
+              _MoreItem(
+                icon: Icons.campaign_outlined,
+                title: 'Campaigns',
+                onTap: () => _go(context, RouteNames.creatorCampaigns),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.assignment_outlined,
+                title: 'My applications',
+                onTap: () => _go(context, RouteNames.creatorMyApplications),
+              ),
+              const _MoreDivider(),
               _MoreItem(
                 icon: Icons.groups_outlined,
                 title: 'Partnerships',
