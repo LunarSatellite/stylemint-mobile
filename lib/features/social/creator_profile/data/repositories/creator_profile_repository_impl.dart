@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/datasources/creator_profile_remote_datasource.dart';
@@ -52,7 +53,7 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
       final dtos = await remoteDataSource.updateBadgeShowcase(awardIdsInOrder);
       return right(dtos.map((d) => d.toDomain()).toList(growable: false));
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -71,7 +72,7 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
       final dto = await remoteDataSource.getCreatorProfile(accountId);
       return right(dto.toDomain());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -133,7 +134,7 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
       );
       return right(ids);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -153,7 +154,7 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
       await remoteDataSource.addSpecialization(accountId, categoryId);
       return right(null);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -173,7 +174,7 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
       await remoteDataSource.removeSpecialization(accountId, categoryId);
       return right(null);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -194,7 +195,7 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
       );
       return right(map);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -214,7 +215,7 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
       await remoteDataSource.setPrimarySpecialization(accountId, categoryId);
       return right(null);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {

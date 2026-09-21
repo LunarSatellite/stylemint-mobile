@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/profile/data/datasources/profile_remote_datasource.dart';
@@ -28,7 +29,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -48,7 +49,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -82,7 +83,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -109,7 +110,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
       );
       return right(dto.toDomain());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -126,7 +127,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
     try {
       return right(await remoteDataSource.getCreatorSocialLinks());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -149,7 +150,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
       );
       return right(unit);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -197,7 +198,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -225,7 +226,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -245,7 +246,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -266,7 +267,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
       await remoteDataSource.requestDataExport();
       return right(unit);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {

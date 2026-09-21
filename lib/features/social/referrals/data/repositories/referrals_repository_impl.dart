@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/social/referrals/data/datasources/referrals_remote_datasource.dart';
@@ -62,7 +63,7 @@ class ReferralsRepositoryImpl implements ReferralsRepository {
       return right(await body());
     } catch (e) {
       if (e is DioException) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } else if (e is NetworkExceptions) {
         return left(e);
       } else {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/campaigns/domain/entities/campaign_proposal.dart';
 import 'package:stylemint_mobile_frontend/features/creator/campaigns/presentation/notifiers/campaign_proposal_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/campaigns/presentation/widgets/brand_direction_section.dart';
@@ -38,10 +37,7 @@ class CampaignProposalDetailScreen extends ConsumerWidget {
           // A 404 here is settled: the brief is retired, unpublished, or its
           // window closed, and retrying cannot change that. Every other
           // failure is worth another go.
-          final isUnavailable = failure.maybeWhen<bool>(
-            notFound: () => true,
-            orElse: () => false,
-          );
+          final isUnavailable = failure.isNotFound;
           return SmErrorView(
             title: 'Could not load this campaign',
             message: isUnavailable ? unavailableMessage : null,

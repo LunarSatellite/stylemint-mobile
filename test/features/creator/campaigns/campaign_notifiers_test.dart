@@ -8,6 +8,18 @@ import 'package:stylemint_mobile_frontend/features/creator/campaigns/presentatio
 import 'package:stylemint_mobile_frontend/features/creator/campaigns/presentation/notifiers/campaign_proposal_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/campaigns/presentation/notifiers/campaign_proposals_notifier.dart';
 
+/// What the shared Dio mapper actually returns for an HTTP 409.
+///
+/// It is NOT `NetworkExceptions.conflict()` — that case exists but only a
+/// handful of repositories build it by hand. A 409 through
+/// `mapDioExceptionToNetworkException` becomes `.validation` carrying the
+/// backend's `ErrorCodes.Conflict`, which is the literal string
+/// `state.conflict`. Tests that assert with `.conflict()` pass while the real
+/// app never takes the branch, so these use the real shape.
+NetworkExceptions _conflict409() =>
+    const NetworkExceptions.validation(code: 'state.conflict');
+
+
 CampaignProposal _proposal(String id) => CampaignProposal(
   id: id,
   vendorProfileId: 'v1',
@@ -188,7 +200,7 @@ void main() {
       // Reporting success here would leave the creator believing a second
       // application was sent when one slot per brief lineage is the rule.
       final repo = _FakeRepo(
-        applyResult: left(const NetworkExceptions.conflict()),
+        applyResult: left(_conflict409()),
       );
       final notifier = CampaignProposalDetailNotifier(repo, 'b1');
       await _settle();
@@ -211,7 +223,7 @@ void main() {
 
     test('clears the applying flag after a failure so retry is possible', () async {
       final repo = _FakeRepo(
-        applyResult: left(const NetworkExceptions.conflict()),
+        applyResult: left(_conflict409()),
       );
       final notifier = CampaignProposalDetailNotifier(repo, 'b1');
       await _settle();
@@ -247,7 +259,7 @@ void main() {
       // and leaving the list untouched would keep showing a stale row.
       final repo = _FakeRepo(
         applications: [_application()],
-        withdrawResult: left(const NetworkExceptions.conflict()),
+        withdrawResult: left(_conflict409()),
       );
       final notifier = CampaignApplicationsNotifier(repo);
       await _settle();

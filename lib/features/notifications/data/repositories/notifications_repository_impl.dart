@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/data/datasources/notifications_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
@@ -20,7 +21,7 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
       );
       return right(items);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } catch (_) {

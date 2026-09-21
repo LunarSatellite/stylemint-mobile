@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
@@ -26,7 +27,7 @@ class DropPartyRepositoryImpl implements DropPartyRepository {
         return right(dtos.map((dto) => dto.toDomain()).toList(growable: false));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -48,7 +49,7 @@ class DropPartyRepositoryImpl implements DropPartyRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -68,7 +69,7 @@ class DropPartyRepositoryImpl implements DropPartyRepository {
         return right(null);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -107,7 +108,7 @@ class DropPartyRepositoryImpl implements DropPartyRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {

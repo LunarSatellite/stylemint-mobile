@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/social/friends/data/datasources/friends_remote_datasource.dart';
@@ -44,7 +45,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -65,7 +66,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
         return right(dtos.map((d) => d.toDomain()).toList(growable: false));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -87,7 +88,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -109,7 +110,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -131,7 +132,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -151,7 +152,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -176,7 +177,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
         return right(dtos.map((d) => d.toDomain()).toList(growable: false));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {

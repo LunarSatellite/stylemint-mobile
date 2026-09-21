@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/data/datasources/analytics_remote_datasource.dart';
@@ -39,7 +40,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       );
       return right(dto.toDomain());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -66,7 +67,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       );
       return right(dto.toDomain());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -95,7 +96,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       );
       return right(dto.toDomain());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -122,7 +123,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       );
       return right(dtos.map((dto) => dto.toDomain()).toList());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -149,7 +150,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       );
       return right(dto.toDomain());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {

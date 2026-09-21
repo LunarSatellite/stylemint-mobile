@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/datasources/partnerships_remote_datasource.dart';
@@ -30,7 +31,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -55,7 +56,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
         return right(dto.toInviteDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -77,7 +78,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -100,7 +101,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -123,7 +124,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -155,7 +156,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
       );
       return right(unit);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } catch (_) {
@@ -171,7 +172,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
     try {
       return right(await remoteDataSource.getMyRateCard());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } catch (_) {
@@ -201,7 +202,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
       );
       return right(unit);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } catch (_) {
@@ -218,7 +219,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
       await remoteDataSource.deactivateRateCard(const Uuid().v4());
       return right(unit);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } catch (_) {
@@ -271,7 +272,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
     try {
       return right(await call());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {

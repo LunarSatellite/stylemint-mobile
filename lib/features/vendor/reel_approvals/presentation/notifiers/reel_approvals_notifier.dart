@@ -96,10 +96,14 @@ class ReelApprovalsNotifier extends StateNotifier<ReelApprovalsState> {
     if (!mounted) return DecisionOutcome.failed;
 
     final outcome = result.fold(
-      (failure) => failure.maybeWhen<DecisionOutcome>(
-        conflict: () => DecisionOutcome.alreadySettled,
-        orElse: () => DecisionOutcome.failed,
-      ),
+      // `isConflict`, not `maybeWhen(conflict:)`. The shared Dio mapper
+      // turns a 409 into `.validation(code: 'state.conflict')` — the
+      // backend's own ErrorCodes.Conflict — and never into `.conflict()`,
+      // which only a handful of repositories construct by hand. Matching
+      // on the union case alone silently never fired.
+      (failure) => failure.isConflict
+          ? DecisionOutcome.alreadySettled
+          : DecisionOutcome.failed,
       (_) => success,
     );
 

@@ -57,10 +57,14 @@ class CampaignApplicationsNotifier
   Future<WithdrawOutcome> withdraw(String applicationId) async {
     final result = await _repository.withdraw(applicationId);
     final outcome = result.fold(
-      (failure) => failure.maybeWhen(
-        conflict: () => WithdrawOutcome.alreadyDecided,
-        orElse: () => WithdrawOutcome.failed,
-      ),
+      // `isConflict`, not `maybeWhen(conflict:)`. The shared Dio mapper
+      // turns a 409 into `.validation(code: 'state.conflict')` — the
+      // backend's own ErrorCodes.Conflict — and never into `.conflict()`,
+      // which only a handful of repositories construct by hand. Matching
+      // on the union case alone silently never fired.
+      (failure) => failure.isConflict
+          ? WithdrawOutcome.alreadyDecided
+          : WithdrawOutcome.failed,
       (_) => WithdrawOutcome.withdrawn,
     );
     // Both the success and the 409 mean this screen is now stale: reload so

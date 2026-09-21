@@ -26,7 +26,7 @@ class CartRepositoryImpl implements CartRepository {
           e.type == DioExceptionType.connectionTimeout) {
         return NetworkExceptions.noInternetConnection();
       }
-      return NetworkExceptions.server(e.message.toString());
+      return mapDioExceptionToNetworkException(e);
     } else if (e is NetworkExceptions) {
       return e;
     }

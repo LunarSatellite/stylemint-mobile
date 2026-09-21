@@ -35,7 +35,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -60,7 +60,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       return right(products.map((product) => product.toDomain()).toList());
     } catch (e) {
       if (e is DioException) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       }
       if (e is NetworkExceptions) return left(e);
       return left(NetworkExceptions.unexpectedError());
@@ -86,7 +86,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -126,7 +126,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -159,7 +159,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
               ),
         });
       } on DioException catch (e) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } on NetworkExceptions catch (e) {
         return left(e);
       } on Object {
@@ -190,7 +190,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         return right(faq);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -235,7 +235,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -257,7 +257,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         return right(productPassportFromJson(json));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -328,7 +328,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -373,7 +373,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -395,7 +395,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         return right(dtos.map((d) => d.toDomain()).toList(growable: false));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -424,7 +424,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -451,7 +451,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         return right(isSaved);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {

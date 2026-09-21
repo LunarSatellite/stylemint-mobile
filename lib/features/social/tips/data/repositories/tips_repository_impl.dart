@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
@@ -75,7 +76,7 @@ class TipsRepositoryImpl implements TipsRepository {
 
   NetworkExceptions _mapException(Object e) {
     if (e is DioException) {
-      return NetworkExceptions.server(e.message.toString());
+      return mapDioExceptionToNetworkException(e);
     }
     if (e is NetworkExceptions) return e;
     return NetworkExceptions.unexpectedError();

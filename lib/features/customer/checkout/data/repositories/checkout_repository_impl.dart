@@ -49,7 +49,7 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
             if (code != null)
               return left(NetworkExceptions.validation(code: code));
           }
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -132,7 +132,7 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
         return right(dtos.map((d) => d.toDomain()).toList(growable: false));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -153,7 +153,7 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
         return right(dtos.map((d) => d.toDomain()).toList(growable: false));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {

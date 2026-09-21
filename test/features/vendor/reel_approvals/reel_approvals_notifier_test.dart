@@ -6,6 +6,12 @@ import 'package:stylemint_mobile_frontend/features/vendor/reel_approvals/domain/
 import 'package:stylemint_mobile_frontend/features/vendor/reel_approvals/presentation/notifiers/approval_rounds_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/reel_approvals/presentation/notifiers/reel_approvals_notifier.dart';
 
+/// See campaign_notifiers_test: a real 409 arrives as `.validation` carrying
+/// `state.conflict`, never as `NetworkExceptions.conflict()`.
+NetworkExceptions _conflict409() =>
+    const NetworkExceptions.validation(code: 'state.conflict');
+
+
 ReelApprovalRequest _request({
   String id = 'r1',
   int round = 1,
@@ -120,7 +126,7 @@ void main() {
       // not.
       final repo = _FakeRepo(
         pending: [_request()],
-        approveResult: left(const NetworkExceptions.conflict()),
+        approveResult: left(_conflict409()),
       );
       final notifier = ReelApprovalsNotifier(repo);
       await _settle();
@@ -200,7 +206,7 @@ void main() {
       // Only one round is live at a time. Claiming a submission would leave
       // the creator waiting on a review nobody was asked for.
       final repo = _FakeRepo(
-        submitResult: left(const NetworkExceptions.conflict()),
+        submitResult: left(_conflict409()),
       );
       final notifier = ApprovalRoundsNotifier(repo, 'reel1');
       await _settle();

@@ -87,7 +87,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       if (e.response?.statusCode == 409) {
         return left(const NetworkExceptions.conflict());
       }
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (_) {
@@ -107,7 +107,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       final dtos = await remoteDataSource.searchProducts(query);
       return right(dtos.map((d) => d.toDomain()).toList(growable: false));
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (_) {
@@ -134,7 +134,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       if (e.response?.statusCode == 404) {
         return right(const []);
       }
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (_) {
@@ -156,7 +156,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       );
       return right(unit);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (_) {
@@ -180,7 +180,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       );
       return right(unit);
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (_) {
@@ -203,7 +203,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       );
       return right(dtos.map((dto) => dto.toDomain()).toList(growable: false));
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (_) {
@@ -223,7 +223,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
         await remoteDataSource.importBulk(reels, const Uuid().v4()),
       );
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (_) {
@@ -245,7 +245,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       );
       return right(_parseReelIntent(response));
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (_) {
@@ -269,7 +269,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       );
       return right(_parseReelIntent(response));
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (_) {

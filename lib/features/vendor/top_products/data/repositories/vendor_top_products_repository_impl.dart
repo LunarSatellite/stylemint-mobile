@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/top_products/data/datasources/vendor_top_products_remote_datasource.dart';
@@ -30,7 +31,7 @@ class VendorTopProductsRepositoryImpl implements VendorTopProductsRepository {
         );
         return right(dto.toDomain());
       } on DioException catch (e) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } on NetworkExceptions catch (e) {
         return left(e);
       } on Object catch (_) {

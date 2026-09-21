@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/data/datasources/creator_documents_remote_datasource.dart';
@@ -71,7 +72,7 @@ class CreatorDocumentsRepositoryImpl implements CreatorDocumentsRepository {
       return networkRight<T>(await call());
     } on DioException catch (e) {
       return networkLeft<T>(
-        NetworkExceptions.server(e.message ?? 'Server error'),
+        mapDioExceptionToNetworkException(e),
       );
     } on NetworkExceptions catch (e) {
       return networkLeft<T>(e);

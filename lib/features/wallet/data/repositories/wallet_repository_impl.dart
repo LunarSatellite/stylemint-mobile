@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/wallet/data/datasources/wallet_remote_datasource.dart';
@@ -37,7 +38,7 @@ class WalletRepositoryImpl implements WalletRepository {
     } catch (e, st) {
       log('WalletRepo.getBalance error: $e\n$st', name: 'Wallet');
       if (e is DioException) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } else if (e is NetworkExceptions) {
         return left(e);
       }
@@ -66,7 +67,7 @@ class WalletRepositoryImpl implements WalletRepository {
     } catch (e, st) {
       log('WalletRepo.getTransactions error: $e\n$st', name: 'Wallet');
       if (e is DioException) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } else if (e is NetworkExceptions) {
         return left(e);
       }

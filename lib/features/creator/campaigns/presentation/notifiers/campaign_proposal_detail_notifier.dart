@@ -82,11 +82,14 @@ class CampaignProposalDetailNotifier
     return result.fold(
       (failure) {
         state = current.copyWith(isApplying: false);
-        final outcome = failure.maybeWhen(
-          conflict: () => ApplyOutcome.alreadyApplied,
-          notFound: () => ApplyOutcome.unavailable,
-          orElse: () => ApplyOutcome.failed,
-        );
+        // See CampaignApplicationsNotifier: a 409 arrives as
+        // `.validation(code: 'state.conflict')`, so `isConflict` is the only
+        // check that sees it. 404 does map to `.notFound()`.
+        final outcome = failure.isConflict
+            ? ApplyOutcome.alreadyApplied
+            : failure.isNotFound
+            ? ApplyOutcome.unavailable
+            : ApplyOutcome.failed;
         return (outcome, null);
       },
       (application) {

@@ -81,11 +81,16 @@ class ApprovalRoundsNotifier extends StateNotifier<ApprovalRoundsState> {
     if (!mounted) return SubmitOutcome.failed;
 
     final outcome = result.fold(
-      (failure) => failure.maybeWhen<SubmitOutcome>(
-        conflict: () => SubmitOutcome.alreadyPending,
-        notFound: () => SubmitOutcome.notAllowed,
-        orElse: () => SubmitOutcome.failed,
-      ),
+      // `isConflict`, not `maybeWhen(conflict:)`. The shared Dio mapper
+      // turns a 409 into `.validation(code: 'state.conflict')` — the
+      // backend's own ErrorCodes.Conflict — and never into `.conflict()`,
+      // which only a handful of repositories construct by hand. Matching
+      // on the union case alone silently never fired.
+      (failure) => failure.isConflict
+          ? SubmitOutcome.alreadyPending
+          : failure.isNotFound
+          ? SubmitOutcome.notAllowed
+          : SubmitOutcome.failed,
       (_) => SubmitOutcome.submitted,
     );
 

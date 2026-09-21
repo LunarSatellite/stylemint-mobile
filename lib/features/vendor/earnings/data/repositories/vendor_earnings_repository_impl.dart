@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/data/datasources/vendor_earnings_remote_datasource.dart';
@@ -206,7 +207,7 @@ class VendorEarningsRepositoryImpl implements VendorEarningsRepository {
 
   NetworkExceptions _mapError(Object e) {
     if (e is DioException)
-      return NetworkExceptions.server(e.message.toString());
+      return mapDioExceptionToNetworkException(e);
     if (e is NetworkExceptions) return e;
     return const NetworkExceptions.unexpectedError();
   }

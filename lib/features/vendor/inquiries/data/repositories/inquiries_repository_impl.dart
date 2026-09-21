@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/data/datasources/inquiries_remote_datasource.dart';
@@ -24,7 +25,7 @@ class InquiriesRepositoryImpl implements InquiriesRepository {
         final dtos = await remoteDataSource.listVendor(pageSize: pageSize);
         return right(dtos.map((d) => d.toDomain()).toList());
       } on DioException catch (e) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } on NetworkExceptions catch (e) {
         return left(e);
       } on Object catch (_) {
@@ -42,7 +43,7 @@ class InquiriesRepositoryImpl implements InquiriesRepository {
         final count = await remoteDataSource.getVendorInquiryCount();
         return right(count);
       } on DioException catch (e) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } on NetworkExceptions catch (e) {
         return left(e);
       } on Object catch (_) {
@@ -63,7 +64,7 @@ class InquiriesRepositoryImpl implements InquiriesRepository {
         final dto = await remoteDataSource.reply(inquiryId, text);
         return right(dto.toDomain());
       } on DioException catch (e) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } on NetworkExceptions catch (e) {
         return left(e);
       } on Object catch (_) {

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/data/datasources/creator_performance_remote_datasource.dart';
@@ -26,7 +27,7 @@ class CreatorPerformanceRepositoryImpl implements CreatorPerformanceRepository {
         );
         return right(page.items.map((d) => d.toDomain()).toList());
       } on DioException catch (e) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } on NetworkExceptions catch (e) {
         return left(e);
       } on Object catch (_) {

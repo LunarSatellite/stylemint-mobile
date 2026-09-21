@@ -48,7 +48,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
         return right(dtos.map((dto) => dto.toDomain()).toList(growable: false));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -70,7 +70,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -94,7 +94,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
       return right(dto.toDomain());
     } catch (e) {
       if (e is DioException) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       }
       if (e is NetworkExceptions) return left(e);
       return left(NetworkExceptions.unexpectedError());
@@ -118,7 +118,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -216,7 +216,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
         return right(returnId);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -240,7 +240,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
       return right(url);
     } catch (e) {
       if (e is DioException) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } else if (e is NetworkExceptions) {
         return left(e);
       } else {
@@ -288,7 +288,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
       return right(suggestions);
     } catch (e) {
       if (e is DioException) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } else if (e is NetworkExceptions) {
         return left(e);
       } else {
@@ -309,7 +309,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
       return right(unit);
     } catch (e) {
       if (e is DioException) {
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } else if (e is NetworkExceptions) {
         return left(e);
       } else {
@@ -331,7 +331,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
         if (e.response?.statusCode == 404) {
           return left(const NetworkExceptions.notFound());
         }
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } else if (e is NetworkExceptions) {
         return left(e);
       } else {
@@ -355,7 +355,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
         if (e.response?.statusCode == 404) {
           return left(const NetworkExceptions.notFound());
         }
-        return left(NetworkExceptions.server(e.message.toString()));
+        return left(mapDioExceptionToNetworkException(e));
       } else if (e is NetworkExceptions) {
         return left(e);
       } else {

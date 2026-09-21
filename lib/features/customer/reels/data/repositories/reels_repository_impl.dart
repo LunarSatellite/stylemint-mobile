@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
@@ -33,7 +34,7 @@ class ReelsRepositoryImpl implements ReelsRepository {
         return right(page);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -58,7 +59,7 @@ class ReelsRepositoryImpl implements ReelsRepository {
           if (e.response?.statusCode == 404) {
             return left(const NetworkExceptions.notFound());
           }
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -91,7 +92,7 @@ class ReelsRepositoryImpl implements ReelsRepository {
       if (e.response?.statusCode == 404) {
         return left(const NetworkExceptions.notFound());
       }
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (e) {
@@ -123,7 +124,7 @@ class ReelsRepositoryImpl implements ReelsRepository {
       if (e.response?.statusCode == 401) {
         return left(const NetworkExceptions.auth());
       }
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object {
@@ -139,7 +140,7 @@ class ReelsRepositoryImpl implements ReelsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -161,7 +162,7 @@ class ReelsRepositoryImpl implements ReelsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -183,7 +184,7 @@ class ReelsRepositoryImpl implements ReelsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -205,7 +206,7 @@ class ReelsRepositoryImpl implements ReelsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -228,7 +229,7 @@ class ReelsRepositoryImpl implements ReelsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -248,7 +249,7 @@ class ReelsRepositoryImpl implements ReelsRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {

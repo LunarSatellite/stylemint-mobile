@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/data/datasources/vendor_remote_datasource.dart';
@@ -32,7 +33,7 @@ class VendorRepositoryImpl implements VendorRepository {
     }
     if (status != null && status >= 500)
       return const NetworkExceptions.serverUnavailable();
-    return NetworkExceptions.server(e.message ?? 'Unknown error');
+    return mapDioExceptionToNetworkException(e);
   }
 
   @override
@@ -48,7 +49,7 @@ class VendorRepositoryImpl implements VendorRepository {
           if (e.response?.statusCode == 404) {
             return left(const NetworkExceptions.notFound());
           }
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -133,7 +134,7 @@ class VendorRepositoryImpl implements VendorRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -159,7 +160,7 @@ class VendorRepositoryImpl implements VendorRepository {
         return right(dtos.map((d) => d.toDomain()).toList(growable: false));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -181,7 +182,7 @@ class VendorRepositoryImpl implements VendorRepository {
         return right(session?['id'] as String?);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
