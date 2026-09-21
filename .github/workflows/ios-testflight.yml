@@ -49,14 +49,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -switch /Applications/Xcode_16.2.app
+      - name: Select the newest Xcode on the runner
+        # Not a hard-coded /Applications/Xcode_16.2.app: runner images add and
+        # retire Xcode versions, and selecting a path that is not there fails
+        # the step outright. This picks the highest version present and prints
+        # it, so a toolchain change shows up in the log instead of as a
+        # mystery build error.
+        run: |
+          latest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using $latest"
+          sudo xcode-select -switch "$latest"
+          xcodebuild -version
 
       - uses: subosito/flutter-action@v2
         with:
           # Match the version the project is developed against rather than
-          # tracking "stable", so CI and the desk build the same way.
-          flutter-version: 3.41.9
+          # tracking "stable", so CI and the desk build the same way. Read off
+          # `flutter --version` on the development machine, not from the
+          # project skill doc, which still says 3.41.9 and is out of date.
+          flutter-version: 3.44.0
           channel: stable
           cache: true
 
