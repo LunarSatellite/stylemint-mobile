@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/datasources/creator_reels_remote_datasource.dart';
@@ -144,9 +145,13 @@ class CreatorReelsRepositoryImpl implements CreatorReelsRepository {
     try {
       return networkRight<T>(await call());
     } on DioException catch (e) {
-      return networkLeft<T>(
-        NetworkExceptions.server(e.message ?? 'Server error'),
-      );
+      // The shared mapper, not `NetworkExceptions.server(e.message)`. Dio's
+      // `.message` is developer prose — it names RequestOptions.validateStatus
+      // and links to MDN — and this value is rendered straight to the user.
+      // The mapper reads the status code instead: 403 becomes `.auth()`, 404
+      // `.notFound()`, 5xx `.serverUnavailable()`, each with a sentence a
+      // person can act on.
+      return networkLeft<T>(mapDioExceptionToNetworkException(e));
     } on NetworkExceptions catch (e) {
       return networkLeft<T>(e);
     } on Exception {

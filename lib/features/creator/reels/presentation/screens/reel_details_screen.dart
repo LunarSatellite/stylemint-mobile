@@ -49,9 +49,15 @@ class ReelDetailsScreen extends ConsumerWidget {
           if (err is NetworkExceptions && err.isNotFound) {
             return const _ReelUnavailableView();
           }
+          // `err.toString()` on anything that is not a NetworkExceptions
+          // would put a raw exception — stack-trace prose, MDN links, "you
+          // have to fix the server code" — in front of whoever opened the
+          // screen. An unmapped error is a bug in this app, and the person
+          // reading it can do nothing with the detail, so they get a sentence
+          // and a retry instead.
           final message = err is NetworkExceptions
               ? NetworkExceptions.getMessage(err)
-              : err.toString();
+              : 'Something went wrong loading this reel.';
           return _ReelErrorView(reelId: reelId, message: message);
         },
         data: (reel) => _Body(reel: reel),
