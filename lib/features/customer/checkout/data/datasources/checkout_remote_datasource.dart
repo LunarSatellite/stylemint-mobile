@@ -382,15 +382,29 @@ class CheckoutRemoteDataSource {
       options: Options(headers: {'requiresToken': true}),
     );
 
-    final response = await apiClient.post(
-      '/v1/checkout/sessions/$sessionId/place',
-      options: Options(
-        headers: {
-          'requiresToken': true,
-          'Idempotency-Key': idempotencyKey,
-        },
-      ),
-    );
+    Object? response;
+    try {
+      response = await apiClient.post(
+        '/v1/checkout/sessions/$sessionId/place',
+        options: Options(
+          headers: {
+            'requiresToken': true,
+            'Idempotency-Key': idempotencyKey,
+          },
+        ),
+      );
+    } catch (_) {
+      // A place that got as far as the server has moved the session out of
+      // Draft (to Placing, or to Failed once the saga unwinds), and the
+      // backend refuses to place anything that isn't a Draft. Holding on to
+      // the id meant every retry re-posted the same dead session and came
+      // back "Cannot transition CheckoutSession from ... to Placing" — which
+      // reached the customer as the bare "Order failed: _Validation" and
+      // could not be escaped without restarting the app. Drop it so the next
+      // attempt opens a fresh session against the live cart.
+      _sessionId = null;
+      rethrow;
+    }
 
     _sessionId = null; // clear after successful placement
     final data = response as Map<String, dynamic>;
