@@ -74,8 +74,10 @@ flutter build ipa \
   --build-number="$BUILD_NUMBER" \
   --export-options-plist=ios/ExportOptions.plist
 
-IPA=$(ls build/ios/ipa/*.ipa 2>/dev/null | head -1) \
-  || die "no .ipa produced — check the archive log above"
+# Deliberately not `IPA=$(...) || die`: the exit status of an assignment is
+# the pipeline's, and the pipeline ends in `head`, which succeeds even when
+# the glob matched nothing. The emptiness check is the one that works.
+IPA=$(ls build/ios/ipa/*.ipa 2>/dev/null | head -1)
 [ -n "$IPA" ] || die "no .ipa produced — check the archive log above"
 
 say "Built $IPA"
