@@ -98,87 +98,97 @@ class _CreatorActivateScreenState extends ConsumerState<CreatorActivateScreen> {
           style: DesignTokens.oneLinerSemibold,
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16,
-          DesignTokens.s8,
-          DesignTokens.s16,
-          DesignTokens.s32,
-        ),
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            decoration: BoxDecoration(
-              color: DesignTokens.bgAppBody,
-              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Start creating on StyleMint',
-                  style: DesignTokens.sectionInnerTitle,
-                ),
-                const SizedBox(height: DesignTokens.s6),
-                const Text(
-                  "You're a creator as soon as you tap the button. We use "
-                  'the name, email and phone already on your account.',
-                  style: DesignTokens.smallDescription,
-                ),
-                const SizedBox(height: DesignTokens.s16),
-                const _Point(
-                  icon: Icons.bolt_rounded,
-                  text: 'No forms, ID upload or review',
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                const _Point(
-                  icon: Icons.link_rounded,
-                  text: 'Connect Instagram, TikTok, YouTube or Facebook next',
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                const _Point(
-                  icon: Icons.insights_rounded,
-                  text: 'Followers come straight from each platform',
-                ),
-                const SizedBox(height: DesignTokens.s24),
-                TextField(
-                  controller: _expressionController,
-                  enabled: !submitting,
-                  maxLength: _maxExpression,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 14,
-                    color: DesignTokens.inputFieldData,
-                  ),
-                  cursorColor: DesignTokens.primaryGreen,
-                  decoration: DesignTokens.inputDecoration(
-                    labelText: 'What do you create? (optional)',
-                    hintText: 'e.g. Tech reviews and unboxings',
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                TextField(
-                  controller: _bioController,
-                  enabled: !submitting,
-                  maxLines: 4,
-                  maxLength: _maxBio,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 14,
-                    color: DesignTokens.inputFieldData,
-                  ),
-                  cursorColor: DesignTokens.primaryGreen,
-                  decoration: DesignTokens.inputDecoration(
-                    hintText: 'Short bio (optional)',
-                  ),
-                ),
-              ],
-            ),
+      // iOS gives a multiline field a Return key, not a Done key, so the bio
+      // below had no way to dismiss its own keyboard and the form could trap
+      // the creator behind it. Tapping anywhere off the inputs drops focus.
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.s16,
+            DesignTokens.s8,
+            DesignTokens.s16,
+            DesignTokens.s32,
           ),
-        ],
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(DesignTokens.s16),
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBody,
+                borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Start creating on StyleMint',
+                    style: DesignTokens.sectionInnerTitle,
+                  ),
+                  const SizedBox(height: DesignTokens.s6),
+                  const Text(
+                    "You're a creator as soon as you tap the button. We use "
+                    'the name, email and phone already on your account.',
+                    style: DesignTokens.smallDescription,
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  const _Point(
+                    icon: Icons.bolt_rounded,
+                    text: 'No forms, ID upload or review',
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  const _Point(
+                    icon: Icons.link_rounded,
+                    text: 'Connect Instagram, TikTok, YouTube or Facebook next',
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  const _Point(
+                    icon: Icons.insights_rounded,
+                    text: 'Followers come straight from each platform',
+                  ),
+                  const SizedBox(height: DesignTokens.s24),
+                  TextField(
+                    controller: _expressionController,
+                    enabled: !submitting,
+                    maxLength: _maxExpression,
+                    textCapitalization: TextCapitalization.sentences,
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                      color: DesignTokens.inputFieldData,
+                    ),
+                    cursorColor: DesignTokens.primaryGreen,
+                    decoration: DesignTokens.inputDecoration(
+                      labelText: 'What do you create? (optional)',
+                      hintText: 'e.g. Tech reviews and unboxings',
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  TextField(
+                    controller: _bioController,
+                    enabled: !submitting,
+                    maxLines: 4,
+                    maxLength: _maxBio,
+                    textCapitalization: TextCapitalization.sentences,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                      color: DesignTokens.inputFieldData,
+                    ),
+                    cursorColor: DesignTokens.primaryGreen,
+                    decoration: DesignTokens.inputDecoration(
+                      hintText: 'Short bio (optional)',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: Container(
         width: double.infinity,

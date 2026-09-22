@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart_offer.dart';
@@ -194,8 +195,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             ],
           );
         },
+        // The friendly headline stays; the server's own reason goes underneath
+        // it. Without that detail an intermittent cart failure is
+        // indistinguishable from a permanent one, on the tester's device and
+        // in a bug report alike.
         loadFailure: (failure) => SmErrorView(
-          message: 'Failed to load your cart.',
+          title: 'Failed to load your cart.',
+          message: NetworkExceptions.getMessage(failure),
           onRetry: () => ref.read(cartNotifierProvider.notifier).fetchCart(),
         ),
       ),

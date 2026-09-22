@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/following_user.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -123,125 +126,141 @@ class _FollowingCard extends ConsumerWidget {
     return n.toString();
   }
 
+  /// Opens the tapped account's creator profile. `user.id` is the followee's
+  /// ACCOUNT id (see `FollowingUserDto.toDomain`), which is exactly what
+  /// `/creator-profile/:accountId` takes — the same id Discover Creator
+  /// pushes. Accounts that aren't creators are handled by the profile screen's
+  /// own not-found state rather than being guessed at here.
+  void _openProfile(BuildContext context) {
+    if (user.id.isEmpty) return;
+    unawaited(
+      context.push(RouteNames.creatorProfile.replaceAll(':accountId', user.id)),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header: avatar + name/handle + button ─────────────────────
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: DesignTokens.bgAppBodyLight,
-                backgroundImage: user.avatarUrl.isNotEmpty
-                    ? CachedNetworkImageProvider(user.avatarUrl)
-                    : null,
-                child: user.avatarUrl.isEmpty
-                    ? const Icon(
-                        Icons.person,
-                        color: DesignTokens.iconLight,
-                        size: 26,
-                      )
-                    : null,
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.oneLinerSemibold,
-                    ),
-                    // Backend's AccountSummaryDto doesn't carry a handle yet,
-                    // so this is always empty — showing a bare "@" reads as
-                    // broken, so hide the row entirely until handles exist.
-                    if (user.handle.isNotEmpty) ...[
-                      const SizedBox(height: DesignTokens.s4),
+    return InkWell(
+      onTap: () => _openProfile(context),
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      child: Container(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header: avatar + name/handle + button ─────────────────────
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: DesignTokens.bgAppBodyLight,
+                  backgroundImage: user.avatarUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(user.avatarUrl)
+                      : null,
+                  child: user.avatarUrl.isEmpty
+                      ? const Icon(
+                          Icons.person,
+                          color: DesignTokens.iconLight,
+                          size: 26,
+                        )
+                      : null,
+                ),
+                const SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        '@${user.handle}',
+                        user.displayName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: DesignTokens.smallRegular,
+                        style: DesignTokens.oneLinerSemibold,
+                      ),
+                      // Backend's AccountSummaryDto doesn't carry a handle yet,
+                      // so this is always empty — showing a bare "@" reads as
+                      // broken, so hide the row entirely until handles exist.
+                      if (user.handle.isNotEmpty) ...[
+                        const SizedBox(height: DesignTokens.s4),
+                        Text(
+                          '@${user.handle}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DesignTokens.smallRegular,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: DesignTokens.s8),
+                _FollowToggleButton(
+                  isFollowing: user.isFollowing,
+                  onTap: () => ref
+                      .read(followingNotifierProvider.notifier)
+                      .unfollow(user.id),
+                ),
+              ],
+            ),
+
+            // ── Category ──────────────────────────────────────────────────
+            if (user.category != null) ...[
+              const SizedBox(height: DesignTokens.s12),
+              Text(
+                user.category!,
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.textWhite,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+
+            // ── Bio / description ─────────────────────────────────────────
+            if (user.bio != null) ...[
+              const SizedBox(height: DesignTokens.s4),
+              Text(
+                user.bio!,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
+              ),
+            ],
+
+            // ── Stats ─────────────────────────────────────────────────────
+            const SizedBox(height: DesignTokens.s12),
+            Row(
+              children: [
+                const Icon(
+                  Icons.people_outline_rounded,
+                  size: 14,
+                  color: DesignTokens.textMuted,
+                ),
+                const SizedBox(width: 4),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '${_fmt(user.followerCount)} ',
+                        style: DesignTokens.smallRegular.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: DesignTokens.textWhite,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Followers',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textLight,
+                        ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: DesignTokens.s8),
-              _FollowToggleButton(
-                isFollowing: user.isFollowing,
-                onTap: () => ref
-                    .read(followingNotifierProvider.notifier)
-                    .unfollow(user.id),
-              ),
-            ],
-          ),
-
-          // ── Category ──────────────────────────────────────────────────
-          if (user.category != null) ...[
-            const SizedBox(height: DesignTokens.s12),
-            Text(
-              user.category!,
-              style: DesignTokens.mediumSemibold.copyWith(
-                color: DesignTokens.textWhite,
-                fontSize: 12,
-              ),
+              ],
             ),
           ],
-
-          // ── Bio / description ─────────────────────────────────────────
-          if (user.bio != null) ...[
-            const SizedBox(height: DesignTokens.s4),
-            Text(
-              user.bio!,
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textLight,
-              ),
-            ),
-          ],
-
-          // ── Stats ─────────────────────────────────────────────────────
-          const SizedBox(height: DesignTokens.s12),
-          Row(
-            children: [
-              const Icon(
-                Icons.people_outline_rounded,
-                size: 14,
-                color: DesignTokens.textMuted,
-              ),
-              const SizedBox(width: 4),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '${_fmt(user.followerCount)} ',
-                      style: DesignTokens.smallRegular.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: DesignTokens.textWhite,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'Followers',
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textLight,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

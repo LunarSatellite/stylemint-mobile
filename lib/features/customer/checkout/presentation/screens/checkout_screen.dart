@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/notifiers/checkout_notifier.dart';
@@ -96,10 +97,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           );
         },
         failure: (failure) {
+          // `failure.runtimeType` is the freezed union's Dart class name, so
+          // a rejected checkout used to read "Order failed: _Validation" —
+          // which names neither the field nor the rule that rejected it.
+          // getMessage() renders the server's own per-field problem-details
+          // (e.g. 'Field "ShippingAddressId" is invalid (required).').
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Order failed: ${failure.runtimeType}'),
+              content: Text(NetworkExceptions.getMessage(failure)),
               backgroundColor: DesignTokens.colorError,
+              duration: const Duration(seconds: 6),
             ),
           );
         },

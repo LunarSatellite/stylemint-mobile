@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/creator_chip_dto.dart';
+import 'package:stylemint_mobile_frontend/features/onboarding/presentation/widgets/onboarding_back_button.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -63,9 +64,13 @@ class _FollowCreatorsScreenState extends ConsumerState<FollowCreatorsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Padding(
+              padding: EdgeInsets.symmetric(horizontal: DesignTokens.s4),
+              child: OnboardingBackButton(),
+            ),
+            const Padding(
               padding: EdgeInsets.fromLTRB(
                 DesignTokens.s16,
-                DesignTokens.s16,
+                DesignTokens.s8,
                 DesignTokens.s16,
                 0,
               ),
@@ -113,9 +118,10 @@ class _FollowCreatorsScreenState extends ConsumerState<FollowCreatorsScreen> {
                 size: 16,
                 color: DesignTokens.buttonPrimaryText, // #06190E
               ),
-              onPrimary: () => context.go(RouteNames.followBrands),
+              // push, not go: keeps Interests → Creators → Brands poppable.
+              onPrimary: () => context.push(RouteNames.followBrands),
               secondaryLabel: 'Skip',
-              onSecondary: () => context.go(RouteNames.followBrands),
+              onSecondary: () => context.push(RouteNames.followBrands),
               showTopDivider: true,
             ),
           ],

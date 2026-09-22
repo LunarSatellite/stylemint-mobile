@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/brand.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_list_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/onboarding/presentation/widgets/onboarding_back_button.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -49,9 +50,13 @@ class FollowBrandsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Padding(
+              padding: EdgeInsets.symmetric(horizontal: DesignTokens.s4),
+              child: OnboardingBackButton(),
+            ),
+            const Padding(
               padding: EdgeInsets.fromLTRB(
                 DesignTokens.s16,
-                DesignTokens.s16,
+                DesignTokens.s8,
                 DesignTokens.s16,
                 0,
               ),

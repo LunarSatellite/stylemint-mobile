@@ -135,9 +135,11 @@ final reelProductsNotifierProvider = StateNotifierProvider.autoDispose
       ),
     );
 
-/// Mall or Reels under the Home switch. Mall by default; the last choice
-/// holds for the rest of the session.
-final homeModeProvider = StateProvider<HomeMode>((ref) => HomeMode.mall);
+/// Mall or Reels under the Home switch. Reels by default — the reels feed is
+/// the intended landing surface on launch, and the app used to open on the
+/// Mall instead. The last choice holds for the rest of the session, but the
+/// provider is not persisted, so every cold start comes back to Reels.
+final homeModeProvider = StateProvider<HomeMode>((ref) => HomeMode.reels);
 
 /// Bumped when Home is re-tapped while the Mall is showing: the page scrolls
 /// to the top and refreshes. (On Reels the shell bumps

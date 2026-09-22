@@ -207,8 +207,10 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                         DesignTokens.buttonRadius,
                       ),
                       child: InkWell(
+                        // push, not go: `go` replaces the stack, which is why
+                        // the next onboarding step had nothing to go back to.
                         onTap: canProceed
-                            ? () => context.go(RouteNames.followCreators)
+                            ? () => context.push(RouteNames.followCreators)
                             : null,
                         borderRadius: BorderRadius.circular(
                           DesignTokens.buttonRadius,
