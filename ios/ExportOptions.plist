@@ -8,9 +8,12 @@
 	<key>method</key>
 	<string>app-store-connect</string>
 
-	<!-- The Apple Developer team already set on the Xcode targets. -->
+	<!-- The PAID team. It is deliberately not the YBSBPFR23X that the
+	     Xcode project still carries: that is a free personal team, and
+	     Xcode answered 'No Account for Team "YBSBPFR23X"'. The build
+	     script rewrites this value when ASC_TEAM_ID is set. -->
 	<key>teamID</key>
-	<string>YBSBPFR23X</string>
+	<string>3M82H6Y69S</string>
 
 	<!-- Let Xcode fetch the distribution certificate and provisioning
 	     profile from App Store Connect using the API key the workflow

@@ -115,18 +115,27 @@ if [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ] && [ -f "$KEY_PATH" ]
     -authenticationKeyPath "$KEY_PATH"
   )
 
-  # Two build-setting overrides, each fixing an observed failure:
+  # DEVELOPMENT_TEAM is the only override, and it is deliberate: the project
+  # hardcodes YBSBPFR23X, a free personal team, and Xcode answered 'No Account
+  # for Team "YBSBPFR23X"'. Personal teams support neither this app's
+  # associated-domains/NFC entitlements nor TestFlight. ASC_TEAM_ID points it
+  # at the paid team the API key belongs to.
   #
-  # CODE_SIGN_IDENTITY — the project pins "iPhone Developer" for iphoneos on
-  # every configuration, Release included, which is why Xcode went hunting for
-  # "iOS App Development provisioning profiles" while archiving for the App
-  # Store. A distribution archive needs a distribution identity.
+  # CODE_SIGN_IDENTITY is deliberately NOT overridden. An earlier version
+  # forced "Apple Distribution", reasoning that an App Store archive needs a
+  # distribution identity. Xcode rejected that outright:
   #
-  # DEVELOPMENT_TEAM — the project hardcodes YBSBPFR23X, a free personal team.
-  # Xcode reported 'No Account for Team "YBSBPFR23X"', and personal teams
-  # support neither this app's associated-domains/NFC entitlements nor
-  # TestFlight. ASC_TEAM_ID points it at the paid team the key belongs to.
-  OVERRIDES=(CODE_SIGN_IDENTITY="Apple Distribution")
+  #   Runner has conflicting provisioning settings. Runner is automatically
+  #   signed for development, but a conflicting code signing identity Apple
+  #   Distribution has been manually specified.
+  #
+  # Under automatic signing the archive is signed for DEVELOPMENT; the
+  # distribution re-signing happens at export, from the method in the export
+  # options. And a build setting passed on the xcodebuild command line applies
+  # to every target in the workspace, so it also demanded a distribution
+  # certificate from all ~50 Pods targets, which are never signed individually.
+  # The project's own "iPhone Developer" pin is correct; leave it alone.
+  OVERRIDES=()
   if [ -n "${ASC_TEAM_ID:-}" ]; then
     OVERRIDES+=(DEVELOPMENT_TEAM="$ASC_TEAM_ID")
   else
@@ -135,20 +144,34 @@ if [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ] && [ -f "$KEY_PATH" ]
 
   rm -rf "$ARCHIVE" "$IPA_DIR"
 
+  # `${OVERRIDES[@]+...}` guards the empty-array case: macOS ships bash 3.2,
+  # where "${arr[@]}" on an empty array under `set -u` is an unbound variable.
   ( cd ios && xcodebuild \
       -workspace Runner.xcworkspace \
       -scheme Runner \
       -configuration Release \
       -archivePath "$ARCHIVE" \
-      archive "${AUTH[@]}" "${OVERRIDES[@]}" ) \
+      archive "${AUTH[@]}" ${OVERRIDES[@]+"${OVERRIDES[@]}"} ) \
     || die "xcodebuild archive failed — see the errors above"
 
-  ( cd ios && xcodebuild \
+  # The export step takes no build-setting overrides, so its team can only come
+  # from the plist. A copy is used rather than editing the committed file, so
+  # the checked-in default cannot silently disagree with the key in use.
+  EXPORT_PLIST="$PWD/ios/ExportOptions.plist"
+  if [ -n "${ASC_TEAM_ID:-}" ]; then
+    EXPORT_PLIST="$(mktemp -t ExportOptions)"
+    cp ios/ExportOptions.plist "$EXPORT_PLIST"
+    /usr/libexec/PlistBuddy -c "Set :teamID $ASC_TEAM_ID" "$EXPORT_PLIST" \
+      || die "could not set teamID in the export options"
+    say "Exporting for team $ASC_TEAM_ID"
+  fi
+
+  xcodebuild \
       -exportArchive \
       -archivePath "$ARCHIVE" \
-      -exportOptionsPlist ExportOptions.plist \
+      -exportOptionsPlist "$EXPORT_PLIST" \
       -exportPath "$IPA_DIR" \
-      "${AUTH[@]}" ) \
+      "${AUTH[@]}" \
     || die "xcodebuild export failed — see the errors above"
 else
   say "Building with the Apple ID signed into Xcode (build $BUILD_NUM)"
