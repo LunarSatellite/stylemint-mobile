@@ -4,7 +4,7 @@ Source: `StyleMint_Failed_Test_Points.docx` (QA pass, 22 Sep 2026, iOS/TestFligh
 
 Status: **implemented** on branch `fix/testflight-qa-2026-09-22` in both
 `stylemint-mobile` and `stylemint-backend`, except SM-015 (not possible on
-iOS) and SM-014 (TikTok portal configuration, no code involved).
+iOS) and SM-014 (retested by the team and working — withdrawn, not a bug).
 
 **Nothing here has been compiled, analysed or run.** The authoring machine has
 no Flutter SDK and no .NET SDK. Before this goes anywhere near TestFlight:
@@ -37,7 +37,7 @@ Work in this order. Later groups depend on earlier ones being out of the way.
 | Group | Items | Why first |
 |---|---|---|
 | 0. Unblock diagnosis | SM-007a, SM-011a | Both hide the real server error. Fix the display first so the *next* TestFlight pass reports a cause instead of a Dart type name. |
-| 1. Ops / third-party | SM-001, SM-014 | No app code involved; can proceed in parallel with everything else, by whoever owns DNS/Apple/TikTok. |
+| 1. Ops / third-party | SM-001 | No app code involved; can proceed in parallel with everything else, by whoever owns DNS/Apple. (SM-014 was also here until it was retested and withdrawn.) |
 | 2. Cheap app fixes | SM-005, SM-013, SM-010, SM-003/004, SM-002 | Small, independent, low regression risk. |
 | 3. Client state | SM-008 | Touches a provider several screens read. |
 | 4. Features | SM-012, SM-006 | New surface area; SM-006 is the largest single item. |
@@ -141,21 +141,17 @@ sign-in on a clean device and on a returning account (per the QA retest list).
 
 ---
 
-### SM-014 · TikTok `non_sandbox_target`
+### SM-014 · TikTok `non_sandbox_target` — **not a bug, withdrawn**
 
-**Root cause.** TikTok returns `non_sandbox_target` when the app is still in
-**Sandbox** in the TikTok Developer Portal and the account attempting to log in
-is not a registered sandbox target user. It is a portal state, not a code path
-— nothing in `lib/` can change it.
+Retested and TikTok connects. No action, and nothing to change: this was
+never a code path — `non_sandbox_target` comes from the TikTok Developer
+Portal when the app is in Sandbox and the account signing in is not a
+registered sandbox target user.
 
-**Plan.** Either add the QA tester's TikTok account as a sandbox target user on
-the app's sandbox, or complete TikTok's app review and move the client key to
-production. Then confirm the redirect URI registered with TikTok matches what
-the app sends.
-
-**Keep.** The request ID from the screenshot,
-`202609221614316EF77B6FA4C0B74EA53A`, for TikTok support if the portal state
-looks correct.
+If it ever comes back, the fix is in the portal — add the tester as a sandbox
+target user, or complete TikTok's review and move the client key to
+production — and the reference to quote at TikTok support is the request ID
+from the original screenshot, `202609221614316EF77B6FA4C0B74EA53A`.
 
 ---
 
@@ -574,11 +570,9 @@ recommended; reverse any of them if you disagree.
    actually signed with (the value is from the Xcode project; check the
    distribution provisioning profile). If release signing uses a different
    team, the file is wrong again in the same way.
-2. **SM-014** — someone with TikTok Developer Portal access has to either add
-   the tester as a sandbox target user or move the app to production.
-3. **SM-015** — which alternative to offer, if any.
-4. **SM-009** — run the duplicate-row query above before closing it.
-5. **SM-006** — `paths: ["*"]` in the AASA accepts every path on the domain
+2. **SM-015** — which alternative to offer, if any.
+3. **SM-009** — run the duplicate-row query above before closing it.
+4. **SM-006** — `paths: ["*"]` in the AASA accepts every path on the domain
    into the app; narrow it once universal links are confirmed working.
 
 ---
