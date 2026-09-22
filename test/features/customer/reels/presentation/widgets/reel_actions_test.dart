@@ -72,6 +72,10 @@ class _FakeFollowApi implements FollowApi {
   Future<void> unfollow(String followeeAccountId) async {}
 
   @override
+  Future<List<String>> followingIds({int pageSize = 200}) async =>
+      const <String>[];
+
+  @override
   Future<FollowStats> stats(String accountId) => throw UnimplementedError();
 }
 

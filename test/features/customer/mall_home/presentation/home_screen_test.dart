@@ -14,7 +14,6 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reels_feed_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reels_pager.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api.dart';
@@ -30,6 +29,10 @@ class _FakeFollowApi implements FollowApi {
 
   @override
   Future<void> unfollow(String followeeAccountId) async {}
+
+  @override
+  Future<List<String>> followingIds({int pageSize = 200}) async =>
+      const <String>[];
 
   @override
   Future<FollowStats> stats(String accountId) => throw UnimplementedError();
@@ -118,21 +121,11 @@ void main() {
     tester.element(find.byType(type, skipOffstage: false)),
   ).enabled;
 
-  testWidgets('opens on the Mall and does not load reels yet', (tester) async {
+  // SM-005 (22 Sep TestFlight QA): the app opened on the Mall. Reels is the
+  // intended landing surface, so Home now starts there and the feed is part
+  // of the launch path rather than something built on first switch.
+  testWidgets('opens on Reels and loads the feed', (tester) async {
     final container = await pumpHome(tester);
-
-    expect(container.read(homeModeProvider), HomeMode.mall);
-    expect(find.byType(MallHomePage), findsOneWidget);
-    expect(find.byType(ReelsFeedScreen, skipOffstage: false), findsNothing);
-    expect(reels.feedCalls, 0);
-  });
-
-  testWidgets('the switch shows the reels feed, and pauses it when the Mall '
-      'comes back', (tester) async {
-    final container = await pumpHome(tester);
-
-    await tester.tap(find.text('Reels'));
-    await tester.pump();
     await tester.pump();
 
     expect(container.read(homeModeProvider), HomeMode.reels);
@@ -140,13 +133,28 @@ void main() {
     expect(reels.feedCalls, 1);
     expect(tickerEnabled(tester, ReelsPager), isTrue);
     expect(tickerEnabled(tester, MallHomePage), isFalse);
+  });
+
+  testWidgets('the switch shows the Mall, and pauses reels while it is up', (
+    tester,
+  ) async {
+    final container = await pumpHome(tester);
+    await tester.pump();
 
     await tester.tap(find.text('Mall'));
     await tester.pump();
 
     expect(container.read(homeModeProvider), HomeMode.mall);
+    expect(find.byType(MallHomePage), findsOneWidget);
     expect(tickerEnabled(tester, ReelsPager), isFalse);
     expect(tickerEnabled(tester, MallHomePage), isTrue);
+
+    await tester.tap(find.text('Reels'));
+    await tester.pump();
+
+    expect(container.read(homeModeProvider), HomeMode.reels);
+    expect(tickerEnabled(tester, ReelsPager), isTrue);
+    expect(tickerEnabled(tester, MallHomePage), isFalse);
     // The feed is kept, so switching back is instant.
     expect(find.byType(ReelsPager, skipOffstage: false), findsOneWidget);
     expect(reels.feedCalls, 1);
@@ -156,9 +164,8 @@ void main() {
     tester,
   ) async {
     final container = await pumpHome(tester);
-    await tester.tap(find.text('Reels'));
     await tester.pump();
-    await tester.pump();
+    expect(reels.feedCalls, 1);
 
     container.read(homeTabReselectedProvider.notifier).state++;
     await tester.pump();

@@ -118,6 +118,7 @@ class _StyleMintScanScreenState extends ConsumerState<StyleMintScanScreen> {
     }
     // Picker dismissed without choosing anything.
     if (file == null || !mounted) return;
+    final path = file.path;
 
     setState(() {
       _handling = true;
@@ -127,14 +128,14 @@ class _StyleMintScanScreenState extends ConsumerState<StyleMintScanScreen> {
 
     BarcodeCapture? capture;
     try {
-      capture = await _controller.analyzeImage(file.path);
+      capture = await _controller.analyzeImage(path);
     } catch (_) {
       capture = null;
     } finally {
       // The picker leaves a copy of the chosen photo in a temp directory.
       // Nothing here needs it after the decode, so it doesn't outlive the
       // call — same handling as the screenshot picker in customer search.
-      await _discardTempFile(file.path);
+      await _discardTempFile(path);
     }
     if (!mounted) return;
 
