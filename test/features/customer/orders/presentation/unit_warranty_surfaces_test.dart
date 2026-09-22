@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -12,6 +13,20 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/reposi
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_care_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/unit_warranty_list.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
+
+/// The coverage label exactly as the widget builds it.
+///
+/// `_WarrantyChip` renders
+/// `DateFormat('MMM d, y').format(ends.toLocal())`, so a `DateTime.utc`
+/// midnight formats as the PREVIOUS day anywhere behind UTC. Hardcoding
+/// "Warranty to Sep 11, 2027" made these assertions pass only east of UTC —
+/// on a machine west of it the chip correctly read "Sep 10, 2027" and the
+/// test failed for a reason that had nothing to do with the behaviour under
+/// test. Deriving the string the same way the widget does keeps the assertion
+/// about what is rendered rather than about where the runner sits.
+String _warrantyLabel(DateTime endsUtc) =>
+    'Warranty to ${DateFormat('MMM d, y').format(endsUtc.toLocal())}';
+
 
 class _MockOrdersRepository extends Mock implements OrdersRepository {}
 
@@ -129,7 +144,7 @@ void main() {
     ) async {
       await pumpCard(tester, eligibility: _eligibility(const []));
 
-      expect(find.text('Warranty to Sep 11, 2027'), findsOneWidget);
+      expect(find.text(_warrantyLabel(DateTime.utc(2027, 9, 11))), findsOneWidget);
       expect(find.byIcon(Icons.shield_outlined), findsOneWidget);
       expect(find.byType(UnitWarrantyList), findsNothing);
     });
@@ -140,7 +155,7 @@ void main() {
       // A 404 or an outage must not remove a warranty from the screen.
       await pumpCard(tester);
 
-      expect(find.text('Warranty to Sep 11, 2027'), findsOneWidget);
+      expect(find.text(_warrantyLabel(DateTime.utc(2027, 9, 11))), findsOneWidget);
       expect(find.byType(UnitWarrantyList), findsNothing);
     });
   });
@@ -182,7 +197,7 @@ void main() {
       expect(find.text('UM2QD8V5L3HM'), findsOneWidget);
       // The merged line-level chip is gone, because it would be a merge of
       // three different answers.
-      expect(find.text('Warranty to Sep 11, 2027'), findsNothing);
+      expect(find.text(_warrantyLabel(DateTime.utc(2027, 9, 11))), findsNothing);
       expect(
         find.textContaining('has its own warranty'),
         findsOneWidget,
