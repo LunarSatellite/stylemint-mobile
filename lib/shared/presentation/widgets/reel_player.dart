@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.d
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_play_indicator.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_poster.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_sound_button.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:video_player/video_player.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -47,6 +48,7 @@ class ReelPlayer extends StatefulWidget {
     required this.reel,
     required this.isActive,
     this.playbackController,
+    this.showSoundControl = true,
     super.key,
   });
 
@@ -62,6 +64,13 @@ class ReelPlayer extends StatefulWidget {
 
   /// Optional handle so an ancestor can toggle play/pause on tap.
   final ReelPlaybackController? playbackController;
+
+  /// Draws the sound toggle over the video.
+  ///
+  /// Set false only where the surface lays its own tap target over this
+  /// player — the customer feed does, and a control drawn here would sit
+  /// underneath it and never receive a tap. That surface draws its own.
+  final bool showSoundControl;
 
   @override
   State<ReelPlayer> createState() => _ReelPlayerState();
@@ -90,6 +99,10 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
   /// network, so a decode failure can be treated as a bad cache entry.
   bool _playingFromCache = false;
   bool _hasError = false;
+
+  /// Sound state for the native path. Embeds keep theirs in the pool, which
+  /// already shares one setting across every reel in the session.
+  bool _nativeMuted = false;
 
   // Embedded playback: the feed's pool when inside one, otherwise a
   // single-slot pool owned by this player.
@@ -318,7 +331,8 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
         _preloadInitFuture = null;
         _controller = preloaded;
         _playingFromCache = true;
-        await preloaded.setVolume(1);
+        // The preload was built silent; hand it whatever the viewer chose.
+        await _applyNativeVolume();
         setState(() => _initialized = true);
         _reconcilePlayback();
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -358,6 +372,8 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
 
       await controller.setLooping(true);
       if (!mounted) return;
+      await _applyNativeVolume();
+      if (!mounted) return;
 
       setState(() => _initialized = true);
 
@@ -393,6 +409,8 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
       await controller.initialize();
       if (!mounted) return;
       await controller.setLooping(true);
+      if (!mounted) return;
+      await _applyNativeVolume();
       if (!mounted) return;
       setState(() => _initialized = true);
       _reconcilePlayback();
@@ -459,15 +477,85 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     _reconcilePlayback();
   }
 
+  /// The pool this player's sound setting lives in, or null on the native
+  /// path. Its own pool when it has one, otherwise the feed's.
+  EmbedPlayerPool? get _soundPool => _ownPool ?? _scopePool;
+
+  /// Applies [_nativeMuted] to the live controller. Called after every
+  /// controller is built, because a fresh [VideoPlayerController] starts at
+  /// full volume regardless of what the viewer last chose.
+  Future<void> _applyNativeVolume() async {
+    final controller = _controller;
+    if (controller == null) return;
+    try {
+      await controller.setVolume(_nativeMuted ? 0 : 1);
+    } on Exception {
+      // A disposed or not-yet-ready controller; the next init applies it.
+    }
+  }
+
+  void _toggleMuted() {
+    final pool = _source is EmbedSource ? _soundPool : null;
+    if (pool != null) {
+      pool.setMuted(!pool.muted);
+      return;
+    }
+    setState(() => _nativeMuted = !_nativeMuted);
+    unawaited(_applyNativeVolume());
+  }
+
+  /// Whether there is any sound to control yet. Hidden over a poster, a
+  /// loader or a reel that cannot play at all, where the control would do
+  /// nothing.
+  bool get _soundControlVisible {
+    if (!widget.showSoundControl) return false;
+    final source = _source;
+    switch (source) {
+      case NativeVideoSource():
+        return _initialized && !_hasError;
+      case EmbedSource():
+        final pool = _soundPool;
+        // A reel that gave up shows the "can't play here" poster; offering
+        // to turn its sound on would be offering nothing.
+        return pool != null && !pool.hasGivenUp(EmbedRequest(source).key);
+      case ExternalOnlySource():
+        return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final source = _source;
-    return switch (source) {
+    final layer = switch (source) {
       NativeVideoSource() =>
         _hasError ? _buildUnavailableLayer() : _buildNativeLayer(),
       EmbedSource() => _buildEmbedLayer(source),
       ExternalOnlySource() => _buildUnavailableLayer(),
     };
+    if (!_soundControlVisible) return layer;
+
+    final pool = source is EmbedSource ? _soundPool : null;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        layer,
+        Align(
+          alignment: Alignment.topRight,
+          child: Padding(
+            padding: const EdgeInsets.all(DesignTokens.s12),
+            child: pool == null
+                ? ReelSoundButton(muted: _nativeMuted, onTap: _toggleMuted)
+                : ListenableBuilder(
+                    listenable: pool,
+                    builder: (context, _) => ReelSoundButton(
+                      muted: pool.muted,
+                      onTap: _toggleMuted,
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildNativeLayer() {

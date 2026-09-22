@@ -82,6 +82,9 @@ class _ReelPlaybackSheetState extends State<ReelPlaybackSheet> {
                       reel: widget.reel,
                       isActive: true,
                       playbackController: _playback,
+                      // The tap target below covers the player, so a control
+                      // drawn inside it would never receive a tap.
+                      showSoundControl: false,
                     ),
                 // Tap to pause or resume. Draws nothing.
                 GestureDetector(

@@ -542,6 +542,83 @@ Recommend (1), with the QA doc's retest line rewritten accordingly.
 
 ---
 
+---
+
+## SM-016 · TikTok reel plays with no audio, and no sound control
+
+Two separate defects reported as one.
+
+### Nothing is downloaded, so there is no pipeline to investigate
+
+The QA note asks to "verify whether the imported media file contains an audio
+stream" and to check the "video-processing pipeline". Neither exists.
+`resolveReelPlayback` sends **every** TikTok reel to `EmbedSource` — TikTok's
+own embed player in a WebView, driven over postMessage. Import stores
+metadata and a URL; no media is ever fetched, stored or transcoded. Audio is
+TikTok's to grant, and the only question is whether the unmute succeeds.
+
+### (a) An unanswered unMute left the reel silent forever — **fixed**
+
+The embed deliberately starts muted (TikTok refuses to autoplay with sound,
+error 3002) and asks for sound once frames move. TikTok answers that three
+ways: `onMute{value:false}`, error 3002, or a pause. It can also answer none
+of them, and nothing watched for that — so no refusal was recorded, Dart
+never learned the reel was silent, and the reel played its whole length in
+silence.
+
+Silence is now treated as a refusal after 1.5s, which mutes cleanly and
+surfaces the control. The timer is cancelled on granted sound, an explicit
+refusal, a new player and a torn-down stage.
+
+### (b) There was no sound control on most surfaces — **fixed, with gaps**
+
+`ReelPlayer` is used by five surfaces. Only the customer feed had any control
+at all, and it rendered *only once a platform had already refused sound* — so
+a reel playing quietly showed nothing, and the viewer could neither tell it
+was muted nor change it.
+
+`ReelSoundButton` is now a shared widget, always showing the current state,
+and `ReelPlayer` draws it by default.
+
+| Surface | Before | Now |
+|---|---|---|
+| Import preview (`preview_reel_screen`) | none | ✅ built in |
+| Reel window (`reel_window`) | none | ✅ built in |
+| Customer feed (`reel_card`) | only after a refusal | ✅ persistent, embed reels |
+| Playback sheet (`reel_playback_sheet`) | none | ❌ still none |
+| Creator reel details (`reel_details_screen`) | none | ❌ still none |
+
+**Why the two gaps.** Those surfaces lay a full-screen play/pause tap target
+*over* the player, so a control drawn inside `ReelPlayer` sits underneath it
+and never receives a tap. They opt out via `showSoundControl: false` rather
+than shipping a button that silently does nothing.
+
+Fixing them properly means moving mute onto `ReelPlaybackController` — the
+handle those screens already hold, and which they already layer their own
+controls above. That is the right design and was deliberately **not** done
+here: it makes `ReelPlaybackController` a `ChangeNotifier` that `ReelPlayer`
+pushes state into, which touches the feed — the most-used screen in the app —
+and none of this could be compiled or run on the machine it was written on.
+
+**Also still missing:** native (Instagram) reels **in the feed** have no
+control. The feed's button is driven by the embed pool, which a native reel
+has no part in. Not a regression — they never had one — but the same gap.
+
+### Still to check
+
+Neither fix above helps if the cause is the **iOS audio session**. The app
+sets no `AVAudioSession` category anywhere — not in `AppDelegate.swift`, and
+there is no `audio_session` dependency — so iOS leaves WebView inline media
+on the default ambient category, which **the hardware ring/silent switch
+mutes**. That would silence every inline video on every platform.
+
+Costs nothing to rule out: **flip the silent switch and replay.** Setting a
+category is a product decision (`.playback` plays through the silent switch
+and interrupts other apps' audio; `.ambient` respects it), so nothing was
+changed.
+
+---
+
 ## Decisions taken while implementing
 
 These were the open questions. Each was resolved the way this plan

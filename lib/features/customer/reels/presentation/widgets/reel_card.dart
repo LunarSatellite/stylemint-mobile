@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_layout_pol
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_scope.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_slot.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/reel_shapes.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_sound_button.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
@@ -116,6 +117,10 @@ class _ReelCardState extends State<ReelCard> {
                   reel: widget.reel,
                   isActive: widget.isActive,
                   playbackController: _playback,
+                  // The full-screen play/pause tap target below is layered
+                  // over the player, so a control drawn inside it would never
+                  // receive a tap. This card draws its own, above that target.
+                  showSoundControl: false,
                 ),
               ),
 
@@ -203,8 +208,12 @@ class _ReelCardState extends State<ReelCard> {
   }
 }
 
-/// Appears when a platform only allowed the reel to play without sound.
-/// A tap turns sound on for the rest of the session.
+/// Sound on/off for the reel on screen.
+///
+/// This used to render only once a platform had already refused sound, so a
+/// reel that simply played quietly showed nothing at all — the viewer could
+/// neither tell it was muted nor do anything about it (SM-016). It is now
+/// always on screen for the active reel and always shows the current state.
 class _SoundOffButton extends StatelessWidget {
   const _SoundOffButton({required this.embed});
 
@@ -217,28 +226,12 @@ class _SoundOffButton extends StatelessWidget {
     return ListenableBuilder(
       listenable: pool,
       builder: (context, _) {
-        if (pool.activeKey != embed.key || !pool.muted) {
-          return const SizedBox.shrink();
-        }
-        return Semantics(
-          button: true,
-          label: 'Turn sound on',
-          child: GestureDetector(
-            onTap: () => pool.setMuted(false),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: DesignTokens.baseBlack.withValues(alpha: 0.45),
-              ),
-              child: const Icon(
-                Icons.volume_off_rounded,
-                size: 20,
-                color: DesignTokens.iconWhite,
-              ),
-            ),
-          ),
+        // Only the reel on screen: the neighbours either side are paused, and
+        // their controls would sit under this one.
+        if (pool.activeKey != embed.key) return const SizedBox.shrink();
+        return ReelSoundButton(
+          muted: pool.muted,
+          onTap: () => pool.setMuted(!pool.muted),
         );
       },
     );

@@ -114,6 +114,12 @@ class _BodyState extends State<_Body> {
                 reel: reel,
                 isActive: true,
                 playbackController: _playback,
+                // The play/pause tap target below covers the same rect as
+                // this player, so a control drawn inside it would sit
+                // underneath and never receive a tap. This screen has no
+                // sound control of its own yet — see SM-016 in
+                // docs/TESTFLIGHT_FIX_PLAN.md.
+                showSoundControl: false,
               ),
             ),
 
