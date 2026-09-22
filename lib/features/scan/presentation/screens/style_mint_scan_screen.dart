@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
@@ -32,6 +34,13 @@ class StyleMintScanScreen extends ConsumerStatefulWidget {
       'creators, drop parties and web login';
   static const String notStyleMint = "That isn't a StyleMint code";
 
+  /// The chosen picture held nothing scannable at all.
+  static const String noCodeInImage = "No QR code in that picture";
+
+  /// The OS refused the photo library (permission denied, or no picker).
+  static const String galleryUnavailable =
+      "Can't open your photos. Check StyleMint's photo access in Settings.";
+
   /// A 404 from the tag scan: StyleMint never issued this code. Distinct
   /// from a genuine tag nobody bound, which answers 200 and opens the
   /// passport screen saying it is not bound to a sale.
@@ -49,7 +58,8 @@ class _StyleMintScanScreenState extends ConsumerState<StyleMintScanScreen> {
     formats: const [BarcodeFormat.qrCode],
   );
   bool _handling = false;
-  bool _showNotStyleMint = false;
+  final ImagePicker _picker = ImagePicker();
+  String? _noteText;
   Timer? _noteTimer;
 
   @override
@@ -84,10 +94,70 @@ class _StyleMintScanScreenState extends ConsumerState<StyleMintScanScreen> {
 
     setState(() {
       _handling = true;
-      _showNotStyleMint = false;
+      _noteText = null;
     });
     await _controller.stop();
     if (!mounted) return;
+    final left = await _open(code);
+    if (!left) await _resume();
+  }
+
+  /// Reads a StyleMint code out of a picture the user already has, for codes
+  /// that reach them as a screenshot or a saved image rather than something
+  /// they can point a camera at. Same handling as a live scan once a code is
+  /// found — [_open] does not care where the code came from.
+  Future<void> _scanFromGallery() async {
+    if (_handling) return;
+
+    XFile? file;
+    try {
+      file = await _picker.pickImage(source: ImageSource.gallery);
+    } catch (_) {
+      if (mounted) _note(StyleMintScanScreen.galleryUnavailable);
+      return;
+    }
+    // Picker dismissed without choosing anything.
+    if (file == null || !mounted) return;
+
+    setState(() {
+      _handling = true;
+      _noteText = null;
+    });
+    await _controller.stop();
+
+    BarcodeCapture? capture;
+    try {
+      capture = await _controller.analyzeImage(file.path);
+    } catch (_) {
+      capture = null;
+    } finally {
+      // The picker leaves a copy of the chosen photo in a temp directory.
+      // Nothing here needs it after the decode, so it doesn't outlive the
+      // call — same handling as the screenshot picker in customer search.
+      await _discardTempFile(file.path);
+    }
+    if (!mounted) return;
+
+    final raw = capture?.barcodes
+        .map((b) => b.rawValue)
+        .firstWhere(
+          (v) => v != null && v.trim().isNotEmpty,
+          orElse: () => null,
+        );
+    final code = raw == null ? null : StyleMintCode.parse(raw);
+
+    if (code == null) {
+      // Tell the difference: nothing scannable at all, versus a real QR code
+      // that simply isn't ours.
+      _note(
+        raw == null
+            ? StyleMintScanScreen.noCodeInImage
+            : StyleMintScanScreen.notStyleMint,
+      );
+      await _resume();
+      return;
+    }
+
     final left = await _open(code);
     if (!left) await _resume();
   }
@@ -190,11 +260,27 @@ class _StyleMintScanScreenState extends ConsumerState<StyleMintScanScreen> {
     }
   }
 
-  void _noteNotStyleMint() {
+  /// Best effort: a temp file we cannot delete is the platform's to clean up,
+  /// and must never be the reason a scan fails.
+  Future<void> _discardTempFile(String path) async {
+    try {
+      final file = File(path);
+      if (file.existsSync()) await file.delete();
+    } on Object catch (_) {
+      // Nothing to do here.
+    }
+  }
+
+  void _noteNotStyleMint() => _note(StyleMintScanScreen.notStyleMint);
+
+  /// Shows [text] over the camera for three seconds. The gallery path needs
+  /// its own wording — "no code in that picture" is a different thing from
+  /// "that code isn't StyleMint's", and silence reads as a broken button.
+  void _note(String text) {
     _noteTimer?.cancel();
-    if (!_showNotStyleMint) setState(() => _showNotStyleMint = true);
+    if (_noteText != text) setState(() => _noteText = text);
     _noteTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _showNotStyleMint = false);
+      if (mounted) setState(() => _noteText = null);
     });
   }
 
@@ -225,6 +311,14 @@ class _StyleMintScanScreenState extends ConsumerState<StyleMintScanScreen> {
           style: DesignTokens.sectionInnerTitle,
         ),
         actions: [
+          IconButton(
+            tooltip: 'Scan a picture from your photos',
+            icon: const Icon(
+              Icons.photo_library_outlined,
+              color: DesignTokens.textWhite,
+            ),
+            onPressed: _handling ? null : () => unawaited(_scanFromGallery()),
+          ),
           ValueListenableBuilder<MobileScannerState>(
             valueListenable: _controller,
             builder: (context, state, _) {
@@ -269,8 +363,8 @@ class _StyleMintScanScreenState extends ConsumerState<StyleMintScanScreen> {
                 children: [
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    child: _showNotStyleMint
-                        ? const _Note(text: StyleMintScanScreen.notStyleMint)
+                    child: _noteText != null
+                        ? _Note(text: _noteText!)
                         : const SizedBox.shrink(),
                   ),
                   const SizedBox(height: DesignTokens.s16),
