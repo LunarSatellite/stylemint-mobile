@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/data/datasources/shipping_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/data/repositories/shipping_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/data/services/location_capture_service.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/data/services/place_search_service.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/repositories/shipping_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/notifiers/shipping_notifier.dart';
 
@@ -19,6 +20,12 @@ final shippingRemoteDataSourceProvider = Provider<ShippingRemoteDataSource>(
 /// drive the denied / denied-forever / services-off / timeout paths.
 final locationCaptureServiceProvider = Provider<LocationCaptureService>(
   (ref) => const GeolocatorLocationCaptureService(),
+);
+
+/// The geocoder behind "Search for a place" on the address map. Overridden in
+/// widget tests so the search box can be exercised without a network.
+final placeSearchServiceProvider = Provider<PlaceSearchService>(
+  (ref) => PhotonPlaceSearchService(),
 );
 
 final shippingRepositoryProvider = Provider<ShippingRepository>(

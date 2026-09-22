@@ -10,11 +10,20 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/presentatio
 import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
+/// Where the map opens before any point has been chosen, so there is
+/// something to search from and drag on. Kathmandu, matching the app's
+/// default timezone (`Asia/Kathmandu`). Only ever a camera position — it is
+/// not written anywhere, and `_capturedFrom` stays null until the shopper
+/// actually places the pin.
+const double _defaultMapLatitude = 27.7172;
+const double _defaultMapLongitude = 85.3240;
+
 /// Add / edit a shipping address.
 ///
 /// The customer never types a street, city, state or postal code. They fix
-/// *where* the place is — by GPS, by pasting a Maps link, or by dragging the
-/// pin — and then explain in their own words how to find the door.
+/// *where* the place is — by searching for it, by GPS, by pasting a Maps
+/// link, or by dragging the pin — and then explain in their own words how to
+/// find the door.
 class AddEditAddressScreen extends ConsumerStatefulWidget {
   const AddEditAddressScreen({this.address, super.key});
 
@@ -911,13 +920,20 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                     fromLink: _capturedFrom == null && _hasMapsLink,
                     accuracyIsPoor: _accuracyIsPoor,
                   ),
-                  const SizedBox(height: DesignTokens.s12),
-                  AddressPinMap(
-                    latitude: _latitude!,
-                    longitude: _longitude!,
-                    onPinMoved: _onPinMoved,
-                  ),
                 ],
+                // Always on screen, not only once a point exists. The map used
+                // to be hidden behind "use my current location" or a pasted
+                // Maps link, so anyone who wanted to pin a spot on a map never
+                // saw one. Until the pin is actually placed it shows a default
+                // view and says so; `_capturedFrom` stays null, so an
+                // untouched default is never written as the address.
+                const SizedBox(height: DesignTokens.s12),
+                AddressPinMap(
+                  latitude: _latitude ?? _defaultMapLatitude,
+                  longitude: _longitude ?? _defaultMapLongitude,
+                  onPinMoved: _onPinMoved,
+                  pinPlaced: _hasPoint,
+                ),
                 const SizedBox(height: DesignTokens.s20),
                 _mapsLinkField(),
                 const SizedBox(height: DesignTokens.s24),

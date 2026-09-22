@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/data/services/place_search_service.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -92,6 +96,23 @@ class _OsmPinMapState extends State<_OsmPinMap> {
     if (oldWidget.latitude != widget.latitude ||
         oldWidget.longitude != widget.longitude) {
       _pin = LatLng(widget.latitude, widget.longitude);
+      // Move the camera too. Without this a place chosen from search moved
+      // the pin to somewhere off-screen while the map stayed where it was,
+      // so the map appeared not to react at all.
+      _recentre();
+    }
+  }
+
+  /// Centres the map on [_pin], keeping the current zoom. No-ops before the
+  /// map's first frame — it opens centred on the pin anyway — and swallows
+  /// controller errors, which are never worth interrupting an address form.
+  void _recentre() {
+    final camera = _camera.value;
+    if (camera == null) return;
+    try {
+      _mapController.move(_pin, camera.zoom);
+    } on Object catch (_) {
+      // Map not ready or already disposed; the pin is still correct.
     }
   }
 
@@ -250,21 +271,28 @@ void _openOsmCopyright() {
   launchUrl(_osmCopyrightUri, mode: LaunchMode.externalApplication).ignore();
 }
 
-/// A small, fixed-height map for nudging the pin onto the right building.
+/// A small, fixed-height map for putting the pin on the right building,
+/// with a place search above it.
 ///
-/// Intentionally not a full map UI — drag the marker (or tap a spot) and the
-/// point moves; nothing else.
+/// Still not a full map UI: search for somewhere, drag the marker or tap a
+/// spot, and the point moves. Nothing else.
+///
+/// [pinPlaced] false means the map is showing a default view and the pin does
+/// not yet stand for anything — the caption says so, and the pin is drawn
+/// faintly, so an untouched default is never mistaken for a chosen address.
 class AddressPinMap extends ConsumerWidget {
   const AddressPinMap({
     required this.latitude,
     required this.longitude,
     required this.onPinMoved,
+    this.pinPlaced = true,
     super.key,
   });
 
   final double latitude;
   final double longitude;
   final void Function(double latitude, double longitude) onPinMoved;
+  final bool pinPlaced;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -273,8 +301,16 @@ class AddressPinMap extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        AddressPlaceSearchField(
+          near: (latitude: latitude, longitude: longitude),
+          onSelected: (result) =>
+              onPinMoved(result.latitude, result.longitude),
+        ),
+        const SizedBox(height: DesignTokens.s12),
         Text(
-          'Not quite right? Drag the pin onto your building.',
+          pinPlaced
+              ? 'Not quite right? Drag the pin onto your building.'
+              : 'Search above, or drag the pin onto your building to set it.',
           style: DesignTokens.smallRegular.copyWith(
             color: DesignTokens.textMuted,
           ),
@@ -286,9 +322,193 @@ class AddressPinMap extends ConsumerWidget {
             key: const Key('address_pin_map'),
             height: 180,
             width: double.infinity,
-            child: builder(context, latitude, longitude, onPinMoved),
+            child: Opacity(
+              opacity: pinPlaced ? 1 : 0.75,
+              child: builder(context, latitude, longitude, onPinMoved),
+            ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// Type-to-search over the geocoder, feeding the map above it.
+///
+/// Debounced rather than fired per keystroke: every letter is a request to a
+/// free public endpoint, and the shopper is typing an address, not browsing.
+class AddressPlaceSearchField extends ConsumerStatefulWidget {
+  const AddressPlaceSearchField({
+    required this.onSelected,
+    this.near,
+    super.key,
+  });
+
+  final ValueChanged<PlaceResult> onSelected;
+
+  /// Where the map is looking, so results near it rank first.
+  final ({double latitude, double longitude})? near;
+
+  @override
+  ConsumerState<AddressPlaceSearchField> createState() =>
+      _AddressPlaceSearchFieldState();
+}
+
+class _AddressPlaceSearchFieldState
+    extends ConsumerState<AddressPlaceSearchField> {
+  static const Duration _debounce = Duration(milliseconds: 450);
+
+  final TextEditingController _controller = TextEditingController();
+  Timer? _debounceTimer;
+
+  /// Guards against an earlier, slower search overwriting a later one.
+  int _requestId = 0;
+
+  List<PlaceResult> _results = const [];
+  bool _searching = false;
+  bool _failed = false;
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String value) {
+    _debounceTimer?.cancel();
+    if (value.trim().length < PhotonPlaceSearchService.minQueryLength) {
+      setState(() {
+        _results = const [];
+        _searching = false;
+        _failed = false;
+      });
+      return;
+    }
+    setState(() => _searching = true);
+    _debounceTimer = Timer(_debounce, () => unawaited(_run(value)));
+  }
+
+  Future<void> _run(String query) async {
+    final id = ++_requestId;
+    try {
+      final results = await ref
+          .read(placeSearchServiceProvider)
+          .search(query, near: widget.near);
+      if (!mounted || id != _requestId) return;
+      setState(() {
+        _results = results;
+        _searching = false;
+        _failed = false;
+      });
+    } on Object catch (_) {
+      if (!mounted || id != _requestId) return;
+      setState(() {
+        _results = const [];
+        _searching = false;
+        _failed = true;
+      });
+    }
+  }
+
+  void _select(PlaceResult result) {
+    _debounceTimer?.cancel();
+    _requestId++; // abandon anything still in flight
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _results = const [];
+      _searching = false;
+      _failed = false;
+      _controller.text = result.label;
+    });
+    widget.onSelected(result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          key: const Key('address_place_search'),
+          controller: _controller,
+          onChanged: _onChanged,
+          textInputAction: TextInputAction.search,
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            color: DesignTokens.inputFieldData,
+          ),
+          cursorColor: DesignTokens.primaryGreen,
+          decoration: DesignTokens.inputDecoration(
+            hintText: 'Search for a place or address',
+            prefixIcon: const Icon(
+              Icons.search,
+              color: DesignTokens.inputFieldPlaceholder,
+              size: 20,
+            ),
+          ),
+        ),
+        if (_searching) ...[
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            'Searching…',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+        ],
+        // One quiet line, not a dialog: the map and the pin still work when
+        // the geocoder is unreachable, so this must not read as a dead end.
+        if (_failed) ...[
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            key: const Key('address_place_search_error'),
+            "Couldn't search right now. Drag the pin instead.",
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+        ],
+        if (_results.isNotEmpty) ...[
+          const SizedBox(height: DesignTokens.s8),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: DesignTokens.surfaceRaised,
+              borderRadius: BorderRadius.circular(DesignTokens.s8),
+              border: Border.all(color: DesignTokens.borderDefault),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final result in _results)
+                  ListTile(
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
+                    title: Text(
+                      result.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
+                    subtitle: result.detail.isEmpty
+                        ? null
+                        : Text(
+                            result.detail,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textMuted,
+                            ),
+                          ),
+                    onTap: () => _select(result),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
