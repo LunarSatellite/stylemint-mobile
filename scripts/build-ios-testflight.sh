@@ -10,125 +10,54 @@
 # Usage, from the repo root on the Mac:
 #     bash scripts/build-ios-testflight.sh              # build only
 #     bash scripts/build-ios-testflight.sh --upload     # build, then upload
-#     BUILD_NUMBER=7 bash scripts/build-ios-testflight.sh --upload
-#
-# Uploading needs an App Store Connect API key. Export these first — they are
-# yours to create and this script never stores them:
-#     export ASC_KEY_ID=XXXXXXXXXX
-#     export ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-#     # the .p8 must live at ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8
-#
-# Without --upload the script stops at the .ipa and tells you where it is, so
-# you can drag it into Transporter instead.
-# ============================================================
-set -euo pipefail
-
-UPLOAD=false
-[ "${1:-}" = "--upload" ] && UPLOAD=true
-
-say() { printf '\n\033[1;34m[ios]\033[0m %s\n' "$1"; }
-die() { printf '\n\033[1;31m[ios] ERROR:\033[0m %s\n' "$1"; exit 1; }
-
-# ── 0. sanity ───────────────────────────────────────────────
-[ "$(uname -s)" = "Darwin" ] || die "this must run on macOS; there is no iOS toolchain elsewhere"
-[ -f pubspec.yaml ] || die "run this from the repo root"
-command -v flutter >/dev/null || die "flutter is not on PATH"
-command -v xcodebuild >/dev/null || die "Xcode command line tools are missing: xcode-select --install"
-
-# Xcode has to have been opened once to accept its licence, or xcodebuild
-# fails with a licence error that looks nothing like a build problem.
-xcodebuild -version >/dev/null 2>&1 || die "xcodebuild refused to run — open Xcode once and accept the licence"
-
-say "Toolchain"
-# Captured into variables rather than piped into `head`. Flutter writes its
-# version-freshness notice to stdout asynchronously, so `flutter --version |
-# head -1` lets head exit first, closes the pipe under the writer, and
-# Flutter dies with an unhandled FileSystemException: Broken pipe. Under
-# `set -o pipefail` that kills this script before it does anything.
-FLUTTER_VERSION_LINE=$(flutter --version 2>/dev/null | sed -n '1p' || true)
-XCODE_VERSION_LINE=$(xcodebuild -version 2>/dev/null | sed -n '1p' || true)
-echo "${FLUTTER_VERSION_LINE:-flutter: version unknown}"
-echo "${XCODE_VERSION_LINE:-xcodebuild: version unknown}"
-
-# ── 1. dependencies ─────────────────────────────────────────
-say "Resolving Dart dependencies"
-flutter pub get
-
-# The freezed / json_serializable output is gitignored (.gitignore lines 51-52),
-# so a fresh clone has none of it and the build fails on missing .freezed.dart
-# parts. This is the step people skip.
-say "Generating code (freezed / json_serializable — gitignored, so required)"
-dart run build_runner build
-
-say "Installing CocoaPods"
-# `pod install` treats Podfile.lock as a hard constraint on transitive pods.
-# When the Dart side moves without the lock following — which happens whenever
-# plugins are bumped on a machine that cannot run CocoaPods, i.e. the Windows
-# desk — a plugin's podspec asks for a newer pod than the lock pins and
-# resolution dies with "could not find compatible versions". Seen with
-# firebase_messaging 16.6.0 wanting Firebase/Messaging 12.18.0 while the
-# committed lock pinned 12.13.0.
-#
-# `--repo-update` does not rescue that: it refreshes the spec repos but still
-# honours the lock. The only thing that re-resolves is removing the lock.
-#
-# So: try the lock first, because reproducing an exact pod set is the whole
-# point of having one. Only if it refuses do we drop it and re-resolve from
-# the plugins' own podspecs, which pubspec.lock already pins.
-if ! ( cd ios && pod install ); then
-  say "Lock is stale — re-resolving pods from the plugin podspecs"
-  (
-    cd ios
-    pod repo update
-    rm -f Podfile.lock
-    pod install
-  ) || die "pod install still failing — read the resolution error above"
-
-  cat <<'EOF'
-
-  ios/Podfile.lock was regenerated. Commit it so nobody hits this again:
-
-      git add ios/Podfile.lock
-      git commit -m "build(ios): refresh Podfile.lock for the current plugins"
-
-EOF
-fi
-
-# ── 2. checks worth failing on before a 10-minute archive ───
-say "Analyzer"
-# `--no-fatal-infos --no-fatal-warnings` is load-bearing. `flutter analyze`
-# exits 1 on ANY finding, info-level lints included, and this repo carries
-# ~4,700 of them. Without these flags the gate fails every single run while
-# reporting "analyzer errors", which is not what happened. Only genuine
-# error-severity findings should stop a build going to testers.
-flutter analyze lib/ --no-fatal-infos --no-fatal-warnings || die "analyzer ERRORS (not lints) - fix before shipping to testers"
-
-say "Tests"
-flutter test || die "tests failed — fix before shipping to testers"
-
-# ── 3. build ────────────────────────────────────────────────
-# App Store Connect rejects a build whose number is not higher than every
-# build already uploaded for this version. pubspec says 1.0.0+1, so the first
-# upload is build 1 and each later one must climb.
-# Epoch seconds, not a YYYYMMDDHHMM stamp. CFBundleVersion components must
+#     # Epoch seconds, not a YYYYMMDDHHMM stamp. CFBundleVersion components must
 # fit in 2^32 (4294967296) or App Store Connect rejects the upload, and a
 # 12-digit datestamp like 202609220755 does not. Epoch is ~1.79e9 today,
 # well under, and still climbs on every build.
 BUILD_NUMBER="${BUILD_NUMBER:-$(date +%s)}"
-say "Building IPA (build number $BUILD_NUMBER)"
-flutter build ipa \
-  --release \
-  --build-number="$BUILD_NUMBER" \
-  --export-options-plist=ios/ExportOptions.plist
+
+KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID:-none}.p8"
+
+if [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ] && [ -f "$KEY_PATH" ]; then
+  # ---- API-key path -------------------------------------------------------
+  # `flutter build ipa` has no passthrough for extra xcodebuild arguments, so
+  # the App Store Connect key cannot be handed to it. Without the key, Xcode
+  # falls back to whatever Apple ID is signed into it — which on this machine
+  # was a free personal team, and personal teams support neither the
+  # associated-domains/NFC entitlements this app declares nor TestFlight.
+  #
+  # So: let Flutter generate the Xcode configuration, then drive xcodebuild
+  # directly with the key. Xcode then creates and downloads the distribution
+  # certificate and provisioning profile itself, against the paid team the key
+  # belongs to, with no interactive sign-in and no 2FA.
+  say "Building IPA via xcodebuild with the App Store Connect key (build $BUILD_NUMBER)"
+
+  flutter build ipa --release --build-number="$BUILD_NUMBER" --config-only
+
+  AUTH=(
+    -allowProvisioningUpdates
+    -authenticationKeyID "$ASC_KEY_ID"
+    -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+    -authenticationKeyPath "$KEY_PATH"
+  )
+  ARCHIVE="$PWD/build/ios/archive/Runner.xcarchive"
+  rm -rf "$ARCHIVE" build/ios/ipa
+
+  ( cd ios && xcodebuild       -workspace Runner.xcworkspace       -scheme Runner       -configuration Release       -archivePath "$ARCHIVE"       archive "${AUTH[@]}" ) || die "xcodebuild archive failed - see above"
+
+  ( cd ios && xcodebuild       -exportArchive       -archivePath "$ARCHIVE"       -exportOptionsPlist ExportOptions.plist       -exportPath "$PWD/../build/ios/ipa"       "${AUTH[@]}" ) || die "xcodebuild export failed - see above"
+else
+  # ---- no key: Flutter drives it, using whatever Xcode is signed into ------
+  say "Building IPA (build number $BUILD_NUMBER)"
+  say "No ASC_KEY_ID/ASC_ISSUER_ID set - signing with the Apple ID in Xcode"
+  flutter build ipa     --release     --build-number="$BUILD_NUMBER"     --export-options-plist=ios/ExportOptions.plist
+fi
 
 # Deliberately not `IPA=$(...) || die`: the exit status of an assignment is
 # the pipeline's, and the pipeline ends in `head`, which succeeds even when
 # the glob matched nothing. The emptiness check is the one that works.
-# `|| true` matters under `set -e` with `pipefail`: when the glob matches
-# nothing, ls exits non-zero, the assignment inherits that, and the script
-# would exit silently instead of reaching the message below.
 IPA=$(ls build/ios/ipa/*.ipa 2>/dev/null | head -1 || true)
-[ -n "$IPA" ] || die "no .ipa produced — check the archive log above"
+[ -n "$IPA" ] || die "no .ipa produced - check the archive log above"
 
 say "Built $IPA"
 

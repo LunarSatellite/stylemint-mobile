@@ -104,16 +104,29 @@ jobs:
           KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
+        # `flutter build ipa` has no passthrough for extra xcodebuild
+        # arguments, so the App Store Connect key cannot be given to it. An
+        # earlier version of this step tried `-- -authenticationKeyID ...` and
+        # would have failed. Flutter generates the Xcode configuration with
+        # --config-only; xcodebuild is then driven directly with the key, so it
+        # creates and downloads the distribution certificate and profile
+        # against the paid team with no interactive sign-in.
         run: |
-          flutter build ipa \
-            --release \
-            --build-number="$BUILD_NUMBER" \
-            --export-options-plist=ios/ExportOptions.plist \
-            -- \
-            -allowProvisioningUpdates \
-            -authenticationKeyID "$KEY_ID" \
-            -authenticationKeyIssuerID "$ISSUER_ID" \
-            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_"$KEY_ID".p8
+          flutter build ipa --release --build-number="$BUILD_NUMBER" --config-only
+
+          KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
+          ARCHIVE="$PWD/build/ios/archive/Runner.xcarchive"
+          AUTH=(
+            -allowProvisioningUpdates
+            -authenticationKeyID "$KEY_ID"
+            -authenticationKeyIssuerID "$ISSUER_ID"
+            -authenticationKeyPath "$KEY_PATH"
+          )
+
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner             -configuration Release -archivePath "$ARCHIVE"             archive "${AUTH[@]}"
+
+          xcodebuild -exportArchive -archivePath "$ARCHIVE"             -exportOptionsPlist ExportOptions.plist             -exportPath "$PWD/../build/ios/ipa" "${AUTH[@]}"
 
       - name: Upload to TestFlight
         env:
