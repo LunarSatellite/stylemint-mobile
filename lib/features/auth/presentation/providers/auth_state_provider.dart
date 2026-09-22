@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:fpdart/fpdart.dart';
@@ -20,6 +22,7 @@ import 'package:stylemint_mobile_frontend/features/auth/services/passkey_service
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -205,6 +208,7 @@ class SessionController extends StateNotifier<AuthSessionState> {
     required this.roleNotifier,
     required this.accountNotifier,
     required this.cartNotifier,
+    required this.followNotifier,
   }) : super(const AuthSessionState.unknown());
 
   final AuthRepository authRepository;
@@ -213,6 +217,7 @@ class SessionController extends StateNotifier<AuthSessionState> {
   final RoleNotifier roleNotifier;
   final AccountNotifier accountNotifier;
   final CartNotifier cartNotifier;
+  final FollowNotifier followNotifier;
 
   /// Reads persisted credentials and sets the initial status.
   Future<void> bootstrap() => recheck();
@@ -238,7 +243,14 @@ class SessionController extends StateNotifier<AuthSessionState> {
       // clean cart fetch for whichever account is now signed in — cart
       // is the one piece of per-account state that had no reset call
       // anywhere in the login flows.
-      if (authenticated) cartNotifier.reset();
+      if (authenticated) {
+        cartNotifier.reset();
+        // Follow state is server-side but nothing read it back on launch, so
+        // every restart showed previously followed creators as un-followed.
+        // Fire-and-forget: a slow or failed follow graph must not hold up the
+        // session resolving, or the splash screen sticks.
+        unawaited(followNotifier.hydrate());
+      }
       state = authenticated
           ? AuthSessionState.authenticated(accountId)
           : const AuthSessionState.unauthenticated();
@@ -265,6 +277,7 @@ class SessionController extends StateNotifier<AuthSessionState> {
     roleNotifier.reset();
     accountNotifier.reset();
     cartNotifier.reset();
+    followNotifier.reset();
     state = const AuthSessionState.unauthenticated();
   }
 }
@@ -278,6 +291,7 @@ final sessionControllerProvider =
         roleNotifier: ref.watch(roleNotifierProvider.notifier),
         accountNotifier: ref.watch(accountNotifierProvider.notifier),
         cartNotifier: ref.watch(cartNotifierProvider.notifier),
+        followNotifier: ref.watch(followNotifierProvider.notifier),
       );
     });
 

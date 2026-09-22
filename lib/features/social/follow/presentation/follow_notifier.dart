@@ -16,6 +16,42 @@ class FollowNotifier extends StateNotifier<Set<String>> {
 
   bool isFollowing(String accountId) => state.contains(accountId);
 
+  /// Rebuilds follow state from the server's follow graph.
+  ///
+  /// This notifier is an app-lifetime singleton that started empty on every
+  /// launch and was only ever filled by [seed] (a per-item server flag) or by
+  /// the user's own [toggle] this session. Nothing read the graph back, so
+  /// after a restart every creator the user followed rendered as "not
+  /// followed" — the follows had persisted server-side all along.
+  ///
+  /// Best effort: a hydration failure leaves the previous state alone rather
+  /// than blanking out follows over one bad request.
+  Future<void> hydrate() async {
+    final List<String> ids;
+    try {
+      ids = await _api.followingIds();
+    } catch (_) {
+      return;
+    }
+    // Live toggles still win. An id the user already acted on this session is
+    // in [_seeded], so a hydration that raced the toggle can't revive a
+    // just-removed follow.
+    final next = {...state};
+    for (final id in ids) {
+      if (_seeded.contains(id)) continue;
+      _seeded.add(id);
+      next.add(id);
+    }
+    state = next;
+  }
+
+  /// Drops all follow state. Called on logout so the next account on this
+  /// device doesn't inherit the previous user's follows.
+  void reset() {
+    _seeded.clear();
+    state = const <String>{};
+  }
+
   /// Seed initial follow state from a server flag (e.g. a reel's
   /// `isCreatorFollowed` or a profile's `isFollowedByViewer`). No-ops if this
   /// account was already seeded or the user has already toggled it this session
