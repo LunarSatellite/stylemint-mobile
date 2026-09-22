@@ -25,6 +25,20 @@
 # ============================================================
 set -euo pipefail
 
+# CocoaPods reads the Podfile path through Ruby's unicode_normalize, which
+# refuses to run on an ASCII-8BIT string and dies with
+#
+#   Unicode Normalization not appropriate for ASCII-8BIT
+#     (Encoding::CompatibilityError)
+#
+# Ruby picks that encoding whenever the locale is unset, which is the default
+# for any non-interactive shell — a CI runner, or this script launched from
+# something other than a login terminal. An interactive Terminal exports LANG
+# already, so the crash never shows up when the script is run by hand.
+# Existing values win; only the empty case is filled in.
+export LANG="${LANG:-en_US.UTF-8}"
+export LC_ALL="${LC_ALL:-en_US.UTF-8}"
+
 UPLOAD=false
 SKIP_CHECKS=false
 for arg in "$@"; do
