@@ -180,9 +180,10 @@ class _FollowingCard extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: DesignTokens.oneLinerSemibold,
                       ),
-                      // Backend's AccountSummaryDto doesn't carry a handle yet,
-                      // so this is always empty — showing a bare "@" reads as
-                      // broken, so hide the row entirely until handles exist.
+                      // The handle is what tells two creators with the same
+                      // display name apart — without it they read as one
+                      // creator listed twice. Still hidden when the account
+                      // genuinely has no handle: a bare "@" reads as broken.
                       if (user.handle.isNotEmpty) ...[
                         const SizedBox(height: DesignTokens.s4),
                         Text(

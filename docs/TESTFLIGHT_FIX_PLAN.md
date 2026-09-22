@@ -1,11 +1,32 @@
 # TestFlight Failed Test Points — Fix Plan
 
 Source: `StyleMint_Failed_Test_Points.docx` (QA pass, 22 Sep 2026, iOS/TestFlight).
-Status: **plan only — no code changed yet.**
 
-No Flutter SDK is installed on the machine this plan was written on, so nothing
-here has been compiled or run. Every "verify" step below still needs to happen
-on a machine with Flutter 3.44.0 (`.fvmrc`).
+Status: **implemented** on branch `fix/testflight-qa-2026-09-22` in both
+`stylemint-mobile` and `stylemint-backend`, except SM-015 (not possible on
+iOS) and SM-014 (TikTok portal configuration, no code involved).
+
+**Nothing here has been compiled, analysed or run.** The authoring machine has
+no Flutter SDK and no .NET SDK. Before this goes anywhere near TestFlight:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+flutter analyze
+flutter test
+```
+
+The `build_runner` step is **required, not optional** — `FollowingUserDto`
+gained a `handle` field and generated sources are gitignored, so the app will
+not compile until it runs.
+
+Two corrections to the original triage, found while implementing:
+
+* **SM-007's cause was not the address selection.** See SM-007b below.
+* **The `PageFollowingAsync` cursor is not buggy.** The first draft of this
+  plan claimed `Guid.CompareTo` and PostgreSQL disagree on uuid ordering.
+  They would — but the comparison is translated to SQL, so both the `WHERE`
+  and the `ORDER BY` use Postgres's ordering and agree with each other. No
+  change was made.
 
 ---
 
@@ -404,35 +425,38 @@ search — ship (a) into the next TestFlight build and (b) after.
 
 ## Group 5 — Backend
 
-### SM-007b · Why a valid checkout fails validation
+### SM-007b · Why a valid checkout fails validation — **fixed**
 
-Do this **after** SM-007a, which will probably name the field outright.
+The original hypothesis (address selected in the UI but never PATCHed onto the
+session) turned out to be **wrong**. `placeOrder` in
+`checkout_remote_datasource.dart` PATCHes the address and the payment method
+onto the session immediately before posting `/place`, so both are set.
 
-**Strongest hypothesis.** `PlaceAsync`
-([`CheckoutService.cs:297`](../../stylemint-backend/src/StyleMint.Modules.CartCheckout/Service/CheckoutService/CheckoutService.cs))
-rejects with `ServiceResult.Required(...)` when
-`session.ShippingAddressId is null` or `session.PaymentMethod is null`. Both map
-to `_Validation` on the client.
+The real cause was the last candidate on the original list: **a session left
+in a non-`Draft` status by an earlier attempt.**
 
-Meanwhile the checkout screen renders `_selectedAddress ?? summary.shippingAddress`
-— **local UI state**. If picking an address in the sheet doesn't also
-`PATCH /v1/checkout/sessions/{id}/address` (and likewise
-`/payment-method`), the server session stays null while the UI looks complete.
-That would produce exactly this symptom: a checkout that looks valid and fails
-validation.
+`_sessionId` is a field on the datasource, cleared only on *success*. A place
+that reaches the server moves the session out of `Draft` — to `Placing`, and
+to `Failed` once the saga unwinds — and `PlaceAsync` refuses anything that
+isn't a `Draft`. So the first failure poisoned the session: every retry
+re-posted the same dead id, got `state.invalid_transition` back, and rendered
+it through `failure.runtimeType` as `Order failed: _Validation`. There was no
+way out short of restarting the app, which is why it looked like a checkout
+that simply could not succeed.
 
-**Plan.** Trace the address/payment selection handlers in `checkout_screen.dart`
-and `checkout_notifier.dart` and confirm each selection is persisted to the
-session before Place is callable. Add a guard that disables Place until the
-server session has both.
+`_sessionId` is now dropped on failure too, so the next attempt opens a fresh
+session against the live cart.
 
-**Other candidates if that isn't it:** promo revalidation
-(`RevalidateForCheckoutAsync` → `BusinessRule`), loyalty credit reservation
-failure, an empty frozen cart snapshot, or a session left in a non-`Draft`
-status by an earlier abandoned attempt.
+Scoped deliberately to the place call: the address, payment-method and
+delivery-option calls also resolve `_sessionId`, but none of them move the
+session out of `Draft`, and clearing it there would silently discard a
+delivery choice the customer had already made.
 
-**Also.** Capture the `traceId` from the problem-details response in the client
-log so a failed order can be joined to the server log.
+**Still worth doing.** This is the likeliest cause, not a proven one — no
+failing request was captured. SM-007a ships alongside it, so if something else
+is going on, the next TestFlight pass will name it. Capturing the `traceId`
+from the problem-details body in the client log is still not done, and would
+let a failed order be joined to the server log.
 
 ---
 
@@ -456,24 +480,28 @@ then hides the handle row entirely ("showing a bare `@` reads as broken"). With
 nothing but a display name and an avatar on screen, two distinct creators called
 e.g. "Sarah" are indistinguishable from one creator listed twice.
 
-**Plan — verify in this order.**
-1. `SELECT follower_account_id, followee_account_id, COUNT(*) FROM follows GROUP BY 1,2 HAVING COUNT(*) > 1;`
-   If this returns rows, `ux_follows_edge` was never applied to the deployed
-   database — check the migration history table.
-2. If it returns nothing, compare the `accountId`s in the `GET /v1/follows/me`
-   response for the "duplicate" rows. Different ids confirms the name-collision
-   theory.
-3. **Fix for the name-collision case:** add `Handle` to `AccountSummaryDto` and
-   `FollowingListItemDto`, populate `FollowingUserDto.handle`, and render it —
-   which also removes the stale "backend doesn't carry a handle yet" comment in
-   `following_screen.dart` and improves SM-010's profile navigation.
+**Done.** `AccountSummaryDto` now carries the account's `@handle` (the
+Creator-role handle where there is one, else any active handle),
+`FollowingListItemDto` passes it through, `FollowingUserDto` parses it
+(defaulting to `''`, so an older backend still parses), and the list renders
+it. The stale "backend doesn't carry a handle yet" comment is gone.
 
-**Unrelated bug found while reading this code, worth filing separately.**
-`PageFollowingAsync` orders by `(CreatedUtc, Id)` descending and its cursor
-compares `f.Id.CompareTo(cutId)`. .NET `Guid.CompareTo` and PostgreSQL `uuid`
-ordering are **not the same ordering**, so the cursor can skip or repeat rows at
-page boundaries. It has not bitten yet only because the client never passes a
-cursor.
+**Still verify before closing this one.** The fix assumes these are distinct
+accounts that merely look alike. Confirm that:
+
+1. `SELECT follower_account_id, followee_account_id, COUNT(*) FROM follows GROUP BY 1,2 HAVING COUNT(*) > 1;`
+   If this returns rows, `ux_follows_edge` is missing from the deployed
+   database — check the migration history table. That is a different bug and
+   the handle does not fix it.
+2. If it returns nothing, compare the `accountId`s in the `GET /v1/follows/me`
+   response for the rows that looked duplicated. Different ids confirm the
+   name collision.
+
+**Correction.** An earlier draft of this plan called the `PageFollowingAsync`
+cursor buggy, on the grounds that .NET `Guid.CompareTo` and PostgreSQL `uuid`
+order differently. That is true of the two orderings, but irrelevant here: the
+comparison is translated into SQL, so the `WHERE` and the `ORDER BY` both use
+Postgres's ordering and agree. No change was made.
 
 ---
 
@@ -518,20 +546,40 @@ Recommend (1), with the QA doc's retest line rewritten accordingly.
 
 ---
 
-## Open questions
+## Decisions taken while implementing
 
-1. **SM-006** — which geocoding provider? (Photon / Nominatim / paid.) Blocks
-   the search half of the item.
-2. **SM-003** — should the *first* onboarding step have a Back button, and if
-   so, back to what?
-3. **SM-005** — should the Mall/Reels choice persist across launches, or always
-   reset to Reels on cold start?
-4. **SM-015** — which of the three options above?
-5. **SM-001** — confirm `YBSBPFR23X` is the signing team on the actual
-   TestFlight build, and decide who owns the AASA file going forward (it needs
-   to enter source control).
-6. **SM-002** — approve the single-hidden-field rewrite, or take the
-   zero-width-space fallback?
+These were the open questions. Each was resolved the way this plan
+recommended; reverse any of them if you disagree.
+
+1. **SM-006 geocoder → Photon (Komoot).** No key, no billing, OSM data to
+   match the tiles, and built for autocomplete, which Nominatim's usage policy
+   discourages. It is a free public endpoint with no uptime guarantee —
+   `PlaceSearchService` is the interface to move off it. It is reached through
+   its own `Dio`, never the app's `ApiClient`, so StyleMint's bearer token
+   cannot leak to a third-party host.
+2. **SM-003 first step → no Back button.** `OnboardingBackButton` renders
+   nothing when there is nothing to pop, so Interests (the first post-auth
+   step) shows no control rather than a dead one or a link back to sign-in
+   while already signed in. Steps 2 and 3 get a working Back.
+3. **SM-005 → always resets to Reels.** `homeModeProvider` is not persisted,
+   so the choice holds for the session and every cold start returns to Reels.
+   This is the literal reading of "the first/default page after app launch".
+4. **SM-015 → not implemented.** No code can satisfy it; see below.
+5. **SM-002 → single hidden field.** The zero-width-space fallback was not
+   taken. The rewrite also buys iOS one-time-code autofill and paste.
+
+## Still open
+
+1. **SM-001** — confirm `YBSBPFR23X` is the team the TestFlight build was
+   actually signed with (the value is from the Xcode project; check the
+   distribution provisioning profile). If release signing uses a different
+   team, the file is wrong again in the same way.
+2. **SM-014** — someone with TikTok Developer Portal access has to either add
+   the tester as a sandbox target user or move the app to production.
+3. **SM-015** — which alternative to offer, if any.
+4. **SM-009** — run the duplicate-row query above before closing it.
+5. **SM-006** — `paths: ["*"]` in the AASA accepts every path on the domain
+   into the app; narrow it once universal links are confirmed working.
 
 ---
 
@@ -539,10 +587,25 @@ Recommend (1), with the QA doc's retest line rewritten accordingly.
 
 The QA doc's own checklist (§5) stands. Add to it:
 
+- **Run `build_runner` first.** The app will not compile without it.
 - Passkey retest requires **delete + reinstall**, not just a new build — iOS
-  caches the AASA.
-- Cold-launch timing before/after SM-005, and confirm reels start muted.
+  caches the AASA. Confirm the AASA is actually deployed first:
+  `curl -sD - https://stylemint.voyageritnepal.com/.well-known/apple-app-site-association`
+  should show `200`, `application/json` and the `YBSBPFR23X` prefix in both
+  sections.
+- **Cold-launch cost of SM-005.** Landing on Reels puts the feed's network
+  fetch and video init on the launch path. Time a cold start before and after.
+- **Launch audio.** Playback starts muted and asks for sound once frames are
+  moving, which is existing Reels behaviour — but it now happens on launch
+  rather than when someone chooses Reels. Confirm that is wanted; it was not
+  changed, because muting Reels generally is a different decision.
 - Following list retest should compare **account ids**, not names, when
-  judging SM-009.
-- Re-run the checkout failure once SM-007a is in and record the exact field
-  named in the new error message.
+  judging SM-009 — and the handle should now be visible on each row.
+- SM-007 is fixed on a strong hypothesis, not a captured failure. Re-run
+  checkout and, if it still fails, record the new error message verbatim: it
+  will now name the actual server error instead of `_Validation`.
+- Address map: check that a pin left on the **default** Kathmandu view cannot
+  be saved as an address, that search results move both the pin and the
+  camera, and that a failed search still leaves the pin draggable.
+- Gallery scanning: a valid code, a picture with no code, and a non-StyleMint
+  QR code should each say something different.
