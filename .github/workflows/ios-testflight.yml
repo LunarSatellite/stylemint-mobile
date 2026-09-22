@@ -80,9 +80,11 @@ jobs:
         run: dart run build_runner build
 
       - name: Analyze
-        # A build that ships to testers should at least be free of analyzer
-        # errors. Info-level lints are not gated on.
-        run: flutter analyze lib/
+        # Only ERROR-severity findings gate the build. `flutter analyze`
+        # exits 1 on any finding at all, and this repo carries ~4,700
+        # info-level lints, so without these flags the step fails every
+        # run while claiming there are analyzer errors.
+        run: flutter analyze lib/ --no-fatal-infos --no-fatal-warnings
 
       - name: Test
         run: flutter test

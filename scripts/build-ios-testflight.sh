@@ -96,7 +96,12 @@ fi
 
 # ── 2. checks worth failing on before a 10-minute archive ───
 say "Analyzer"
-flutter analyze lib/ || die "analyzer errors — fix before shipping to testers"
+# `--no-fatal-infos --no-fatal-warnings` is load-bearing. `flutter analyze`
+# exits 1 on ANY finding, info-level lints included, and this repo carries
+# ~4,700 of them. Without these flags the gate fails every single run while
+# reporting "analyzer errors", which is not what happened. Only genuine
+# error-severity findings should stop a build going to testers.
+flutter analyze lib/ --no-fatal-infos --no-fatal-warnings || die "analyzer ERRORS (not lints) - fix before shipping to testers"
 
 say "Tests"
 flutter test || die "tests failed — fix before shipping to testers"
@@ -105,7 +110,11 @@ flutter test || die "tests failed — fix before shipping to testers"
 # App Store Connect rejects a build whose number is not higher than every
 # build already uploaded for this version. pubspec says 1.0.0+1, so the first
 # upload is build 1 and each later one must climb.
-BUILD_NUMBER="${BUILD_NUMBER:-$(date +%Y%m%d%H%M)}"
+# Epoch seconds, not a YYYYMMDDHHMM stamp. CFBundleVersion components must
+# fit in 2^32 (4294967296) or App Store Connect rejects the upload, and a
+# 12-digit datestamp like 202609220755 does not. Epoch is ~1.79e9 today,
+# well under, and still climbs on every build.
+BUILD_NUMBER="${BUILD_NUMBER:-$(date +%s)}"
 say "Building IPA (build number $BUILD_NUMBER)"
 flutter build ipa \
   --release \
