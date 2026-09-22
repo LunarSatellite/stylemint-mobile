@@ -61,7 +61,38 @@ say "Generating code (freezed / json_serializable — gitignored, so required)"
 dart run build_runner build
 
 say "Installing CocoaPods"
-( cd ios && pod install )
+# `pod install` treats Podfile.lock as a hard constraint on transitive pods.
+# When the Dart side moves without the lock following — which happens whenever
+# plugins are bumped on a machine that cannot run CocoaPods, i.e. the Windows
+# desk — a plugin's podspec asks for a newer pod than the lock pins and
+# resolution dies with "could not find compatible versions". Seen with
+# firebase_messaging 16.6.0 wanting Firebase/Messaging 12.18.0 while the
+# committed lock pinned 12.13.0.
+#
+# `--repo-update` does not rescue that: it refreshes the spec repos but still
+# honours the lock. The only thing that re-resolves is removing the lock.
+#
+# So: try the lock first, because reproducing an exact pod set is the whole
+# point of having one. Only if it refuses do we drop it and re-resolve from
+# the plugins' own podspecs, which pubspec.lock already pins.
+if ! ( cd ios && pod install ); then
+  say "Lock is stale — re-resolving pods from the plugin podspecs"
+  (
+    cd ios
+    pod repo update
+    rm -f Podfile.lock
+    pod install
+  ) || die "pod install still failing — read the resolution error above"
+
+  cat <<'EOF'
+
+  ios/Podfile.lock was regenerated. Commit it so nobody hits this again:
+
+      git add ios/Podfile.lock
+      git commit -m "build(ios): refresh Podfile.lock for the current plugins"
+
+EOF
+fi
 
 # ── 2. checks worth failing on before a 10-minute archive ───
 say "Analyzer"
