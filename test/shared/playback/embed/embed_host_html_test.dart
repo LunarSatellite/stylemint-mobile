@@ -187,6 +187,45 @@ void main() {
       );
     });
 
+    // SM-016 (TikTok reels played without audio): TikTok can answer an unMute
+    // with nothing at all. Nothing watched for that, so no refusal was
+    // reported, Dart never learned the reel was silent, and the "Turn sound
+    // on" button — which only appears once a refusal is known — never showed.
+    test('an unanswered unMute is treated as a refusal', () {
+      final ask = section('function ttAskSound()', 'function ttProgress()');
+      expect(ask, contains('ttSoundTimer = setTimeout('));
+      expect(
+        ask,
+        contains('if (ttSound && !ttSoundOk'),
+        reason: 'the timeout must not fire once sound was granted',
+      );
+      expect(
+        ask,
+        contains('ttSoundRefused()'),
+        reason: 'silence takes the same path as an explicit refusal, so the '
+            'reel mutes cleanly and the sound button appears',
+      );
+
+      // Confirmed sound, an explicit refusal, a new player and a torn-down
+      // stage must each cancel it, or a stale timer mutes the next reel.
+      expect(
+        section("case 'onMute':", "case 'onPlayerError':"),
+        contains('ttClearSoundTimer()'),
+      );
+      expect(
+        section('function ttSoundRefused()', 'function ttApply()'),
+        contains('ttClearSoundTimer()'),
+      );
+      expect(
+        section('function ttAssign()', 'function ttReuse()'),
+        contains('ttClearSoundTimer()'),
+      );
+      expect(
+        section('function clearStage()', '// [byViewer]'),
+        contains('ttClearSoundTimer()'),
+      );
+    });
+
     test('error 3002 carries on muted at once, in one step', () {
       expect(
         section("case 'onPlayerError':", '// 1001 invalid video'),

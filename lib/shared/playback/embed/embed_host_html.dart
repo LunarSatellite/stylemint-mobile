@@ -209,6 +209,12 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   // a second chance should a play message be lost; a pre-loaded one does not.
   var tt = null, ttId = null, ttReady = false, ttPlaying = false, ttStarted = false, ttFailed = false;
   var ttSound = false, ttSoundOk = false, ttTime = null, ttTimeSeen = false;
+  var ttSoundTimer = null;
+
+  // How long to wait for TikTok to answer an unMute before treating silence
+  // as a refusal. Long enough for a round trip on a slow connection, short
+  // enough that a reel does not play most of its length in silence.
+  var TT_SOUND_TIMEOUT = 1500;
   var TT_STATES = {'-1': 'init', '0': 'ended', '1': 'playing', '2': 'paused', '3': 'buffering'};
 
   function ttSend(type, value) {
@@ -230,10 +236,30 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     ttSend('play');
   }
 
+  function ttClearSoundTimer() {
+    if (ttSoundTimer !== null) { clearTimeout(ttSoundTimer); ttSoundTimer = null; }
+  }
+
   function ttAskSound() {
     if (cur.muted || !cur.wantPlay || ttSound) return;
     ttSound = true;
     ttSend('unMute');
+    // TikTok answers an unMute one of three ways: onMute{value:false},
+    // error 3002, or a pause. It can also answer none of them, and there was
+    // nothing watching for that: ttSound stayed true, no refusal was ever
+    // reported, so Dart never learned the reel was silent and the "Turn
+    // sound on" button -- which only appears once a refusal is known --
+    // never rendered. The reel played its whole length in silence with no
+    // way for the viewer to do anything about it.
+    //
+    // Treat silence as a refusal. That mutes cleanly and surfaces the
+    // button, so sound is one tap away, and that tap is a real user gesture,
+    // which is what the platform wanted in the first place.
+    ttClearSoundTimer();
+    ttSoundTimer = setTimeout(function () {
+      ttSoundTimer = null;
+      if (ttSound && !ttSoundOk && cur.platform === 'tiktok') ttSoundRefused();
+    }, TT_SOUND_TIMEOUT);
   }
 
   // The frames are moving for the reel on screen: tell Dart once, then ask
@@ -246,6 +272,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   // TikTok would not play with sound: carry on muted at once, in one step.
   // A refusal while already muted is retried only once per reel.
   function ttSoundRefused() {
+    ttClearSoundTimer();
     var retry = ttSound || !cur.refusedMuted;
     if (!ttSound) cur.refusedMuted = true;
     cur.muted = true;
@@ -290,6 +317,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     stage.appendChild(frame);
     tt = frame;
     ttId = cur.id;
+    ttClearSoundTimer();
     ttReady = false; ttPlaying = false; ttStarted = false; ttFailed = false;
     ttSound = false; ttSoundOk = false; ttTime = null;
   }
@@ -347,7 +375,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
       case 'onMute':
         // Only this page changes the player's sound (the viewer cannot reach
         // its controls), so this confirms a request rather than reporting one.
-        if (!data.value && ttSound) ttSoundOk = true;
+        if (!data.value && ttSound) { ttSoundOk = true; ttClearSoundTimer(); }
         break;
       case 'onPlayerError':
         var code = data.value && data.value.errorCode;
@@ -459,6 +487,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   function clearStage() {
     if (yt && yt.destroy) { try { yt.destroy(); } catch (e) {} }
     clearTimeout(fbWatchdog);
+    ttClearSoundTimer();
     stage.innerHTML = '';
     yt = null; ytReady = false; ytVideoId = null; fbPlayer = null;
     tt = null; ttId = null; ttReady = false; ttPlaying = false; ttStarted = false; ttFailed = false;
