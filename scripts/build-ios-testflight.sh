@@ -40,8 +40,15 @@ command -v xcodebuild >/dev/null || die "Xcode command line tools are missing: x
 xcodebuild -version >/dev/null 2>&1 || die "xcodebuild refused to run — open Xcode once and accept the licence"
 
 say "Toolchain"
-flutter --version | head -1
-xcodebuild -version | head -1
+# Captured into variables rather than piped into `head`. Flutter writes its
+# version-freshness notice to stdout asynchronously, so `flutter --version |
+# head -1` lets head exit first, closes the pipe under the writer, and
+# Flutter dies with an unhandled FileSystemException: Broken pipe. Under
+# `set -o pipefail` that kills this script before it does anything.
+FLUTTER_VERSION_LINE=$(flutter --version 2>/dev/null | sed -n '1p' || true)
+XCODE_VERSION_LINE=$(xcodebuild -version 2>/dev/null | sed -n '1p' || true)
+echo "${FLUTTER_VERSION_LINE:-flutter: version unknown}"
+echo "${XCODE_VERSION_LINE:-xcodebuild: version unknown}"
 
 # ── 1. dependencies ─────────────────────────────────────────
 say "Resolving Dart dependencies"
@@ -77,7 +84,10 @@ flutter build ipa \
 # Deliberately not `IPA=$(...) || die`: the exit status of an assignment is
 # the pipeline's, and the pipeline ends in `head`, which succeeds even when
 # the glob matched nothing. The emptiness check is the one that works.
-IPA=$(ls build/ios/ipa/*.ipa 2>/dev/null | head -1)
+# `|| true` matters under `set -e` with `pipefail`: when the glob matches
+# nothing, ls exits non-zero, the assignment inherits that, and the script
+# would exit silently instead of reaching the message below.
+IPA=$(ls build/ios/ipa/*.ipa 2>/dev/null | head -1 || true)
 [ -n "$IPA" ] || die "no .ipa produced — check the archive log above"
 
 say "Built $IPA"
