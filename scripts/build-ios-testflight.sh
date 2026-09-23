@@ -82,12 +82,51 @@ say "Installing CocoaPods"
 # for a newer pod than the lock pins and resolution dies. `--repo-update` does
 # not rescue that — it refreshes the spec repos but still honours the lock.
 # Removing the lock is the only thing that re-resolves.
-if ! ( cd ios && pod install ); then
-  say "Lock is stale — re-resolving pods from the plugin podspecs"
-  ( cd ios && pod repo update && rm -f Podfile.lock && pod install ) \
-    || die "pod install still failing — read the resolution error above"
-  say "ios/Podfile.lock was regenerated — commit it"
+#
+# But that recovery is only correct for a RESOLUTION failure. An earlier
+# version retried on any non-zero exit, and a crash unrelated to resolution
+# (CocoaPods aborting on an ASCII-8BIT locale, see the LANG export above) was
+# read as "stale lock" and deleted Podfile.lock on its way out. The output is
+# matched for CocoaPods' own resolution-conflict wording, and anything else
+# stops the build with its error intact.
+POD_LOG="$(mktemp -t podinstall)"
+# The status wanted is pod's, not tee's, so PIPESTATUS is read rather than $?.
+# `set -o pipefail` would also surface it here, but only by accident of pod
+# being the sole failing stage; PIPESTATUS says which stage is meant. The
+# pipeline is guarded because `set -e` would otherwise abort on pod's failure
+# before the recovery below can look at it.
+set +e
+( cd ios && pod install ) 2>&1 | tee "$POD_LOG"
+POD_STATUS=${PIPESTATUS[0]}
+set -e
+
+if [ "$POD_STATUS" -ne 0 ]; then
+  if grep -qiE 'could not find compatible versions|unable to satisfy the following requirements|required a higher minimum deployment target|was resolved to' "$POD_LOG"; then
+    say "Lock is stale — re-resolving pods from the plugin podspecs"
+    # The lock is moved aside, not deleted: if the re-resolve also fails, the
+    # committed lock is put back so a failed build never leaves the tree worse
+    # than it found it.
+    # A bare `[ -f x ] && cp ...` would be the last command of the branch and
+    # return 1 when the lock is absent, which `set -e` turns into an exit.
+    LOCK_BACKUP="$(mktemp -t Podfile.lock)"
+    if [ -f ios/Podfile.lock ]; then
+      cp ios/Podfile.lock "$LOCK_BACKUP"
+    fi
+    if ( cd ios && pod repo update && rm -f Podfile.lock && pod install ); then
+      say "ios/Podfile.lock was regenerated — commit it"
+    else
+      if [ -s "$LOCK_BACKUP" ]; then
+        cp "$LOCK_BACKUP" ios/Podfile.lock
+        say "re-resolve failed; ios/Podfile.lock restored"
+      fi
+      die "pod install still failing — read the resolution error above"
+    fi
+  else
+    die "pod install failed for a reason that is not a stale lock — see above. \
+Podfile.lock was left alone."
+  fi
 fi
+rm -f "$POD_LOG"
 
 # ── 2. checks ───────────────────────────────────────────────
 if [ "$SKIP_CHECKS" = true ]; then
