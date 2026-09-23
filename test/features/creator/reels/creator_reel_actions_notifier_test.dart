@@ -62,11 +62,11 @@ class _FakeRepository implements CreatorReelsRepository {
       networkLeft(const NetworkExceptions.unexpectedError());
 
   @override
-  Future<NetworkEither<List<CreatorReelSummary>>> listCreatorReels({
-    String sortBy = 'publishedAt',
-    String order = 'desc',
-    int limit = 6,
-  }) async => networkRight(const <CreatorReelSummary>[]);
+  Future<NetworkEither<CreatorReelsSummaryPage>> listCreatorReels({
+    int pageSize = 6,
+  }) async => networkRight(
+    const CreatorReelsSummaryPage(items: <CreatorReelSummary>[], totalCount: 0),
+  );
 
   @override
   Future<NetworkEither<List<ReelProductTag>>> listTaggedProducts(

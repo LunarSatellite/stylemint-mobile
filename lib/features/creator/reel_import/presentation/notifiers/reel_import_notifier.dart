@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/creator/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/content_freshness.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/repositories/reel_import_repository.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 
 part 'reel_import_notifier.freezed.dart';
@@ -354,9 +357,29 @@ class ReelSubmitFailure extends ReelSubmitState {
   final String message;
 }
 
-class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
-  ReelSubmitNotifier(this._repository) : super(ReelSubmitIdle());
+/// Marks everything that counts the creator's reels as stale.
+///
+/// The dashboard notifier loads once in its constructor and is an app-lifetime
+/// singleton, so after an import it kept showing the count from whenever the
+/// dashboard was first built — the creator had to pull-to-refresh to see their
+/// own reel appear. The recent-reels strip has the same problem: it is
+/// autoDispose, but stays alive while the dashboard is on screen.
+///
+/// Called on every path that adds a reel, single or bulk.
+void invalidateCreatorReelCounts(Ref ref) {
+  // load() rather than invalidate(): this notifier is not autoDispose, so
+  // invalidating it would rebuild and re-fetch anyway — load() is the same
+  // work without discarding the state currently on screen mid-flight.
+  unawaited(ref.read(creatorDashboardNotifierProvider.notifier).load());
+  ref.invalidate(creatorReelsPageProvider);
+  ref.invalidate(creatorReelSummariesProvider);
+  ref.invalidate(creatorReelCountProvider);
+}
 
+class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
+  ReelSubmitNotifier(this._ref, this._repository) : super(ReelSubmitIdle());
+
+  final Ref _ref;
   final ReelImportRepository _repository;
 
   /// [caption] is the StyleMint caption composed on the Review screen; it is
@@ -377,6 +400,9 @@ class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
         orElse: () => false,
       );
       if (alreadyImported) {
+        // It is already one of theirs, so whatever the dashboard is showing
+        // may still be out of date.
+        invalidateCreatorReelCounts(_ref);
         state = ReelSubmitSuccess(null);
         return;
       }
@@ -402,10 +428,14 @@ class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
     );
     if (publishResult.isLeft()) {
       final failure = publishResult.getLeft().toNullable()!;
+      // The reel exists as a draft even though publishing failed, so the
+      // dashboard is stale either way.
+      invalidateCreatorReelCounts(_ref);
       state = ReelSubmitFailure(NetworkExceptions.getMessage(failure));
       return;
     }
 
+    invalidateCreatorReelCounts(_ref);
     state = ReelSubmitSuccess(importedReel.id);
   }
 }
@@ -427,13 +457,18 @@ class BulkImportFailure extends BulkImportState {
 }
 
 class BulkImportNotifier extends StateNotifier<BulkImportState> {
-  BulkImportNotifier(this._repository) : super(BulkImportIdle());
+  BulkImportNotifier(this._ref, this._repository) : super(BulkImportIdle());
+  final Ref _ref;
   final ReelImportRepository _repository;
 
   Future<void> submit(List<ImportableReel> reels) async {
     if (reels.isEmpty) return;
     state = BulkImportInProgress();
     final either = await _repository.importBulk(reels);
+    // A bulk import reports per-item results, so even a page that "failed"
+    // overall can have added reels. Refresh either way rather than reasoning
+    // about partial success here.
+    invalidateCreatorReelCounts(_ref);
     state = either.fold(
       (failure) => BulkImportFailure(NetworkExceptions.getMessage(failure)),
       BulkImportSuccess.new,

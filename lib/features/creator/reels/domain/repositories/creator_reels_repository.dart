@@ -8,10 +8,13 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities
 abstract class CreatorReelsRepository {
   Future<NetworkEither<CreatorReelDetail>> getReelDetail(String reelId);
 
-  Future<NetworkEither<List<CreatorReelSummary>>> listCreatorReels({
-    String sortBy = 'publishedAt',
-    String order = 'desc',
-    int limit = 6,
+  /// The creator's own reels — drafts included — plus their true total across
+  /// every page.
+  ///
+  /// The endpoint has no sort or limit parameters; [pageSize] is what it
+  /// takes. `sortBy`/`order`/`limit` used to be sent and silently ignored.
+  Future<NetworkEither<CreatorReelsSummaryPage>> listCreatorReels({
+    int pageSize = 6,
   });
 
   Future<NetworkEither<PostPublishReport>> getPostPublishReport(String reelId);

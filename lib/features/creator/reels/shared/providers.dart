@@ -18,9 +18,12 @@ Future<void> deleteCreatorReel(WidgetRef ref, String reelId) async {
       .read(creatorReelsRepositoryProvider)
       .deleteReel(reelId);
   if (result.isRight()) {
-    ref.invalidate(creatorReelSummariesProvider(('publishedAt', 'asc')));
-    ref.invalidate(creatorReelSummariesProvider(('publishedAt', 'desc')));
-    ref.invalidate(creatorReelSummariesProvider(('views', 'desc')));
+    // The whole family, so no page size is left holding the deleted reel —
+    // this used to list three (sortBy, order) keys by hand, which stopped
+    // being the shape of the key and would have quietly missed others.
+    ref.invalidate(creatorReelsPageProvider);
+    ref.invalidate(creatorReelSummariesProvider);
+    ref.invalidate(creatorReelCountProvider);
   }
 }
 
@@ -59,21 +62,37 @@ final creatorReelDetailProvider = FutureProvider.autoDispose
       ),
     );
 
-// ── Reel list (auto-disposed, keyed by (sortBy, order)) ───────────────────────
-// sortBy: 'publishedAt' | 'views'   order: 'asc' | 'desc'
+// ── Reel list (auto-disposed, keyed by page size) ─────────────────────────────
+// The endpoint has no sort parameters — it always answers in cursor order —
+// so the old (sortBy, order) key selected between identical requests.
 
 // ignore: specify_nonobvious_property_types
-final creatorReelSummariesProvider = FutureProvider.autoDispose
-    .family<List<CreatorReelSummary>, (String sortBy, String order)>(
-      (ref, args) async => _orThrow(
+final creatorReelsPageProvider = FutureProvider.autoDispose
+    .family<CreatorReelsSummaryPage, int>(
+      (ref, pageSize) async => _orThrow(
         await ref
             .watch(creatorReelsRepositoryProvider)
-            .listCreatorReels(
-              sortBy: args.$1,
-              order: args.$2,
-            ),
+            .listCreatorReels(pageSize: pageSize),
       ),
     );
+
+/// Just the reels of [creatorReelsPageProvider], for the lists that do not
+/// care about the total.
+// ignore: specify_nonobvious_property_types
+final creatorReelSummariesProvider = FutureProvider.autoDispose
+    .family<List<CreatorReelSummary>, int>(
+      (ref, pageSize) async =>
+          (await ref.watch(creatorReelsPageProvider(pageSize).future)).items,
+    );
+
+/// The creator's total reel count, drafts included. Used for the dashboard
+/// stat, which cannot be derived from the analytics overview — see
+/// [CreatorReelsSummaryPage].
+// ignore: specify_nonobvious_property_types
+final creatorReelCountProvider = FutureProvider.autoDispose<int>(
+  (ref) async =>
+      (await ref.watch(creatorReelsPageProvider(1).future)).totalCount,
+);
 
 // ── Tagged products for a reel (auto-disposed, keyed by reelId) ───────────────
 

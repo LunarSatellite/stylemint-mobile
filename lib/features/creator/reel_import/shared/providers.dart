@@ -69,12 +69,12 @@ final suggestedProductsNotifierProvider =
 
 final reelSubmitNotifierProvider =
     StateNotifierProvider.autoDispose<ReelSubmitNotifier, ReelSubmitState>(
-      (ref) => ReelSubmitNotifier(ref.watch(reelImportRepositoryProvider)),
+      (ref) => ReelSubmitNotifier(ref, ref.watch(reelImportRepositoryProvider)),
     );
 
 final bulkImportNotifierProvider =
     StateNotifierProvider.autoDispose<BulkImportNotifier, BulkImportState>(
-      (ref) => BulkImportNotifier(ref.watch(reelImportRepositoryProvider)),
+      (ref) => BulkImportNotifier(ref, ref.watch(reelImportRepositoryProvider)),
     );
 
 final reelIntentNotifierProvider =

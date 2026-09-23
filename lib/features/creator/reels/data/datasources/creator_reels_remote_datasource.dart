@@ -3,6 +3,14 @@ import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/models/creator_reel_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/models/creator_reel_summary_dto.dart';
 
+/// One page of the creator's own reels, plus the total across all pages.
+class CreatorReelsPage {
+  const CreatorReelsPage({required this.items, required this.totalCount});
+
+  final List<CreatorReelSummaryDto> items;
+  final int totalCount;
+}
+
 class CreatorReelsRemoteDataSource {
   CreatorReelsRemoteDataSource({required this.apiClient});
 
@@ -13,24 +21,28 @@ class CreatorReelsRemoteDataSource {
     return CreatorReelDetailDto.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<List<CreatorReelSummaryDto>> listCreatorReels({
-    String sortBy = 'publishedAt',
-    String order = 'desc',
-    int limit = 6,
-  }) async {
+  /// `GET /v1/creator/reels` — the creator's own reels, drafts included.
+  ///
+  /// The endpoint takes `cursor` and `pageSize`; it has no `sortBy`/`order`
+  /// and no `limit`. Those were being sent and silently ignored, so a request
+  /// for 6 reels "newest first" came back as the server's default page in
+  /// cursor order. [pageSize] is the real parameter.
+  Future<CreatorReelsPage> listCreatorReels({int pageSize = 6}) async {
     final response = await apiClient.get(
       '/v1/creator/reels',
-      queryParameters: {
-        'sortBy': sortBy,
-        'order': order,
-        'limit': limit,
-      },
+      queryParameters: {'pageSize': pageSize},
     );
-    final items = (response['items'] as List<dynamic>? ?? const [])
+    final body = response as Map<String, dynamic>? ?? const {};
+    final items = (body['items'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(CreatorReelSummaryDto.fromJson)
         .toList(growable: false);
-    return items;
+    return CreatorReelsPage(
+      items: items,
+      // The creator's true reel total, across every page — not the length of
+      // whatever this page happened to return.
+      totalCount: (body['totalCount'] as num?)?.toInt() ?? items.length,
+    );
   }
 
   Future<void> publishReel(String reelId, String idempotencyKey) async {

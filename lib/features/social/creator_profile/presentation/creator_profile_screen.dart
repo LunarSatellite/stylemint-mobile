@@ -85,6 +85,10 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   bool _expanded = false;
   int _reelFilter = 1;
 
+  /// Reels fetched for the grid. The filter below sorts this page rather than
+  /// the whole catalogue — the endpoint has no sort parameter to push it to.
+  static const int _reelPageSize = 24;
+
   void _showBadgesSheet() {
     final showcased = ref.watch(showcasedBadgesProvider);
     if (showcased.isEmpty) return;
@@ -786,14 +790,42 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     );
   }
 
+  /// Oldest / newest / most viewed, applied here.
+  ///
+  /// These used to be sent to `GET /v1/creator/reels` as `sortBy`/`order`,
+  /// which that endpoint does not accept — it answers in cursor order and
+  /// ignored them, so every filter returned the same list in the same order
+  /// and the control did nothing. It has no sort parameter to use instead, so
+  /// the page that comes back is ordered here.
+  List<CreatorReelSummary> _sorted(
+    List<CreatorReelSummary> reels,
+  ) {
+    final sorted = [...reels];
+    switch (_reelFilter) {
+      case 0: // Oldest first. Reels with no publish date are drafts: last.
+        sorted.sort(
+          (a, b) => (a.publishedAtUtc ?? _farFuture).compareTo(
+            b.publishedAtUtc ?? _farFuture,
+          ),
+        );
+      case 2: // Most viewed.
+        sorted.sort((a, b) => b.views.compareTo(a.views));
+      default: // Newest first; drafts last.
+        sorted.sort(
+          (a, b) => (b.publishedAtUtc ?? _farPast).compareTo(
+            a.publishedAtUtc ?? _farPast,
+          ),
+        );
+    }
+    return sorted;
+  }
+
+  static final DateTime _farFuture = DateTime.utc(9999);
+  static final DateTime _farPast = DateTime.utc(1970);
+
   Widget _reelsSection() {
-    final (sortBy, order) = switch (_reelFilter) {
-      0 => ('publishedAt', 'asc'),
-      2 => ('views', 'desc'),
-      _ => ('publishedAt', 'desc'),
-    };
     final reelsAsync = ref.watch(
-      reels_providers.creatorReelSummariesProvider((sortBy, order)),
+      reels_providers.creatorReelSummariesProvider(_reelPageSize),
     );
 
     return Padding(
@@ -858,7 +890,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
               childAspectRatio: 0.78,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              children: reels.map((r) => _ReelCard(reel: r)).toList(),
+              children: _sorted(
+                reels,
+              ).map((r) => _ReelCard(reel: r)).toList(),
             ),
           ),
         ],

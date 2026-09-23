@@ -29,17 +29,14 @@ class CreatorReelsRepositoryImpl implements CreatorReelsRepository {
       });
 
   @override
-  Future<NetworkEither<List<CreatorReelSummary>>> listCreatorReels({
-    String sortBy = 'publishedAt',
-    String order = 'desc',
-    int limit = 6,
+  Future<NetworkEither<CreatorReelsSummaryPage>> listCreatorReels({
+    int pageSize = 6,
   }) => _guard(() async {
-    final dtos = await remoteDataSource.listCreatorReels(
-      sortBy: sortBy,
-      order: order,
-      limit: limit,
+    final page = await remoteDataSource.listCreatorReels(pageSize: pageSize);
+    return CreatorReelsSummaryPage(
+      items: page.items.map((d) => d.toDomain()).toList(growable: false),
+      totalCount: page.totalCount,
     );
-    return dtos.map((d) => d.toDomain()).toList(growable: false);
   });
 
   @override

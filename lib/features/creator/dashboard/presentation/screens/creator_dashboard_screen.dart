@@ -81,7 +81,17 @@ class _CreatorDashboardView extends ConsumerWidget {
         firstName: firstName,
         accountId: accountId,
         avatarUrl: profile?.avatarUrl,
-        onRefresh: () => ref.read(creatorDashboardNotifierProvider.notifier).load(),
+        // Pull-to-refresh has to refresh everything on the page, not just the
+        // analytics overview — the reel count and the recent strip come from
+        // a different endpoint.
+        onRefresh: () {
+          unawaited(
+            ref.read(creatorDashboardNotifierProvider.notifier).load(),
+          );
+          ref.invalidate(creatorReelsPageProvider);
+          ref.invalidate(creatorReelSummariesProvider);
+          ref.invalidate(creatorReelCountProvider);
+        },
       ),
       loadFailure: (_) => SmErrorView(
         title: 'Could not load your dashboard',
@@ -170,7 +180,10 @@ class _BecomeCreatorCta extends StatelessWidget {
 
 // ── Dashboard content ─────────────────────────────────────────────────────────
 
-class _DashboardContent extends StatelessWidget {
+// ConsumerWidget so the reel count can be read here: it comes from the
+// creator's own reel list, not from the analytics overview this widget is
+// handed.
+class _DashboardContent extends ConsumerWidget {
   const _DashboardContent({
     required this.dashboard,
     required this.onRefresh,
@@ -186,7 +199,7 @@ class _DashboardContent extends StatelessWidget {
   final String? avatarUrl;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return RefreshIndicator(
       color: DesignTokens.primaryGreen,
       onRefresh: () async => onRefresh(),
@@ -215,9 +228,14 @@ class _DashboardContent extends StatelessWidget {
             const SizedBox(height: DesignTokens.s16),
             const _ReelStudioQuickAction(),
             const SizedBox(height: DesignTokens.s16),
+            // `topReels` is the analytics overview's top performers — capped
+            // server-side and scoped to the selected window — so using its
+            // length as the reel count meant a freshly imported reel with no
+            // views never moved the number. The count comes from the creator's
+            // own paged reel list, which carries a real total.
             _StatsSection(
               sales: dashboard.totalSales,
-              reels: dashboard.topReels.length,
+              reels: ref.watch(creatorReelCountProvider).valueOrNull,
               totalViews: dashboard.totalViews,
             ),
             const SizedBox(height: DesignTokens.s24),
@@ -566,7 +584,11 @@ class _StatsSection extends StatelessWidget {
   });
 
   final int sales;
-  final int reels;
+
+  /// Null while the count is still loading — rendered as an em dash rather
+  /// than a confident 0, which would read as "you have no reels".
+  final int? reels;
+
   final int totalViews;
 
   @override
@@ -587,7 +609,7 @@ class _StatsSection extends StatelessWidget {
               child: _StatCard(
                 imagePath: 'assets/images/creatordash/person-heart-outline-rounded.png',
                 label: 'Reels',
-                value: '$reels',
+                value: reels == null ? '—' : '$reels',
               ),
             ),
             const SizedBox(width: DesignTokens.s8),
@@ -1490,8 +1512,9 @@ class _MyRecentReels extends ConsumerWidget {
     );
   }
 
-  /// Most recent first — the provider is keyed by (sortBy, order).
-  static const _recent = ('publishedAt', 'desc');
+  /// How many reels the strip asks for. The endpoint has no sort parameter —
+  /// it answers in cursor order — so the key is just the page size.
+  static const _recent = 6;
 }
 
 class _MyReelTile extends StatelessWidget {
