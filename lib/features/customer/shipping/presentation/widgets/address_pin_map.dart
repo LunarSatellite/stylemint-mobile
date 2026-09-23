@@ -302,7 +302,6 @@ class AddressPinMap extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AddressPlaceSearchField(
-          near: (latitude: latitude, longitude: longitude),
           onSelected: (result) =>
               onPinMoved(result.latitude, result.longitude),
         ),
@@ -338,16 +337,9 @@ class AddressPinMap extends ConsumerWidget {
 /// Debounced rather than fired per keystroke: every letter is a request to a
 /// free public endpoint, and the shopper is typing an address, not browsing.
 class AddressPlaceSearchField extends ConsumerStatefulWidget {
-  const AddressPlaceSearchField({
-    required this.onSelected,
-    this.near,
-    super.key,
-  });
+  const AddressPlaceSearchField({required this.onSelected, super.key});
 
   final ValueChanged<PlaceResult> onSelected;
-
-  /// Where the map is looking, so results near it rank first.
-  final ({double latitude, double longitude})? near;
 
   @override
   ConsumerState<AddressPlaceSearchField> createState() =>
@@ -394,7 +386,7 @@ class _AddressPlaceSearchFieldState
     try {
       final results = await ref
           .read(placeSearchServiceProvider)
-          .search(query, near: widget.near);
+          .search(query);
       if (!mounted || id != _requestId) return;
       setState(() {
         _results = results;

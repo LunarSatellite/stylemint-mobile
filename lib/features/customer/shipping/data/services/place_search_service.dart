@@ -30,12 +30,17 @@ class PlaceResult {
 /// widget tests without any network at all — the same way
 /// `locationCaptureServiceProvider` stands in for GPS.
 abstract interface class PlaceSearchService {
-  /// Best matches for [query], biased toward [near] when it is given. Returns
-  /// an empty list for a query too short to be worth sending.
-  Future<List<PlaceResult>> search(
-    String query, {
-    ({double latitude, double longitude})? near,
-  });
+  /// Best matches for [query]. Returns an empty list for a query too short to
+  /// be worth sending.
+  ///
+  /// Deliberately takes no location to bias the results with. An earlier
+  /// version passed the map's centre as `lat`/`lon`, which put where the
+  /// shopper is standing into a query string sent to a third-party geocoder,
+  /// and so into that operator's access logs. Where someone lives may travel
+  /// in a request body to our own backend and nowhere else — see
+  /// test/features/customer/shipping/address_coordinate_containment_test.dart.
+  /// Ranking is a little worse for it; that is the trade being made.
+  Future<List<PlaceResult>> search(String query);
 }
 
 /// Raised when the geocoder could not be reached or answered with something
@@ -89,10 +94,7 @@ class PhotonPlaceSearchService implements PlaceSearchService {
   static const int minQueryLength = 3;
 
   @override
-  Future<List<PlaceResult>> search(
-    String query, {
-    ({double latitude, double longitude})? near,
-  }) async {
+  Future<List<PlaceResult>> search(String query) async {
     final trimmed = query.trim();
     if (trimmed.length < minQueryLength) return const <PlaceResult>[];
 
@@ -100,14 +102,7 @@ class PhotonPlaceSearchService implements PlaceSearchService {
     try {
       response = await _dio.get<dynamic>(
         _endpoint,
-        queryParameters: <String, dynamic>{
-          'q': trimmed,
-          'limit': _limit,
-          // Bias toward what is already on screen, so "main street" finds the
-          // one the shopper is looking at, not one on another continent.
-          if (near != null) 'lat': near.latitude,
-          if (near != null) 'lon': near.longitude,
-        },
+        queryParameters: <String, dynamic>{'q': trimmed, 'limit': _limit},
       );
     } on Object catch (_) {
       throw const PlaceSearchException();
