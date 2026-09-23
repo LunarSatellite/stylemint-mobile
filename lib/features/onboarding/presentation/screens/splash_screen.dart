@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/onboarding/presentation/widgets/splash_reel_wall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -42,6 +43,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     duration: const Duration(milliseconds: 2200),
   );
 
+  /// The reel wall's scroll. Slow on purpose — this is a backdrop, and the
+  /// splash only holds for [_hold].
+  late final AnimationController _drift = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 24),
+  );
+
   late final Animation<double> _lit = CurvedAnimation(
     parent: _intro,
     curve: const Interval(0, 0.7, curve: Curves.easeInOutCubic),
@@ -53,6 +61,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _tagline = CurvedAnimation(
     parent: _intro,
     curve: const Interval(0.6, 1, curve: Curves.easeOutCubic),
+  );
+
+  /// The wall comes up first and stops well short of full: it is a backdrop,
+  /// and the logo has to stay the thing you look at.
+  late final Animation<double> _wallFade = Tween<double>(
+    begin: 0,
+    end: 0.45,
+  ).animate(
+    CurvedAnimation(
+      parent: _intro,
+      curve: const Interval(0, 0.5, curve: Curves.easeOut),
+    ),
   );
 
   bool _started = false;
@@ -71,9 +91,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
       _intro.value = 1;
       _lap.value = 0.1;
+      // The wall draws nothing under reduced motion, so it is not started.
     } else {
       unawaited(_intro.forward());
       unawaited(_lap.repeat());
+      unawaited(_drift.repeat());
     }
   }
 
@@ -87,76 +109,97 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void dispose() {
     _intro.dispose();
     _lap.dispose();
+    _drift.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Semantics(
-              label: 'StyleMint',
-              image: true,
-              child: SizedBox.square(
-                dimension: 188,
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.92, end: 1).animate(_lit),
-                  child: SmLuminousMark(
-                    lap: _lap,
-                    brightness: _lit,
-                    halo: true,
-                  ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          SplashReelWall(drift: _drift, fade: _wallFade),
+          // Holds the wall back to a backdrop rather than a competing
+          // surface, and guarantees contrast for the wordmark whatever the
+          // cards behind it happen to be.
+          const IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  radius: 0.9,
+                  colors: [Color(0xF0000000), Color(0xC0000000)],
                 ),
               ),
             ),
-            const SizedBox(height: DesignTokens.s32),
-            FadeTransition(
-              opacity: _wordmark,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.3),
-                  end: Offset.zero,
-                ).animate(_wordmark),
-                child: const Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'Style',
-                        style: TextStyle(color: DesignTokens.textWhite),
+          ),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Semantics(
+                  label: 'StyleMint',
+                  image: true,
+                  child: SizedBox.square(
+                    dimension: 188,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.92, end: 1).animate(_lit),
+                      child: SmLuminousMark(
+                        lap: _lap,
+                        brightness: _lit,
+                        halo: true,
                       ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s32),
+                FadeTransition(
+                  opacity: _wordmark,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.3),
+                      end: Offset.zero,
+                    ).animate(_wordmark),
+                    child: const Text.rich(
                       TextSpan(
-                        text: 'Mint',
-                        style: TextStyle(color: DesignTokens.primaryGreen),
+                        children: [
+                          TextSpan(
+                            text: 'Style',
+                            style: TextStyle(color: DesignTokens.textWhite),
+                          ),
+                          TextSpan(
+                            text: 'Mint',
+                            style: TextStyle(color: DesignTokens.primaryGreen),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 36,
-                    height: 1,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -1,
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 36,
+                        height: 1,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -1,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s12),
-            FadeTransition(
-              opacity: _tagline,
-              child: Text(
-                'Shop, Create, Sell, All in Reels',
-                textAlign: TextAlign.center,
-                style: DesignTokens.sectionInnerTitle.copyWith(
-                  color: DesignTokens.textMuted,
+                const SizedBox(height: DesignTokens.s12),
+                FadeTransition(
+                  opacity: _tagline,
+                  child: Text(
+                    'Shop, Create, Sell, All in Reels',
+                    textAlign: TextAlign.center,
+                    style: DesignTokens.sectionInnerTitle.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

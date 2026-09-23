@@ -1,8 +1,11 @@
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter_web_browser/flutter_web_browser.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
@@ -157,7 +160,33 @@ class _SignInMethodSelectionScreenState
       );
       return;
     }
-    await FlutterWebBrowser.openWebPage(url: url);
+
+    // url_launcher, not FlutterWebBrowser: the provider sends the browser to
+    // `stylemint://oauth-callback?...`, the app signs in underneath, and then
+    // the browser has to be dismissed — and `closeInAppWebView()` can only
+    // close a browser url_launcher itself opened. Opened through
+    // FlutterWebBrowser it stayed on top of the app forever, still showing the
+    // provider's page, which is indistinguishable from sign-in not working.
+    // Same call the social-connect flow already uses for the same round trip.
+    try {
+      final launched = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.inAppBrowserView,
+      );
+      if (!launched && mounted) {
+        SmSnackbar.error(
+          context,
+          'Could not open the $provider sign-in page.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        SmSnackbar.error(
+          context,
+          'Could not open the $provider sign-in page.',
+        );
+      }
+    }
   }
 
   @override
@@ -601,9 +630,34 @@ class _DisplayNameSheetState extends State<_DisplayNameSheet> {
   }
 }
 
-/// Footer with Terms & Conditions / Privacy Policy green links.
-class _Footer extends StatelessWidget {
+/// Footer with Terms & Conditions / Privacy Policy links.
+///
+/// These were styled green to read as links but carried no recognizer, so
+/// nothing happened when they were tapped — the documents were reachable only
+/// from Settings, after signing in, which is exactly backwards for text that
+/// says "by continuing you agree". Both routes are public, so they open
+/// signed out.
+class _Footer extends StatefulWidget {
   const _Footer();
+
+  @override
+  State<_Footer> createState() => _FooterState();
+}
+
+class _FooterState extends State<_Footer> {
+  // Recognizers hold gesture state, so they are owned by the State and
+  // disposed with it rather than rebuilt on every frame.
+  late final TapGestureRecognizer _terms = TapGestureRecognizer()
+    ..onTap = () => unawaited(context.push(RouteNames.legalTerms));
+  late final TapGestureRecognizer _privacy = TapGestureRecognizer()
+    ..onTap = () => unawaited(context.push(RouteNames.legalPrivacy));
+
+  @override
+  void dispose() {
+    _terms.dispose();
+    _privacy.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -627,9 +681,19 @@ class _Footer extends StatelessWidget {
               text: 'By Continuing you acknowledge that you read & agree our ',
               style: regular,
             ),
-            TextSpan(text: 'Terms & Conditions', style: link),
+            TextSpan(
+              text: 'Terms & Conditions',
+              style: link,
+              recognizer: _terms,
+              semanticsLabel: 'Terms and Conditions, opens the document',
+            ),
             TextSpan(text: ' and ', style: regular),
-            TextSpan(text: 'Privacy Policy', style: link),
+            TextSpan(
+              text: 'Privacy Policy',
+              style: link,
+              recognizer: _privacy,
+              semanticsLabel: 'Privacy Policy, opens the document',
+            ),
           ],
         ),
         textAlign: TextAlign.center,

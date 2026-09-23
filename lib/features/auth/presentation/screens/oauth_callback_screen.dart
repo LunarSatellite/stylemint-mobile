@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Handles the OAuth redirect callback.
 ///
@@ -52,6 +53,13 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     if (_started) return;
     _started = true;
 
+    // The provider's page is still sitting on top of the app: the deep link
+    // brought us here underneath it. Dismiss it first, whatever happens next,
+    // or a sign-in that actually succeeded looks exactly like one that did
+    // nothing — the browser just stays there. (The social-connect flow has
+    // always done this; sign-in never did.)
+    await _closeBrowser();
+
     // User declined in the provider sheet, or the provider returned an error.
     if ((widget.error != null && widget.error!.isNotEmpty) ||
         widget.code.isEmpty) {
@@ -85,6 +93,16 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
         );
     // ignore: avoid_print
     print('[OAUTH-DEBUG] completeCallback returned');
+  }
+
+  /// Best effort: no in-app browser open (the link arrived some other way, or
+  /// the platform has nothing to close) is not a reason to fail a sign-in.
+  Future<void> _closeBrowser() async {
+    try {
+      await closeInAppWebView();
+    } catch (_) {
+      // Nothing to dismiss.
+    }
   }
 
   void _bail(String message) {

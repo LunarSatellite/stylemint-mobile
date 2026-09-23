@@ -354,6 +354,14 @@ abstract class RouteNames {
   static const settingsLanguage = '/settings/language';
   static const settingsPrivacy = '/settings/privacy';
   static const settingsTerms = '/settings/terms';
+
+  /// Top-level aliases for the same two documents, for the "by continuing you
+  /// agree" links on the auth screens. The settings paths are nested under
+  /// `/settings`, so pushing one from sign-in puts the Settings screen on the
+  /// back stack underneath it — from a login footer that reads as a wrong
+  /// turn. These land on the document and pop straight back.
+  static const legalTerms = '/terms';
+  static const legalPrivacy = '/privacy';
   static const settingsAbout = '/settings/about';
   static const settingsMemory = '/settings/memory';
 

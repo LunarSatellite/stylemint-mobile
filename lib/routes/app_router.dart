@@ -328,6 +328,11 @@ const _publicPaths = {
   RouteNames.settings,
   RouteNames.settingsPrivacy,
   RouteNames.settingsTerms,
+  // The same documents at their top-level aliases, linked from the auth
+  // screens' "by continuing you agree" footer — which is read before anyone
+  // has an account, so they must open signed out.
+  RouteNames.legalTerms,
+  RouteNames.legalPrivacy,
   RouteNames.support,
   // Social browsing
   RouteNames.feed,
@@ -584,6 +589,17 @@ GoRouter appRouter(Ref ref) {
             error: error,
           );
         },
+      ),
+      // Legal documents at the top level, so the auth footer's links open the
+      // document itself rather than pushing Settings underneath it. Same two
+      // screens the settings routes build.
+      GoRoute(
+        path: RouteNames.legalTerms,
+        builder: (ctx, state) => const TermsConditionsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.legalPrivacy,
+        builder: (ctx, state) => const PrivacyPolicyScreen(),
       ),
       GoRoute(
         path: RouteNames.userTypeSelection,

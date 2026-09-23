@@ -344,10 +344,48 @@ class _UserTypeSelectionScreenState
                       ),
                     ),
                   ),
+                  // Browsing has never needed an account — /home and the reels
+                  // feed are both public routes, and the feed endpoint serves
+                  // trending to anonymous callers. There was just no way in:
+                  // a cold start landed here and every path off it asked you
+                  // to pick a role and sign in.
+                  Padding(
+                    padding: const EdgeInsets.only(top: DesignTokens.s8),
+                    child: GestureDetector(
+                      key: const Key('browse_as_guest'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => context.go(RouteNames.home),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: DesignTokens.s12,
+                          horizontal: DesignTokens.s16,
+                        ),
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Just looking? ',
+                                style: DesignTokens.mediumRegular.copyWith(
+                                  color: DesignTokens.textLight,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'Watch reels without an account',
+                                style: DesignTokens.mediumSemibold.copyWith(
+                                  color: DesignTokens.primaryGreen,
+                                ),
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.only(
                       bottom: DesignTokens.s32,
-                      top: DesignTokens.s8,
+                      top: DesignTokens.s4,
                     ),
                     child: GestureDetector(
                       onTap: () => context.go(RouteNames.signInMethod),

@@ -531,9 +531,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
           child: Column(
             children: [
-              _buildTermLink('Terms of Service', RouteNames.settingsTerms),
+              // Top-level aliases: the settings paths are nested, so pushing
+              // one from signup left the Settings screen on the back stack.
+              _buildTermLink('Terms of Service', RouteNames.legalTerms),
               const SizedBox(height: DesignTokens.s12),
-              _buildTermLink('Privacy Policy', RouteNames.settingsPrivacy),
+              _buildTermLink('Privacy Policy', RouteNames.legalPrivacy),
               const SizedBox(height: DesignTokens.s16),
               const Divider(color: DesignTokens.borderDefault),
               const SizedBox(height: DesignTokens.s12),
