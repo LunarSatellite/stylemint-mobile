@@ -36,6 +36,8 @@ import 'package:stylemint_mobile_frontend/features/customer/saved_items/data/dat
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/shared/saved_products_providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
@@ -55,6 +57,8 @@ class _MockAccountNotifier extends Mock implements AccountNotifier {}
 
 class _MockCartNotifier extends Mock implements CartNotifier {}
 
+class _MockFollowApi extends Mock implements FollowApi {}
+
 class _MockDiscoveryRepository extends Mock implements DiscoveryRepository {}
 
 class _Session extends SessionController {
@@ -66,6 +70,7 @@ class _Session extends SessionController {
         roleNotifier: _MockRoleNotifier(),
         accountNotifier: _MockAccountNotifier(),
         cartNotifier: _MockCartNotifier(),
+        followNotifier: FollowNotifier(_MockFollowApi()),
       ) {
     state = signedIn
         ? const AuthSessionState.authenticated('viewer-1')

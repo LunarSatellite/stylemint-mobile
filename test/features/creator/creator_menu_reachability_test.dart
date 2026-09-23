@@ -17,6 +17,8 @@ import 'package:stylemint_mobile_frontend/features/creator/shared/widgets/creato
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
 import '../../smoke/fake_api_client.dart';
@@ -33,6 +35,8 @@ class _MockAccountNotifier extends Mock implements AccountNotifier {}
 
 class _MockCartNotifier extends Mock implements CartNotifier {}
 
+class _MockFollowApi extends Mock implements FollowApi {}
+
 const _signedInAccountId = 'creator-1';
 const _otherAccountId = 'creator-2';
 
@@ -47,6 +51,7 @@ class _SignedInSession extends SessionController {
         roleNotifier: _MockRoleNotifier(),
         accountNotifier: _MockAccountNotifier(),
         cartNotifier: _MockCartNotifier(),
+        followNotifier: FollowNotifier(_MockFollowApi()),
       ) {
     state = const AuthSessionState.authenticated(_signedInAccountId);
   }

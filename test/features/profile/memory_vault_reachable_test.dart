@@ -18,6 +18,8 @@ import 'package:stylemint_mobile_frontend/features/profile/domain/repositories/p
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
 import '../../smoke/fake_api_client.dart';
@@ -34,6 +36,8 @@ class _MockAccountNotifier extends Mock implements AccountNotifier {}
 
 class _MockCartNotifier extends Mock implements CartNotifier {}
 
+class _MockFollowApi extends Mock implements FollowApi {}
+
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _SignedInSession extends SessionController {
@@ -45,6 +49,7 @@ class _SignedInSession extends SessionController {
         roleNotifier: _MockRoleNotifier(),
         accountNotifier: _MockAccountNotifier(),
         cartNotifier: _MockCartNotifier(),
+        followNotifier: FollowNotifier(_MockFollowApi()),
       ) {
     state = const AuthSessionState.authenticated('viewer-1');
   }

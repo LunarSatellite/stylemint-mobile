@@ -21,7 +21,11 @@ import '../mall_test_support.dart';
 
 final _home = GoRoute(path: '/home', builder: (_, _) => const HomeScreen());
 
+  // SM-005 made Reels the landing surface, so Home no longer starts on the
+  // Mall. These tests are about the Mall page itself, so they open straight
+  // onto it rather than tapping through the switch first.
 List<Object> _overrides(FakeMallHomeRepository repo) => [
+  homeModeProvider.overrideWith((ref) => HomeMode.mall),
   mallHomeRepositoryProvider.overrideWithValue(repo),
   mallViewerSignedInProvider.overrideWithValue(false),
   mallClockProvider.overrideWithValue(mallTestNow),

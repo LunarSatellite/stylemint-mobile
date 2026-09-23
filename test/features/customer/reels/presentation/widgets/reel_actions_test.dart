@@ -25,6 +25,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/w
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_button.dart';
@@ -45,6 +46,8 @@ class _MockAccountNotifier extends Mock implements AccountNotifier {}
 
 class _MockCartNotifier extends Mock implements CartNotifier {}
 
+class _MockFollowApi extends Mock implements FollowApi {}
+
 /// Already signed in, so `ensureAuth` lets the action straight through.
 class _SignedInSession extends SessionController {
   _SignedInSession()
@@ -55,6 +58,7 @@ class _SignedInSession extends SessionController {
         roleNotifier: _MockRoleNotifier(),
         accountNotifier: _MockAccountNotifier(),
         cartNotifier: _MockCartNotifier(),
+        followNotifier: FollowNotifier(_MockFollowApi()),
       ) {
     state = const AuthSessionState.authenticated('viewer-1');
   }

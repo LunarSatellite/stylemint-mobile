@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/home_mode.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_zones.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/home_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
@@ -176,6 +177,7 @@ void main() {
             GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
           ],
           overrides: [
+            homeModeProvider.overrideWith((ref) => HomeMode.mall),
             mallHomeRepositoryProvider.overrideWithValue(
               FakeMallHomeRepository([right(sampleHome())]),
             ),
@@ -218,6 +220,7 @@ void main() {
           GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
         ],
         overrides: [
+          homeModeProvider.overrideWith((ref) => HomeMode.mall),
           mallHomeRepositoryProvider.overrideWithValue(
             FakeMallHomeRepository([right(sampleHome())]),
           ),

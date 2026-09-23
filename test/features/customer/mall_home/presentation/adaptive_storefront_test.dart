@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/adaptive_storefront_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/adaptive_layout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/feed_signal_recorder.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/home_mode.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/home_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/storefront_personalizer.dart';
@@ -1403,6 +1404,7 @@ void main() {
         location: '/home',
         routes: [GoRoute(path: '/home', builder: (_, _) => const HomeScreen())],
         overrides: [
+          homeModeProvider.overrideWith((ref) => HomeMode.mall),
           mallHomeRepositoryProvider.overrideWithValue(
             FakeMallHomeRepository([right(pageHome())]),
           ),
