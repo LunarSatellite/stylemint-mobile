@@ -209,12 +209,15 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   // a second chance should a play message be lost; a pre-loaded one does not.
   var tt = null, ttId = null, ttReady = false, ttPlaying = false, ttStarted = false, ttFailed = false;
   var ttSound = false, ttSoundOk = false, ttTime = null, ttTimeSeen = false;
-  var ttSoundTimer = null;
+  var ttSoundTimer = null, ttSoundTries = 0;
 
-  // How long to wait for TikTok to answer an unMute before treating silence
-  // as a refusal. Long enough for a round trip on a slow connection, short
-  // enough that a reel does not play most of its length in silence.
+  // How long to wait for TikTok to answer one unMute, and how many times to
+  // ask before treating silence as a refusal. Long enough for a round trip on
+  // a slow connection, short enough that a reel does not play most of its
+  // length in silence. Two asks: a single unanswered one turned out to be a
+  // race rather than a refusal.
   var TT_SOUND_TIMEOUT = 1500;
+  var TT_SOUND_TRIES = 2;
   var TT_STATES = {'-1': 'init', '0': 'ended', '1': 'playing', '2': 'paused', '3': 'buffering'};
 
   function ttSend(type, value) {
@@ -243,6 +246,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   function ttAskSound() {
     if (cur.muted || !cur.wantPlay || ttSound) return;
     ttSound = true;
+    ttSoundTries = 1;
     ttSend('unMute');
     // TikTok answers an unMute one of three ways: onMute{value:false},
     // error 3002, or a pause. It can also answer none of them, and there was
@@ -255,10 +259,28 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     // Treat silence as a refusal. That mutes cleanly and surfaces the
     // button, so sound is one tap away, and that tap is a real user gesture,
     // which is what the platform wanted in the first place.
+    ttArmSoundTimer();
+  }
+
+  // One unanswered unMute is not a refusal. TikTok's player is heavy enough
+  // that it can still be settling when the first ask goes out, and treating
+  // that single silence as "no" is why sound came on for some reels and not
+  // others on the same connection -- a race, decided by how busy the player
+  // happened to be. Ask again before giving up; only silence TT_SOUND_TRIES
+  // times running is taken as a refusal.
+  function ttArmSoundTimer() {
     ttClearSoundTimer();
     ttSoundTimer = setTimeout(function () {
       ttSoundTimer = null;
-      if (ttSound && !ttSoundOk && cur.platform === 'tiktok') ttSoundRefused();
+      if (ttSound && !ttSoundOk && cur.platform === 'tiktok') {
+        if (ttSoundTries < TT_SOUND_TRIES) {
+          ttSoundTries++;
+          ttSend('unMute');
+          ttArmSoundTimer();
+          return;
+        }
+        ttSoundRefused();
+      }
     }, TT_SOUND_TIMEOUT);
   }
 
@@ -319,7 +341,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     ttId = cur.id;
     ttClearSoundTimer();
     ttReady = false; ttPlaying = false; ttStarted = false; ttFailed = false;
-    ttSound = false; ttSoundOk = false; ttTime = null;
+    ttSound = false; ttSoundOk = false; ttSoundTries = 0; ttTime = null;
   }
 
   // Re-activates the player this slot already holds for the current reel.
@@ -491,7 +513,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     stage.innerHTML = '';
     yt = null; ytReady = false; ytVideoId = null; fbPlayer = null;
     tt = null; ttId = null; ttReady = false; ttPlaying = false; ttStarted = false; ttFailed = false;
-    ttSound = false; ttSoundOk = false; ttTime = null;
+    ttSound = false; ttSoundOk = false; ttSoundTries = 0; ttTime = null;
   }
 
   // [byViewer]: the viewer paused the reel on screen (see ytHold). TikTok's

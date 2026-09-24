@@ -19,6 +19,7 @@ import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.d
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_icons.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_sound_button.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -183,9 +184,9 @@ class _BodyState extends State<_Body> {
                 playbackController: _playback,
                 // The play/pause tap target below covers the same rect as
                 // this player, so a control drawn inside it would sit
-                // underneath and never receive a tap. This screen has no
-                // sound control of its own yet — see SM-016 in
-                // docs/TESTFLIGHT_FIX_PLAN.md.
+                // underneath and never receive a tap. This screen draws its
+                // own, above that target — see the sound button further down
+                // this stack.
                 showSoundControl: false,
               ),
             ),
@@ -197,6 +198,30 @@ class _BodyState extends State<_Body> {
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: _playback.toggle,
+              ),
+            ),
+
+            // Sound — AFTER the tap target, so it is painted over it and is
+            // hit-tested first. Drawn here rather than inside the player for
+            // exactly that reason.
+            //
+            // Reels always start muted, because the platforms refuse to
+            // autoplay with sound. Without this control the reel played
+            // silently on this screen with nothing anywhere to turn it on.
+            //
+            // Below the player rather than over it when the platform reserves
+            // one (YouTube): nothing may be drawn over a YouTube player.
+            Positioned(
+              right: DesignTokens.s12,
+              top: besidePlayer
+                  ? player.bottom + DesignTokens.s12
+                  : padding.top + _topBarHeight + DesignTokens.s12,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: _playback.muted,
+                builder: (context, muted, _) => ReelSoundButton(
+                  muted: muted,
+                  onTap: _playback.toggleMuted,
+                ),
               ),
             ),
 
