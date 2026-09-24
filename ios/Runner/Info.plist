@@ -112,6 +112,12 @@
 	     background. Pasting a Maps link is a full alternative if they decline. -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>StyleMint uses your location to pin where your order should be delivered, so you don't have to type out an address. We only check when you tap "Use my current location".</string>
+	<!-- Required by App Store Connect (ITMS-90683) because the geolocator
+	     plugin's binary references requestAlwaysAuthorization, even though
+	     StyleMint only ever asks for when-in-use access. The string is
+	     written to be true if iOS ever does show it. -->
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>StyleMint only checks your location while you are using the app, to pin where your order should be delivered when you tap "Use my current location". It does not follow you in the background.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>viber</string>
