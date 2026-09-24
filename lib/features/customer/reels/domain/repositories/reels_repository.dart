@@ -38,5 +38,10 @@ abstract interface class ReelsRepository {
     String commentText,
   );
 
-  Future<Either<NetworkExceptions, Unit>> shareReel(String reelId);
+  /// Records that the signed-in viewer watched [reelId]. [completed] says
+  /// whether they stayed to the end.
+  Future<Either<NetworkExceptions, Unit>> recordView(
+    String reelId, {
+    required bool completed,
+  });
 }

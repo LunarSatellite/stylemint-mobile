@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/feed_signal_recorder.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/reel_view_recorder.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reels_pager.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -32,10 +33,15 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
   /// looked up from a deactivated element.
   late final FeedSignalRecorder _signals;
 
+  /// Held for the same reason as [_signals]: the last reel's dwell arrives
+  /// during dispose, and that is exactly the watch worth counting.
+  late final ReelViewRecorder _views;
+
   @override
   void initState() {
     super.initState();
     _signals = ref.read(feedSignalRecorderProvider);
+    _views = ref.read(reelViewRecorderProvider);
   }
 
   @override
@@ -77,8 +83,14 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
               ref.read(reelsFeedNotifierProvider.notifier).fetchNextPage(),
             ),
             // One signal per reel the viewer leaves, and only when the dwell
-            // actually says something.
-            onReelDwell: (reel, dwell) => _signals.reelDwell(reel.id, dwell),
+            // actually says something. The same dwell is what the creator's
+            // view count is built from — before this, nothing in the app ever
+            // called the views endpoint, so every reel sat at zero views
+            // forever.
+            onReelDwell: (reel, dwell) {
+              _signals.reelDwell(reel.id, dwell);
+              _views.recordDwell(reel, dwell);
+            },
           );
         },
         loadFailure: (failure) {

@@ -883,17 +883,24 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
               ),
             ),
             error: (_, __) => const SizedBox.shrink(),
-            data: (reels) => GridView.count(
-              crossAxisCount: 2,
-              mainAxisSpacing: DesignTokens.s8,
-              crossAxisSpacing: DesignTokens.s8,
-              childAspectRatio: 0.78,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: _sorted(
-                reels,
-              ).map((r) => _ReelCard(reel: r)).toList(),
-            ),
+            data: (reels) {
+              final sorted = _sorted(reels);
+              // Handed to the detail screen with every card, so opening one
+              // reel lets the creator keep swiping through the rest in the
+              // order they are looking at them here.
+              final ids = [for (final r in sorted) r.id];
+              return GridView.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: DesignTokens.s8,
+                crossAxisSpacing: DesignTokens.s8,
+                childAspectRatio: 0.78,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  for (final r in sorted) _ReelCard(reel: r, siblingIds: ids),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -1234,13 +1241,19 @@ class _FilterTab extends StatelessWidget {
 }
 
 class _ReelCard extends ConsumerWidget {
-  const _ReelCard({required this.reel});
+  const _ReelCard({required this.reel, this.siblingIds = const <String>[]});
+
   final CreatorReelSummary reel;
+
+  /// Every reel in the grid, in the order shown, so the detail screen opens
+  /// as a pager rather than as a dead end.
+  final List<String> siblingIds;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => context.push('/creator/reels/${reel.id}'),
+      onTap: () =>
+          context.push('/creator/reels/${reel.id}', extra: siblingIds),
       onLongPress: () => _showDeleteDialog(context, ref),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),

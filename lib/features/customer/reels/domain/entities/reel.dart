@@ -42,9 +42,15 @@ class Reel implements ReelMedia {
     this.isSavedByMe,
     this.saveCount = 0,
     this.provenance,
+    this.durationSeconds,
   });
 
   final String id;
+
+  /// How long the reel runs, as the source platform reported it. Null when
+  /// the payload did not carry one. Only used to judge whether a watch ran
+  /// long enough to count as a completed view.
+  final int? durationSeconds;
 
   /// Why the feed served this reel, and whether anything ranked it.
   ///
@@ -122,6 +128,7 @@ class Reel implements ReelMedia {
     bool? isSavedByMe,
     int? saveCount,
     FeedProvenance? provenance,
+    int? durationSeconds,
   }) {
     return Reel(
       id: id ?? this.id,
@@ -148,6 +155,7 @@ class Reel implements ReelMedia {
       isSavedByMe: isSavedByMe ?? this.isSavedByMe,
       saveCount: saveCount ?? this.saveCount,
       provenance: provenance ?? this.provenance,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
     );
   }
 

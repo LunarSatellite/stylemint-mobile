@@ -56,12 +56,14 @@ EmbedRequest _tikTok(String id) => EmbedRequest(
 Future<(EmbedPlayerPool, List<_FakeDriver>)> _pool({
   int slots = 2,
   Duration readyTimeout = const Duration(seconds: 12),
+  Duration tikTokReadyTimeout = const Duration(seconds: 25),
   EmbedStartupMetrics? metrics,
 }) async {
   final pool = EmbedPlayerPool(
     slotCount: slots,
     origins: Future.value(_origins),
     readyTimeout: readyTimeout,
+    tikTokReadyTimeout: tikTokReadyTimeout,
     metrics: metrics,
   );
   final drivers = [for (final slot in pool.slots) _FakeDriver(slot)];
@@ -187,6 +189,34 @@ void main() {
     expect(d[0].assigns, hasLength(2));
   });
 
+  test('gives a reel its retry back once it leaves the window', () async {
+    final (pool, d) = await _pool(slots: 1);
+    pool.setWindow(active: a);
+    d[0].finishLoad();
+
+    // One bad load, one retry, a second bad load: given up on.
+    for (var i = 0; i < 2; i++) {
+      pool.slots.single.handleEvent({
+        'type': 'error',
+        'token': d[0].lastToken,
+        'code': 'timeout',
+      });
+      await Future<void>.delayed(Duration.zero);
+    }
+    expect(pool.hasGivenUp(a.key), isTrue);
+    expect(d[0].assigns, hasLength(2));
+
+    // Scroll away, then come back. Before this the reel stayed dead for the
+    // rest of the session, however long since the platform had recovered.
+    pool.setWindow(active: b);
+    await Future<void>.delayed(Duration.zero);
+    pool.setWindow(active: a);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(d[0].assigns.length, greaterThan(2));
+    expect(pool.hasGivenUp(a.key), isFalse);
+  });
+
   test('does not retry a video whose owner turned embedding off', () async {
     final (pool, d) = await _pool(slots: 1);
     pool.setWindow(active: a);
@@ -268,6 +298,30 @@ void main() {
         expect(d[0].assigns.last, endsWith(',false,false,true)'));
       },
     );
+
+    // TikTok's player pulls a React bundle and two SDKs before it says
+    // onPlayerReady, and measured cold it can take past 20s. The budget that
+    // suits YouTube failed it mid-load and showed "can't play here" for a
+    // video that was about to start.
+    test('waits longer for TikTok than for the other platforms', () async {
+      final (pool, d) = await _pool(
+        slots: 1,
+        readyTimeout: const Duration(milliseconds: 20),
+        tikTokReadyTimeout: const Duration(milliseconds: 200),
+      );
+      pool.setWindow(active: t1);
+      d[0].finishLoad();
+
+      // Well past the default budget, nowhere near TikTok's: still loading,
+      // so nothing has been given up on and nothing retried.
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      expect(pool.slots.single.state, EmbedPlayerState.loading);
+      expect(d[0].assigns, hasLength(1));
+
+      // Past TikTok's budget: now it times out, and the pool retries it.
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      expect(d[0].assigns, hasLength(2));
+    });
 
     test(
       'retries TikTok server and playback errors once; an invalid video '

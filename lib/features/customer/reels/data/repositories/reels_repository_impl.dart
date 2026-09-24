@@ -242,10 +242,17 @@ class ReelsRepositoryImpl implements ReelsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> shareReel(String reelId) async {
+  Future<Either<NetworkExceptions, Unit>> recordView(
+    String reelId, {
+    required bool completed,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.shareReel(reelId, _uuid.v4());
+        await remoteDataSource.recordView(
+          reelId,
+          completed: completed,
+          idempotencyKey: _uuid.v4(),
+        );
         return right(unit);
       } catch (e) {
         if (e is DioException) {

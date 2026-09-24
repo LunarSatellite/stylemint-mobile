@@ -1,5 +1,6 @@
 ﻿import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/partnership_terms.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
@@ -10,6 +11,10 @@ abstract interface class VendorPartnershipsRepository {
   /// `totalCount` of pending creator-initiated partnership requests -
   /// dashboard tile count.
   Future<Either<NetworkExceptions, int>> getPendingCreatorRequestCount();
+
+  /// Publishes the vendor's partnership terms. Until one version exists the
+  /// backend refuses every invite and every creator request.
+  Future<Either<NetworkExceptions, Unit>> publishTerms(PartnershipTerms terms);
 
   Future<Either<NetworkExceptions, Unit>> acceptRequest(String id);
 

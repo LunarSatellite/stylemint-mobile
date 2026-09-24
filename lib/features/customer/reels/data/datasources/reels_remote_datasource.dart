@@ -112,6 +112,7 @@ class ReelsRemoteDataSource {
       isCreatorFollowed: _bool(r['isCreatorFollowed']),
       isSavedByMe: _bool(r['isSavedByMe']),
       saveCount: _int(r['saveCount']),
+      durationSeconds: _intOrNull(r['durationSeconds']),
     );
   }
 
@@ -223,10 +224,16 @@ class ReelsRemoteDataSource {
       isCreatorFollowed: _bool(r['isCreatorFollowed']),
       isSavedByMe: _bool(r['isSavedByMe']),
       saveCount: _int(r['saveCount']),
+      durationSeconds: _intOrNull(r['durationSeconds']),
     );
   }
 
   static int _int(Object? value) => value is num ? value.toInt() : 0;
+
+  /// Like [_int] but keeps "the payload did not say" distinct from zero — a
+  /// reel of unknown length is not a reel of zero length.
+  static int? _intOrNull(Object? value) =>
+      value is num ? value.toInt() : null;
 
   static bool? _bool(Object? value) => value is bool ? value : null;
 
@@ -317,10 +324,24 @@ class ReelsRemoteDataSource {
     );
   }
 
-  /// POST `/v1/reels/{reelId}/views` — share/view tracking.
-  Future<void> shareReel(String reelId, String idempotencyKey) async {
+  /// POST `/v1/reels/{reelId}/views` — records that the signed-in viewer
+  /// watched this reel, feeding `reels.reel_daily_stats` and from there the
+  /// creator's view counts.
+  ///
+  /// `completed` is required by the contract (`RecordReelViewVm`) and the
+  /// server trusts the client's definition of it. Sending no body at all —
+  /// which is what this method used to do, under the name `shareReel`, from
+  /// nowhere — is a 400.
+  ///
+  /// The endpoint is `[Authorize]`: a guest watching reels records nothing.
+  Future<void> recordView(
+    String reelId, {
+    required bool completed,
+    required String idempotencyKey,
+  }) async {
     await apiClient.post(
       '/v1/reels/$reelId/views',
+      data: {'completed': completed},
       options: _idempotent(idempotencyKey),
     );
   }

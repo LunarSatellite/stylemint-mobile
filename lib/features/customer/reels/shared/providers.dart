@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/domain/reposit
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_landing_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_like_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/reel_view_recorder.dart';
 
 final reelsRemoteDataSourceProvider = Provider<ReelsRemoteDataSource>(
   (ref) => ReelsRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
@@ -47,3 +48,9 @@ final reelLandingNotifierProvider = StateNotifierProvider.autoDispose
 /// Bumped each time the Home (reels) tab is tapped while already on it.
 /// The reels feed listens to this to refresh its content and scroll to top.
 final homeTabReselectedProvider = StateProvider<int>((ref) => 0);
+
+/// Posts a view for each reel a viewer actually watches. Built per screen so
+/// its "already counted" memory lasts exactly as long as the visit.
+final reelViewRecorderProvider = Provider.autoDispose<ReelViewRecorder>(
+  (ref) => ReelViewRecorder(ref.watch(reelsRepositoryProvider)),
+);

@@ -52,6 +52,7 @@ class EmbedSlot extends ChangeNotifier {
   EmbedSlot(
     this.index, {
     this.readyTimeout = const Duration(seconds: 12),
+    this.tikTokReadyTimeout = const Duration(seconds: 25),
     this.startTimeout = const Duration(milliseconds: 2500),
     EmbedStartupMetrics? metrics,
   }) : metrics = metrics ?? EmbedStartupMetrics();
@@ -61,6 +62,22 @@ class EmbedSlot extends ChangeNotifier {
   /// How long a reel may take to report its player ready before the slot
   /// treats the embed as failed.
   final Duration readyTimeout;
+
+  /// The same budget for TikTok, which needs a far longer one.
+  ///
+  /// TikTok's Embed Player is a full web app — it pulls a React bundle, its
+  /// own signing SDK and a consent SDK before it will say `onPlayerReady`,
+  /// and it intermittently answers `2001` and retries internally on the way.
+  /// Measured cold on a good connection it can take past 20s; the 12s that
+  /// suits YouTube's player fails it while it is still loading, and the reel
+  /// then shows "can't play here" for a video that was about to start.
+  final Duration tikTokReadyTimeout;
+
+  /// The ready budget for whatever this slot currently holds.
+  Duration get _readyBudget =>
+      _request?.source.platform == SocialPlatform.tiktok
+      ? tikTokReadyTimeout
+      : readyTimeout;
 
   /// How long a TikTok reel may be asked to play, once its player is ready,
   /// before its video time must have moved (the host page's `progress`
@@ -393,7 +410,7 @@ class EmbedSlot extends ChangeNotifier {
   void _armReadyTimer() {
     _readyTimer?.cancel();
     final token = _token;
-    _readyTimer = Timer(readyTimeout, () {
+    _readyTimer = Timer(_readyBudget, () {
       if (_disposed || token != _token) return;
       if (_state != EmbedPlayerState.loading) return;
       _errorCode = 'timeout';

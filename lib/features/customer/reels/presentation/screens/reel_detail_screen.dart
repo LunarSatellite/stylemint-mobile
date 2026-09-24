@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_landing_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/reel_view_recorder.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reels_pager.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -28,6 +29,11 @@ class ReelDetailScreen extends ConsumerStatefulWidget {
 
 class _ReelDetailScreenState extends ConsumerState<ReelDetailScreen> {
   final ReelsPagerController _pager = ReelsPagerController();
+
+  /// Reels watched here count the same as reels watched in the feed. Read
+  /// once and held: the last reel's dwell arrives during dispose, when a
+  /// provider can no longer be looked up.
+  late final ReelViewRecorder _views = ref.read(reelViewRecorderProvider);
 
   @override
   void didUpdateWidget(ReelDetailScreen oldWidget) {
@@ -63,6 +69,7 @@ class _ReelDetailScreenState extends ConsumerState<ReelDetailScreen> {
               reels: reels,
               onNearEnd: () =>
                   unawaited(ref.read(landing.notifier).fetchNextPage()),
+              onReelDwell: _views.recordDwell,
             ),
           },
           const _BackButton(),

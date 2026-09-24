@@ -233,6 +233,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentat
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_briefs_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/create_campaign_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/creator_partnership_requests_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/partnership_terms_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/message_creator_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/send_partnership_request_screen.dart';
@@ -1161,8 +1162,15 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.creatorReelDetail,
+        // `extra` carries the reels of the list that opened this one, so the
+        // detail screen pages through them. Absent for a deep link or a
+        // notification, which opens the one reel on its own.
         builder: (ctx, state) => ReelDetailsScreen(
           reelId: state.pathParameters['reelId']!,
+          siblingReelIds: switch (state.extra) {
+            final List<String> ids => ids,
+            _ => const <String>[],
+          },
         ),
       ),
       GoRoute(
@@ -1574,6 +1582,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorSendPartnershipRequest,
         builder: (ctx, state) => const SendPartnershipRequestScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorPartnershipTerms,
+        builder: (ctx, state) => const PartnershipTermsScreen(),
       ),
       GoRoute(
         path: RouteNames.vendorPartnershipsInvite,

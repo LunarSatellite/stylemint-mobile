@@ -22,7 +22,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
-/// Single-reel detail (creator) — same full-screen layout as the Home feed's
+/// Reel detail (creator) — same full-screen layout as the Home feed's
 /// [ReelCard]/[CreatorInfo]/[TaggedProductsSection] (Figma-designed), reused
 /// here rather than re-invented: full-screen video, a right-rail (styled
 /// like ReelActions) for the read-only view/like/comment counts, and a
@@ -32,18 +32,81 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 /// Backend: `GET /v1/public/reels/{id}` → ReelDto (caption, metrics, tagged
 /// products). The video plays in-app through [ReelPlayer]; the source
 /// platform is shown as a plain chip and never opened.
-class ReelDetailsScreen extends ConsumerWidget {
-  const ReelDetailsScreen({required this.reelId, super.key});
+class ReelDetailsScreen extends StatefulWidget {
+  const ReelDetailsScreen({
+    required this.reelId,
+    this.siblingReelIds = const <String>[],
+    super.key,
+  });
 
   final String reelId;
+
+  /// The other reels to keep swiping through, in the order the screen that
+  /// opened this one was showing them.
+  ///
+  /// Empty when a reel was opened on its own (a link, a notification), and
+  /// the screen is then a single page. The creator's profile grid passes its
+  /// whole sorted list: before it did, opening a second reel meant backing
+  /// out to the grid and tapping again.
+  final List<String> siblingReelIds;
+
+  @override
+  State<ReelDetailsScreen> createState() => _ReelDetailsScreenState();
+}
+
+class _ReelDetailsScreenState extends State<ReelDetailsScreen> {
+  /// The reels this screen pages through. Always contains [reelId]: a list
+  /// that does not mention the reel actually asked for would open on the
+  /// wrong video, so an absent or empty list falls back to that reel alone.
+  late final List<String> _ids = widget.siblingReelIds.contains(widget.reelId)
+      ? List<String>.unmodifiable(widget.siblingReelIds)
+      : <String>[widget.reelId];
+
+  late int _index = _ids.indexOf(widget.reelId);
+  late final PageController _controller = PageController(initialPage: _index);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: DesignTokens.baseBlack,
+      extendBodyBehindAppBar: true,
+      // Vertical, like every other reel surface in the app. A single-reel
+      // list still builds a pager: one code path, and it simply does not
+      // scroll.
+      body: PageView.builder(
+        controller: _controller,
+        scrollDirection: Axis.vertical,
+        itemCount: _ids.length,
+        onPageChanged: (index) => setState(() => _index = index),
+        itemBuilder: (context, index) => _ReelPage(
+          reelId: _ids[index],
+          // Only the reel on screen plays; the rest stay paused, or two
+          // videos would run at once.
+          isActive: index == _index,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReelPage extends ConsumerWidget {
+  const _ReelPage({required this.reelId, required this.isActive});
+
+  final String reelId;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(creatorReelDetailProvider(reelId));
-    return Scaffold(
-      backgroundColor: DesignTokens.baseBlack,
-      extendBodyBehindAppBar: true,
-      body: async.when(
+    return ColoredBox(
+      color: DesignTokens.baseBlack,
+      child: async.when(
         loading: () => const SmPageLoader(),
         error: (err, _) {
           if (err is NetworkExceptions && err.isNotFound) {
@@ -60,16 +123,20 @@ class ReelDetailsScreen extends ConsumerWidget {
               : 'Something went wrong loading this reel.';
           return _ReelErrorView(reelId: reelId, message: message);
         },
-        data: (reel) => _Body(reel: reel),
+        data: (reel) => _Body(reel: reel, isActive: isActive),
       ),
     );
   }
 }
 
 class _Body extends StatefulWidget {
-  const _Body({required this.reel});
+  const _Body({required this.reel, required this.isActive});
 
   final CreatorReelDetail reel;
+
+  /// False while this page sits off screen in the pager, so its player stays
+  /// paused instead of playing under the reel the creator is looking at.
+  final bool isActive;
 
   @override
   State<_Body> createState() => _BodyState();
@@ -112,7 +179,7 @@ class _BodyState extends State<_Body> {
               rect: player,
               child: ReelPlayer(
                 reel: reel,
-                isActive: true,
+                isActive: widget.isActive,
                 playbackController: _playback,
                 // The play/pause tap target below covers the same rect as
                 // this player, so a control drawn inside it would sit

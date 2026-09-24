@@ -94,6 +94,15 @@ class _VendorMoreMenu extends StatelessWidget {
                 onTap: () => _go(context, RouteNames.vendorPartnerships),
               ),
               const _MoreDivider(),
+              // Sits directly above Creator Partnerships because it gates it:
+              // the backend refuses every invite and every creator
+              // application until a vendor has published terms once.
+              _MoreItem(
+                icon: Icons.gavel_outlined,
+                title: 'Partnership Terms',
+                onTap: () => _go(context, RouteNames.vendorPartnershipTerms),
+              ),
+              const _MoreDivider(),
               // Brand Studio (brand intelligence + Campaign Briefs) had no
               // navigation entry point anywhere in the vendor UI despite being
               // fully built and wired to real backend endpoints
