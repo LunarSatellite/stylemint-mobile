@@ -1,5 +1,8 @@
 import 'dart:async';
 
+// ValueListenable is declared in foundation, and material re-exports only the
+// ValueListenableBuilder widget — so exposing the type itself needs this.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/shared/data/reel_video_cache.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_pool.dart';
