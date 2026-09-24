@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/data/datasources/vendor_partnerships_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/data/models/vendor_partnership_dto.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/partnership_terms.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/repositories/vendor_partnerships_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
@@ -282,6 +283,24 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> publishTerms(
+    PartnershipTerms terms,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.publishPartnershipTerms(
+        body: terms.toJson(),
+        idempotencyKey: const Uuid().v4(),
+      );
+      return right(unit);
+    } catch (e) {
+      return left(_mapError(e));
     }
   }
 

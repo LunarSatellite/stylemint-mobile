@@ -22,6 +22,7 @@ class EmbedPlayerPool extends ChangeNotifier {
     int slotCount = 2,
     Future<EmbedOrigins>? origins,
     this.readyTimeout = const Duration(seconds: 12),
+    this.tikTokReadyTimeout = const Duration(seconds: 25),
     this.startTimeout = const Duration(milliseconds: 2500),
     EmbedStartupMetrics? metrics,
   }) : startupMetrics = metrics ?? EmbedStartupMetrics() {
@@ -50,6 +51,9 @@ class EmbedPlayerPool extends ChangeNotifier {
   };
 
   final Duration readyTimeout;
+
+  /// See [EmbedSlot.tikTokReadyTimeout].
+  final Duration tikTokReadyTimeout;
 
   /// See [EmbedSlot.startTimeout].
   final Duration startTimeout;
@@ -111,6 +115,7 @@ class EmbedPlayerPool extends ChangeNotifier {
         EmbedSlot(
           _slots.length,
           readyTimeout: readyTimeout,
+          tikTokReadyTimeout: tikTokReadyTimeout,
           startTimeout: startTimeout,
           metrics: startupMetrics,
         )..addListener(_onSlotChanged),
@@ -184,6 +189,17 @@ class EmbedPlayerPool extends ChangeNotifier {
       if (active != null) active.key,
       for (final n in wanted) n.key,
     };
+
+    // A reel that scrolled out of the window gets its one retry back.
+    //
+    // Without this, two bad loads — a TikTok player answering 2001, a slow
+    // network — marked the reel dead for the rest of the session, so scrolling
+    // back to it showed "can't play here" forever even when the platform had
+    // long recovered. Coming back to a reel is the clearest signal we get that
+    // the viewer wants it to try again. Errors that are not in
+    // [_retryableErrors] (embedding turned off, video removed) still never
+    // retry, so this cannot loop on a reel that genuinely cannot play.
+    _retried.removeWhere((key) => !keep.contains(key));
 
     // Pause first so two reels never overlap, even for a frame.
     for (final slot in _slots) {

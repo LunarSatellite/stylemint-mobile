@@ -126,10 +126,10 @@ class MockReelsRepository implements ReelsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> shareReel(String reelId) async {
-    _toggle(reelId, (r) => r.copyWith(shareCount: r.shareCount + 1));
-    return right(unit);
-  }
+  Future<Either<NetworkExceptions, Unit>> recordView(
+    String reelId, {
+    required bool completed,
+  }) async => right(unit);
 
   void _toggle(String reelId, Reel Function(Reel) update) {
     final idx = _reels.indexWhere((r) => r.id == reelId);

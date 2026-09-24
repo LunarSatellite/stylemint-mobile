@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/data/datasources/vendor_partnerships_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/data/repositories/vendor_partnerships_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/repositories/vendor_partnerships_repository.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/notifiers/partnership_terms_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/notifiers/vendor_partnerships_notifier.dart';
 
 final vendorPartnershipsRemoteDataSourceProvider =
@@ -65,5 +66,17 @@ final campaignDetailNotifierProvider =
       (ref, briefId) => CampaignDetailNotifier(
         ref.watch(vendorPartnershipsRepositoryProvider),
         briefId,
+      ),
+    );
+
+/// Publishing the vendor's partnership terms — the gate that has to be
+/// passed before any creator can be invited or can apply.
+final partnershipTermsNotifierProvider =
+    StateNotifierProvider.autoDispose<
+      PartnershipTermsNotifier,
+      PublishTermsState
+    >(
+      (ref) => PartnershipTermsNotifier(
+        ref.watch(vendorPartnershipsRepositoryProvider),
       ),
     );

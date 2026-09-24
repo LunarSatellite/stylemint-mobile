@@ -276,4 +276,27 @@ class VendorPartnershipsRemoteDataSource {
       ),
     );
   }
+
+  /// `POST /v1/vendor/partnership-terms` — publishes a new version of the
+  /// vendor's partnership terms and rotates every live partnership onto it.
+  ///
+  /// The vendor is taken from the JWT, so this must run on the vendor's own
+  /// session. There is no matching GET: the server exposes a vendor's terms
+  /// only through a partnership (`GET /v1/partnerships/{id}/terms/active`),
+  /// so this editor always publishes a fresh version rather than editing one.
+  Future<void> publishPartnershipTerms({
+    required Map<String, dynamic> body,
+    required String idempotencyKey,
+  }) async {
+    await apiClient.post(
+      '/v1/vendor/partnership-terms',
+      data: body,
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
+    );
+  }
 }

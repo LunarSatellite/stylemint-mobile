@@ -288,6 +288,10 @@ abstract class RouteNames {
 
   static const vendorPartnerships = '/vendor/partnerships';
   static const vendorSendPartnershipRequest = '/vendor/partnerships/send';
+
+  /// Authoring the terms every creator reads before accepting. Must be
+  /// published once before any invite or application is accepted.
+  static const vendorPartnershipTerms = '/vendor/partnerships/terms';
   static const vendorPartnershipsInvite =
       '/vendor/partnerships/:campaignId/invite';
   static const vendorBrandStudio = '/vendor/brand-studio';
