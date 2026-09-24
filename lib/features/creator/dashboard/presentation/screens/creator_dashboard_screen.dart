@@ -235,7 +235,7 @@ class _DashboardContent extends ConsumerWidget {
             // own paged reel list, which carries a real total.
             _StatsSection(
               sales: dashboard.totalSales,
-              reels: ref.watch(creatorReelCountProvider).valueOrNull,
+              reels: ref.watch(creatorReelCountProvider).asData?.value,
               totalViews: dashboard.totalViews,
             ),
             const SizedBox(height: DesignTokens.s24),
