@@ -170,8 +170,8 @@ void main() {
       );
       expect(
         RegExp(r"ttSend\('unMute'\)").allMatches(html),
-        hasLength(1),
-        reason: 'only ttAskSound asks for sound',
+        hasLength(2),
+        reason: 'only the ask and its one retry ask for sound',
       );
       final playing = section(
         'if (data.value === 1) {',
@@ -191,6 +191,26 @@ void main() {
     // with nothing at all. Nothing watched for that, so no refusal was
     // reported, Dart never learned the reel was silent, and the "Turn sound
     // on" button — which only appears once a refusal is known — never showed.
+    // Sound came on for some TikTok reels and not others on the same
+    // connection. One unanswered unMute was taken as a refusal, and whether
+    // the answer beat the timer depended on how busy the player happened to
+    // be — a race, not a decision by the platform.
+    test('an unanswered unMute is asked again before it counts as a refusal',
+        () {
+      final ask = section('function ttAskSound()', 'function ttProgress()');
+      expect(ask, contains('if (ttSoundTries < TT_SOUND_TRIES)'));
+      expect(
+        ask,
+        contains('ttArmSoundTimer();'),
+        reason: 'the retry re-arms the timer, so the second silence is what '
+            'decides it',
+      );
+      expect(
+        RegExp(r'var TT_SOUND_TRIES = (\d+);').firstMatch(html)?.group(1),
+        '2',
+      );
+    });
+
     test('an unanswered unMute is treated as a refusal', () {
       final ask = section('function ttAskSound()', 'function ttProgress()');
       expect(ask, contains('ttSoundTimer = setTimeout('));

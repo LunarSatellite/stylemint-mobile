@@ -20,9 +20,28 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 /// play/pause state without owning the underlying controller.
 class ReelPlaybackController {
   VoidCallback? _onToggle;
+  VoidCallback? _onToggleMuted;
+  final ValueNotifier<bool> _muted = ValueNotifier<bool>(true);
 
   /// Toggle play/pause on the attached [ReelPlayer]; no-op if none attached.
   void toggle() => _onToggle?.call();
+
+  /// Turn sound on or off on the attached [ReelPlayer]; no-op if none
+  /// attached.
+  void toggleMuted() => _onToggleMuted?.call();
+
+  /// Whether the attached player is muted, for a surface that draws the sound
+  /// control itself.
+  ///
+  /// A screen that lays its own full-size tap target over the player has to:
+  /// a control drawn inside the player would sit underneath that target and
+  /// never receive a tap. The creator's reel details screen did exactly that
+  /// and then passed `showSoundControl: false`, which left the reel playing
+  /// silently with nothing anywhere to turn sound on.
+  ///
+  /// Starts true because every reel starts muted — the platforms refuse to
+  /// autoplay with sound.
+  ValueListenable<bool> get muted => _muted;
 }
 
 /// Inline player for a reel, shared by the customer feed, the creator's reel
@@ -126,6 +145,7 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     widget.playbackController?._onToggle = _togglePlayPause;
+    widget.playbackController?._onToggleMuted = _toggleMuted;
     _initNative();
   }
 
@@ -157,8 +177,11 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     if (oldWidget.playbackController != widget.playbackController) {
       if (oldWidget.playbackController?._onToggle == _togglePlayPause) {
         oldWidget.playbackController?._onToggle = null;
+        oldWidget.playbackController?._onToggleMuted = null;
       }
       widget.playbackController?._onToggle = _togglePlayPause;
+      widget.playbackController?._onToggleMuted = _toggleMuted;
+      _publishMuted();
     }
 
     final source = resolveReelPlayback(widget.reel);
@@ -232,6 +255,28 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
   }
 
   /// Outside a feed, an embedded reel gets a player of its own.
+  /// The pool [_publishMuted] is currently listening to, so the listener is
+  /// moved rather than stacked when the player changes pools.
+  EmbedPlayerPool? _watchedMuteSource;
+
+  /// Keeps [ReelPlaybackController.muted] current, whichever path this reel
+  /// plays on. The embed pool is a [Listenable] and the native path is not,
+  /// so the pool is subscribed to and the native flag is pushed on change.
+  void _watchMuteSource() {
+    final pool = _source is EmbedSource ? _soundPool : null;
+    if (!identical(pool, _watchedMuteSource)) {
+      _watchedMuteSource?.removeListener(_publishMuted);
+      _watchedMuteSource = pool;
+      _watchedMuteSource?.addListener(_publishMuted);
+    }
+    _publishMuted();
+  }
+
+  void _publishMuted() {
+    final pool = _source is EmbedSource ? _soundPool : null;
+    widget.playbackController?._muted.value = pool?.muted ?? _nativeMuted;
+  }
+
   void _syncOwnPool() {
     final source = _source;
     if (source is! EmbedSource || _scopePool != null) {
@@ -241,12 +286,16 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
       if (stale != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) => stale.dispose());
       }
+      // The feed's scope pool, or the native path, still has a mute state
+      // for a surface drawing its own control.
+      _watchMuteSource();
       return;
     }
     final pool = _ownPool ??= EmbedPlayerPool(slotCount: 1);
     pool
       ..setWindow(active: EmbedRequest(source))
       ..setHostActive(_shouldPlay);
+    _watchMuteSource();
   }
 
   /// Downloads the neighbour's video bytes, then — the part that actually
@@ -448,7 +497,9 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
   void dispose() {
     if (widget.playbackController?._onToggle == _togglePlayPause) {
       widget.playbackController?._onToggle = null;
+      widget.playbackController?._onToggleMuted = null;
     }
+    _watchedMuteSource?.removeListener(_publishMuted);
     WidgetsBinding.instance.removeObserver(this);
     _disposeNative();
     _ownPool?.dispose();
@@ -501,6 +552,9 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
       return;
     }
     setState(() => _nativeMuted = !_nativeMuted);
+    // The pool branch above notifies its own listeners; the native flag has
+    // none, so the surface drawing the control is told here.
+    _publishMuted();
     unawaited(_applyNativeVolume());
   }
 
