@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/widgets/caption_editor.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/widgets/add_tagged_product_sheet.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/reel_caption/reel_caption.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -941,6 +942,26 @@ class _TaggedProductsSheet extends ConsumerWidget {
                     ),
                   ),
                 ),
+              const SizedBox(height: DesignTokens.s12),
+              // The counterpart to the remove button above. Tagging otherwise
+              // only exists inside the import wizard, and a reel that is
+              // already imported cannot re-enter it — the unique index on
+              // (source platform, external id) refuses a second import — so
+              // without this a creator whose partnership or product listing
+              // arrived after the import had no way to connect the two.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Tag a product'),
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: DesignTokens.bgAppBody,
+                    builder: (_) => AddTaggedProductSheet(reelId: reelId),
+                  ),
+                ),
+              ),
               const SizedBox(height: DesignTokens.s8),
             ],
           ),
