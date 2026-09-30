@@ -270,6 +270,28 @@ class _SignInMethodSelectionScreenState
                         ),
                       ),
                       const SizedBox(height: DesignTokens.s16),
+                      // Creating a passkey used to be reachable only by
+                      // failing to sign in with one: the bootstrap signup ran
+                      // from the PASSKEY_NO_CREDENTIALS branch of
+                      // _continueWithPasskey and nowhere else. When the
+                      // ceremony reported anything but that exact code — which
+                      // on a device with no credentials it often does — a new
+                      // user had no route to a passkey at all. The database
+                      // showed it plainly: 23 authentication challenges issued,
+                      // zero credentials ever registered.
+                      //
+                      // A first-time user should not have to trigger a failure
+                      // to find the way in, so signup is its own button. The
+                      // fallback stays for anyone who taps the top CTA first.
+                      TextButton(
+                        onPressed: _busy ? null : _startBootstrapSignup,
+                        child: Text(
+                          "New here? Create an account",
+                          style: DesignTokens.mediumSemibold.copyWith(
+                            color: DesignTokens.primaryGreen,
+                          ),
+                        ),
+                      ),
                       TextButton(
                         onPressed: () => setState(() => _showMore = true),
                         child: Text(
