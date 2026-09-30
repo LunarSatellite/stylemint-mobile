@@ -86,15 +86,36 @@ class _SignInMethodSelectionScreenState
           SmSnackbar.error(context, NetworkExceptions.getMessage(failure));
           return;
         }
-        if (failure.validationCode == 'PASSKEY_TIMEOUT') {
-          SmSnackbar.error(
-            context,
+        // Everything the ceremony can distinguish, said plainly. These used to
+        // fall through to "Could not sign in with passkey. Try again." — one
+        // sentence for six different causes, most of which retrying cannot
+        // fix. A device without passkey support, a domain that is not
+        // associated and a missing Google account each need a different
+        // response from the person holding the phone, and none of them is
+        // "try again". It also made the failures undiagnosable from outside:
+        // the OS-level error never reaches the server, so the message on
+        // screen is the only evidence there is.
+        final message = switch (failure.validationCode) {
+          'PASSKEY_DOMAIN_NOT_ASSOCIATED' =>
+            'This app is not yet associated with the StyleMint domain. '
+                'Reinstalling the app usually fixes it.',
+          'PASSKEY_DEVICE_NOT_SUPPORTED' =>
+            'This device does not support passkeys. Use Email or Phone.',
+          'PASSKEY_NO_GOOGLE_ACCOUNT' =>
+            'Add a Google account on this device to use passkeys, '
+                'or sign in with Email or Phone.',
+          'PASSKEY_SYNC_UNAVAILABLE' =>
+            'Turn on password syncing for this device to use passkeys, '
+                'or sign in with Email or Phone.',
+          'PASSKEY_TIMEOUT' =>
             'Passkey sign-in timed out. Your device may not support this — '
-            'try Email or Phone instead.',
-          );
-          return;
-        }
-        SmSnackbar.error(context, 'Could not sign in with passkey. Try again.');
+                'try Email or Phone instead.',
+          'PASSKEY_OPTIONS_INVALID' =>
+            'Passkey sign-in is misconfigured on our side. '
+                'Please use Email or Phone for now.',
+          _ => 'Could not sign in with passkey. Try again.',
+        };
+        SmSnackbar.error(context, message);
       },
       orElse: () {},
     );
