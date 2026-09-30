@@ -20,7 +20,13 @@ class CreatorReelSummaryDto {
     return CreatorReelSummaryDto(
       id: (json['id'] as String?) ?? '',
       thumbnailUrl: json['thumbnailCdnUrl'] as String?,
-      views: (json['viewsSnapshot'] as num?)?.toInt() ?? 0,
+      // viewCount is the platform snapshot plus views recorded in StyleMint.
+      // Falls back to viewsSnapshot alone so this keeps working against a
+      // server that predates the combined field.
+      views:
+          (json['viewCount'] as num?)?.toInt() ??
+          (json['viewsSnapshot'] as num?)?.toInt() ??
+          0,
       likes: (json['likesSnapshot'] as num?)?.toInt() ?? 0,
       publishedAtUtc: DateTime.tryParse(
         json['publishedAtUtc'] as String? ?? '',
