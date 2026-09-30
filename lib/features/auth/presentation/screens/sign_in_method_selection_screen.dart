@@ -293,7 +293,7 @@ class _SignInMethodSelectionScreenState
 }
 
 /// Plan B — all sign-in options including passkey as a row.
-class _PlanB extends StatelessWidget {
+class _PlanB extends ConsumerWidget {
   const _PlanB({
     required this.onPasskey,
     required this.onSocial,
@@ -302,11 +302,21 @@ class _PlanB extends StatelessWidget {
   /// Triggers usernameless passkey authentication. Null while busy.
   final VoidCallback? onPasskey;
 
-  /// Starts the Google / Facebook OAuth browser flow.
+  /// Starts the OAuth browser flow for the provider named.
   final Future<void> Function(String provider) onSocial;
 
+  /// Icon and label per provider name, keyed by the enum name the server
+  /// returns and the same value posted back to `/authorize`. A provider the
+  /// server offers but this map does not know is skipped rather than drawn
+  /// unlabelled — a blank button is worse than an absent one.
+  static const _brands = <String, ({String asset, String label})>{
+    'Google': (asset: 'assets/icons/google.svg', label: 'Google ID'),
+    'Apple': (asset: 'assets/icons/apple.svg', label: 'Apple ID'),
+    'Facebook': (asset: 'assets/icons/facebook.svg', label: 'Facebook ID'),
+  };
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         const SizedBox(height: DesignTokens.s8),
@@ -385,19 +395,31 @@ class _PlanB extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.s24),
 
-        // Google and Facebook sign-in are live on the server. Apple stays
-        // hidden until Apple sign-in credentials are configured there too.
-        _SocialButton(
-          assetPath: 'assets/icons/google.svg',
-          label: 'Google ID',
-          onTap: () => onSocial('Google'),
-        ),
-        const SizedBox(height: DesignTokens.s16),
-        _SocialButton(
-          assetPath: 'assets/icons/facebook.svg',
-          label: 'Facebook ID',
-          onTap: () => onSocial('Facebook'),
-        ),
+        // Driven by the server rather than hardcoded, so a provider appears
+        // when its credentials are configured and stops being offered when
+        // they are pulled — neither needing a new build. While the lookup is
+        // in flight, or if it failed, nothing is drawn: the email, phone and
+        // passkey paths above are unaffected, and an empty gap is honest
+        // where a button that cannot complete a sign-in is not.
+        ...ref
+            .watch(oauthProvidersProvider)
+            .maybeWhen(
+              data: (providers) => providers
+                  .map((name) => (name: name, brand: _brands[name]))
+                  .where((p) => p.brand != null)
+                  .expand(
+                    (p) => [
+                      _SocialButton(
+                        assetPath: p.brand!.asset,
+                        label: p.brand!.label,
+                        onTap: () => onSocial(p.name),
+                      ),
+                      const SizedBox(height: DesignTokens.s16),
+                    ],
+                  )
+                  .toList(),
+              orElse: () => const <Widget>[],
+            ),
       ],
     );
   }

@@ -685,3 +685,20 @@ final oauthSignInProvider =
         authRepository: ref.watch(authRepositoryProvider),
       );
     });
+
+/// Social providers this deployment can complete a sign-in with, by enum name.
+///
+/// The sign-in screen renders one button per entry instead of hardcoding the
+/// set. That is what lets Apple — whose server-side flow has been complete but
+/// uncredentialled — appear as soon as the credentials are configured, without
+/// another release.
+///
+/// On failure it yields the empty list rather than surfacing an error: the
+/// screen's own email and phone paths are unaffected by a social provider
+/// lookup that did not answer, and an error banner over a working sign-in
+/// screen would be noise. The effect is the same as a deployment with no
+/// social providers configured — the buttons are simply absent.
+final oauthProvidersProvider = FutureProvider<List<String>>((ref) async {
+  final result = await ref.watch(authRepositoryProvider).oauthProviders();
+  return result.fold((_) => const <String>[], (providers) => providers);
+});

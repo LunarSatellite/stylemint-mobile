@@ -342,6 +342,25 @@ class AuthRepositoryImpl implements AuthRepository {
   // ==========================================================================
 
   @override
+  Future<Either<NetworkExceptions, List<String>>> oauthProviders() async {
+    if (await networkInfo.isConnected) {
+      try {
+        return right(await remoteDataSource.oauthProviders());
+      } catch (e) {
+        if (e is DioException) {
+          return left(mapDioExceptionToNetworkException(e));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(const NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, OAuthAuthorizeResultDto>> oauthAuthorize({
     required String provider,
     required String redirectUri,

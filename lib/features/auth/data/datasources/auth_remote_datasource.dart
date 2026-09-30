@@ -185,6 +185,22 @@ class AuthRemoteDataSource {
   // OAuth / social login
   // ==========================================================================
 
+  /// GET `/v1/auth/oauth/providers` — the providers this deployment can
+  /// actually complete a sign-in with. Anonymous, so plain [get].
+  ///
+  /// The sign-in screen used to hardcode its buttons, which meant the set
+  /// shown and the set that works could only be kept in step by shipping a
+  /// build. Asking instead means a provider configured on the server appears
+  /// on the next launch, and one whose credentials are pulled stops being
+  /// offered rather than failing when tapped.
+  Future<List<String>> oauthProviders() async {
+    final response = await apiClient.get('/v1/auth/oauth/providers');
+    final map = response as Map<String, dynamic>;
+    return ((map['providers'] as List?) ?? const [])
+        .map((e) => e as String)
+        .toList(growable: false);
+  }
+
   /// POST `/v1/auth/oauth/{provider}/authorize`
   Future<OAuthAuthorizeResultDto> oauthAuthorize({
     required String provider,
