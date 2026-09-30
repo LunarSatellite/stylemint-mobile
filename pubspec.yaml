@@ -165,6 +165,12 @@ flutter:
     - assets/fonts/
     - assets/animations/
     - assets/branding/
+    # Looping clips for the onboarding carousel. Bundled rather than streamed:
+    # onboarding is the first screen a new user sees and must not wait on a
+    # network. The directory currently holds only its README — each slide falls
+    # back to its still illustration until the clips are added, so the build and
+    # the screen are both fine while it is empty. See the README for the spec.
+    - assets/videos/onboarding/
 
 
   # Bundled OFL fonts from github.com/google/fonts. Licence texts ship as

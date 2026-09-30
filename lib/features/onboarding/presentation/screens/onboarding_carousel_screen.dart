@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/onboarding/presentation/widgets/onboarding_clip.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_sticky_bottom_bar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -9,7 +10,18 @@ class _Slide {
   final String subtitle;
   final IconData icon;
   final String? imagePath;
-  const _Slide(this.title, this.subtitle, this.icon, {this.imagePath});
+
+  /// Bundled looping clip for this slide. The image stays the fallback, so a
+  /// slide whose clip file is not present yet renders exactly as before.
+  final String? clipPath;
+
+  const _Slide(
+    this.title,
+    this.subtitle,
+    this.icon, {
+    this.imagePath,
+    this.clipPath,
+  });
 }
 
 /// Onboarding intro carousel — pixel-matched to Figma section `9365:10823`
@@ -36,24 +48,28 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
       "Discover trending fits, tips, and products directly from the people who know what's up",
       Icons.groups_rounded,
       imagePath: 'assets/images/onboarding/rafiki.png',
+      clipPath: 'assets/videos/onboarding/creators.mp4',
     ),
     _Slide(
       'Tap. Try. Buy. Just Like That With Vibe Try',
       'See a product in a reel? Tap it. Try it in AR. Cop it in seconds. No fluff, no fuss.',
       Icons.view_in_ar_rounded,
       imagePath: 'assets/images/onboarding/ecommerce_campaign.png',
+      clipPath: 'assets/videos/onboarding/tap_try_buy.mp4',
     ),
     _Slide(
       'Find Your Tribe, Make Your Squad, Share the Drip',
       'Start fashion challenges, shop in squads, and earn rewards together',
       Icons.diversity_3_rounded,
       imagePath: 'assets/images/onboarding/group-discussion.png',
+      clipPath: 'assets/videos/onboarding/squads.mp4',
     ),
     _Slide(
       'Get Rewarded for Being Stylish.',
       'Earn points for engaging, shopping, and showing off your style',
       Icons.card_giftcard_rounded,
       imagePath: 'assets/images/onboarding/gift.png',
+      clipPath: 'assets/videos/onboarding/rewards.mp4',
     ),
   ];
 
@@ -174,12 +190,10 @@ class _SlideView extends StatelessWidget {
           // Illustration
           Expanded(
             child: Center(
-              child: slide.imagePath != null
-                  ? Image.asset(
-                      slide.imagePath!,
-                      width: 240,
-                      height: 240,
-                      fit: BoxFit.contain,
+              child: (slide.clipPath != null || slide.imagePath != null)
+                  ? OnboardingClip(
+                      clipPath: slide.clipPath,
+                      imagePath: slide.imagePath,
                     )
                   : Container(
                       width: 240,

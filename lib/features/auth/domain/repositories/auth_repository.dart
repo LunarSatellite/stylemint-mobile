@@ -59,6 +59,12 @@ abstract interface class AuthRepository {
   Future<Either<NetworkExceptions, Unit>> sessionPing();
 
   // --- OAuth / social ---
+
+  /// Social providers this deployment can actually complete a sign-in with,
+  /// by enum name ("Google", "Apple", "Facebook"). The caller renders one
+  /// button per entry rather than hardcoding the set.
+  Future<Either<NetworkExceptions, List<String>>> oauthProviders();
+
   Future<Either<NetworkExceptions, OAuthAuthorizeResultDto>> oauthAuthorize({
     required String provider,
     required String redirectUri,
