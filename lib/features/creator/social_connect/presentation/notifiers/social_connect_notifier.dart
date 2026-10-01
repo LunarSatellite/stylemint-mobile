@@ -56,9 +56,25 @@ class SocialConnectNotifier extends StateNotifier<SocialConnectState> {
           return const NetworkExceptions.unexpectedError();
         }
         try {
+          // iOS cannot use an in-app browser for this. inAppBrowserView there
+          // is SFSafariViewController, which refuses to follow a redirect to a
+          // custom URL scheme — so `stylemint://social-connected` was blocked
+          // at the final hop and the connect never came back, even though the
+          // provider had authorised and the backend had already exchanged the
+          // code. Real Safari does hand a custom scheme to its app.
+          //
+          // The Safari tab is left behind, since it is not ours to close, but
+          // the deep link brings the app forward over it. Android keeps the
+          // in-app tab: Custom Tabs follow custom-scheme redirects and can be
+          // closed.
+          //
+          // Same restriction, same fix as the social sign-in launch in
+          // sign_in_method_selection_screen.
           final launched = await launchUrl(
             Uri.parse(url),
-            mode: LaunchMode.inAppBrowserView,
+            mode: defaultTargetPlatform == TargetPlatform.iOS
+                ? LaunchMode.externalApplication
+                : LaunchMode.inAppBrowserView,
           );
           if (!launched) {
             return const NetworkExceptions.unexpectedError();

@@ -188,12 +188,29 @@ class _SignInMethodSelectionScreenState
     // close a browser url_launcher itself opened. Opened through
     // FlutterWebBrowser it stayed on top of the app forever, still showing the
     // provider's page, which is indistinguishable from sign-in not working.
-    // Same call the social-connect flow already uses for the same round trip.
+    //
+    // The launch mode has to differ by platform, and iOS is the awkward one.
+    // inAppBrowserView there is SFSafariViewController, which refuses to
+    // follow a redirect to a custom URL scheme — a documented restriction, not
+    // a bug we can work around. So `stylemint://oauth-callback` was blocked at
+    // the last hop: the provider authenticated the person, the server minted a
+    // session, and the app never heard about it. Sign in with Apple showed it
+    // most clearly, because Face ID visibly succeeded first.
+    //
+    // externalApplication opens real Safari, which does hand a custom scheme
+    // to its app. The cost is that closeInAppWebView() cannot dismiss what it
+    // did not open, so the Safari tab is left behind — but the deep link
+    // brings the app to the foreground over it, which is how every other app
+    // using this pattern behaves. A tab behind the app beats a sign-in that
+    // never lands.
+    //
+    // Android keeps inAppBrowserView: Chrome Custom Tabs do follow
+    // custom-scheme redirects, and closing it there works.
+    final mode = Theme.of(context).platform == TargetPlatform.iOS
+        ? LaunchMode.externalApplication
+        : LaunchMode.inAppBrowserView;
     try {
-      final launched = await launchUrl(
-        Uri.parse(url),
-        mode: LaunchMode.inAppBrowserView,
-      );
+      final launched = await launchUrl(Uri.parse(url), mode: mode);
       if (!launched && mounted) {
         SmSnackbar.error(
           context,

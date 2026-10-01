@@ -356,6 +356,18 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'Linked Accounts',
               onTap: () => context.push(RouteNames.linkedAccounts),
             ),
+            // The only way an existing account can get a passkey. Sign-in is
+            // passkey-first, but the bootstrap signup behind it creates an
+            // account as well as a credential, so it is no use to someone who
+            // already has one. PasskeySetupScreen registers a credential
+            // against the signed-in account and was routed but unreachable —
+            // nothing in the app navigated to it, which is half of why
+            // passkey_credentials has stood at zero.
+            ProfileMenuItem(
+              icon: Icons.key_outlined,
+              label: 'Set Up Passkey',
+              onTap: () => context.push(RouteNames.passkeyFace),
+            ),
             // Account security hub: 2FA, trusted devices, active sessions,
             // blocked accounts, marketing consents, pause/delete.
             ProfileMenuItem(

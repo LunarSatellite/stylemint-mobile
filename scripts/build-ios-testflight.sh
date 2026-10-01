@@ -168,11 +168,18 @@ if [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ] && [ -f "$KEY_PATH" ]
     -authenticationKeyPath "$KEY_PATH"
   )
 
-  # DEVELOPMENT_TEAM is the only override, and it is deliberate: the project
-  # hardcodes YBSBPFR23X, a free personal team, and Xcode answered 'No Account
-  # for Team "YBSBPFR23X"'. Personal teams support neither this app's
-  # associated-domains/NFC entitlements nor TestFlight. ASC_TEAM_ID points it
-  # at the paid team the API key belongs to.
+  # DEVELOPMENT_TEAM is the only override. It was load-bearing when the
+  # project hardcoded YBSBPFR23X — a free personal team that Xcode rejected
+  # with 'No Account for Team "YBSBPFR23X"', and which supports neither this
+  # app's associated-domains/NFC entitlements nor TestFlight. project.pbxproj
+  # now carries the paid team 3M82H6Y69S directly, so this override agrees
+  # with the project rather than correcting it, and ASC_TEAM_ID still lets a
+  # different team be pointed at without editing the project.
+  #
+  # Leaving the stale id in the project was not harmless while it lasted: the
+  # same value reached the Apple sign-in config and the
+  # apple-app-site-association file, where it produced invalid_client on every
+  # token exchange and stopped passkeys registering at all.
   #
   # CODE_SIGN_IDENTITY is deliberately NOT overridden. An earlier version
   # forced "Apple Distribution", reasoning that an App Store archive needs a
