@@ -99,3 +99,4 @@ logs/
 # Device screen dumps and screenshots captured while designing. Local only.
 .device-*
 stylemint-*.png
+.asc-tools/
