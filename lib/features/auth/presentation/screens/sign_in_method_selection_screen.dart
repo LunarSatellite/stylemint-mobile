@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
@@ -15,6 +17,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/routes/oauth_callback_scheme.dart';
 
 /// Auth entry — **passkey first**.
 ///
@@ -160,11 +163,18 @@ class _SignInMethodSelectionScreenState
         );
   }
 
-  /// Social sign-in (Google / Facebook). Fetches the authorization URL and
-  /// stashes the CSRF state, then opens it in an in-app browser. The provider
-  /// redirects back via `stylemint://auth/oauth/callback?code=&state=`, which
-  /// the deep-link handler routes to [OAuthCallbackScreen] to finish the
-  /// exchange.
+  /// Social sign-in (Apple / Google / Facebook). Fetches the authorization URL
+  /// and stashes the CSRF state, then opens the provider.
+  ///
+  /// Two paths, because the platforms differ in what can catch the final
+  /// redirect to `stylemint://auth/oauth/callback?code=&state=`:
+  ///
+  /// - **iOS** uses ASWebAuthenticationSession via [FlutterWebAuth2]. It is a
+  ///   sheet over this screen, not a trip to Safari, it *returns* the callback
+  ///   URL to the caller, and it closes itself on the way back. We then push
+  ///   the callback route ourselves.
+  /// - **Android** keeps the Custom Tab + deep link it has always used, which
+  ///   already slides over the app and already follows custom schemes.
   Future<void> _startSocial(String provider) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -182,35 +192,91 @@ class _SignInMethodSelectionScreenState
       return;
     }
 
-    // url_launcher, not FlutterWebBrowser: the provider sends the browser to
-    // `stylemint://oauth-callback?...`, the app signs in underneath, and then
-    // the browser has to be dismissed — and `closeInAppWebView()` can only
-    // close a browser url_launcher itself opened. Opened through
-    // FlutterWebBrowser it stayed on top of the app forever, still showing the
-    // provider's page, which is indistinguishable from sign-in not working.
-    //
-    // The launch mode has to differ by platform, and iOS is the awkward one.
-    // inAppBrowserView there is SFSafariViewController, which refuses to
-    // follow a redirect to a custom URL scheme — a documented restriction, not
-    // a bug we can work around. So `stylemint://oauth-callback` was blocked at
-    // the last hop: the provider authenticated the person, the server minted a
-    // session, and the app never heard about it. Sign in with Apple showed it
-    // most clearly, because Face ID visibly succeeded first.
-    //
-    // externalApplication opens real Safari, which does hand a custom scheme
-    // to its app. The cost is that closeInAppWebView() cannot dismiss what it
-    // did not open, so the Safari tab is left behind — but the deep link
-    // brings the app to the foreground over it, which is how every other app
-    // using this pattern behaves. A tab behind the app beats a sign-in that
-    // never lands.
-    //
-    // Android keeps inAppBrowserView: Chrome Custom Tabs do follow
-    // custom-scheme redirects, and closing it there works.
-    final mode = Theme.of(context).platform == TargetPlatform.iOS
-        ? LaunchMode.externalApplication
-        : LaunchMode.inAppBrowserView;
+    if (Theme.of(context).platform == TargetPlatform.iOS) {
+      await _startSocialIos(provider, url);
+      return;
+    }
+    await _startSocialAndroid(provider, url);
+  }
+
+  /// iOS: ASWebAuthenticationSession.
+  ///
+  /// This replaces `launchUrl(externalApplication)`, which was itself a
+  /// workaround. `inAppBrowserView` on iOS is SFSafariViewController, which
+  /// refuses to follow a redirect to a custom URL scheme — a documented
+  /// restriction — so the callback was blocked at the last hop: the provider
+  /// authenticated the person, the server minted a session, and the app never
+  /// heard about it. Sign in with Apple showed it most clearly, because Face
+  /// ID visibly succeeded first.
+  ///
+  /// Opening real Safari instead did deliver the deep link, at the cost of
+  /// throwing the user out of the app and leaving a tab behind that
+  /// `closeInAppWebView()` could not dismiss (it can only close what
+  /// url_launcher opened). ASWebAuthenticationSession is the API built for
+  /// exactly this: it owns the callback scheme for the duration of the
+  /// session, hands the URL straight back, and dismisses itself.
+  Future<void> _startSocialIos(String provider, String url) async {
+    final String result;
     try {
-      final launched = await launchUrl(Uri.parse(url), mode: mode);
+      result = await FlutterWebAuth2.authenticate(
+        url: url,
+        // Scheme only — the session matches on it and returns the whole URL.
+        callbackUrlScheme: oauthCallbackScheme,
+        options: const FlutterWebAuth2Options(
+          // Not ephemeral: a person who is already signed in to Google in
+          // Safari should not have to type their password again, and Apple's
+          // own sheet relies on the existing session too.
+          preferEphemeral: false,
+        ),
+      );
+    } on PlatformException {
+      // The user dismissed the sheet. Not an error worth a red snackbar —
+      // they cancelled on purpose and are looking at this screen already.
+      return;
+    } catch (_) {
+      if (mounted) {
+        SmSnackbar.error(
+          context,
+          'Could not open the $provider sign-in page.',
+        );
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    // Hand off to the same screen the Android deep link lands on, so the CSRF
+    // check, the code exchange and the new-vs-returning routing all stay in
+    // one place.
+    final callback = Uri.parse(result);
+    context.go(
+      Uri(
+        path: RouteNames.oauthCallback,
+        queryParameters: {
+          'code': callback.queryParameters['code'] ?? '',
+          'state': callback.queryParameters['state'] ?? '',
+          if (callback.queryParameters['error'] != null)
+            'error': callback.queryParameters['error']!,
+        },
+      ).toString(),
+    );
+  }
+
+  /// Android: Chrome Custom Tab, which does follow custom-scheme redirects and
+  /// can be closed afterwards. The provider sends the browser to
+  /// `stylemint://auth/oauth/callback?...`; the app's deep-link handler routes
+  /// to [OAuthCallbackScreen], which dismisses the tab and finishes.
+  ///
+  /// url_launcher rather than FlutterWebBrowser: `closeInAppWebView()` can
+  /// only close a browser url_launcher itself opened. Opened the other way it
+  /// stayed on top of the app forever, still showing the provider's page,
+  /// which is indistinguishable from sign-in not working.
+  Future<void> _startSocialAndroid(String provider, String url) async {
+    try {
+      final launched = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.inAppBrowserView,
+      );
       if (!launched && mounted) {
         SmSnackbar.error(
           context,

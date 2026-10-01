@@ -132,7 +132,8 @@ class _CreatorStorefrontScreenState
     required bool following,
   }) {
     final stats = loaded.stats;
-    final followers = loaded.followersWhen(following: following);
+    final followers = loaded.followersWhen(viewerFollows: following);
+    final followingCount = loaded.following;
     return [
       if (stats != null) ...[
         StorefrontStat(
@@ -148,6 +149,13 @@ class _CreatorStorefrontScreenState
         StorefrontStat(
           value: formatCompactNumber(followers),
           label: followers == 1 ? 'Follower' : 'Followers',
+        ),
+      // The stats endpoint has always returned this next to followers; it
+      // was dropped in StorefrontFollowSummary, so the stat never existed.
+      if (followingCount != null)
+        StorefrontStat(
+          value: formatCompactNumber(followingCount),
+          label: 'Following',
         ),
     ];
   }

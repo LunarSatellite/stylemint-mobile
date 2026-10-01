@@ -34,6 +34,7 @@ final class CreatorStorefrontLoaded extends CreatorStorefrontState {
     required this.profile,
     this.stats,
     this.followers,
+    this.following,
     this.followedAtLoad = false,
   });
 
@@ -45,15 +46,21 @@ final class CreatorStorefrontLoaded extends CreatorStorefrontState {
   /// Null when the follower count couldn't be read.
   final int? followers;
 
+  /// Accounts this creator follows. Null when the count could not be read.
+  final int? following;
+
   /// Whether the viewer followed the creator when the count was read.
   final bool followedAtLoad;
 
   /// The follower count adjusted for a follow toggled since loading.
-  int? followersWhen({required bool following}) {
+  /// Parameter named viewerFollows, not following: this class now also has a
+  /// `following` field (how many accounts the creator follows), and a
+  /// parameter of that name would shadow it inside this method.
+  int? followersWhen({required bool viewerFollows}) {
     final base = followers;
     if (base == null) return null;
-    if (following == followedAtLoad) return base;
-    return math.max(0, base + (following ? 1 : -1));
+    if (viewerFollows == followedAtLoad) return base;
+    return math.max(0, base + (viewerFollows ? 1 : -1));
   }
 }
 
@@ -102,6 +109,7 @@ class CreatorStorefrontNotifier extends StateNotifier<CreatorStorefrontState> {
         profile: value,
         stats: stats.fold<CreatorReelStats?>((_) => null, (s) => s),
         followers: summary?.followers,
+        following: summary?.following,
         followedAtLoad: summary?.isFollowedByViewer ?? false,
       ),
     );
