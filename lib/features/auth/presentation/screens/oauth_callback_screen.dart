@@ -113,8 +113,47 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     context.go(RouteNames.signInMethod);
   }
 
+  /// Whether [_route] has already acted, so a state that is both already
+  /// settled on first build and then re-notified cannot navigate twice.
+  bool _routed = false;
+
+  /// Navigates for a settled sign-in state.
+  ///
+  /// Extracted from the listener because the listener alone was not enough.
+  /// `ref.listen` fires on a *change* observed after it is registered, and the
+  /// exchange frequently finishes before this screen's first build — the deep
+  /// link arrives and _handleCallback runs from initState's post-frame
+  /// callback. When it won that race the provider was already loadSuccess with
+  /// no transition left to observe, so nothing navigated: the user was signed
+  /// in, with tokens persisted, staring at the callback screen. Tapping
+  /// through a second time produced a fresh transition while the listener was
+  /// live, which is why it "worked on the second attempt".
+  void _route(LoginState state) {
+    if (_routed || !mounted) return;
+    state.maybeWhen(
+      loadSuccess: (auth) {
+        _routed = true;
+        if (auth.isNewAccount) {
+          // New account → role / onboarding picker. Pass isNewAccount via the
+          // query string (not extra) so it survives the post-login refresh.
+          context.go('${RouteNames.userTypeSelection}?new=true');
+        } else {
+          context.go(RouteNames.home);
+        }
+      },
+      orElse: () {},
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Covers the state that was already settled before this build. Deferred to
+    // a post-frame callback because navigating during build is not allowed.
+    final settled = ref.read(oauthSignInProvider);
+    if (!_routed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _route(settled));
+    }
+
     ref.listen<LoginState>(oauthSignInProvider, (previous, next) {
       // State name only: LoginState.loadSuccess carries the access and refresh
       // tokens, and its toString() would write them to the device log.
@@ -128,15 +167,7 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
       // ignore: avoid_print
       print('[OAUTH-DEBUG] oauthSignInProvider changed: $stateName');
       next.maybeWhen(
-        loadSuccess: (auth) {
-          if (auth.isNewAccount) {
-            // New account → role / onboarding picker. Pass isNewAccount via the
-            // query string (not extra) so it survives the post-login refresh.
-            context.go('${RouteNames.userTypeSelection}?new=true');
-          } else {
-            context.go(RouteNames.home);
-          }
-        },
+        loadSuccess: (_) => _route(next),
         loadFailure: (failure) {
           // 409 — the email is already on a different sign-in method.
           if (failure.isConflict) {
