@@ -109,6 +109,11 @@ dependencies:
   # itself when it does. iOS only; Android Custom Tabs already work.
   # See sign_in_method_selection_screen._startSocial.
   flutter_web_auth_2: ^4.1.0
+  # Native Sign in with Apple: the OS sheet with Face ID, no web content
+  # at all. iOS only -- Apple ships no native SDK for Android, which keeps
+  # the web flow. Also what App Store review expects alongside Google and
+  # Facebook buttons.
+  sign_in_with_apple: ^7.0.1
   app_links: ^7.0.0
   passkeys: ^2.8.2
 

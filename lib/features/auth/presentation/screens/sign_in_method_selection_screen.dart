@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -177,6 +178,16 @@ class _SignInMethodSelectionScreenState
   ///   already slides over the app and already follows custom schemes.
   Future<void> _startSocial(String provider) async {
     if (_busy) return;
+
+    // Apple on iOS never touches a browser: the OS sheet authenticates the
+    // person and hands back a signed token. Everything else, and Apple on
+    // Android where no native SDK exists, goes through the web flow below.
+    if (provider.toLowerCase() == 'apple' &&
+        Theme.of(context).platform == TargetPlatform.iOS) {
+      await _startAppleNative();
+      return;
+    }
+
     setState(() => _busy = true);
     final url = await ref
         .read(oauthSignInProvider.notifier)
@@ -197,6 +208,90 @@ class _SignInMethodSelectionScreenState
       return;
     }
     await _startSocialAndroid(provider, url);
+  }
+
+  /// Native Sign in with Apple — the OS sheet, Face ID, no web content.
+  ///
+  /// Apple returns a signed identity token straight to the app, so there is
+  /// no authorization URL to open, no redirect to catch and no CSRF state to
+  /// carry: `POST /v1/auth/oauth/Apple/native` verifies the token's signature,
+  /// issuer, audience and expiry and mints the same session the web flow does.
+  /// Someone who signed in through the browser before lands on the same
+  /// account, because both resolve the same Apple subject.
+  ///
+  /// iOS only. Apple ships no native SDK for Android, where the web flow
+  /// stays. This is also what App Store review expects once Google and
+  /// Facebook buttons are on the screen.
+  Future<void> _startAppleNative() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final token = credential.identityToken;
+      if (token == null || token.isEmpty) {
+        if (mounted) {
+          SmSnackbar.error(
+            context,
+            'Apple did not return a sign-in token. Please try again.',
+          );
+        }
+        return;
+      }
+
+      // Apple sends the name exactly once, on first authorization, and never
+      // in the token. If it is not forwarded now it is gone — revoking the
+      // app under Settings > Apple ID is the only way to be offered it again.
+      final name = [credential.givenName, credential.familyName]
+          .whereType<String>()
+          .map((part) => part.trim())
+          .where((part) => part.isNotEmpty)
+          .join(' ');
+
+      await ref
+          .read(oauthSignInProvider.notifier)
+          .completeNative(
+            provider: 'Apple',
+            identityToken: token,
+            displayName: name.isEmpty ? null : name,
+          );
+      if (!mounted) return;
+
+      // Routed here rather than through OAuthCallbackScreen: that screen
+      // exists to receive a deep link, and this flow never produced one.
+      ref
+          .read(oauthSignInProvider)
+          .maybeWhen(
+            loadSuccess: (auth) => auth.isNewAccount
+                ? context.go('${RouteNames.userTypeSelection}?new=true')
+                : context.go(RouteNames.home),
+            loadFailure: (failure) => SmSnackbar.error(
+              context,
+              failure.isConflict
+                  ? 'An account already uses this email. Sign in with your '
+                        'existing method, then link Apple from settings.'
+                  : 'Apple sign-in failed. Please try again.',
+            ),
+            orElse: () {},
+          );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Dismissing the sheet is a decision, not a failure.
+      if (e.code == AuthorizationErrorCode.canceled) return;
+      if (mounted) {
+        SmSnackbar.error(context, 'Apple sign-in failed. Please try again.');
+      }
+    } catch (_) {
+      if (mounted) {
+        SmSnackbar.error(context, 'Apple sign-in failed. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   /// iOS: ASWebAuthenticationSession.
