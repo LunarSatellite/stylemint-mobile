@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/routes/oauth_callback_scheme.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/repositories/social_connect_repository.dart';
 
@@ -41,11 +44,21 @@ class SocialConnectNotifier extends StateNotifier<SocialConnectState> {
     );
   }
 
-  /// Starts the OAuth flow: fetches the provider authorize URL and opens it in
-  /// an in-app browser tab (Custom Tab / SFSafariViewController). Completion is
-  /// NOT awaited here — the backend exchanges the code server-side and then
-  /// redirects to `stylemint://social-connected?status=ok|error`, which the
-  /// app's deep-link handler routes to [onConnectReturn].
+  /// Starts the OAuth flow: fetches the provider authorize URL and opens it.
+  ///
+  /// **iOS** uses ASWebAuthenticationSession ([FlutterWebAuth2]): a sheet over
+  /// the app that returns the callback URL directly and dismisses itself. The
+  /// alternatives both failed here — `inAppBrowserView` is
+  /// SFSafariViewController, which refuses to follow a redirect to a custom
+  /// URL scheme, so `stylemint://social-connected` was blocked at the final
+  /// hop even though the provider had authorised and the backend had already
+  /// exchanged the code; and `externalApplication` opened real Safari, which
+  /// does deliver the deep link but throws the user out of the app and leaves
+  /// a tab behind that nothing can close.
+  ///
+  /// **Android** keeps the Custom Tab: it follows custom-scheme redirects, the
+  /// deep-link handler routes to [onConnectReturn], and it can be closed.
+  /// Completion is NOT awaited on that path.
   Future<NetworkExceptions?> connect(SocialPlatform platform) async {
     final either = await _repository.beginConnect(platform);
     return either.fold(
@@ -55,37 +68,54 @@ class SocialConnectNotifier extends StateNotifier<SocialConnectState> {
         if (url.isEmpty) {
           return const NetworkExceptions.unexpectedError();
         }
-        try {
-          // iOS cannot use an in-app browser for this. inAppBrowserView there
-          // is SFSafariViewController, which refuses to follow a redirect to a
-          // custom URL scheme — so `stylemint://social-connected` was blocked
-          // at the final hop and the connect never came back, even though the
-          // provider had authorised and the backend had already exchanged the
-          // code. Real Safari does hand a custom scheme to its app.
-          //
-          // The Safari tab is left behind, since it is not ours to close, but
-          // the deep link brings the app forward over it. Android keeps the
-          // in-app tab: Custom Tabs follow custom-scheme redirects and can be
-          // closed.
-          //
-          // Same restriction, same fix as the social sign-in launch in
-          // sign_in_method_selection_screen.
-          final launched = await launchUrl(
-            Uri.parse(url),
-            mode: defaultTargetPlatform == TargetPlatform.iOS
-                ? LaunchMode.externalApplication
-                : LaunchMode.inAppBrowserView,
-          );
-          if (!launched) {
-            return const NetworkExceptions.unexpectedError();
-          }
-          return null;
-        } catch (_) {
-          // No browser available / malformed URL.
-          return const NetworkExceptions.unexpectedError();
+        if (defaultTargetPlatform == TargetPlatform.iOS) {
+          return _connectIos(url);
         }
+        return _connectAndroid(url);
       },
     );
+  }
+
+  Future<NetworkExceptions?> _connectIos(String url) async {
+    final String result;
+    try {
+      result = await FlutterWebAuth2.authenticate(
+        url: url,
+        callbackUrlScheme: oauthCallbackScheme,
+        options: const FlutterWebAuth2Options(preferEphemeral: false),
+      );
+    } on PlatformException {
+      // Sheet dismissed by the user. Deliberate, so not a failure to report.
+      return null;
+    } catch (_) {
+      return const NetworkExceptions.unexpectedError();
+    }
+
+    // The session already closed itself, so unlike the Android path there is
+    // no browser to dismiss — go straight to the same completion handler.
+    final callback = Uri.parse(result);
+    final status = callback.queryParameters['status'];
+    await onConnectReturn(
+      ok: status == 'ok',
+      errorCode: callback.queryParameters['error'],
+    );
+    return null;
+  }
+
+  Future<NetworkExceptions?> _connectAndroid(String url) async {
+    try {
+      final launched = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.inAppBrowserView,
+      );
+      if (!launched) {
+        return const NetworkExceptions.unexpectedError();
+      }
+      return null;
+    } catch (_) {
+      // No browser available / malformed URL.
+      return const NetworkExceptions.unexpectedError();
+    }
   }
 
   /// Invoked by the deep-link handler when the backend's

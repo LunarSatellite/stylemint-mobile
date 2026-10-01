@@ -103,6 +103,12 @@ dependencies:
 
   # ── Auth helpers ──────────────────────────────────────────────────────────
   local_auth: ^3.0.1
+  # OAuth sheets. On iOS this is ASWebAuthenticationSession, which --
+  # unlike SFSafariViewController behind url_launcher inAppBrowserView --
+  # does hand a custom-scheme redirect back to the app, and dismisses
+  # itself when it does. iOS only; Android Custom Tabs already work.
+  # See sign_in_method_selection_screen._startSocial.
+  flutter_web_auth_2: ^4.1.0
   app_links: ^7.0.0
   passkeys: ^2.8.2
 
