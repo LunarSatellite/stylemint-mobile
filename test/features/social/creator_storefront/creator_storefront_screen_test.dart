@@ -297,6 +297,7 @@ void main() {
       ..follow = right(
         const StorefrontFollowSummary(
           followers: 1284000,
+          following: 312,
           isFollowedByViewer: true,
         ),
       )

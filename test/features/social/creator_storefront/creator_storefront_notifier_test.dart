@@ -36,6 +36,7 @@ void main() {
       storefront.follow = right(
         const StorefrontFollowSummary(
           followers: 1200,
+          following: 42,
           isFollowedByViewer: true,
         ),
       );
@@ -84,19 +85,19 @@ void main() {
         profile: sampleCreator,
         followers: 10,
       );
-      expect(notFollowing.followersWhen(following: false), 10);
-      expect(notFollowing.followersWhen(following: true), 11);
+      expect(notFollowing.followersWhen(viewerFollows: false), 10);
+      expect(notFollowing.followersWhen(viewerFollows: true), 11);
 
       const following = CreatorStorefrontLoaded(
         profile: sampleCreator,
         followers: 0,
         followedAtLoad: true,
       );
-      expect(following.followersWhen(following: false), 0);
+      expect(following.followersWhen(viewerFollows: false), 0);
       expect(
         const CreatorStorefrontLoaded(
           profile: sampleCreator,
-        ).followersWhen(following: true),
+        ).followersWhen(viewerFollows: true),
         isNull,
       );
     });

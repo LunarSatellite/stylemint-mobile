@@ -309,7 +309,11 @@ class FakeStorefrontRepository implements StorefrontRepository {
   >
   collections = {};
   Either<NetworkExceptions, StorefrontFollowSummary> follow = right(
-    const StorefrontFollowSummary(followers: 1200, isFollowedByViewer: false),
+    const StorefrontFollowSummary(
+      followers: 1200,
+      following: 42,
+      isFollowedByViewer: false,
+    ),
   );
   final List<String> calls = [];
 

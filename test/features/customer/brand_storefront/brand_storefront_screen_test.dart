@@ -310,7 +310,11 @@ void main() {
     );
     storefront
       ..follow = right(
-        const StorefrontFollowSummary(followers: 10, isFollowedByViewer: true),
+        const StorefrontFollowSummary(
+          followers: 10,
+          following: 3,
+          isFollowedByViewer: true,
+        ),
       )
       ..vendorReels = right(page([aiReel, humanReel]))
       ..collections[CollectionKind.brandCollection] = right(

@@ -82,6 +82,7 @@ class StorefrontRepositoryImpl implements StorefrontRepository {
     final stats = await followApi.stats(accountId);
     return StorefrontFollowSummary(
       followers: stats.followers < 0 ? 0 : stats.followers,
+      following: stats.following < 0 ? 0 : stats.following,
       isFollowedByViewer: stats.isFollowedByViewer,
     );
   });
