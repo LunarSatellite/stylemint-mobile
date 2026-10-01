@@ -91,7 +91,7 @@ traceable.
 
 - Live AASA at `https://stylemint.voyageritnepal.com/.well-known/apple-app-site-association` returns:
   `{ "webcredentials": { "apps": ["AA25Q882AV.app.stylemint.stylemintMobileFrontend"] } }`
-- The app signs with `DEVELOPMENT_TEAM = YBSBPFR23X` (`ios/Runner.xcodeproj/project.pbxproj`).
+- The app signs with `DEVELOPMENT_TEAM = 3M82H6Y69S` (`ios/Runner.xcodeproj/project.pbxproj`).
 
 iOS refuses the `webcredentials:` association when the team prefix doesn't
 match the installed app, so every WebAuthn ceremony fails before it reaches the
@@ -111,13 +111,13 @@ links) cannot work either. Not in the QA doc, but it will be the next bug filed.
     "apps": [],
     "details": [
       {
-        "appID": "YBSBPFR23X.app.stylemint.stylemintMobileFrontend",
+        "appID": "3M82H6Y69S.app.stylemint.stylemintMobileFrontend",
         "paths": ["*"]
       }
     ]
   },
   "webcredentials": {
-    "apps": ["YBSBPFR23X.app.stylemint.stylemintMobileFrontend"]
+    "apps": ["3M82H6Y69S.app.stylemint.stylemintMobileFrontend"]
   }
 }
 ```
@@ -126,7 +126,7 @@ Serve at `/.well-known/apple-app-site-association`, `Content-Type:
 application/json`, no redirect, no auth.
 
 **Caveats.**
-- Confirm `YBSBPFR23X` is the team the TestFlight build was actually signed
+- Confirm `3M82H6Y69S` is the team the TestFlight build was actually signed
   with, not just the Xcode project value — check the distribution provisioning
   profile.
 - The file is **not in any repo.** It is placed on the server by hand, and
@@ -643,7 +643,7 @@ recommended; reverse any of them if you disagree.
 
 ## Still open
 
-1. **SM-001** — confirm `YBSBPFR23X` is the team the TestFlight build was
+1. **SM-001** — confirm `3M82H6Y69S` is the team the TestFlight build was
    actually signed with (the value is from the Xcode project; check the
    distribution provisioning profile). If release signing uses a different
    team, the file is wrong again in the same way.
@@ -662,7 +662,7 @@ The QA doc's own checklist (§5) stands. Add to it:
 - Passkey retest requires **delete + reinstall**, not just a new build — iOS
   caches the AASA. Confirm the AASA is actually deployed first:
   `curl -sD - https://stylemint.voyageritnepal.com/.well-known/apple-app-site-association`
-  should show `200`, `application/json` and the `YBSBPFR23X` prefix in both
+  should show `200`, `application/json` and the `3M82H6Y69S` prefix in both
   sections.
 - **Cold-launch cost of SM-005.** Landing on Reels puts the feed's network
   fetch and video init on the launch path. Time a cold start before and after.

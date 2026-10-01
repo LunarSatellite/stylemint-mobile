@@ -8,10 +8,14 @@
 	<key>method</key>
 	<string>app-store-connect</string>
 
-	<!-- The PAID team. It is deliberately not the YBSBPFR23X that the
-	     Xcode project still carries: that is a free personal team, and
-	     Xcode answered 'No Account for Team "YBSBPFR23X"'. The build
-	     script rewrites this value when ASC_TEAM_ID is set. -->
+	<!-- The PAID team, and now the only one in the project: DEVELOPMENT_TEAM
+	     in project.pbxproj carried YBSBPFR23X, a free personal team that
+	     Xcode rejected with 'No Account for Team "YBSBPFR23X"', and it has
+	     been corrected to match this. The split was not harmless — the same
+	     stale id reached the Apple sign-in configuration and the
+	     apple-app-site-association file, where it produced invalid_client on
+	     every token exchange and kept passkeys from registering at all.
+	     The build script rewrites this value when ASC_TEAM_ID is set. -->
 	<key>teamID</key>
 	<string>3M82H6Y69S</string>
 
