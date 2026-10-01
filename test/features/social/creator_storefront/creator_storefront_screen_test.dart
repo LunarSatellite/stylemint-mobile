@@ -18,6 +18,7 @@ import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/en
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/repositories/storefront_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/presentation/storefront_links.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/presentation/widgets/storefront_collection_cards.dart';
+import 'package:stylemint_mobile_frontend/features/customer/storefront/presentation/widgets/storefront_follow_button.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/presentation/widgets/storefront_reel_grid.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
@@ -319,7 +320,17 @@ void main() {
 
     await pump(tester, width: 320, height: 2600, textScale: 1.3);
     expect(tester.takeException(), isNull);
-    expect(find.text('Following'), findsOneWidget);
+    // Scoped to the follow pill. 687884a8 added a "Following" count to the
+    // stats row, so a bare find.text matches that label too and a plain
+    // findsOneWidget reports "too many" — the assertion here is about the
+    // button's own state, not how many times the word appears.
+    expect(
+      find.descendant(
+        of: find.byType(StorefrontFollowButton),
+        matching: find.text('Following'),
+      ),
+      findsOneWidget,
+    );
 
     for (final tab in ['Reels', 'Shop', 'Collections', 'Looks', 'Home']) {
       await tapStorefrontTab(tester, tab);
