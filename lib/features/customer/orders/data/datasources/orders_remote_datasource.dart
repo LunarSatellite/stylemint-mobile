@@ -68,6 +68,22 @@ class OrdersRemoteDataSource {
     );
   }
 
+
+  /// POST `/v1/orders/sub-orders/{subOrderId}/confirm-receipt`
+  ///
+  /// The buyer confirms a parcel arrived, sending the raw value their scanner
+  /// read. The server compares it against the sub-order's tracking number and
+  /// rejects a mismatch, so this reports what the camera saw and does not
+  /// decide whether it was the right parcel.
+  Future<void> confirmReceipt({
+    required String subOrderId,
+    String? scannedCode,
+  }) async {
+    await apiClient.authPost(
+      '/v1/orders/sub-orders/$subOrderId/confirm-receipt',
+      data: {if (scannedCode != null) 'scannedCode': scannedCode},
+    );
+  }
   /// GET `/v1/orders/{orderNumber}/invoice` — immutable receipt projection.
   Future<OrderInvoiceDto> getOrderInvoice(String orderNumber) async {
     final response = await apiClient.get('/v1/orders/$orderNumber/invoice');

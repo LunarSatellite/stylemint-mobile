@@ -23,6 +23,13 @@ abstract interface class OrdersRepository {
 
   Future<Either<NetworkExceptions, OrderDetail>> getOrderDetail(String orderId);
 
+  /// The buyer confirms a parcel arrived, sending the raw scanned value.
+  /// The server verifies it against the sub-order tracking number.
+  Future<Either<NetworkExceptions, Unit>> confirmReceipt({
+    required String subOrderId,
+    String? scannedCode,
+  });
+
   Future<Either<NetworkExceptions, OrderInvoice>> getOrderInvoice(
     String orderNumber,
   );
