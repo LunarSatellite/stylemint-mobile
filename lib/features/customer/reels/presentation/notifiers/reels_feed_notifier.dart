@@ -43,6 +43,30 @@ class ReelsFeedNotifier extends StateNotifier<ReelsFeedState> {
     });
   }
 
+  /// Re-reads the first page and swaps the whole list, WITHOUT passing through
+  /// [ReelsFeedState.loadInProgress].
+  ///
+  /// That distinction is the point. [fetchFeed] emits loadInProgress, which
+  /// replaces the pager with a full-screen loader — fine for a cold start,
+  /// wrong for a pull-to-refresh: it tears the PageView down in the middle of
+  /// the gesture that asked for it, so the spinner the pager was drawing goes
+  /// with it and the screen flashes. Here the existing reels stay on screen
+  /// until new ones arrive.
+  ///
+  /// The cursor is reset, so paging continues from the new first page rather
+  /// than appending onto a list that no longer exists.
+  ///
+  /// A failed refresh keeps the current feed. Someone who pulled to refresh
+  /// still has reels to watch, and replacing them with an error over a working
+  /// screen is a worse answer than leaving them be.
+  Future<void> refreshFeedInPlace({int limit = _pageSize}) async {
+    final either = await _repository.getReelsFeed(limit: limit);
+    either.fold((_) {}, (page) {
+      _nextCursor = page.nextCursor;
+      state = ReelsFeedState.loadSuccess(page.reels);
+    });
+  }
+
   /// Re-reads one reel and swaps it into the loaded feed in place.
   ///
   /// This provider is NOT autoDispose — it is an app-lifetime singleton, so

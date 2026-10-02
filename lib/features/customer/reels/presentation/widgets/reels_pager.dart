@@ -96,6 +96,7 @@ class ReelsPager extends StatefulWidget {
     required this.controller,
     required this.reels,
     this.onNearEnd,
+    this.onRefresh,
     this.onReelDwell,
     this.clock = DateTime.now,
     super.key,
@@ -115,6 +116,19 @@ class ReelsPager extends StatefulWidget {
   /// Pages in more reels before the viewer hits the end, so the pager never
   /// dead-ends with nothing new to swipe to.
   final VoidCallback? onNearEnd;
+
+  /// Pull down past the first reel to reload the feed.
+  ///
+  /// Driven by overscroll notifications rather than a RefreshIndicator: this
+  /// vertical PageView sits inside SwipeableBranchView's horizontal one, and a
+  /// RefreshIndicator would add a third competitor to a gesture arena two axes
+  /// already contest. Overscroll arrives after the pager has won the pointer,
+  /// so it cannot lose that fight.
+  ///
+  /// Before this the only way to reload was re-tapping the Home tab — which
+  /// nobody discovers, and which does nothing at all when the reels screen was
+  /// reached from anywhere other than that tab.
+  final Future<void> Function()? onRefresh;
 
   /// How long the viewer stayed on a reel, reported once, when they leave it
   /// (or when the pager goes away under them). This is the only thing the
@@ -137,8 +151,67 @@ class _ReelsPagerState extends State<ReelsPager> {
   DateTime? _dwellSince;
   int _dwellIndex = 0;
 
+  /// How far past the first reel the viewer has pulled, in logical pixels.
+  ///
+  /// Accumulated rather than read from a single notification because a drag
+  /// arrives as a stream of small overscrolls; one of them crossing a
+  /// threshold would make the gesture depend on frame timing.
+  double _pullDown = 0;
+  bool _refreshing = false;
+
+  /// How far down you have to pull before the feed reloads.
+  ///
+  /// Generous on purpose. This pager's whole job is vertical swiping, so a
+  /// short threshold would reload the feed every time someone swiped up from
+  /// the first reel and overshot — losing their place for a gesture they did
+  /// not make.
+  static const double _pullToRefreshThreshold = 110;
+
   ReelsPagerController get _controller => widget.controller;
   EmbedPlayerPool get _embedPool => widget.controller.embedPool;
+
+  /// Watches for a downward pull past the first reel and reloads the feed.
+  ///
+  /// Only from the first page: overscrolling at the END of the list is how the
+  /// viewer asks for more reels, which [ReelsPager.onNearEnd] already handles,
+  /// and treating it as a refresh would throw away everything they had paged
+  /// in. A negative overscroll is a pull towards the start.
+  ///
+  /// Returns false throughout so the notification keeps bubbling — the pager
+  /// is nested, and swallowing scroll notifications here would break anything
+  /// above it that listens for them.
+  bool _onScroll(ScrollNotification notification) {
+    if (widget.onRefresh == null) return false;
+
+    if (notification is ScrollEndNotification) {
+      _pullDown = 0;
+      return false;
+    }
+
+    if (notification is OverscrollNotification &&
+        notification.overscroll < 0 &&
+        _controller._currentIndex == 0) {
+      _pullDown += -notification.overscroll;
+      if (_pullDown >= _pullToRefreshThreshold && !_refreshing) {
+        _pullDown = 0;
+        unawaited(_runRefresh());
+      }
+    }
+    return false;
+  }
+
+  Future<void> _runRefresh() async {
+    final refresh = widget.onRefresh;
+    if (refresh == null || _refreshing) return;
+    setState(() => _refreshing = true);
+    try {
+      await refresh();
+    } finally {
+      // The feed may have replaced this widget entirely by now, so the mounted
+      // check is not optional.
+      if (mounted) setState(() => _refreshing = false);
+    }
+  }
 
   @override
   void initState() {
@@ -288,7 +361,9 @@ class _ReelsPagerState extends State<ReelsPager> {
                   layoutChanges: ReelShapes.instance,
                 ),
               ),
-            PageView.builder(
+            NotificationListener<ScrollNotification>(
+              onNotification: _onScroll,
+              child: PageView.builder(
               controller: _controller.pageController,
               scrollDirection: Axis.vertical,
               // Track the drag from the initial touch-down rather than from
@@ -320,7 +395,29 @@ class _ReelsPagerState extends State<ReelsPager> {
                 reel: reels[index],
                 isActive: index == _controller._currentIndex,
               ),
+              ),
             ),
+            // Shown over the reel rather than replacing it, so a pull that
+            // returns nothing new still looks like it did something. Without
+            // any acknowledgement a refresh on an unchanged feed is
+            // indistinguishable from the gesture not registering, which is
+            // what made the old Home-tab refresh feel broken.
+            if (_refreshing)
+              const Positioned(
+                top: 24,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.4,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
