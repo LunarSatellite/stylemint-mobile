@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_device_key.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_remote_datasource.dart';
@@ -158,3 +159,15 @@ final courierActionsNotifierProvider =
         location: ref.watch(locationCaptureServiceProvider),
       ),
     );
+
+/// The signed-in account id, or empty when there is no session.
+///
+/// Read from the session controller rather than token storage so it reacts to
+/// sign-out: a courier who logs out mid-shift should not keep seeing hops
+/// resolved against the previous account's id.
+final courierAccountIdProvider = Provider<String>(
+  (ref) => ref.watch(sessionControllerProvider).maybeWhen(
+    authenticated: (accountId) => accountId,
+    orElse: () => '',
+  ),
+);
