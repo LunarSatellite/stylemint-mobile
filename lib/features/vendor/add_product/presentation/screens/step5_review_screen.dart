@@ -31,22 +31,50 @@ class Step5ReviewScreen extends ConsumerWidget {
       );
     });
 
-    final review = state.maybeWhen(
-      loadSuccess: (fs) => fs.reviewInfo,
-      loadInProgress: (fs) => fs.reviewInfo,
-      saveInProgress: (fs) => fs.reviewInfo,
-      saveSuccess: (fs, d) => fs.reviewInfo,
-      saveFailure: (fs, e) => fs.reviewInfo,
-      publishing: (fs) => fs.reviewInfo,
-      publishFailure: (fs, e) => fs.reviewInfo,
+    final formState = state.maybeWhen(
+      loadSuccess: (fs) => fs,
+      loadInProgress: (fs) => fs,
+      saveInProgress: (fs) => fs,
+      saveSuccess: (fs, d) => fs,
+      saveFailure: (fs, e) => fs,
+      publishing: (fs) => fs,
+      publishFailure: (fs, e) => fs,
       orElse: () => null,
     );
+    final review = formState?.reviewInfo;
 
     if (review == null) {
-      return const Center(
-        child: Text(
-          'Complete previous steps first',
-          style: DesignTokens.bodyText,
+      // Say WHICH step, and offer the way back to it. "Complete previous
+      // steps first" on its own was indistinguishable from a broken screen:
+      // a vendor who believed the form was finished had nothing to act on,
+      // and a draft then sat at Draft with no explanation.
+      return Padding(
+        padding: const EdgeInsets.all(DesignTokens.s24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.info_outline,
+              color: DesignTokens.textMuted,
+              size: 32,
+            ),
+            const SizedBox(height: DesignTokens.s12),
+            Text(
+              formState?.incompleteReason ?? 'Complete previous steps first.',
+              style: DesignTokens.bodyText,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: DesignTokens.s16),
+            TextButton(
+              onPressed: () => notifier.goToStep(1),
+              child: Text(
+                'Back to Basic Information',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.primaryGreen,
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }

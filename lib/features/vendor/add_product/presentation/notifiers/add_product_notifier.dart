@@ -192,11 +192,23 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     );
   }
 
-  Future<void> publish({String? draftId}) async {
-    if (!_formState.isValid) return;
+  /// Saves every step and then flips the product to Active.
+  ///
+  /// Works for a brand-new product and for a draft being finished later —
+  /// `submitDraft` starts a draft when it has no id and PATCHes the existing
+  /// one when it does. Routing a resumed draft through the wizard PATCHes
+  /// rather than the `details/*` endpoints matters: only the wizard steps
+  /// advance the backend's `WizardStepReached`, and `Product.Publish`
+  /// refuses anything below step 4. Saving a draft through `details/*` left
+  /// it complete on screen but unpublishable on the server.
+  ///
+  /// Returns false without a request when the form is still incomplete; the
+  /// caller shows [ProductFormState.incompleteReason].
+  Future<bool> publish({String? draftId}) async {
+    if (!_formState.isValid) return false;
     state = AddProductState.publishing(_formState);
 
-    // Create + fill the draft (start -> step 2-4), then publish the new id.
+    // Create + fill the draft (start -> step 2-4), then publish the id.
     final submitEither = await _repository.submitDraft(
       _draftFrom(id: draftId ?? _draftId ?? ''),
       idempotencyKey: _draftIdempotencyKey,
@@ -211,13 +223,14 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
         return id;
       },
     );
-    if (productId == null) return;
+    if (productId == null) return false;
 
     final publishEither = await _repository.publishProduct(productId);
     state = publishEither.fold(
       (failure) => AddProductState.publishFailure(_formState, failure),
       AddProductState.publishSuccess,
     );
+    return publishEither.isRight();
   }
 
   /// Fetches an existing product's images for the Edit Product Images flow
@@ -270,6 +283,16 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       },
       (formState) {
         _formState = formState;
+        // A draft is a wizard run that was interrupted, so adopt its id as
+        // THE draft id: saveDraft and publish then target this product
+        // instead of starting a second one. Cleared for a live product so a
+        // later Create-mode run can't accidentally publish over it.
+        _draftId = formState.isLoadedDraft ? productId : null;
+        // Fresh key for this editing session. It is only ever spent on
+        // StartDraft, which a resumed draft never calls, but leaving the
+        // previous run's key in place would let an abandoned Create-mode
+        // session's key be replayed if this form later started a draft.
+        _draftIdempotencyKey = _uuid.v4();
         // Fresh data from the backend -- nothing user-touched yet.
         _isDirty = false;
         state = AddProductState.loadSuccess(_formState);
@@ -277,6 +300,10 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       },
     );
   }
+
+  /// True when the loaded product is still a draft — the screen owes the
+  /// vendor a Publish action, not just Save.
+  bool get isEditingDraft => _formState.isLoadedDraft;
 
   /// Persists [loadForEdit]'s (possibly edited) result back to an
   /// already-published product via the `details/*` + `images` endpoints —

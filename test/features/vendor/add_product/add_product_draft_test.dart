@@ -254,4 +254,196 @@ void main() {
       verify(() => remote.patchStep1('product-1', any())).called(1);
     },
   );
+
+  // ── Finishing a draft that was saved earlier ──────────────────────────
+  //
+  // A draft reopened from the products list used to have no route to Active:
+  // Edit mode saved through the `details/*` endpoints, which neither publish
+  // nor advance the server's WizardStepReached, so the listing stayed Draft
+  // however complete it looked.
+
+  group('resuming a saved draft', () {
+    test('adopts the draft id so publish targets it, not a new product', () async {
+      final repository = _MockAddProductRepository();
+      final notifier = AddProductNotifier(repository);
+      when(() => repository.fetchProductForEdit('draft-7')).thenAnswer(
+        (_) async => right(
+          ProductFormState(
+            currentStep: 1,
+            step1: _basic(),
+            step2: _images,
+            step3: _pricing,
+            step4: _shipping,
+            loadedProductState: ProductFormState.draftProductState,
+          ),
+        ),
+      );
+      when(
+        () => repository.submitDraft(
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer((_) async => right('draft-7'));
+      when(
+        () => repository.publishProduct(any()),
+      ).thenAnswer((_) async => right('draft-7'));
+
+      expect(await notifier.loadForEdit('draft-7'), isTrue);
+      expect(notifier.isEditingDraft, isTrue);
+
+      expect(await notifier.publish(), isTrue);
+
+      // The existing draft is PATCHed, never re-created: submitDraft carries
+      // the loaded id, so startDraft is skipped and WizardStepReached is
+      // advanced to 4 by the step PATCHes before publish is attempted.
+      final submitted =
+          verify(
+                () => repository.submitDraft(
+                  captureAny(),
+                  idempotencyKey: any(named: 'idempotencyKey'),
+                ),
+              ).captured.single
+              as ProductDraft;
+      expect(submitted.id, 'draft-7');
+      verify(() => repository.publishProduct('draft-7')).called(1);
+    });
+
+    test('a live product is not adopted as a draft', () async {
+      final repository = _MockAddProductRepository();
+      final notifier = AddProductNotifier(repository);
+      when(() => repository.fetchProductForEdit('live-1')).thenAnswer(
+        (_) async => right(
+          ProductFormState(
+            currentStep: 1,
+            step1: _basic(),
+            step2: _images,
+            step3: _pricing,
+            step4: _shipping,
+            loadedProductState: 2, // Active
+          ),
+        ),
+      );
+
+      expect(await notifier.loadForEdit('live-1'), isTrue);
+      expect(notifier.isEditingDraft, isFalse);
+    });
+
+    test('reads the lifecycle state off the product payload', () async {
+      final remote = _MockRemoteDataSource();
+      final repository = AddProductRepositoryImpl(
+        remoteDataSource: remote,
+        networkInfo: _ConnectedNetwork(),
+      );
+      when(() => remote.fetchProduct('draft-7')).thenAnswer(
+        (_) async => <String, dynamic>{
+          'id': 'draft-7',
+          'name': 'QA product',
+          'shortDescription': 'Short description',
+          'longDescriptionMarkdown': 'Full description',
+          'categoryId': 'category-id',
+          'state': 1,
+          'processingTimeDays': 2,
+          'variants': <dynamic>[],
+          'images': <dynamic>[],
+          'shippingOptions': <dynamic>[],
+        },
+      );
+
+      final loaded = await repository.fetchProductForEdit('draft-7');
+      final formState = loaded.getRight().toNullable();
+      expect(formState, isNotNull);
+      expect(formState!.isLoadedDraft, isTrue);
+    });
+  });
+
+  // ── Why a publish is blocked ──────────────────────────────────────────
+
+  group('incompleteReason', () {
+    ProductFormState form({
+      BasicInfo? step1,
+      ImagesInfo? step2,
+      PricingInfo? step3,
+      ShippingInfo? step4,
+    }) => ProductFormState(
+      currentStep: 5,
+      step1: step1 ?? _basic(),
+      step2: step2 ?? _images,
+      step3: step3 ?? _pricing,
+      step4: step4 ?? _shipping,
+    );
+
+    test('a complete form has no reason and is valid', () {
+      final state = form();
+      expect(state.incompleteReason, isNull);
+      expect(state.isValid, isTrue);
+    });
+
+    test('isValid always agrees with incompleteReason', () {
+      // Built directly: the `form` helper substitutes defaults for nulls.
+      final blocked = ProductFormState(
+        currentStep: 5,
+        step1: _basic(),
+        step2: _images,
+        step4: _shipping,
+      );
+      expect(blocked.incompleteReason, contains('Pricing'));
+      expect(blocked.isValid, isFalse);
+    });
+
+    test('a product loaded for edit is valid without a category name', () {
+      // fetchProductForEdit can only supply categoryId — the backend returns
+      // no category name — so validating the display list made every loaded
+      // product look incomplete until Step 1 was re-walked.
+      final state = form(
+        step1: BasicInfo(
+          productName: 'QA product',
+          sku: 'QA-SKU',
+          shortDescription: 'Short description',
+          description: 'Full description',
+          categoryId: 'category-id',
+          categories: const [],
+          tags: const [],
+        ),
+      );
+      expect(state.incompleteReason, isNull);
+      expect(state.isValid, isTrue);
+    });
+
+    test('refuses a zero price rather than publishing a free listing', () {
+      final state = form(
+        step3: const PricingInfo(
+          basePrice: Money(amount: 0, currency: 'NPR'),
+          taxRate: 0,
+          discountEnabled: false,
+          sku: 'QA-SKU',
+          quantityOnHand: 10,
+        ),
+      );
+      expect(state.incompleteReason, contains('selling price'));
+      expect(state.isValid, isFalse);
+    });
+
+    test('names the missing photos and counts how many', () {
+      final state = form(
+        step2: const ImagesInfo(
+          images: ['https://cdn.test/1.png', 'https://cdn.test/2.png'],
+          primaryImageIndex: 0,
+        ),
+      );
+      expect(state.incompleteReason, contains('3 more photos'));
+    });
+
+    test('names the shipping field that is missing', () {
+      final state = form(
+        step4: _shipping.copyWith(processingTimeDays: 0),
+      );
+      expect(state.incompleteReason, contains('ready'));
+      expect(state.isValid, isFalse);
+    });
+
+    test('names the dispatch address when it is unset', () {
+      final state = form(step4: _shipping.copyWith(shipsFromAddressId: ''));
+      expect(state.incompleteReason, contains('ships from'));
+    });
+  });
 }

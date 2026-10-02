@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart'
+    show pendingRoleProvider, pendingRoleNeedsResume;
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -137,6 +139,14 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
           // New account → role / onboarding picker. Pass isNewAccount via the
           // query string (not extra) so it survives the post-login refresh.
           context.go('${RouteNames.userTypeSelection}?new=true');
+        } else if (pendingRoleNeedsResume(ref.read(pendingRoleProvider))) {
+          // An EXISTING account that picked Creator, Vendor or delivery
+          // partner before signing in. This branch used to go straight to
+          // home, which silently discarded the choice — the one path where
+          // social sign-in differed from OTP and password, and the reason
+          // tapping a role then continuing with Google appeared to do
+          // nothing. The picker resumes it from pendingRoleProvider.
+          context.go(RouteNames.userTypeSelection);
         } else {
           context.go(RouteNames.home);
         }

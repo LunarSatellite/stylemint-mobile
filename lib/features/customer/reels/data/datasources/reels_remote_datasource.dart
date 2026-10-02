@@ -73,6 +73,7 @@ class ReelsRemoteDataSource {
             taggedProductId: p['taggedProductId'] as String?,
             name: (p['name'] as String?) ?? '',
             imageUrl: absoluteMediaUrl(p['imageUrl'] as String?),
+            imageUrls: _mediaUrlList(p['imageUrls']),
             price: Money(
               amount: (p['priceAmount'] as num?)?.toDouble() ?? 0,
               currency: (p['priceCurrency'] as String?) ?? 'NPR',
@@ -179,6 +180,11 @@ class ReelsRemoteDataSource {
             imageUrl: absoluteMediaUrl(
               (p['imageUrl'] ?? p['productPrimaryImageUrl']) as String?,
             ),
+            // Both spellings, like every other field here: the feed card
+            // says `imageUrls`, the detail projection `productImageUrls`.
+            imageUrls: _mediaUrlList(
+              p['imageUrls'] ?? p['productImageUrls'],
+            ),
             price: Money(
               amount: amount is num ? amount.toDouble() : 0,
               currency: currency is String ? currency : 'NPR',
@@ -242,6 +248,15 @@ class ReelsRemoteDataSource {
           .whereType<String>()
           .where((url) => url.isNotEmpty)
           .toList(growable: false);
+
+  /// [_stringList] with each entry put through [absoluteMediaUrl], for media
+  /// the backend may return relative (`/media/vendor-products/<uuid>`) or
+  /// without an extension. Resolving per-entry rather than at render time
+  /// keeps the entity holding URLs that are already loadable.
+  static List<String> _mediaUrlList(Object? value) => _stringList(value)
+      .map(absoluteMediaUrl)
+      .where((url) => url.isNotEmpty)
+      .toList(growable: false);
 
   /// POST `/v1/customer/reels/{reelId}/like` — the viewer likes the reel on
   /// StyleMint. Idempotent server-side; answers

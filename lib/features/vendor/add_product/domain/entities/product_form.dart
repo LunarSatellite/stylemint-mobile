@@ -542,6 +542,10 @@ class ProductFormState {
   static const int minImagesAtPublish = ImagesInfo.minImages;
   static const int maxImagesAtPublish = ImagesInfo.maxImages;
 
+  /// Backend `ProductState` for Draft. The wizard only ever needs to tell a
+  /// draft from anything else, so the rest of the enum is not mirrored here.
+  static const int draftProductState = 1;
+
   const ProductFormState({
     required this.currentStep,
     this.step1,
@@ -549,6 +553,7 @@ class ProductFormState {
     this.step3,
     this.step4,
     this.step5,
+    this.loadedProductState,
   });
 
   final int currentStep;
@@ -558,6 +563,23 @@ class ProductFormState {
   final ShippingInfo? step4;
   final ReviewInfo? step5;
 
+  /// The product's backend `ProductState` as it was when this form was loaded
+  /// for editing (1=Draft, 2=Active, 3=OutOfStock, 4=Archived, 5=Suspended).
+  ///
+  /// Null in Create mode, where there is no product yet.
+  ///
+  /// The form needs this because a draft and a live product are edited through
+  /// different endpoints and finish differently: a draft is saved through the
+  /// Draft-only wizard PATCHes and then has to be *published*, while a live
+  /// product is saved through the `details/*` endpoints and is already live.
+  /// Without it, Edit mode treated every product as live and a draft had no
+  /// route to Active at all.
+  final int? loadedProductState;
+
+  /// True when this form is editing a product that is still a draft, so the
+  /// screen owes the vendor a Publish step rather than just Save.
+  bool get isLoadedDraft => loadedProductState == draftProductState;
+
   ProductFormState copyWith({
     int? currentStep,
     BasicInfo? step1,
@@ -565,6 +587,7 @@ class ProductFormState {
     PricingInfo? step3,
     ShippingInfo? step4,
     ReviewInfo? step5,
+    int? loadedProductState,
   }) {
     return ProductFormState(
       currentStep: currentStep ?? this.currentStep,
@@ -573,37 +596,82 @@ class ProductFormState {
       step3: step3 ?? this.step3,
       step4: step4 ?? this.step4,
       step5: step5 ?? this.step5,
+      loadedProductState: loadedProductState ?? this.loadedProductState,
     );
   }
 
-  bool get isStep1Valid =>
-      step1 != null &&
-      step1!.productName.isNotEmpty &&
-      step1!.description.isNotEmpty &&
-      step1!.categories.isNotEmpty;
+  /// The single next thing standing between this form and a live product, in
+  /// the order a vendor would fix it — or null when nothing is.
+  ///
+  /// [isValid] is defined as `incompleteReason == null`, so the gate and the
+  /// explanation can never disagree: every condition that blocks a publish
+  /// has to name itself here. This replaced a set of per-step `isStepNValid`
+  /// getters that nothing outside this class read — the gate said no and the
+  /// screen said "Complete previous steps first", which is indistinguishable
+  /// from a broken form.
+  String? get incompleteReason {
+    // Keyed on categoryId, NOT the `categories` display list. `categories`
+    // holds the category's *name*, which only Step 1's own picker can
+    // supply — the backend returns `categoryId` and no name, so a product
+    // loaded for editing arrived with `categories: []` and was judged
+    // incomplete until the vendor re-walked Step 1 and tapped Next, which
+    // also made "Save Changes" fail on a perfectly complete product.
+    // categoryId is what actually goes on the wire (`_basicInfoBody`), so it
+    // is the honest thing to validate.
+    if (step1 == null ||
+        step1!.productName.isEmpty ||
+        step1!.description.isEmpty ||
+        step1!.categoryId.isEmpty) {
+      return 'Basic Information needs a product name, a description and a '
+          'category.';
+    }
 
-  // Matched to ImagesInfo.minImages/maxImages so the wizard can't walk a
-  // vendor through all 5 steps only to fail silently on the final publish
-  // call with no indication why.
-  bool get isStep2Valid =>
-      step2 != null &&
-      step2!.images.length >= ImagesInfo.minImages &&
-      step2!.images.length <= ImagesInfo.maxImages;
+    final photos = step2?.images.length ?? 0;
+    if (photos < ImagesInfo.minImages) {
+      final short = ImagesInfo.minImages - photos;
+      return 'Add $short more photo${short == 1 ? '' : 's'} — a listing needs '
+          '${ImagesInfo.minImages} to ${ImagesInfo.maxImages}.';
+    }
+    if (photos > ImagesInfo.maxImages) {
+      final over = photos - ImagesInfo.maxImages;
+      return 'Remove $over photo${over == 1 ? '' : 's'} — a listing can have '
+          'at most ${ImagesInfo.maxImages}.';
+    }
 
-  bool get isStep3Valid => step3 != null;
+    if (step3 == null) {
+      return 'Set a price and stock in Pricing & Inventory.';
+    }
+    // Step 3's own Next only checks that the price field is non-empty, so
+    // "0" — or anything unparseable — walks straight through it. A resumed
+    // draft can also arrive with a 0 price from a variant that was never
+    // priced. Publishing that puts the product on sale for nothing.
+    if (step3!.basePrice.amount <= 0) {
+      return 'Enter a selling price in Pricing & Inventory.';
+    }
 
-  bool get isStep4Valid =>
-      step4 != null &&
-      step4!.shipsFromAddressId?.isNotEmpty == true &&
-      step4!.weight > 0 &&
-      step4!.dimensionsLength > 0 &&
-      step4!.dimensionsWidth > 0 &&
-      step4!.dimensionsHeight > 0 &&
-      step4!.processingTimeDays > 0 &&
-      step4!.shippingOptions.isNotEmpty;
+    if (step4 == null) return 'Shipping has not been filled in yet.';
+    if (step4!.shipsFromAddressId?.isNotEmpty != true) {
+      return 'Choose the address this product ships from.';
+    }
+    if (step4!.weight <= 0) {
+      return 'Enter the package weight in Shipping.';
+    }
+    if (step4!.dimensionsLength <= 0 ||
+        step4!.dimensionsWidth <= 0 ||
+        step4!.dimensionsHeight <= 0) {
+      return 'Enter the package length, width and height in Shipping.';
+    }
+    if (step4!.processingTimeDays <= 0) {
+      return 'Enter how many days you need to get an order ready.';
+    }
+    if (step4!.shippingOptions.isEmpty) {
+      return 'Pick at least one delivery option in Shipping.';
+    }
 
-  bool get isValid =>
-      isStep1Valid && isStep2Valid && isStep3Valid && isStep4Valid;
+    return null;
+  }
+
+  bool get isValid => incompleteReason == null;
 
   ReviewInfo? get reviewInfo {
     if (!isValid) return null;

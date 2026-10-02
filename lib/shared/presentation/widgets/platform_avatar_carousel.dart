@@ -9,8 +9,15 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// Builds the [ImageProvider] for one avatar URL.
 typedef AvatarImageProviderBuilder = ImageProvider<Object> Function(String url);
 
-/// Circular creator avatar that rotates through the profile pictures of the
-/// creator's connected platforms (Instagram, TikTok, YouTube, Facebook).
+/// Rotates through a set of pictures, flipping from one to the next.
+///
+/// Named for its first use — the creator avatar, which cycles the profile
+/// pictures of the creator's connected platforms (Instagram, TikTok, YouTube,
+/// Facebook) — but it is the general mechanism and is also the tagged-product
+/// card's photo, where [borderRadius] makes it a rounded square instead of a
+/// circle. Everything that makes rotation behave (precaching the next picture,
+/// dropping one that 404s, pausing off-screen and in the background) lives
+/// here, so a second use should extend this rather than copy it.
 ///
 /// * Two or more pictures: each stays up for [interval], then spins around
 ///   the Y axis to reveal the next one, looping. The next picture is
@@ -33,6 +40,7 @@ class PlatformAvatarCarousel extends StatefulWidget {
     this.transitionDuration = const Duration(milliseconds: 600),
     this.imageProviderBuilder,
     this.semanticLabel,
+    this.borderRadius,
     super.key,
   });
 
@@ -61,6 +69,11 @@ class PlatformAvatarCarousel extends StatefulWidget {
 
   /// Accessibility label for the avatar.
   final String? semanticLabel;
+
+  /// Clip shape. Null — the default — clips to a circle of [size], which is
+  /// what an avatar wants. Set it to clip to a rounded rectangle instead, for
+  /// a product photo.
+  final BorderRadius? borderRadius;
 
   /// The platform pictures when there are any, otherwise [fallbackUrl] (a
   /// single legacy avatar URL) so payloads without platform pictures still
@@ -329,7 +342,16 @@ class _PlatformAvatarCarouselState extends State<PlatformAvatarCarousel>
     );
   }
 
-  Widget _face(String url) => ClipOval(
+  /// Clips to [PlatformAvatarCarousel.borderRadius] when one is set, and to a
+  /// circle otherwise.
+  Widget _clip({required Widget child}) {
+    final radius = widget.borderRadius;
+    return radius == null
+        ? ClipOval(child: child)
+        : ClipRRect(borderRadius: radius, child: child);
+  }
+
+  Widget _face(String url) => _clip(
     child: ColoredBox(
       color: widget.backgroundColor,
       child: Image(
@@ -344,7 +366,7 @@ class _PlatformAvatarCarouselState extends State<PlatformAvatarCarousel>
     ),
   );
 
-  Widget _fallback() => ClipOval(
+  Widget _fallback() => _clip(
     child: SizedBox.square(
       dimension: widget.size,
       child:
