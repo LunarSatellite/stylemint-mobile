@@ -1,5 +1,9 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// StateNotifierProvider lives here in Riverpod 3; without it the type
+// cannot resolve, `ref` degrades to dynamic and every ref.watch in the
+// notifier provider below fails to assign.
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';

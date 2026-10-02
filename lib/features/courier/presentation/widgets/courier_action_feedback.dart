@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/notifiers/courier_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 
@@ -87,15 +88,28 @@ void showCourierActionFeedback(
     case CourierActionFailed(:final failure):
       SmSnackbar.error(
         context,
-        failure.maybeWhen(
+        // `when` rather than `maybeWhen`: freezed 3 dropped the orElse form,
+        // and every other NetworkExceptions reader in lib/ spells the cases
+        // out. Exhaustive is also better here — a new failure kind should
+        // make this fail to compile rather than quietly read "try again".
+        failure.when(
           // The server's own message is better than anything generic here:
           // a refused pickup usually says WHY (wrong state, not your hop,
           // signature rejected) and hiding that makes it unfixable.
           server: (message) => message,
+          serverUnavailable: () =>
+              'StyleMint is unreachable right now. Try again in a moment.',
           noInternetConnection: () =>
               'No connection. Your parcel is still yours — try again when you '
               'have signal.',
-          orElse: () => 'That did not go through. Please try again.',
+          unexpectedError: () => 'That did not go through. Please try again.',
+          formatException: () => 'That reply could not be read.',
+          emptyData: () => 'Nothing came back.',
+          validation: (code, message, _, _) =>
+              message ?? 'That did not go through. Please try again.',
+          auth: () => 'Please sign in again.',
+          notFound: () => 'This hop is no longer available.',
+          conflict: () => 'That has already been done.',
         ),
       );
   }
