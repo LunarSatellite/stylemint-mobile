@@ -66,4 +66,26 @@ void main() {
 
     expect(() => sut.getByAccount('acc-1'), throwsA(isA<DioException>()));
   });
+
+  // Reliability snapshots come from a nightly job that only runs for Active
+  // couriers, so a newly Onboarded one has none and the server answers 404.
+  // The dashboard has copy for that ("no score yet" rather than 0%, which
+  // would read as a bad score) and it was unreachable while the 404 took the
+  // error path.
+  group('reliability', () {
+    test('404 means "no snapshot yet", not a failure', () async {
+      when(() => api.get(any())).thenThrow(_status(404));
+
+      await expectLater(sut.getReliability('courier-1'), completion(isNull));
+    });
+
+    test('a real failure still throws', () {
+      when(() => api.get(any())).thenThrow(_status(500));
+
+      expect(
+        () => sut.getReliability('courier-1'),
+        throwsA(isA<DioException>()),
+      );
+    });
+  });
 }
