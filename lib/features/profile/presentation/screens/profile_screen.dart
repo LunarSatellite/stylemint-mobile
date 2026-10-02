@@ -247,6 +247,18 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'My wardrobe life',
               onTap: () => context.push(RouteNames.lifecycleSteward),
             ),
+            // Delivery partner. Lives on the profile menu, next to the
+            // other things an account can BE, rather than on the sign-in
+            // screen: a courier signs in with the same account they shop
+            // with, so the choice only makes sense once there is a session.
+            // The destination decides what to show -- apply, checks in
+            // progress, or the work list -- so this entry is the same for
+            // an account that has never applied and one mid-shift.
+            ProfileMenuItem(
+              icon: Icons.delivery_dining_outlined,
+              label: 'Deliver with StyleMint',
+              onTap: () => context.push(RouteNames.courier),
+            ),
             ProfileMenuItem(
               icon: Icons.handshake_outlined,
               label: 'Agent negotiations',
