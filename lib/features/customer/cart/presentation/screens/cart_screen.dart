@@ -335,11 +335,17 @@ class _TicketCard extends StatelessWidget {
                       ? null
                       : formatMoney(cart.shippingTotal),
                 ),
+                // VAT is INSIDE the prices above, not added to them, so it is
+                // shown as what the subtotal already contains rather than as
+                // another bill line. Rendered as an addition — which is how
+                // every other row here reads — it said the shopper owed 13%
+                // on top of the price they were quoted.
                 const SizedBox(height: 12),
                 _BillRow(
                   icon: Icons.percent_rounded,
-                  label: 'Tax (Estimated 13%)',
+                  label: 'Includes VAT',
                   value: formatMoney(cart.taxTotal),
+                  valueColor: DesignTokens.textLight,
                 ),
                 // Promo discount row — visible only when a code is applied
                 if (promoDiscount != null) ...[

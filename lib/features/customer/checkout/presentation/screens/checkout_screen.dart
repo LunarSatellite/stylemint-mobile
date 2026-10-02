@@ -573,10 +573,17 @@ class _BillTicketCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
+                // Same as the cart: VAT is contained in the prices, so this
+                // reports what the subtotal already includes instead of adding
+                // a charge. "Estimated" is gone too — the figure is exact once
+                // the session has recorded its totals, and calling an exact
+                // number an estimate on the screen where the customer commits
+                // invites them to expect a different amount on the card.
                 _BillRow(
                   icon: Icons.percent_rounded,
-                  label: 'Tax (Estimated 13%)',
+                  label: 'Includes VAT',
                   value: formatMoney(summary.tax),
+                  valueColor: DesignTokens.textLight,
                 ),
 
                 if (hasDiscount) ...[
