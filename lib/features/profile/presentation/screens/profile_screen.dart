@@ -257,7 +257,26 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             // the same for an account that has never applied and one
             // mid-shift. The label is the one thing that changes, from the
             // activated Courier role.
-            const _CourierMenuItem(),
+            // ProfileMenuSection takes ProfileMenuItem models, not widgets,
+            // so the label is resolved here rather than inside a wrapper
+            // widget. _ProfileBodyState is a ConsumerState, so `ref` is
+            // already in scope and no Consumer is needed for it.
+            ProfileMenuItem(
+              icon: Icons.delivery_dining_outlined,
+              label:
+                  ref
+                      .watch(roleNotifierProvider)
+                      .maybeWhen(
+                        loadSuccess: (roles) => roles.any(
+                          (r) =>
+                              r.role == IdentityRoles.courier && r.isActivated,
+                        ),
+                        orElse: () => false,
+                      )
+                  ? 'Delivery Dashboard'
+                  : 'Deliver with StyleMint',
+              onTap: () => context.push(RouteNames.courier),
+            ),
             ProfileMenuItem(
               icon: Icons.handshake_outlined,
               label: 'Agent negotiations',
@@ -561,28 +580,6 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 /// already being loaded here for the Creator and Vendor rows. Before the list
 /// arrives it shows the invitation, which is the right guess for almost every
 /// account.
-class _CourierMenuItem extends ConsumerWidget {
-  const _CourierMenuItem();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isCourier = ref
-        .watch(roleNotifierProvider)
-        .maybeWhen(
-          loadSuccess: (roles) => roles.any(
-            (r) => r.role == IdentityRoles.courier && r.isActivated,
-          ),
-          orElse: () => false,
-        );
-
-    return ProfileMenuItem(
-      icon: Icons.delivery_dining_outlined,
-      label: isCourier ? 'Delivery Dashboard' : 'Deliver with StyleMint',
-      onTap: () => context.push(RouteNames.courier),
-    );
-  }
-}
-
 class _RoleSwitcherSection extends ConsumerStatefulWidget {
   const _RoleSwitcherSection();
 
