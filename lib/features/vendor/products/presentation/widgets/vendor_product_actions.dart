@@ -21,6 +21,10 @@ Future<void> showVendorProductActions(
   VendorProduct product,
 ) {
   final isActive = product.status == VendorProductStatus.active;
+  // A draft's one real need is to go live, so its edit row says so. The
+  // screen behind it is the same form, which for a draft runs the full wizard
+  // and ends on Publish.
+  final isDraft = product.status == VendorProductStatus.draft;
   return showModalBottomSheet<void>(
     context: context,
     backgroundColor: DesignTokens.bgAppBodyLight,
@@ -48,8 +52,8 @@ Future<void> showVendorProductActions(
           // Uses the `details/*` + `images` endpoints, which allow
           // Active/OutOfStock, not the wizard's Draft-only PATCH steps.)
           _ActionRow(
-            icon: Icons.edit_outlined,
-            title: 'Edit Product Details',
+            icon: isDraft ? Icons.publish_outlined : Icons.edit_outlined,
+            title: isDraft ? 'Finish & publish' : 'Edit Product Details',
             onTap: () async {
               Navigator.pop(sheetCtx);
               // /vendor/products/{id}/edit — pre-populates the unified

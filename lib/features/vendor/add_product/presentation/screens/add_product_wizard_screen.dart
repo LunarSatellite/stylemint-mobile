@@ -49,7 +49,22 @@ class _AddProductWizardScreenState
   bool _loadFailed = false;
   bool _saving = false;
 
+  /// Set once the product has been fetched: whether it is still a draft.
+  bool _isDraft = false;
+
   bool get _isEditMode => widget.isEditMode;
+
+  /// Finishing an interrupted draft. It gets the Create-mode shape — all 5
+  /// steps including Review, and a Publish button — because a draft's problem
+  /// is that it is not live yet, which "Save Changes" cannot fix.
+  bool get _isDraftEdit => _isEditMode && _isDraft;
+
+  /// Editing something already live (Active/OutOfStock). Saves through the
+  /// `details/*` endpoints; there is nothing to publish.
+  bool get _isLiveEdit => _isEditMode && !_isDraft;
+
+  /// Review is only shown where a publish can follow it.
+  int get _totalSteps => _isLiveEdit ? 4 : 5;
 
   @override
   void initState() {
@@ -74,13 +89,13 @@ class _AddProductWizardScreenState
       _loading = true;
       _loadFailed = false;
     });
-    final ok = await ref
-        .read(addProductNotifierProvider.notifier)
-        .loadForEdit(widget.productId!);
+    final notifier = ref.read(addProductNotifierProvider.notifier);
+    final ok = await notifier.loadForEdit(widget.productId!);
     if (!mounted) return;
     setState(() {
       _loading = false;
       _loadFailed = !ok;
+      _isDraft = ok && notifier.isEditingDraft;
     });
   }
 
@@ -95,9 +110,17 @@ class _AddProductWizardScreenState
       SmSnackbar.success(context, 'Product updated!');
       context.pop(true);
     } else {
+      // Name the field when the form itself is the blocker, rather than
+      // leaving the vendor to guess which of four steps is at fault.
+      final reason = ref
+          .read(addProductNotifierProvider)
+          .maybeWhen(
+            loadSuccess: (fs) => fs.incompleteReason,
+            orElse: () => null,
+          );
       SmSnackbar.error(
         context,
-        'Failed to save — check all steps are complete.',
+        reason ?? 'Failed to save. Please try again.',
       );
     }
   }
@@ -186,10 +209,10 @@ class _AddProductWizardScreenState
           loadFailure: (fs, _) => fs.currentStep,
           orElse: () => 1,
         )
-        // Edit mode has 4 steps only (no Review). Clamp so the reused
-        // step screens' `nextStep()` calls don't index past the end of
-        // the IndexedStack below.
-        .clamp(1, _isEditMode ? 4 : 5);
+        // Clamp so the reused step screens' `nextStep()` calls don't index
+        // past the end of the IndexedStack below. Live-edit has no Review
+        // step; a draft keeps it, because that is where Publish lives.
+        .clamp(1, _totalSteps);
 
     return PopScope(
       // Always intercept the system back gesture so we can prompt on
@@ -213,14 +236,22 @@ class _AddProductWizardScreenState
         appBar: AppBar(
           backgroundColor: DesignTokens.bgAppFoundation,
           title: Text(
-            _isEditMode ? 'Edit Product' : 'Add New Product',
+            _isDraftEdit
+                ? 'Finish Draft'
+                : _isEditMode
+                ? 'Edit Product'
+                : 'Add New Product',
             style: DesignTokens.mediumSemibold.copyWith(
               color: DesignTokens.textWhite,
             ),
           ),
           centerTitle: true,
           actions: [
-            if (_isEditMode)
+            // A draft gets "Save as Draft", not "Save Changes": its save goes
+            // through the wizard PATCHes (which advance the server's
+            // WizardStepReached so Publish will be accepted), and it leaves
+            // the product a draft either way. Publish is on the Review step.
+            if (_isLiveEdit)
               _SaveChangesAction(
                 saving: _saving,
                 enabled: !_loading && !_loadFailed,
@@ -260,13 +291,13 @@ class _AddProductWizardScreenState
                     ),
                     child: WizardStepIndicator(
                       currentStep: currentStep,
-                      totalSteps: _isEditMode ? 4 : 5,
+                      totalSteps: _totalSteps,
                     ),
                   ),
                   Expanded(
                     child: IndexedStack(
                       index: currentStep - 1,
-                      children: _isEditMode
+                      children: _isLiveEdit
                           ? [
                               const Step1BasicInfoScreen(),
                               const Step2ImagesScreen(),
@@ -277,6 +308,8 @@ class _AddProductWizardScreenState
                                 onSave: _saveChanges,
                               ),
                             ]
+                          // Create AND finish-a-draft: step 4 advances to
+                          // Review, where Publish is.
                           : const [
                               Step1BasicInfoScreen(),
                               Step2ImagesScreen(),

@@ -281,6 +281,11 @@ class AddProductRepositoryImpl implements AddProductRepository {
 
       return ProductFormState(
         currentStep: 1,
+        // Carried so the form knows whether it is finishing a draft (save via
+        // the wizard steps, then publish) or editing something already live
+        // (save via `details/*`). The DTO has always returned it; the form
+        // just never read it, which is why a draft had no way to go Active.
+        loadedProductState: (data['state'] as num?)?.toInt(),
         step1: BasicInfo(
           productName: data['name'] as String? ?? '',
           // The Step 1 SKU field displays this, but the backend's real SKU
