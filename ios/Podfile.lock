@@ -95,6 +95,8 @@ PODS:
   - flutter_video_thumbnail_plus (0.0.1):
     - Flutter
     - libwebp
+  - flutter_web_auth_2 (3.0.0):
+    - Flutter
   - flutter_web_browser (0.17.3):
     - Flutter
   - geolocator_apple (1.2.0):
@@ -208,6 +210,7 @@ DEPENDENCIES:
   - flutter_nfc_kit (from `.symlinks/plugins/flutter_nfc_kit/ios`)
   - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - flutter_video_thumbnail_plus (from `.symlinks/plugins/flutter_video_thumbnail_plus/ios`)
+  - flutter_web_auth_2 (from `.symlinks/plugins/flutter_web_auth_2/ios`)
   - flutter_web_browser (from `.symlinks/plugins/flutter_web_browser/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
@@ -275,6 +278,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_secure_storage_darwin/darwin"
   flutter_video_thumbnail_plus:
     :path: ".symlinks/plugins/flutter_video_thumbnail_plus/ios"
+  flutter_web_auth_2:
+    :path: ".symlinks/plugins/flutter_web_auth_2/ios"
   flutter_web_browser:
     :path: ".symlinks/plugins/flutter_web_browser/ios"
   geolocator_apple:
@@ -334,6 +339,7 @@ SPEC CHECKSUMS:
   flutter_nfc_kit: e1b71583eafd2c9650bc86844a7f2d185fb414f6
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   flutter_video_thumbnail_plus: 11624c05e788b4dac5d434e605f68762e44dd23d
+  flutter_web_auth_2: 5c8d9dcd7848b5a9efb086d24e7a9adcae979c80
   flutter_web_browser: 68b27d2c4773b059cef19e12c890cb204518d3c3
   geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
   GoogleDataTransport: a24e58982ab3ba2f64d79613e027fe7f57e88539
