@@ -82,6 +82,13 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
             onNearEnd: () => unawaited(
               ref.read(reelsFeedNotifierProvider.notifier).fetchNextPage(),
             ),
+            // Pull down on the first reel to reload. Re-tapping the Home tab
+            // still works and still jumps to the top, but it was the ONLY way
+            // to refresh — undiscoverable, and unavailable whenever the reels
+            // screen was reached from anywhere but that tab.
+            onRefresh: () => ref
+                .read(reelsFeedNotifierProvider.notifier)
+                .refreshFeedInPlace(),
             // One signal per reel the viewer leaves, and only when the dwell
             // actually says something. The same dwell is what the creator's
             // view count is built from — before this, nothing in the app ever

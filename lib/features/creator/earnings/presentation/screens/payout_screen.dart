@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entit
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/payout_rules.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/notifiers/earnings_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class PayoutScreen extends ConsumerStatefulWidget {
@@ -35,6 +36,58 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
   }
 
   double get _amount => double.tryParse(_amountController.text) ?? 0;
+
+  /// Why the request cannot be submitted, or null when it can.
+  ///
+  /// The submit button used to be `canSubmit ? _openConfirmSheet : null` over
+  /// the same six conditions with nothing on screen saying which one failed —
+  /// so a creator met a dead button and had no way to find out why. Two of the
+  /// six are completely invisible from the form:
+  ///
+  ///  - **No payout method.** A creator who has not added a bank or wallet has
+  ///    an empty method list, so `_selectedMethodId` stays null forever and no
+  ///    amount they type will ever enable the button.
+  ///  - **Balance below the floor.** The minimum is Rs 10,000. With a smaller
+  ///    available balance there is NO amount that satisfies both
+  ///    `>= minimum` and `<= balance`, so the button is permanently dead and
+  ///    the form looks broken rather than unavailable.
+  ///
+  /// Returned in the order a creator should fix them, so the message changes
+  /// as they work down rather than naming a later problem first.
+  String? _blockedReason({
+    required EarningsSummary? summary,
+    required List<PayoutMethod> methods,
+    required bool isSubmitting,
+  }) {
+    if (isSubmitting) return null; // Button shows its own spinner.
+    if (summary == null) return 'Loading your balance…';
+
+    final available = summary.availableBalance.amount;
+    if (available < onDemandPayoutMinimumNpr) {
+      return 'You need at least '
+          '${formatMoney(Money(amount: onDemandPayoutMinimumNpr, currency: summary.availableBalance.currency))} '
+          'available to withdraw. You have '
+          '${formatMoney(summary.availableBalance)}.';
+    }
+    if (methods.isEmpty) {
+      return 'Add a bank account or wallet before withdrawing.';
+    }
+    if (_selectedMethodId == null) return 'Choose where to send the money.';
+    if (_amount < onDemandPayoutMinimumNpr) {
+      return 'Minimum withdrawal is '
+          '${formatMoney(Money(amount: onDemandPayoutMinimumNpr, currency: summary.availableBalance.currency))}.';
+    }
+    if (_amount > onDemandPayoutMaximumNpr) {
+      return 'Maximum per withdrawal is '
+          '${formatMoney(Money(amount: onDemandPayoutMaximumNpr, currency: summary.availableBalance.currency))}.';
+    }
+    if (_amount > available) {
+      return 'That is more than your available '
+          '${formatMoney(summary.availableBalance)}.';
+    }
+    if (!_agreedToTerms) return 'Accept the payout terms to continue.';
+    return null;
+  }
   double get _processingFee => _amount * _feePercent;
   double get _grandTotal => _amount - _processingFee;
 
@@ -131,14 +184,12 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
       submitting: () => true,
       orElse: () => false,
     );
-    final canSubmit =
-        summary != null &&
-        _selectedMethodId != null &&
-        _amount >= onDemandPayoutMinimumNpr &&
-        _amount <= onDemandPayoutMaximumNpr &&
-        _amount <= summary.availableBalance.amount &&
-        _agreedToTerms &&
-        !isSubmitting;
+    final blockedReason = _blockedReason(
+      summary: summary,
+      methods: methods,
+      isSubmitting: isSubmitting,
+    );
+    final canSubmit = blockedReason == null;
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -454,6 +505,32 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
               ),
             ),
             const SizedBox(height: DesignTokens.s24),
+
+            // Why the button below is dead. Above it rather than below, so it
+            // is read before the tap that does nothing rather than after.
+            if (blockedReason != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: DesignTokens.s12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: DesignTokens.textMuted,
+                    ),
+                    const SizedBox(width: DesignTokens.s8),
+                    Expanded(
+                      child: Text(
+                        blockedReason,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             // ── Submit ──────────────────────────────────────────────────────
             SizedBox(

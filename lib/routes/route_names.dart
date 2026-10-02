@@ -197,6 +197,10 @@ abstract class RouteNames {
   static const creatorMyApplications = '/creator/campaigns/applications';
 
   static const partnerships = '/creator/partnerships';
+  /// The delivery-partner role. One route: CourierGateScreen decides what to
+  /// show from the courier's profile state, so callers never have to know
+  /// whether this account has applied, is in review, or is live.
+  static const courier = '/courier';
   static const brandDetail = '/creator/partnerships/:partnershipId';
   static const partnershipApply = '/creator/partnerships/:partnershipId/apply';
   static const activePartnerships = '/creator/partnerships/active';

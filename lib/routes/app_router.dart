@@ -74,6 +74,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentat
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/screens/reel_details_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/screens/social_connect_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_gate_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/screens/assistant_conversation_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/screens/assistant_conversations_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_scenarios_screen.dart';
@@ -1279,6 +1280,13 @@ GoRouter appRouter(Ref ref) {
             ),
           ),
         ],
+      ),
+      // Delivery partner. A single route on purpose: CourierGateScreen
+      // branches on the courier profile state, so nothing else has to know
+      // whether this account has applied, is in review or is live.
+      GoRoute(
+        path: RouteNames.courier,
+        builder: (ctx, state) => const CourierGateScreen(),
       ),
       GoRoute(
         path: RouteNames.partnerships,

@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_device_key.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_remote_datasource.dart';
@@ -8,6 +9,8 @@ import 'package:stylemint_mobile_frontend/features/courier/data/courier_reposito
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/repositories/courier_repository.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/notifiers/courier_actions_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/providers.dart';
 
 final courierRemoteDataSourceProvider = Provider<CourierRemoteDataSource>(
   (ref) => CourierRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
@@ -141,3 +144,30 @@ final courierCanSignProvider =
         return keys.any((k) => k.isActive && k.publicKeyId == localKeyId);
       },
     );
+
+/// Courier mutations — apply, KYC, device-key enrolment, offers, custody
+/// events. The bool is "an action is in flight", which screens read to disable
+/// their buttons; the per-call outcome is returned rather than held in state,
+/// because two screens can act on different hops at once and a shared
+/// last-result field would show one of them the other's error.
+final courierActionsNotifierProvider =
+    StateNotifierProvider<CourierActionsNotifier, bool>(
+      (ref) => CourierActionsNotifier(
+        repository: ref.watch(courierRepositoryProvider),
+        dataSource: ref.watch(courierRemoteDataSourceProvider),
+        deviceKey: ref.watch(courierDeviceKeyProvider),
+        location: ref.watch(locationCaptureServiceProvider),
+      ),
+    );
+
+/// The signed-in account id, or empty when there is no session.
+///
+/// Read from the session controller rather than token storage so it reacts to
+/// sign-out: a courier who logs out mid-shift should not keep seeing hops
+/// resolved against the previous account's id.
+final courierAccountIdProvider = Provider<String>(
+  (ref) => ref.watch(sessionControllerProvider).maybeWhen(
+    authenticated: (accountId) => accountId,
+    orElse: () => '',
+  ),
+);
