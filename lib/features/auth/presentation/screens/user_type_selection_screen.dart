@@ -17,11 +17,34 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 /// automatically applied once authentication completes.
 final pendingRoleProvider = StateProvider<int?>((ref) => null);
 
+/// The delivery-partner option on this screen.
+///
+/// NOT a `RoleType` — the backend's enum stops at Vendor = 3, and a courier is
+/// a Delivery-module profile (`/v1/courier`) keyed to the account, not an
+/// Identity role-profile. So this value must never reach `requestRole` /
+/// `activateRole`; the courier gate owns the whole apply → KYC → active
+/// lifecycle instead. It shares [pendingRoleProvider] only so a guest who taps
+/// it is resumed here after signing in, exactly like Creator and Vendor.
+const int deliveryPartnerOption = 4;
+
+/// True for the options that cannot be completed as a guest, so tapping one
+/// sends the user to sign in and back here afterwards.
+///
+/// Every post-login screen has to agree on this set. They each used to inline
+/// `pendingRole == 2 || pendingRole == 3`, so adding an option meant finding
+/// all of them — and the one that was missed dropped the choice silently.
+bool pendingRoleNeedsResume(int? option) =>
+    option == 2 || option == 3 || option == deliveryPartnerOption;
+
 /// Select User Type — pixel-matched to Figma frame `9365:7986`.
 ///
-/// Brand logo → "Welcome to StyleMint!" (24px) + subtitle → three tappable
+/// Brand logo → "Welcome to StyleMint!" (24px) + subtitle → four tappable
 /// rows (green numbered badge + title/description + chevron, divided by thin
 /// lines) → "Already have an account? Sign In" footer.
+///
+/// The fourth row, delivery partner, is not a Figma role: it routes to the
+/// courier gate rather than through role request/activate. See
+/// [deliveryPartnerOption].
 class UserTypeSelectionScreen extends ConsumerStatefulWidget {
   /// Whether this sign-in just provisioned a new account (smart-start). Passed
   /// as the `?new=` query param rather than a typed `extra` object, because the
@@ -100,6 +123,16 @@ class _UserTypeSelectionScreenState
       return;
     }
 
+    // Delivery partner has no Identity role to request or activate — the
+    // courier gate reads the courier profile and decides between apply, KYC,
+    // "in review" and the work list. Checked BEFORE the activation and
+    // Creator/Vendor branches below, because falling through them would reach
+    // the Customer path and post role 4 to an enum that has no such member.
+    if (roleInt == deliveryPartnerOption) {
+      await _navigateForRole(roleInt);
+      return;
+    }
+
     // Already an active role → straight to that surface, no application needed.
     if (_isRoleActivated(roleInt)) {
       await _navigateForRole(roleInt);
@@ -141,6 +174,26 @@ class _UserTypeSelectionScreenState
 
   Future<void> _navigateForRole(int role) async {
     switch (role) {
+      // Braced so `router` is scoped to this case rather than the whole
+      // switch body.
+      case deliveryPartnerOption:
+        {
+          // Home first, then the gate on top of it. `/courier` is a
+          // top-level route, so reaching it with `go` alone makes it the only
+          // page on the stack and its AppBar renders no back button —
+          // someone who taps this before applying would be stranded on the
+          // apply form with no way back to shopping.
+          //
+          // The push waits a frame: `go` re-parses the route asynchronously,
+          // so pushing in the same synchronous block can append onto the
+          // stack being replaced. The router is captured first because `go`
+          // can dispose this element, taking its context with it.
+          final router = GoRouter.of(context);
+          router.go(RouteNames.home);
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => router.push(RouteNames.courier),
+          );
+        }
       case 2:
         if (_isRoleActivated(2)) {
           context.go(RouteNames.creatorHome);
@@ -339,6 +392,22 @@ class _UserTypeSelectionScreenState
                                 'List your products on our marketplace, Reach millions through creators, Grow your business with influencer marketing',
                             isActivated: _isRoleActivated(3),
                             onTap: () => _selectRole(3),
+                          ),
+                          const _RoleDivider(),
+                          // No `isActivated` badge: a courier is not an
+                          // Identity role, so `_existingRoles` can never say
+                          // whether this account is one. Finding out costs a
+                          // call to /v1/courier, which the gate makes anyway —
+                          // and this screen is the cold-start landing page, so
+                          // it is not worth blocking for every shopper who
+                          // will never tap it.
+                          _RoleRow(
+                            number: 4,
+                            title: 'I am a delivery partner',
+                            description:
+                                'Deliver parcels on your own schedule, Get paid per drop, Your phone signs for every handover',
+                            isActivated: false,
+                            onTap: () => _selectRole(deliveryPartnerOption),
                           ),
                         ],
                       ),

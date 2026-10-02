@@ -7,7 +7,7 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart'
-    show pendingRoleProvider;
+    show pendingRoleProvider, pendingRoleNeedsResume;
 import 'package:stylemint_mobile_frontend/features/auth/presentation/widgets/auth_code_field.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -165,9 +165,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               RouteNames.completeName,
               extra: {'accountId': auth.accountId},
             );
-          } else if (pendingRole == 2 || pendingRole == 3) {
-            // User picked Creator/Vendor before signing in — resume straight
-            // into that application now that the account is authenticated.
+          } else if (pendingRoleNeedsResume(pendingRole)) {
+            // User picked Creator, Vendor or delivery partner before signing
+            // in — resume straight into it now that the account is
+            // authenticated.
             context.go(RouteNames.userTypeSelection);
           } else if (auth.isNewAccount) {
             context.go(RouteNames.pickInterests);
