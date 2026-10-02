@@ -1,0 +1,12 @@
+# Copy to android/key.properties and fill in. NEVER commit the real file:
+# .gitignore already excludes android/key.properties and *.jks.
+#
+# Generate the upload keystore first (see the publishing guide):
+#   keytool -genkeypair -v -keystore upload-keystore.jks \
+#     -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# storeFile is relative to the android/ directory, or an absolute path.
+storeFile=upload-keystore.jks
+storePassword=CHANGE_ME
+keyAlias=upload
+keyPassword=CHANGE_ME
