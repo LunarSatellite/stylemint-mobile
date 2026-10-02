@@ -166,7 +166,11 @@ class _ReelCardState extends State<ReelCard> {
               Positioned(
                 right: DesignTokens.s12,
                 bottom: 180,
-                child: ReelActions(reel: widget.reel),
+                child: ReelActions(
+                  reel: widget.reel,
+                  // Only the watched reel's rail flips its product photos.
+                  isActive: widget.isActive,
+                ),
               ),
 
               // Creator info, caption and tagged products pinned to the bottom.

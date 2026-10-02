@@ -40,9 +40,14 @@ const _RailCart _unknownCart = (count: null, inCart: false);
 /// StyleMint's own sheet to copy a StyleMint link — never another app.
 /// Follow, like, save, share and cart are authenticated.
 class ReelActions extends ConsumerStatefulWidget {
-  const ReelActions({required this.reel, super.key});
+  const ReelActions({required this.reel, this.isActive = true, super.key});
 
   final Reel reel;
+
+  /// Whether this is the reel on screen. Only the visible rail flips its
+  /// product photos — the pager keeps neighbours alive, so without this every
+  /// off-screen rail would run a timer and decode images nobody can see.
+  final bool isActive;
 
   @override
   ConsumerState<ReelActions> createState() => _ReelActionsState();
@@ -363,6 +368,11 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
                   // A different product is a fresh tile, never a celebration.
                   key: ValueKey('rail-product-${product.id}'),
                   productId: product.id,
+                  // The same photos, flipping, as the tagged-product card
+                  // below. `gallery()` reconciles the full set with the
+                  // single lead url an older server sends.
+                  imageUrls: product.gallery(),
+                  isActive: widget.isActive,
                   monogram: productName.trim().isEmpty
                       ? null
                       : productName.trim()[0].toUpperCase(),

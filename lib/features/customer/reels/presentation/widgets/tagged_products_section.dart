@@ -279,10 +279,6 @@ class _ProductPhotos extends StatelessWidget {
 
   static const double _size = 72;
 
-  /// Long enough to take in the picture, short enough that a shopper sees more
-  /// than one before swiping on — a reel is watched for seconds, not minutes.
-  static const Duration _hold = Duration(milliseconds: 2200);
-
   final TaggedProductEntity product;
   final bool isActive;
 
@@ -304,7 +300,7 @@ class _ProductPhotos extends StatelessWidget {
       // snapping to the first photo.
       imageUrls: isActive || photos.isEmpty ? photos : [photos.first],
       size: _size,
-      interval: _hold,
+      interval: PlatformAvatarCarousel.productPhotoInterval,
       borderRadius: BorderRadius.circular(12),
       backgroundColor: DesignTokens.bgAppBodyLight,
       fallback: ground,

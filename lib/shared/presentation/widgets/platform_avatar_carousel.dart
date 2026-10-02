@@ -75,6 +75,15 @@ class PlatformAvatarCarousel extends StatefulWidget {
   /// a product photo.
   final BorderRadius? borderRadius;
 
+  /// How long a product photo holds before flipping to the next one.
+  ///
+  /// Shared by the two surfaces that show a tagged product — the card at the
+  /// bottom of a reel and the rail tile under Share. They sit on screen
+  /// together, so flipping out of step would read as a fault rather than a
+  /// rhythm. Long enough to take a photo in, short enough to see more than one
+  /// before swiping on: a reel is watched for seconds.
+  static const Duration productPhotoInterval = Duration(milliseconds: 2200);
+
   /// The platform pictures when there are any, otherwise [fallbackUrl] (a
   /// single legacy avatar URL) so payloads without platform pictures still
   /// show one.

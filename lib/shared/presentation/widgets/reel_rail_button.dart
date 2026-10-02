@@ -569,6 +569,8 @@ class ReelRailProductTile extends StatefulWidget {
     required this.priceLabel,
     required this.label,
     this.monogram,
+    this.imageUrls = const <String>[],
+    this.isActive = true,
     this.inCart = false,
     this.cartCount,
     this.onTap,
@@ -576,14 +578,26 @@ class ReelRailProductTile extends StatefulWidget {
     super.key,
   });
 
-  /// Seeds the tile's typographic ground, so the product wears the same face
-  /// here as it does everywhere else in the Mall.
+  /// Seeds the typographic ground, used when the product has no photo.
   ///
-  /// This used to be an `imageUrl` and drew the product's photograph over the
-  /// reel. The Mall is video-first and a product photograph belongs to
-  /// product detail (owner directive, 2026-09-16); the reel playing behind
-  /// this tile already is the product's moving image.
+  /// This was the tile's whole face under the video-first directive of
+  /// 2026-09-16, which the owner has since reversed: the tile shows the
+  /// vendor's photographs again, and the ground is the fallback.
   final String productId;
+
+  /// The product's uploaded photos, primary first. Shown here flipping from
+  /// one to the next, matching the tagged-product card at the bottom of the
+  /// reel — the two surfaces show the same product and looked unrelated while
+  /// one had photographs and the other a generated monogram.
+  ///
+  /// Empty falls back to the typographic ground, so a product with no photo
+  /// still wears a face rather than leaving a hole in the rail.
+  final List<String> imageUrls;
+
+  /// Whether this tile is on the reel being watched. Only the visible reel
+  /// flips; the pager keeps neighbours alive, so without this every
+  /// off-screen rail would run a timer and decode images nobody can see.
+  final bool isActive;
 
   /// First letter of the brand, or of the product name. Optional.
   final String? monogram;
@@ -699,16 +713,33 @@ class _ReelRailProductTileState extends State<ReelRailProductTile>
   Widget build(BuildContext context) {
     final inCart = widget.inCart;
     final productId = widget.productId;
-    final image = productId.isEmpty
-        ? ReelRailProductTile._placeholder
-        : SizedBox(
-            width: ReelRailProductTile.size,
-            height: ReelRailProductTile.size,
-            child: MallTypeGround(
-              seed: productId,
-              monogram: widget.monogram,
-            ),
-          );
+    final ground = SizedBox(
+      width: ReelRailProductTile.size,
+      height: ReelRailProductTile.size,
+      child: MallTypeGround(seed: productId, monogram: widget.monogram),
+    );
+    final photos = widget.imageUrls;
+    final Widget image;
+    if (productId.isEmpty) {
+      image = ReelRailProductTile._placeholder;
+    } else if (photos.isEmpty) {
+      image = ground;
+    } else {
+      // Same carousel as the tagged-product card, so the two keep the same
+      // rhythm and the same handling of a photo that fails to load. An
+      // off-screen rail is handed only the lead image rather than a flag:
+      // the carousel keeps showing whichever photo is still in the list when
+      // the list changes, so returning to a reel resumes where it was instead
+      // of snapping back to the first.
+      image = PlatformAvatarCarousel(
+        imageUrls: widget.isActive ? photos : [photos.first],
+        size: ReelRailProductTile.size,
+        interval: PlatformAvatarCarousel.productPhotoInterval,
+        borderRadius: _borderRadius,
+        backgroundColor: DesignTokens.bgAppBodyLight,
+        fallback: ground,
+      );
+    }
     return ReelRailPressable(
       label: inCart ? '${widget.label}, in cart' : widget.label,
       onTap: widget.onTap,

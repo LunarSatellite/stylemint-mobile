@@ -2,8 +2,18 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// **Product photos appear on the product detail page and nowhere else.**
+/// **Product photos appear on the product detail page and nowhere else** —
+/// plus the named exemptions below.
 /// Owner directive, 2026-09-16; the Mall kit's README states the same rule.
+///
+/// **Reversed for the reel's tagged product, 2026-10-02.** The card under a
+/// reel and the rail tile under Share both show the vendor's uploaded photos
+/// again, flipping through them. See exemption group 1b. The rule stands
+/// everywhere else, and `gallery()` was added to [_productPhotoExpression]
+/// because that accessor is how the photos reached those surfaces — without
+/// it the guard would have been silently bypassed rather than deliberately
+/// amended, and the next `product.gallery()` anywhere in `lib/` would have
+/// gone unnoticed.
 ///
 /// Photos re-entered the browse journey twice before this guard existed:
 /// once through a `photoCards` flag on the Mall home's rails that every call
@@ -121,6 +131,41 @@ const List<_Exemption> _productPhotoExemptions = [
   ),
 
   // ---------------------------------------------------------------------
+  // 1b. The tagged product on a reel — the 2026-09-16 directive REVERSED.
+  //
+  //     The owner asked for the vendor's photographs on the tagged-product
+  //     card (2026-10-02) and then for the same on the rail tile under Share.
+  //     Both surfaces now show every uploaded photo, flipping. The reasoning
+  //     that put the typographic ground there — "the reel already is the
+  //     product's moving image" — was overruled: a shopper could not tell
+  //     what the tagged item looked like without opening product detail.
+  //
+  //     Exempted by name rather than by relaxing the rule. The directive
+  //     still holds everywhere else, and the guard's whole point is that a
+  //     NEW screen cannot quietly add a product photo — these two were asked
+  //     for, so they are listed, with the date and the reason.
+  // ---------------------------------------------------------------------
+  _Exemption(
+    'lib/features/customer/reels/presentation/widgets/tagged_products_section.dart',
+    'The tagged-product card under a reel. Owner reversal 2026-10-02: show '
+        'the vendor\'s uploaded photos, flipping, instead of the generated '
+        'typographic ground.',
+  ),
+  _Exemption(
+    'lib/features/customer/reels/presentation/widgets/reel_actions.dart',
+    'The action rail\'s product tile, under Share. Same reversal, and it '
+        'shows the same product as the card — one bearing photographs while '
+        'the other bore a monogram read as a fault.',
+  ),
+  _Exemption(
+    'lib/shared/presentation/widgets/reel_rail_button.dart',
+    'ReelRailProductTile itself, named in this guard\'s own notes as the '
+        'widget that once smuggled a photo onto a reel. It now takes the '
+        'photos deliberately; where it may be built is controlled by the '
+        'reel_actions exemption above, which is its only call site.',
+  ),
+
+  // ---------------------------------------------------------------------
   // 2. Goods the buyer has already chosen — not browse, not discovery.
   //    The decision is already made; the thumbnail answers "is this the
   //    right item?", which is identification, not merchandising.
@@ -200,7 +245,7 @@ const List<_Exemption> _productPhotoExemptions = [
 final RegExp _productPhotoExpression = RegExp(
   r'(?:\b(?:product|products\[[^\]]*\]|item|items\[[^\]]*\]|p|variant|sku|'
   r'listing|widget\.product|r\.product)\s*[?!]?\s*\.\s*'
-  r'(?:imageUrl|imageUrls|heroImageUrl|thumbnailUrl|images)\b)'
+  r'(?:imageUrl|imageUrls|heroImageUrl|thumbnailUrl|images|gallery\(\))\b)'
   r'|\bproductImageUrl\b'
   // Bare `heroImageUrl`, carried over from the original guard. On a render
   // line it has only ever meant a product; `MallCampaignVm.imageUrl` and the
@@ -217,7 +262,7 @@ final RegExp _productPhotoExpression = RegExp(
 final RegExp _productPhotoHandOff = RegExp(
   r'(?:\b(?:product|products\[[^\]]*\]|item|items\[[^\]]*\]|p|variant|sku|'
   r'listing|widget\.product|r\.product)\s*[?!]?\s*\.\s*'
-  r'(?:imageUrl|imageUrls|heroImageUrl|thumbnailUrl|images)\b)'
+  r'(?:imageUrl|imageUrls|heroImageUrl|thumbnailUrl|images|gallery\(\))\b)'
   r'|\bproductImageUrl\b',
 );
 
