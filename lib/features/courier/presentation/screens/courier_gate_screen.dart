@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_kyc_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/identity_roles.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -49,9 +53,45 @@ class CourierGateScreen extends ConsumerWidget {
       ),
       // Null is not an error: most accounts are not couriers. This is the
       // "become one" path, and it is the common first visit.
-      data: (value) => value == null
-          ? const CourierApplyScreen()
-          : _forState(context, ref, value),
+      data: (value) {
+        if (value == null) return const CourierApplyScreen();
+        _ensureCourierRole(ref, accountId, value);
+        return _forState(context, ref, value);
+      },
+    );
+  }
+
+  /// Brings the account's `RoleType.Courier` role into step with the courier
+  /// profile, once that profile has cleared checks.
+  ///
+  /// The courier profile is the single source of truth — it is what decides
+  /// whether someone can carry a parcel. The role exists so the rest of the
+  /// app can answer "is this account a delivery partner?" without calling the
+  /// Delivery module: the role picker's badge, and landing a courier on this
+  /// screen at launch instead of the shopping feed.
+  ///
+  /// Done here rather than in the apply or KYC flow because clearing checks is
+  /// not something the app does — an admin approves the KYC, and the first the
+  /// app hears of it is reading a profile that has moved to Onboarded. This is
+  /// that moment.
+  ///
+  /// Deliberately fire-and-forget and silent. Identity refuses activation
+  /// unless it independently agrees the courier has cleared checks, so the
+  /// worst case is a no-op; and a failure here must not block a courier who
+  /// came to work. `requestRole` on an existing role answers Duplicate, which
+  /// is why it is safe to call on every visit.
+  void _ensureCourierRole(
+    WidgetRef ref,
+    String accountId,
+    CourierProfile profile,
+  ) {
+    if (!profile.state.hasClearedChecks) return;
+    unawaited(
+      Future(() async {
+        final notifier = ref.read(roleNotifierProvider.notifier);
+        await notifier.requestRole(accountId, IdentityRoles.courier);
+        await notifier.activateRole(accountId, IdentityRoles.courier);
+      }),
     );
   }
 
@@ -105,6 +145,10 @@ class CourierGateScreen extends ConsumerWidget {
       // than this gate hiding the screen; a courier who got through checks
       // should be able to see their standing and set up their signing key
       // while they wait.
+      //
+      // These are also the two states Identity accepts as "checks cleared",
+      // so this is where the Courier role is brought into step with the
+      // courier profile — see [_ensureCourierRole].
       case CourierProfileState.onboarded:
       case CourierProfileState.active:
         return CourierDashboardScreen(profile: profile);
