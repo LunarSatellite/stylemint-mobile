@@ -30,6 +30,23 @@ enum CourierProfileState {
 
   /// Whether the courier is waiting on someone else rather than on themselves.
   bool get isAwaitingReview => this == CourierProfileState.kycInReview;
+
+  /// Whether this courier has passed its checks — the delivery equivalent of
+  /// an approved profile application, and exactly what Identity accepts as
+  /// grounds for activating `RoleType.Courier`.
+  ///
+  /// Broader than [canCarry] on purpose: Onboarded has cleared review but is
+  /// still in probation, so it holds the role without yet being offered work.
+  /// Suspended and Banned are excluded — they had it taken away, and a role
+  /// claiming otherwise would disagree with the only thing that decides
+  /// whether a parcel can be carried.
+  ///
+  /// Must agree with `DeliveryCourierStandingLookup` on the server. If the two
+  /// drift, the app shows a courier a role the backend then refuses to
+  /// activate, silently.
+  bool get hasClearedChecks =>
+      this == CourierProfileState.onboarded ||
+      this == CourierProfileState.active;
 }
 
 /// How far up the delivery ladder a courier is. Mirrors `DeliveryTier`.

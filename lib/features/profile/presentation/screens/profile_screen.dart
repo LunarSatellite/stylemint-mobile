@@ -20,6 +20,7 @@ import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dar
 import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/identity_roles.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/theme/theme_mode_provider.dart';
@@ -254,12 +255,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             // deliver never sees it. The destination decides what to show --
             // apply, checks in progress, or the work list -- so this entry is
             // the same for an account that has never applied and one
-            // mid-shift.
-            ProfileMenuItem(
-              icon: Icons.delivery_dining_outlined,
-              label: 'Deliver with StyleMint',
-              onTap: () => context.push(RouteNames.courier),
-            ),
+            // mid-shift. The label is the one thing that changes, from the
+            // activated Courier role.
+            const _CourierMenuItem(),
             ProfileMenuItem(
               icon: Icons.handshake_outlined,
               label: 'Agent negotiations',
@@ -551,6 +549,40 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 /// the rows default to the apply route, and the apply screen self-redirects an
 /// already-approved role to its dashboard, so navigation stays correct either
 /// way.
+/// The delivery-partner row. One destination, two labels.
+///
+/// The courier gate decides what to show behind it — apply, checks in
+/// progress, or the work list — so the row does not branch on navigation. It
+/// branches only on wording, because "Deliver with StyleMint" reads as an
+/// invitation and is the wrong label for someone who already does it.
+///
+/// Reads the activated Courier role rather than calling the Delivery module:
+/// this row is built on every visit to the profile tab, and the role list is
+/// already being loaded here for the Creator and Vendor rows. Before the list
+/// arrives it shows the invitation, which is the right guess for almost every
+/// account.
+class _CourierMenuItem extends ConsumerWidget {
+  const _CourierMenuItem();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isCourier = ref
+        .watch(roleNotifierProvider)
+        .maybeWhen(
+          loadSuccess: (roles) => roles.any(
+            (r) => r.role == IdentityRoles.courier && r.isActivated,
+          ),
+          orElse: () => false,
+        );
+
+    return ProfileMenuItem(
+      icon: Icons.delivery_dining_outlined,
+      label: isCourier ? 'Delivery Dashboard' : 'Deliver with StyleMint',
+      onTap: () => context.push(RouteNames.courier),
+    );
+  }
+}
+
 class _RoleSwitcherSection extends ConsumerStatefulWidget {
   const _RoleSwitcherSection();
 
@@ -560,9 +592,8 @@ class _RoleSwitcherSection extends ConsumerStatefulWidget {
 }
 
 class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
-  // Role ids per the identity model: 2 = Creator, 3 = Vendor.
-  static const _creatorRole = 2;
-  static const _vendorRole = 3;
+  static const _creatorRole = IdentityRoles.creator;
+  static const _vendorRole = IdentityRoles.vendor;
 
   @override
   void initState() {
