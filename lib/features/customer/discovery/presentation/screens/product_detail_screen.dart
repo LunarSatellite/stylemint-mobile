@@ -42,6 +42,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_v
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({required this.productId, super.key});
@@ -421,13 +422,22 @@ class _ProductBody extends StatelessWidget {
           bottom: 0,
           left: 0,
           right: 0,
-          child: _BottomBar(
-            product: product,
-            quantity: quantity,
-            onQuantityChanged: onQuantityChanged,
-            onAddToCart: onAddToCart,
-            onBuyNow: onBuyNow,
-          ),
+          // A digital product this build may not sell gets no purchase bar at
+          // all — not a disabled one. The page still loads, because a deep
+          // link or a share can land here, and says why there is nothing to
+          // press. See DigitalGoodsPolicy.
+          child:
+              DigitalGoodsPolicy.of(context).blocksPurchaseOf(
+                product.productKind,
+              )
+              ? const _UnavailableBar()
+              : _BottomBar(
+                  product: product,
+                  quantity: quantity,
+                  onQuantityChanged: onQuantityChanged,
+                  onAddToCart: onAddToCart,
+                  onBuyNow: onBuyNow,
+                ),
         ),
       ],
     );
@@ -1493,6 +1503,43 @@ class _FromTheReelSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Stands in for the purchase bar on a product this build may not sell.
+///
+/// Deliberately carries no action: no Add to Cart, no Buy Now, no price and
+/// no link out. The product is simply not for sale in this app.
+class _UnavailableBar extends StatelessWidget {
+  const _UnavailableBar();
+
+  static const notice = 'Not available for purchase in the app.';
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16 + bottomPad,
+      ),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody.withValues(alpha: 0.97),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border.all(color: DesignTokens.glassStroke),
+      ),
+      child: const Text(
+        notice,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 13,
+          color: DesignTokens.textMuted,
+        ),
+      ),
     );
   }
 }

@@ -53,4 +53,20 @@ class CollectionDetail {
   final CatalogPage<CollectionItem> items;
 
   bool get isLook => kind == CollectionKind.look;
+
+  /// The same collection with [items] replaced. [itemCount] is the server's
+  /// count of publicly listed items and is left unchanged.
+  CollectionDetail withItems(CatalogPage<CollectionItem> items) =>
+      CollectionDetail(
+        id: id,
+        slug: slug,
+        title: title,
+        kind: kind,
+        items: items,
+        subtitle: subtitle,
+        description: description,
+        coverImageUrl: coverImageUrl,
+        ownerDisplayName: ownerDisplayName,
+        itemCount: itemCount,
+      );
 }

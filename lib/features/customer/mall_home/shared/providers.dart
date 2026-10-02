@@ -24,6 +24,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/storefront_personalizer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/digital_goods/providers.dart';
 
 final mallHomeRemoteDataSourceProvider = Provider<MallHomeRemoteDataSource>(
   (ref) => MallHomeRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
@@ -46,6 +47,7 @@ final mallCatalogRepositoryProvider = Provider<MallCatalogRepository>(
   (ref) => MallCatalogRepositoryImpl(
     remoteDataSource: ref.watch(mallCatalogRemoteDataSourceProvider),
     networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+    digitalGoodsPolicy: ref.watch(digitalGoodsPolicyProvider),
   ),
 );
 

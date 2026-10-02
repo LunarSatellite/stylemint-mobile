@@ -352,6 +352,7 @@ class _Copy extends StatelessWidget {
     // Adds, or opens the page to choose — decided by the card, not the block.
     // The pill spells out whichever it is.
     final buy = MallQuickAdd.forProduct(
+      context: context,
       product: product,
       strings: strings,
       onAdd: onQuickAdd,

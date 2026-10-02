@@ -19,7 +19,13 @@ class CatalogProduct {
     this.requiresOptionSelection = true,
     this.defaultVariantId,
     this.isInStock = false,
+    this.productKind,
   });
+
+  /// Catalog `ProductKind` as the server stated it, or null when the payload
+  /// carried none. Drives the digital-goods gate; never defaulted to
+  /// physical, because "unknown" and "physical" are different facts.
+  final int? productKind;
 
   /// The reel this product is sold through. Null for most products.
   final ProductReelRef? reel;
@@ -64,4 +70,13 @@ class CatalogPage<T> {
   final int? totalCount;
 
   bool get hasMore => nextCursor != null;
+
+  /// The same page with only the items [keep] accepts. The cursor and
+  /// [totalCount] are the server's and are left alone: they describe what the
+  /// server holds, not what this build chose to show.
+  CatalogPage<T> where(bool Function(T item) keep) => CatalogPage<T>(
+    items: items.where(keep).toList(growable: false),
+    nextCursor: nextCursor,
+    totalCount: totalCount,
+  );
 }

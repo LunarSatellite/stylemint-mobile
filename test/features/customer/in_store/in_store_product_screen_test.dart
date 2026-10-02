@@ -22,6 +22,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reviews/shared/provi
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
+import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 
 class _MockDiscoveryRepository extends Mock implements DiscoveryRepository {}
 
@@ -124,8 +125,15 @@ void main() {
 
   Future<void> pump(
     WidgetTester tester,
-    _FakeInStoreRepository inStore,
-  ) async {
+    _FakeInStoreRepository inStore, {
+    DigitalGoodsPolicy policy = const DigitalGoodsPolicy.allowed(),
+    ProductDetail? product,
+  }) async {
+    if (product != null) {
+      when(
+        () => discovery.getProductDetail('p-1'),
+      ).thenAnswer((_) async => right(product));
+    }
     tester.view.physicalSize = const Size(1080, 2600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -168,7 +176,10 @@ void main() {
           reviewsRepositoryProvider.overrideWithValue(reviews),
           inStoreRepositoryProvider.overrideWithValue(inStore),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: DigitalGoodsScope(
+          policy: policy,
+          child: MaterialApp.router(routerConfig: router),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -193,6 +204,59 @@ void main() {
     expect(find.text('Add to cart'), findsOneWidget);
     expect(find.text('Save for later'), findsOneWidget);
     expect(inStore.requested, ['p-1']);
+  });
+
+  group('digital goods', () {
+    const blocked = DigitalGoodsPolicy.blockedBy(StoreBillingRule.googlePlay);
+
+    testWidgets('a digital product loses Add to cart but keeps Save', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        _FakeInStoreRepository([right(List.of(_reels))]),
+        policy: blocked,
+        product: _product.copyWith(productKind: ProductKinds.digital),
+      );
+
+      expect(find.text('Add to cart'), findsNothing);
+      // Saving is not buying, so it stays.
+      expect(find.text('Save for later'), findsOneWidget);
+    });
+
+    testWidgets('a subscription product loses Add to cart', (tester) async {
+      await pump(
+        tester,
+        _FakeInStoreRepository([right(List.of(_reels))]),
+        policy: blocked,
+        product: _product.copyWith(productKind: ProductKinds.subscription),
+      );
+
+      expect(find.text('Add to cart'), findsNothing);
+    });
+
+    testWidgets('a physical product is untouched', (tester) async {
+      await pump(
+        tester,
+        _FakeInStoreRepository([right(List.of(_reels))]),
+        policy: blocked,
+        product: _product.copyWith(productKind: ProductKinds.physical),
+      );
+
+      expect(find.text('Add to cart'), findsOneWidget);
+    });
+
+    testWidgets('a digital product buys where digital goods are allowed', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        _FakeInStoreRepository([right(List.of(_reels))]),
+        product: _product.copyWith(productKind: ProductKinds.digital),
+      );
+
+      expect(find.text('Add to cart'), findsOneWidget);
+    });
   });
 
   testWidgets('a reel tile opens StyleMint reel screen', (tester) async {

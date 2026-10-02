@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 // Small immutable view models consumed by the Mall kit. Feature screens map
@@ -55,6 +56,7 @@ class MallProductVm {
     this.requiresOptionSelection = true,
     this.defaultVariantId,
     this.isInStock = false,
+    this.productKind,
   });
 
   final String id;
@@ -107,6 +109,13 @@ class MallProductVm {
   /// False by default so an older or malformed payload never offers Add.
   final bool isInStock;
 
+  /// Catalog `ProductKind` (1 Physical … 5 Bundle) as the server stated it,
+  /// or null when the card's payload carried none. Kinds 2 and 4 are digital
+  /// content and may not be sold in-app on a store build — see
+  /// `DigitalGoodsPolicy`. Null is "the server did not say" and stays
+  /// purchasable; it is never read as physical.
+  final int? productKind;
+
   /// Whether this product may be added straight from a tile.
   ///
   /// Both halves of the contract have to hold: the card said no choice is
@@ -139,7 +148,11 @@ class MallProductVm {
           requiresOptionSelection: requiresOptionSelection,
           defaultVariantId: defaultVariantId,
           isInStock: isInStock,
+          productKind: productKind,
         );
+
+  /// Whether this card is known to be digital content (Catalog kind 2 or 4).
+  bool get isDigitalGood => isDigitalProductKind(productKind);
 
   bool get isOnSale {
     final was = compareAtPrice;

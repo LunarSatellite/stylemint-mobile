@@ -115,6 +115,7 @@ void main() {
         Builder(
           builder: (context) =>
               MallQuickAdd.forProduct(
+                context: context,
                 product: optionProduct,
                 strings: MallStrings.of(context),
                 onAdd: () async {
@@ -147,6 +148,7 @@ void main() {
             return Wrap(
               children: [
                 MallQuickAdd.forProduct(
+                  context: context,
                   product: plainAddableProduct,
                   strings: strings,
                   onAdd: () async => true,
@@ -154,6 +156,7 @@ void main() {
                   withLabel: true,
                 )!,
                 MallQuickAdd.forProduct(
+                  context: context,
                   product: optionProduct,
                   strings: strings,
                   onAdd: () async => true,
@@ -192,6 +195,7 @@ void main() {
         Builder(
           builder: (context) =>
               MallQuickAdd.forProduct(
+                context: context,
                 // Straight from the default constructor: the field was absent
                 // from the payload, which reads as "a choice is required".
                 product: plainProduct,
@@ -226,6 +230,7 @@ void main() {
         Builder(
           builder: (context) =>
               MallQuickAdd.forProduct(
+                context: context,
                 product: half,
                 strings: MallStrings.of(context),
                 onAdd: () async {

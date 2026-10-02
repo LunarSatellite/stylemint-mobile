@@ -60,6 +60,7 @@ class MallTypeTile extends StatelessWidget {
     final quickAdd = onQuickAdd;
     // Adds, or opens the page to choose — decided by the card, not the tile.
     final buy = MallQuickAdd.forProduct(
+      context: context,
       product: product,
       strings: strings,
       onAdd: quickAdd,

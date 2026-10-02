@@ -1,5 +1,9 @@
+// @JsonKey on freezed factory parameters is supported by json_serializable.
+// ignore_for_file: invalid_annotation_target
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
+import 'package:stylemint_mobile_frontend/shared/data/product_kind_json.dart';
 import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
@@ -94,6 +98,7 @@ abstract class ProductDetailDto with _$ProductDetailDto {
       isSaved: false,
       isInCart: false,
       defaultVariantId: defaultVariant?.id,
+      productKind: resolveProductKind(variants.map((v) => v.productKind)),
     );
   }
 }
@@ -141,6 +146,9 @@ abstract class ProductVariantDto with _$ProductVariantDto {
     @Default('NPR') String priceCurrency,
     @Default(true) bool trackInventory,
     @Default(0) int quantityOnHand,
+    // Catalog's ProductKind. Null when the payload carried none, which the
+    // digital-goods gate reads as "unknown", not "physical".
+    @JsonKey(fromJson: readProductKind) int? productKind,
   }) = _ProductVariantDto;
 
   const ProductVariantDto._();
