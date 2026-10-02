@@ -10,16 +10,34 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/shared/provider
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/platform_avatar_carousel.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Horizontal strip of products tagged on a reel. Each tile shows the
-/// product's typographic ground — never its photograph, which belongs to
-/// product detail — plus the name, the price and an "Add to Cart" button
-/// gated through the shared [ensureAuth].
+/// vendor's uploaded photos, flipping from one to the next, plus the name,
+/// the price and an "Add to Cart" button gated through the shared
+/// [ensureAuth].
+///
+/// The photographs replace the generated typographic ground that stood in for
+/// them until now (the "video-first" directive of 2026-09-16, reversed by the
+/// owner): a shopper could not tell what the tagged item looked like without
+/// opening product detail, and a vendor's five-to-ten uploaded images were
+/// never shown anywhere in the feed. The ground remains the fallback for a
+/// product with no photo.
 class TaggedProductsSection extends ConsumerWidget {
-  const TaggedProductsSection({required this.products, super.key});
+  const TaggedProductsSection({
+    required this.products,
+    this.isActive = true,
+    super.key,
+  });
 
   final List<TaggedProductEntity> products;
+
+  /// Whether this reel is the one on screen. Only the visible reel's tiles
+  /// cycle their photos — the pager keeps neighbours alive, so without this
+  /// every off-screen card would run its own timer and keep decoding images
+  /// nobody is looking at.
+  final bool isActive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,7 +49,8 @@ class TaggedProductsSection extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
         itemCount: products.length,
         separatorBuilder: (_, _) => const SizedBox(width: DesignTokens.s12),
-        itemBuilder: (_, index) => _ProductTile(product: products[index]),
+        itemBuilder: (_, index) =>
+            _ProductTile(product: products[index], isActive: isActive),
       ),
     );
   }
@@ -101,9 +120,10 @@ void changeCartItemQuantity(WidgetRef ref, CartItem item, int delta) {
 }
 
 class _ProductTile extends ConsumerWidget {
-  const _ProductTile({required this.product});
+  const _ProductTile({required this.product, required this.isActive});
 
   final TaggedProductEntity product;
+  final bool isActive;
 
   Future<void> _addToCart(BuildContext context, WidgetRef ref) =>
       addTaggedProductToCart(context, ref, product);
@@ -148,22 +168,9 @@ class _ProductTile extends ConsumerWidget {
                   // Tapping the image opens the product detail page.
                   GestureDetector(
                     onTap: () => _openProduct(context),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      // Video-first: the reel already is this product's
-                      // moving image. The tile beneath it carries the
-                      // product's typographic ground, never its photograph
-                      // (owner directive, 2026-09-16).
-                      child: SizedBox(
-                        width: 72,
-                        height: 72,
-                        child: MallTypeGround(
-                          seed: product.id,
-                          monogram: product.name.trim().isEmpty
-                              ? null
-                              : product.name.trim()[0].toUpperCase(),
-                        ),
-                      ),
+                    child: _ProductPhotos(
+                      product: product,
+                      isActive: isActive,
                     ),
                   ),
                   const SizedBox(width: DesignTokens.s8),
@@ -255,6 +262,53 @@ class _ProductTile extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── PRODUCT PHOTOS ──────────────────────────────────────────────────────────
+
+/// The tagged product's pictures, flipping from one to the next while the
+/// reel is on screen.
+///
+/// One picture is static and no picture falls back to the generated
+/// typographic ground, so a tile is never empty — a draft-era product, or one
+/// whose images failed to load, still reads as a product rather than a hole.
+class _ProductPhotos extends StatelessWidget {
+  const _ProductPhotos({required this.product, required this.isActive});
+
+  static const double _size = 72;
+
+  /// Long enough to take in the picture, short enough that a shopper sees more
+  /// than one before swiping on — a reel is watched for seconds, not minutes.
+  static const Duration _hold = Duration(milliseconds: 2200);
+
+  final TaggedProductEntity product;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final photos = product.gallery();
+    final ground = MallTypeGround(
+      seed: product.id,
+      monogram: product.name.trim().isEmpty
+          ? null
+          : product.name.trim()[0].toUpperCase(),
+    );
+
+    return PlatformAvatarCarousel(
+      // Off-screen tiles hold the lead image instead of cycling. Passing the
+      // shortened list (rather than a flag) is deliberate: the carousel keeps
+      // showing whichever picture is still in the list when it changes, so
+      // scrolling back to a reel resumes from where it was rather than
+      // snapping to the first photo.
+      imageUrls: isActive || photos.isEmpty ? photos : [photos.first],
+      size: _size,
+      interval: _hold,
+      borderRadius: BorderRadius.circular(12),
+      backgroundColor: DesignTokens.bgAppBodyLight,
+      fallback: ground,
+      semanticLabel: product.name.trim().isEmpty ? null : product.name,
     );
   }
 }

@@ -182,6 +182,7 @@ class TaggedProductEntity {
     required this.imageUrl,
     required this.price,
     required this.quantity,
+    this.imageUrls = const <String>[],
   });
 
   final String id;
@@ -193,4 +194,25 @@ class TaggedProductEntity {
   final String imageUrl;
   final Money price;
   final int quantity;
+
+  /// Every image the vendor uploaded, primary first then by sort order. The
+  /// tagged-product card cycles through them.
+  ///
+  /// Kept separate from [imageUrl] rather than replacing it: an older server
+  /// sends only the single url, and some callers want one picture. Read
+  /// [gallery], which reconciles the two.
+  final List<String> imageUrls;
+
+  /// The pictures to show, in order: the full set when the server sent one,
+  /// otherwise the lead image alone, otherwise empty.
+  ///
+  /// Never contains an empty string, so a caller can treat `isEmpty` as "this
+  /// product has no photo" without re-checking each entry.
+  List<String> gallery() {
+    final all = [
+      ...imageUrls.where((url) => url.trim().isNotEmpty),
+      if (imageUrls.isEmpty && imageUrl.trim().isNotEmpty) imageUrl,
+    ];
+    return List.unmodifiable(all);
+  }
 }
