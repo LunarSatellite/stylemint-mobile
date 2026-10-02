@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 
@@ -367,6 +369,26 @@ class CourierRemoteDataSource {
       },
       options: _idempotent(idempotencyKey),
     );
+  }
+
+  // ── Proof photos ───────────────────────────────────────────────────────
+
+  /// POST `/v1/deliveries/courier/proof-images` — uploads one JPG/PNG and
+  /// returns the absolute URL to pass as `proofPhotoUrl`.
+  ///
+  /// Pickup and photo handoff both require that URL and validate it is
+  /// absolute http(s), so this is not optional decoration: without it those
+  /// calls cannot be made at all.
+  Future<String> uploadProofPhoto({
+    required File file,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.postFile(
+      '/v1/deliveries/courier/proof-images',
+      file: file,
+      options: _idempotent(idempotencyKey),
+    );
+    return ((response as Map)['url'] as String?) ?? '';
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────
