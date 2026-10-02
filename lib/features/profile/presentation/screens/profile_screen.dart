@@ -145,6 +145,22 @@ class _ProfileBody extends ConsumerStatefulWidget {
 }
 
 class _ProfileBodyState extends ConsumerState<_ProfileBody> {
+  /// True once the Courier role is activated, which only changes the delivery
+  /// row's wording: "Deliver with StyleMint" is an invitation and reads wrong
+  /// to someone who already delivers. The gate behind the row decides what to
+  /// show, so navigation never branches.
+  ///
+  /// Read here rather than in a child widget because ProfileMenuSection takes
+  /// data items, not widgets. Before the role list arrives this is false, so
+  /// the row shows the invitation — the right guess for almost every account.
+  bool get _isCourier => ref
+      .watch(roleNotifierProvider)
+      .maybeWhen(
+        loadSuccess: (roles) =>
+            roles.any((r) => r.role == IdentityRoles.courier && r.isActivated),
+        orElse: () => false,
+      );
+
   bool _pushEnabled = false;
   bool _pushLoaded = false;
 
@@ -257,22 +273,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             // the same for an account that has never applied and one
             // mid-shift. The label is the one thing that changes, from the
             // activated Courier role.
-            // ProfileMenuSection takes ProfileMenuItem models, not widgets,
-            // so the label is resolved here rather than inside a wrapper
-            // widget. _ProfileBodyState is a ConsumerState, so `ref` is
-            // already in scope and no Consumer is needed for it.
             ProfileMenuItem(
               icon: Icons.delivery_dining_outlined,
-              label:
-                  ref
-                      .watch(roleNotifierProvider)
-                      .maybeWhen(
-                        loadSuccess: (roles) => roles.any(
-                          (r) =>
-                              r.role == IdentityRoles.courier && r.isActivated,
-                        ),
-                        orElse: () => false,
-                      )
+              label: _isCourier
                   ? 'Delivery Dashboard'
                   : 'Deliver with StyleMint',
               onTap: () => context.push(RouteNames.courier),
@@ -568,18 +571,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 /// the rows default to the apply route, and the apply screen self-redirects an
 /// already-approved role to its dashboard, so navigation stays correct either
 /// way.
-/// The delivery-partner row. One destination, two labels.
-///
-/// The courier gate decides what to show behind it — apply, checks in
-/// progress, or the work list — so the row does not branch on navigation. It
-/// branches only on wording, because "Deliver with StyleMint" reads as an
-/// invitation and is the wrong label for someone who already does it.
-///
-/// Reads the activated Courier role rather than calling the Delivery module:
-/// this row is built on every visit to the profile tab, and the role list is
-/// already being loaded here for the Creator and Vendor rows. Before the list
-/// arrives it shows the invitation, which is the right guess for almost every
-/// account.
+/// The delivery-partner row lives in _ProfileBodyState._isCourier, because
+/// ProfileMenuSection takes data items rather than widgets.
+
 class _RoleSwitcherSection extends ConsumerStatefulWidget {
   const _RoleSwitcherSection();
 

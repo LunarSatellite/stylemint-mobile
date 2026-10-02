@@ -182,12 +182,29 @@ class CourierRemoteDataSource {
 
   // ── Reliability + escrow ───────────────────────────────────────────────
 
+  /// GET `/v1/courier/{id}/reliability`, or null when no snapshot exists yet.
+  ///
+  /// The same 404-as-absence as [getByAccount], and the common case for a new
+  /// courier: snapshots are written by a nightly job that only runs for Active
+  /// couriers, so anyone newly Onboarded has none and the server answers
+  /// NotFound. The dashboard already has copy for it — "no score yet", because
+  /// showing 0% to someone who has carried nothing would read as a bad score —
+  /// but that branch was unreachable while the 404 took the error path and
+  /// hid the row instead.
+  ///
+  /// Other statuses still throw: a real failure should not be shown as "no
+  /// score yet".
   Future<Map<String, dynamic>?> getReliability(String courierProfileId) async {
-    final response = await apiClient.get(
-      '/v1/courier/$courierProfileId/reliability',
-    );
-    if (response == null) return null;
-    return (response as Map).cast<String, dynamic>();
+    try {
+      final response = await apiClient.get(
+        '/v1/courier/$courierProfileId/reliability',
+      );
+      if (response == null) return null;
+      return (response as Map).cast<String, dynamic>();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getReliabilityHistory(
