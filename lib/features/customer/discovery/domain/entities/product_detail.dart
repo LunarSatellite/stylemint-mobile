@@ -1,5 +1,6 @@
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_delivery.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_option.dart';
+import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
 
@@ -29,6 +30,7 @@ class ProductDetail {
     this.delivery,
     this.options = const <ProductOption>[],
     this.optionVariants = const <ProductVariantOption>[],
+    this.productKind,
   });
 
   final String id;
@@ -67,6 +69,15 @@ class ProductDetail {
   /// Every variant seen through its option values, for resolving a choice.
   final List<ProductVariantOption> optionVariants;
 
+  /// Catalog `ProductKind` (1 Physical … 5 Bundle) as the server stated it,
+  /// or null when the payload carried none. Kinds 2 and 4 are digital content
+  /// and carry no purchase action on a store build — see `DigitalGoodsPolicy`.
+  /// Null is "the server did not say" and stays purchasable.
+  final int? productKind;
+
+  /// Whether this product is known to be digital content.
+  bool get isDigitalGood => isDigitalProductKind(productKind);
+
   ProductDetail copyWith({
     String? id,
     String? name,
@@ -91,6 +102,7 @@ class ProductDetail {
     ProductDelivery? delivery,
     List<ProductOption>? options,
     List<ProductVariantOption>? optionVariants,
+    int? productKind,
     bool clearCompareAtPrice = false,
     bool clearStockCount = false,
   }) {
@@ -120,6 +132,7 @@ class ProductDetail {
       delivery: delivery ?? this.delivery,
       options: options ?? this.options,
       optionVariants: optionVariants ?? this.optionVariants,
+      productKind: productKind ?? this.productKind,
     );
   }
 }

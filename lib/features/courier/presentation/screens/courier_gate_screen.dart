@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_apply_screen.dart';
@@ -44,13 +45,38 @@ class CourierGateScreen extends ConsumerWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         body: Center(child: SmBrandLoader()),
       ),
-      error: (_, _) => _CourierMessage(
-        icon: Icons.wifi_off_rounded,
-        title: "Couldn't load your partner account",
-        body: 'Check your connection and try again.',
-        action: 'Retry',
-        onAction: () async => ref.invalidate(courierProfileProvider(accountId)),
-      ),
+      // Say which kind of failure it was. This screen used to blame the
+      // connection for everything, which was wrong for every cause it
+      // actually had — a signed-out session and a server error both read as
+      // "check your connection", so the one thing the courier could do about
+      // it was never the thing suggested.
+      error: (error, _) {
+        final failure = error is NetworkExceptions ? error : null;
+        final offline = failure?.isNoInternet ?? false;
+        final signedOut = failure?.isAuth ?? false;
+        return _CourierMessage(
+          icon: offline
+              ? Icons.wifi_off_rounded
+              : signedOut
+              ? Icons.lock_outline_rounded
+              : Icons.error_outline_rounded,
+          title: signedOut
+              ? 'Please sign in again'
+              : "Couldn't load your partner account",
+          body: offline
+              ? 'You are offline. Check your connection and try again.'
+              : signedOut
+              ? 'Your session has expired. Sign in and come back here.'
+              : 'Something went wrong on our side. Try again in a moment — '
+                    'your account and any parcels you are carrying are not '
+                    'affected.',
+          action: signedOut ? null : 'Retry',
+          onAction: signedOut
+              ? null
+              : () async =>
+                    ref.invalidate(courierProfileProvider(accountId)),
+        );
+      },
       // Null is not an error: most accounts are not couriers. This is the
       // "become one" path, and it is the common first visit.
       data: (value) {

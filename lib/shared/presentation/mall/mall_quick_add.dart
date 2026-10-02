@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_metrics.
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_strings.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_view_models.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 
 /// What quick-add is doing right now.
 enum MallQuickAddPhase {
@@ -94,7 +95,11 @@ class MallQuickAdd extends StatefulWidget {
   /// Returns null when the control would do nothing: no [onAdd] (the surface
   /// does not buy), or a product needing a choice with no [onChoose] page to
   /// send the buyer to.
+  /// [context] is required so the digital-goods gate cannot be forgotten at a
+  /// new call site: a product the store's billing rules forbid selling here
+  /// gets no control at all, not a disabled one.
   static Widget? forProduct({
+    required BuildContext context,
     required MallProductVm product,
     required MallStrings strings,
     Future<bool> Function()? onAdd,
@@ -102,6 +107,9 @@ class MallQuickAdd extends StatefulWidget {
     bool withLabel = false,
   }) {
     if (onAdd == null) return null;
+    if (DigitalGoodsPolicy.of(context).blocksPurchaseOf(product.productKind)) {
+      return null;
+    }
     if (!product.isInStock) return null;
     if (!product.canQuickAdd) {
       if (onChoose == null) return null;

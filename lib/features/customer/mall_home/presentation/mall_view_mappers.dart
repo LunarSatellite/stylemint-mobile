@@ -58,6 +58,7 @@ extension CatalogProductToVm on CatalogProduct {
     requiresOptionSelection: requiresOptionSelection,
     defaultVariantId: defaultVariantId,
     isInStock: isInStock,
+    productKind: productKind,
   );
 }
 

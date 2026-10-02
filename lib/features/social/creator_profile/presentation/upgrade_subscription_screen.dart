@@ -8,6 +8,8 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/presen
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/models/account_subscription_dto.dart';
+import 'package:stylemint_mobile_frontend/shared/digital_goods/providers.dart';
 
 class UpgradeSubscriptionScreen extends ConsumerStatefulWidget {
   const UpgradeSubscriptionScreen({super.key});
@@ -95,6 +97,12 @@ class _UpgradeSubscriptionScreenState
   Widget build(BuildContext context) {
     final bottomPadding =
         MediaQuery.of(context).padding.bottom + DesignTokens.s16;
+    // A paid creator subscription is digital content. On a store build that
+    // may not sell it, this screen stops being a shop: no plan list, no plan
+    // prices, no Proceed. What someone already bought is still shown, in
+    // full and read-only, because removing the purchase path is the
+    // requirement — not hiding what they already own. See DigitalGoodsPolicy.
+    final blocked = !ref.watch(digitalGoodsPolicyProvider).canOfferDigitalGoods;
     final plansAsync = ref.watch(subscriptionPlansProvider);
     final currentSubAsync = ref.watch(currentSubscriptionProvider);
     // Preselect only when the API actually returned a subscription. null
@@ -115,9 +123,9 @@ class _UpgradeSubscriptionScreenState
           ),
           onPressed: () => context.popOrHome(),
         ),
-        title: const Text(
-          'Upgrade Subscription Plan',
-          style: TextStyle(
+        title: Text(
+          blocked ? 'My Subscription' : 'Upgrade Subscription Plan',
+          style: const TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -125,121 +133,249 @@ class _UpgradeSubscriptionScreenState
           ),
         ),
       ),
-      body: plansAsync.when(
-        loading: () => const SmPageLoader(),
-        error: (err, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(DesignTokens.s24),
-            child: Text(
-              'Could not load plans: $err',
-              style: const TextStyle(color: DesignTokens.textLight),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-        data: (plans) {
-          // Preselect the tier the user is currently subscribed to, but only
-          // on the first build (so the user's manual choice afterwards
-          // persists). If they have no active subscription, nothing is
-          // preselected and they must pick.
-          if (!_initialized) {
-            _initialized = true;
-            _selectedTier = currentTier;
-          }
-          final tierGroups = _groupByTier(plans);
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16,
-                  DesignTokens.s16,
-                  DesignTokens.s16,
-                  DesignTokens.s24,
-                ),
-                child: _BillingToggle(
-                  value: _billing,
-                  onChanged: (v) => setState(() => _billing = v),
-                ),
-              ),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s16,
+      body: blocked
+          ? _ReadOnlySubscription(subscription: currentSubAsync)
+          : plansAsync.when(
+              loading: () => const SmPageLoader(),
+              error: (err, _) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(DesignTokens.s24),
+                  child: Text(
+                    'Could not load plans: $err',
+                    style: const TextStyle(color: DesignTokens.textLight),
+                    textAlign: TextAlign.center,
                   ),
-                  itemCount: tierGroups.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: DesignTokens.s16),
-                  itemBuilder: (context, i) {
-                    final group = tierGroups[i];
-                    final selected = _planFor(plans, group.tier, _billing);
-                    return _PlanCard(
-                      planGroup: group,
-                      selectedPlan: selected,
-                      isYearly: _billing == BillingCycle.yearly,
-                      isSelected: _selectedTier == group.tier,
-                      onTap: () => setState(() => _selectedTier = group.tier),
-                    );
-                  },
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  DesignTokens.s16,
-                  DesignTokens.s16,
-                  DesignTokens.s16,
-                  bottomPadding,
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _selectedTier == null || _submitting
-                        ? null
-                        : () => _proceed(plans),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DesignTokens.primaryGreen,
-                      foregroundColor: DesignTokens.baseBlack,
-                      disabledBackgroundColor: DesignTokens.primaryGreen
-                          .withValues(alpha: 0.4),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
+              data: (plans) {
+                // Preselect the tier the user is currently subscribed to, but only
+                // on the first build (so the user's manual choice afterwards
+                // persists). If they have no active subscription, nothing is
+                // preselected and they must pick.
+                if (!_initialized) {
+                  _initialized = true;
+                  _selectedTier = currentTier;
+                }
+                final tierGroups = _groupByTier(plans);
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        DesignTokens.s16,
+                        DesignTokens.s16,
+                        DesignTokens.s16,
+                        DesignTokens.s24,
+                      ),
+                      child: _BillingToggle(
+                        value: _billing,
+                        onChanged: (v) => setState(() => _billing = v),
                       ),
                     ),
-                    child: _submitting
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: DesignTokens.baseBlack,
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: DesignTokens.s16,
+                        ),
+                        itemCount: tierGroups.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: DesignTokens.s16),
+                        itemBuilder: (context, i) {
+                          final group = tierGroups[i];
+                          final selected = _planFor(
+                            plans,
+                            group.tier,
+                            _billing,
+                          );
+                          return _PlanCard(
+                            planGroup: group,
+                            selectedPlan: selected,
+                            isYearly: _billing == BillingCycle.yearly,
+                            isSelected: _selectedTier == group.tier,
+                            onTap: () =>
+                                setState(() => _selectedTier = group.tier),
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        DesignTokens.s16,
+                        DesignTokens.s16,
+                        DesignTokens.s16,
+                        bottomPadding,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: _selectedTier == null || _submitting
+                              ? null
+                              : () => _proceed(plans),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: DesignTokens.primaryGreen,
+                            foregroundColor: DesignTokens.baseBlack,
+                            disabledBackgroundColor: DesignTokens.primaryGreen
+                                .withValues(alpha: 0.4),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
                             ),
-                          )
-                        : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Proceed',
-                                style: TextStyle(
-                                  fontFamily: DesignTokens.fontFamily,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: DesignTokens.baseBlack,
-                                ),
-                              ),
-                              SizedBox(width: DesignTokens.s8),
-                              Icon(Icons.arrow_forward_rounded, size: 18),
-                            ],
                           ),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+                          child: _submitting
+                              ? const SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: DesignTokens.baseBlack,
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Proceed',
+                                      style: TextStyle(
+                                        fontFamily: DesignTokens.fontFamily,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: DesignTokens.baseBlack,
+                                      ),
+                                    ),
+                                    SizedBox(width: DesignTokens.s8),
+                                    Icon(Icons.arrow_forward_rounded, size: 18),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
     );
   }
+}
+
+/// What someone who already subscribed sees when this build may not sell
+/// subscriptions: their own plan, read-only.
+///
+/// There is no cancel and no change button. Both are purchase-like calls
+/// (`POST /v1/subscriptions/me/cancel` and `.../upgrade` move money), so the
+/// screen states where the subscription is managed instead of offering an
+/// in-app control. No outbound purchase link either — a store build must not
+/// steer a buyer to an external checkout for digital content.
+class _ReadOnlySubscription extends StatelessWidget {
+  const _ReadOnlySubscription({required this.subscription});
+
+  static const noSubscriptionNotice =
+      'Subscription plans are not available in this app.';
+  static const manageNotice =
+      'Your subscription is managed outside this app. Nothing is charged here.';
+
+  final AsyncValue<AccountSubscriptionDto?> subscription;
+
+  @override
+  Widget build(BuildContext context) => switch (subscription) {
+    AsyncLoading() => const SmPageLoader(),
+    AsyncError() => const _CentredNotice(text: noSubscriptionNotice),
+    AsyncValue(:final value?) => ListView(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      children: [
+        _SubscriptionFactRow(
+          label: 'Plan tier',
+          value: 'Tier ${value.tier}',
+        ),
+        _SubscriptionFactRow(
+          label: 'Billing',
+          value: value.cadence == 1 ? 'Monthly' : 'Yearly',
+        ),
+        _SubscriptionFactRow(
+          label: 'Price paid',
+          value:
+              '${value.pricePaidCurrency ?? ''} '
+                      '${value.pricePaidAmount.toStringAsFixed(2)}'
+                  .trim(),
+        ),
+        _SubscriptionFactRow(
+          label: 'Started',
+          value: value.startedUtc.toLocal().toString().split(' ').first,
+        ),
+        if (value.cancelledUtc case final cancelled?)
+          _SubscriptionFactRow(
+            label: 'Cancelled',
+            value: cancelled.toLocal().toString().split(' ').first,
+          ),
+        const SizedBox(height: DesignTokens.s24),
+        const Text(
+          manageNotice,
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 13,
+            color: DesignTokens.textMuted,
+          ),
+        ),
+      ],
+    ),
+    // Loaded, but there is no subscription: nothing owned, nothing for sale.
+    _ => const _CentredNotice(text: noSubscriptionNotice),
+  };
+}
+
+class _SubscriptionFactRow extends StatelessWidget {
+  const _SubscriptionFactRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: DesignTokens.s8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            color: DesignTokens.textMuted,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: DesignTokens.textWhite,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _CentredNotice extends StatelessWidget {
+  const _CentredNotice({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(DesignTokens.s24),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 14,
+          color: DesignTokens.textLight,
+        ),
+      ),
+    ),
+  );
 }
 
 /// One tier's plans (one row per cadence), pre-sorted by sortOrder.

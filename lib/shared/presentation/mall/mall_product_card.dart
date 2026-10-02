@@ -99,6 +99,7 @@ class MallProductCard extends StatelessWidget {
     final rating = showRating ? item.rating : null;
     final saveTap = onSaveTap;
     final buy = MallQuickAdd.forProduct(
+      context: context,
       product: item,
       strings: strings,
       onAdd: quickAdd,

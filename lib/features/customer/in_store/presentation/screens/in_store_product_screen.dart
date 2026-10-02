@@ -25,6 +25,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 
 /// `/in-store/product/{productId}` — a product scanned off a shelf card or
 /// NFC tag: photos, price, which store it's in, reels that show it, reviews,
@@ -520,14 +521,20 @@ class _BottomBar extends StatelessWidget {
             label: Text(product.isSaved ? 'Saved' : 'Save for later'),
           ),
         ),
-        const SizedBox(width: DesignTokens.s12),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: product.isInStock ? onAddToCart : null,
-            style: DesignTokens.primaryButtonStyle(),
-            child: Text(product.isInStock ? 'Add to cart' : 'Out of stock'),
+        // Add to cart disappears for a digital product this build may not
+        // sell; Save for later stays, because saving is not buying.
+        if (!DigitalGoodsPolicy.of(context).blocksPurchaseOf(
+          product.productKind,
+        )) ...[
+          const SizedBox(width: DesignTokens.s12),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: product.isInStock ? onAddToCart : null,
+              style: DesignTokens.primaryButtonStyle(),
+              child: Text(product.isInStock ? 'Add to cart' : 'Out of stock'),
+            ),
           ),
-        ),
+        ],
       ],
     ),
   );

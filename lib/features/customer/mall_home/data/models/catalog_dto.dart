@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/models/mall_json_readers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/catalog_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/collection_detail.dart';
+import 'package:stylemint_mobile_frontend/shared/data/product_kind_json.dart';
 import 'package:stylemint_mobile_frontend/shared/data/product_options_json.dart';
 import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
@@ -97,6 +98,7 @@ abstract class CatalogProductDto with _$CatalogProductDto {
       requiresOptionSelection: requiresOptionSelection,
       defaultVariantId: defaultVariantId,
       isInStock: isInStock,
+      productKind: resolveProductKind(variants.map((v) => v.productKind)),
     );
   }
 }
@@ -117,6 +119,9 @@ abstract class CatalogVariantDto with _$CatalogVariantDto {
     double? priceAmount,
     String? priceCurrency,
     int? quantityOnHand,
+    // Catalog's ProductKind, read tolerantly: null when the payload carried
+    // none, which the digital-goods gate reads as "unknown", not "physical".
+    @JsonKey(fromJson: readProductKind) int? productKind,
   }) = _CatalogVariantDto;
 
   factory CatalogVariantDto.fromJson(Map<String, dynamic> json) =>

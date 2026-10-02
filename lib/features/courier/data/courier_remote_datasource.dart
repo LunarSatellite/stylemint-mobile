@@ -39,10 +39,29 @@ class CourierRemoteDataSource {
 
   /// GET `/v1/courier/by-account/{accountId}` — how the app discovers whether
   /// this account is a courier at all, and what state the application is in.
+  /// GET `/v1/courier/by-account/{accountId}`, or null when this account has
+  /// no courier profile.
+  ///
+  /// 404 is the normal answer here, not a failure: almost every account is not
+  /// a courier, and the server returns NotFound rather than an empty body for
+  /// one that has never applied. Letting that 404 propagate is what made the
+  /// gate show "Couldn't load your partner account — check your connection" to
+  /// every first-time visitor, which is both wrong and unactionable: the
+  /// connection was fine and the right screen was the apply form.
+  ///
+  /// Only 404 is swallowed. A 401, 403 or 500 still throws, because those are
+  /// real failures and must not be reported as "you are not a courier yet" —
+  /// that would send someone who already has a profile back to the apply form
+  /// and let them try to apply twice.
   Future<Map<String, dynamic>?> getByAccount(String accountId) async {
-    final response = await apiClient.get('/v1/courier/by-account/$accountId');
-    if (response == null) return null;
-    return (response as Map).cast<String, dynamic>();
+    try {
+      final response = await apiClient.get('/v1/courier/by-account/$accountId');
+      if (response == null) return null;
+      return (response as Map).cast<String, dynamic>();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> getProfile(String courierProfileId) async {

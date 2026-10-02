@@ -14,6 +14,8 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/providers/subscription_providers.dart';
+import 'package:stylemint_mobile_frontend/shared/digital_goods/providers.dart';
 
 class ProfileSettingsScreen extends ConsumerStatefulWidget {
   const ProfileSettingsScreen({
@@ -50,6 +52,14 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
 
     final displayName = profile?.displayName ?? widget.displayName;
     final handle = profile?.handle ?? widget.handle;
+
+    // Whether this build may offer a paid creator subscription at all, and
+    // whether this account already has one to look at.
+    final subscriptionsBlocked = !ref
+        .watch(digitalGoodsPolicyProvider)
+        .canOfferDigitalGoods;
+    final hasSubscription =
+        ref.watch(currentSubscriptionProvider).value != null;
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -115,17 +125,26 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
             const SizedBox(height: DesignTokens.s20),
             _MenuGroup(
               items: [
-                _MenuItem(
-                  icon: Icons.workspace_premium_outlined,
-                  iconWidget: Image.asset(
-                    'assets/images/creatordash/crowned.png',
-                    width: 20,
-                    height: 20,
+                // The subscription entry is a purchase path, so a store build
+                // that may not sell digital goods shows it only to someone who
+                // already has a subscription — and then it reads "My
+                // Subscription" and opens a read-only view. Someone with no
+                // subscription gets no entry point at all. See
+                // DigitalGoodsPolicy.
+                if (!subscriptionsBlocked || hasSubscription)
+                  _MenuItem(
+                    icon: Icons.workspace_premium_outlined,
+                    iconWidget: Image.asset(
+                      'assets/images/creatordash/crowned.png',
+                      width: 20,
+                      height: 20,
+                    ),
+                    label: subscriptionsBlocked
+                        ? 'My Subscription'
+                        : 'Upgrade Subscription Plan',
+                    onTap: () =>
+                        context.push(RouteNames.creatorUpgradeSubscription),
                   ),
-                  label: 'Upgrade Subscription Plan',
-                  onTap: () =>
-                      context.push(RouteNames.creatorUpgradeSubscription),
-                ),
                 _MenuItem(
                   icon: Icons.manage_accounts_outlined,
                   label: 'Edit Profile Details',
