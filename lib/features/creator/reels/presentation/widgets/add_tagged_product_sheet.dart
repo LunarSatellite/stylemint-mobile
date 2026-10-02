@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
@@ -111,6 +112,18 @@ class _AddTaggedProductSheetState extends ConsumerState<AddTaggedProductSheet> {
       ref
         ..invalidate(reelTaggedProductsProvider(widget.reelId))
         ..invalidate(creatorReelDetailProvider(widget.reelId));
+
+      // And the shopper-facing feed, which is where the tag is actually FOR.
+      // reelsFeedNotifierProvider is not autoDispose, so its loaded reels sit
+      // in memory for the whole session: invalidating the two creator-side
+      // providers made the creator studio correct while the feed kept serving
+      // the pre-tag copy until the app was killed and relaunched. One reel,
+      // not the whole feed, so nobody loses their place in the pager.
+      unawaited(
+        ref
+            .read(reelsFeedNotifierProvider.notifier)
+            .refreshReel(widget.reelId),
+      );
       Navigator.of(context).pop();
     }
     // On failure the notifier surfaces the server's message — which for the

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_creator_strip.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/reel_approvals/presentation/screens/submit_for_approval_sheet.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_layout_policy.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver.dart';
@@ -937,6 +939,16 @@ class _TaggedProductsSheet extends ConsumerWidget {
                           ref
                             ..invalidate(reelTaggedProductsProvider(reelId))
                             ..invalidate(creatorReelDetailProvider(reelId));
+                          // The shopper feed holds its own copy for the whole
+                          // session (reelsFeedNotifierProvider is not
+                          // autoDispose), so without this a removed tag kept
+                          // showing to shoppers until the app was relaunched —
+                          // the same staleness as adding one.
+                          unawaited(
+                            ref
+                                .read(reelsFeedNotifierProvider.notifier)
+                                .refreshReel(reelId),
+                          );
                         }
                       },
                     ),

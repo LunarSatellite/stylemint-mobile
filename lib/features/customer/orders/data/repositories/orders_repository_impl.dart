@@ -83,6 +83,32 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, Unit>> confirmReceipt({
+    required String subOrderId,
+    String? scannedCode,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.confirmReceipt(
+          subOrderId: subOrderId,
+          scannedCode: scannedCode,
+        );
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(mapDioExceptionToNetworkException(e));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, OrderInvoice>> getOrderInvoice(
     String orderNumber,
   ) async {

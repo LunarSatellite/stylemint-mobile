@@ -16,6 +16,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/carbon_impact_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/condition_assurance_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/custody_proof_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/confirm_receipt_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_acceptance_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_recovery_offers_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/handover_delegation_card.dart';
@@ -244,6 +245,14 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             expanded: _expanded,
             onToggle: () => setState(() => _expanded = !_expanded),
           ),
+          // Confirm-receipt sits OUTSIDE the SM-D- block on purpose.
+          // Everything inside that block is backed by a Delivery-module
+          // package row, which only StyleMint's own parcels have, so an
+          // order on any other carrier had no way for the receiver to
+          // confirm it arrived. This one talks to Orders and works for
+          // every sub-order.
+          if (ConfirmReceiptCard.isOfferedFor(order))
+            ConfirmReceiptCard(order: order),
           if (trackingNumber?.startsWith('SM-D-') == true) ...[
             const SizedBox(height: DesignTokens.s12),
             _DeliveryRiskBanner(
