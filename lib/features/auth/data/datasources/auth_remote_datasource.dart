@@ -239,6 +239,39 @@ class AuthRemoteDataSource {
     return AuthResponseDto.fromJson(response as Map<String, dynamic>);
   }
 
+  /// POST `/v1/auth/oauth/{provider}/native`
+  ///
+  /// Completes a sign-in done in the provider's own native sheet. Sends the
+  /// signed identity token instead of a code + state: nothing left the app, so
+  /// there was no redirect and no CSRF state to carry.
+  ///
+  /// [displayName] is Apple's one chance to tell us the person's name — it
+  /// arrives only on their first authorization and is in no token, so an
+  /// omission here is permanent.
+  Future<AuthResponseDto> oauthNativeSignIn({
+    required String provider,
+    required String identityToken,
+    String? displayName,
+    String? deviceId,
+    String? deviceFingerprint,
+    int? devicePlatform,
+    String? deviceOsVersion,
+  }) async {
+    final response = await apiClient.authPost(
+      '/v1/auth/oauth/$provider/native',
+      data: {
+        'identityToken': identityToken,
+        if (displayName != null && displayName.isNotEmpty)
+          'displayName': displayName,
+        if (deviceId != null) 'deviceId': deviceId,
+        if (deviceFingerprint != null) 'deviceFingerprint': deviceFingerprint,
+        if (devicePlatform != null) 'devicePlatform': devicePlatform,
+        if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
+      },
+    );
+    return AuthResponseDto.fromJson(response as Map<String, dynamic>);
+  }
+
   // ==========================================================================
   // Accounts
   // ==========================================================================

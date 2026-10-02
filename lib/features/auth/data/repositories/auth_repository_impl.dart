@@ -416,6 +416,38 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<Either<NetworkExceptions, AuthResponseDto>> oauthNativeSignIn({
+    required String provider,
+    required String identityToken,
+    String? displayName,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final auth = await remoteDataSource.oauthNativeSignIn(
+          provider: provider,
+          identityToken: identityToken,
+          displayName: displayName,
+          deviceFingerprint: await deviceIdentity.fingerprint(),
+          devicePlatform: deviceIdentity.platformCode,
+          deviceOsVersion: deviceIdentity.osVersion,
+        );
+        await _persist(auth);
+        return right(auth);
+      } catch (e) {
+        if (e is DioException) {
+          return left(mapDioExceptionToNetworkException(e));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(const NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+  }
+
   // ==========================================================================
   // Accounts
   // ==========================================================================

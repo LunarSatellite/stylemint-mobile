@@ -675,6 +675,31 @@ class OAuthSignInNotifier extends StateNotifier<LoginState> {
     ref.read(oauthFlowProvider.notifier).state = const OAuthFlow();
   }
 
+
+  /// One-step native sign-in: the provider's own sheet already authenticated
+  /// the person and handed back a signed identity token, so there is nothing
+  /// to authorize and no code to exchange.
+  ///
+  /// No CSRF state is set or cleared here, deliberately: state binds a browser
+  /// redirect to the request that opened it, and this flow never opened one.
+  Future<void> completeNative({
+    required String provider,
+    required String identityToken,
+    String? displayName,
+  }) async {
+    state = const LoginState.loadInProgress();
+    final result = await authRepository.oauthNativeSignIn(
+      provider: provider,
+      identityToken: identityToken,
+      displayName: displayName,
+    );
+    state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
+    if (state is _LoginSuccess) {
+      await ref.read(sessionControllerProvider.notifier).recheck();
+      ref.read(profileNotifierProvider.notifier).fetchProfile();
+    }
+  }
+
   void reset() => state = const LoginState.initial();
 }
 

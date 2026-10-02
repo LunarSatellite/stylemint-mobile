@@ -77,6 +77,15 @@ abstract interface class AuthRepository {
     required String state,
   });
 
+  /// Completes a sign-in done in the provider's own native sheet, sending
+  /// the signed identity token rather than a code + state. Same auth bundle,
+  /// same persistence as [oauthCallback].
+  Future<Either<NetworkExceptions, AuthResponseDto>> oauthNativeSignIn({
+    required String provider,
+    required String identityToken,
+    String? displayName,
+  });
+
   // --- Accounts ---
   Future<Either<NetworkExceptions, AccountDto>> getAccount(String accountId);
 
