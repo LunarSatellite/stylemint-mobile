@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart'
+    show pendingRoleProvider, pendingRoleNeedsResume;
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -57,6 +59,14 @@ class _MagicLinkScreenState extends ConsumerState<MagicLinkScreen> {
             context.go(
               RouteNames.completeName,
               extra: {'accountId': auth.accountId},
+            );
+          } else if (pendingRoleNeedsResume(ref.read(pendingRoleProvider))) {
+            // A role picked before signing in has to survive the sign-in.
+            // The picker is the resume point — it reads pendingRoleProvider.
+            context.go(
+              auth.isNewAccount
+                  ? '${RouteNames.userTypeSelection}?new=true'
+                  : RouteNames.userTypeSelection,
             );
           } else if (auth.isNewAccount) {
             context.go(RouteNames.pickInterests);
