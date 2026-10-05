@@ -320,10 +320,8 @@ void main() {
 
     await pump(tester, width: 320, height: 2600, textScale: 1.3);
     expect(tester.takeException(), isNull);
-    // Scoped to the follow pill. 687884a8 added a "Following" count to the
-    // stats row, so a bare find.text matches that label too and a plain
-    // findsOneWidget reports "too many" — the assertion here is about the
-    // button's own state, not how many times the word appears.
+    // Scoped to the button: the profile also shows a "Following" stat beside
+    // the follower count, so a bare text finder matches twice.
     expect(
       find.descendant(
         of: find.byType(StorefrontFollowButton),

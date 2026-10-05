@@ -164,6 +164,7 @@ class _OrderDetailBody extends ConsumerStatefulWidget {
 class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   bool _expanded = false;
   final GlobalKey _trackingSectionKey = GlobalKey();
+  final GlobalKey _otherDetailsKey = GlobalKey();
 
   Future<void> _scrollToTracking() async {
     final trackingContext = _trackingSectionKey.currentContext;
@@ -171,6 +172,37 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
 
     await Scrollable.ensureVisible(
       trackingContext,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      alignment: 0.05,
+    );
+  }
+
+  /// Opens the other-details section and brings it into view.
+  ///
+  /// The summary card at the top of the screen carries a chevron that toggles
+  /// this same section — but the section renders near the bottom of the page,
+  /// so tapping the chevron expanded content the buyer could not see. From the
+  /// top of a long order it read as a dead link: the only visible change was
+  /// the chevron flipping to an arrow.
+  ///
+  /// Expanding and scrolling are deliberately one action. Collapsing does not
+  /// scroll: the content is going away, and yanking the page to where it used
+  /// to be is disorienting.
+  Future<void> _toggleOtherDetails() async {
+    final willExpand = !_expanded;
+    setState(() => _expanded = willExpand);
+    if (!willExpand) return;
+
+    // The section does not exist in the tree until this frame is built, so
+    // its context cannot be resolved until after the rebuild.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    final target = _otherDetailsKey.currentContext;
+    if (target == null) return;
+
+    await Scrollable.ensureVisible(
+      target,
       duration: const Duration(milliseconds: 350),
       curve: Curves.easeInOut,
       alignment: 0.05,
@@ -243,7 +275,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           _TrackSummaryCard(
             order: order,
             expanded: _expanded,
-            onToggle: () => setState(() => _expanded = !_expanded),
+            onToggle: _toggleOtherDetails,
           ),
           // Confirm-receipt sits OUTSIDE the SM-D- block on purpose.
           // Everything inside that block is backed by a Delivery-module
@@ -348,10 +380,11 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           ],
           _ViewOtherDetails(
             expanded: _expanded,
-            onTap: () => setState(() => _expanded = !_expanded),
+            onTap: _toggleOtherDetails,
           ),
           if (_expanded)
             _OtherDetails(
+              key: _otherDetailsKey,
               order: order,
               actionPending: widget.actionPending,
               notifier: widget.notifier,
@@ -391,10 +424,11 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           const SizedBox(height: DesignTokens.s8),
           _ViewOtherDetails(
             expanded: _expanded,
-            onTap: () => setState(() => _expanded = !_expanded),
+            onTap: _toggleOtherDetails,
           ),
           if (_expanded)
             _OtherDetails(
+              key: _otherDetailsKey,
               order: order,
               actionPending: widget.actionPending,
               notifier: widget.notifier,
@@ -1146,6 +1180,9 @@ class _OtherDetails extends StatelessWidget {
     required this.actionPending,
     required this.notifier,
     this.onViewTracking,
+    // Carries the key the summary card's chevron scrolls to. Only one of the
+    // two views that build this is ever mounted, so the key is unique.
+    super.key,
   });
 
   final OrderDetail order;
