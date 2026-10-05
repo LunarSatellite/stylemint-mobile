@@ -163,8 +163,13 @@ void main() {
       expect(IdentityDocumentType.nationalIdCard.wireValue, 2);
       expect(IdentityDocumentType.driversLicense.wireValue, 3);
       expect(IdentityDocumentType.addressProof.wireValue, 6);
-      expect(IdentityDocumentSide.front.wireValue, 1);
-      expect(IdentityDocumentSide.back.wireValue, 2);
+      // Sides start at 1, not 0 — see e81c3d75. The backend is
+      // NotApplicable=1, Front=2, Back=3, enforced by
+      // ck_verification_documents_side_range rather than by validation, so a
+      // wrong number here surfaced as a Postgres rejection on every upload.
+      expect(IdentityDocumentSide.notApplicable.wireValue, 1);
+      expect(IdentityDocumentSide.front.wireValue, 2);
+      expect(IdentityDocumentSide.back.wireValue, 3);
     });
   });
 }
