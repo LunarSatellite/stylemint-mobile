@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/courier/data/courier_kyc_documents.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_device_key.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/repositories/courier_repository.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/notifiers/courier_actions_notifier.dart';
@@ -170,5 +172,16 @@ final courierAccountIdProvider = Provider<String>(
   (ref) => ref.watch(sessionControllerProvider).maybeWhen(
     authenticated: (accountId) => accountId,
     orElse: () => '',
+  ),
+);
+
+/// Puts a courier's identity documents through Identity's KYC pipeline.
+///
+/// Built on the account-scoped document client that creator apply already
+/// uses — see [CourierKycDocuments] for why there is no courier-specific
+/// document API and should not be one.
+final courierKycDocumentsProvider = Provider<CourierKycDocuments>(
+  (ref) => CourierKycDocuments(
+    ref.watch(creatorDocumentsRemoteDataSourceProvider),
   ),
 );
