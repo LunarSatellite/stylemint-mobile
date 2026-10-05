@@ -66,12 +66,18 @@ enum IdentityDocumentSide implements WireEnum {
 /// — so a C# enum serialises as its integer value unless it carries its own
 /// `[JsonConverter(typeof(JsonStringEnumConverter<T>))]` attribute. Plenty of
 /// them do; `KycSessionStatus` and `VerificationDocumentStatus` do not.
-abstract interface class WireEnum {
+abstract interface class WireEnum implements Enum {
   int get wireValue;
 
-  /// Supplied by every Dart enum, and matched against the server's member
-  /// name so a value still resolves if a `[JsonConverter]` is added later.
-  String get name;
+  // `name` is deliberately not redeclared here. On an enum it comes from the
+  // `EnumName` extension in dart:core, not from the class, so an interface
+  // that demands `String get name` can never be satisfied by an enum:
+  //
+  //   Missing concrete implementation of 'getter WireEnum.name'
+  //
+  // Implementing `Enum` instead is what makes `value.name` resolve inside
+  // `wireEnum` below — the extension applies to anything statically typed as
+  // Enum — and every enum here satisfies it for free.
 }
 
 /// Resolves [raw] — a number from the wire — to one of [values].
