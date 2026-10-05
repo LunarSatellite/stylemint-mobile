@@ -33,10 +33,24 @@ enum IdentityDocumentType {
 
 /// Which face of a two-sided document this file is. Mirrors the backend's
 /// `VerificationDocumentSide`.
+///
+/// **These start at 1, not 0.** The mirror was previously off by one
+/// (`notApplicable(0), front(1), back(2)`), so every registered document was
+/// rejected by Postgres rather than by validation:
+///
+/// * a selfie went up as `0`, which fails `ck_verification_documents_side_range`
+///   (`side BETWEEN 1 AND 3`);
+/// * an ID front went up as `1`, which the server reads as *NotApplicable* and
+///   which fails `ck_verification_documents_side_matches_type` — a two-sided
+///   type must carry Front or Back;
+/// * an ID back went up as `2`, read as *Front*, failing the same rule.
+///
+/// Nothing could be registered at all. Keep these numbers identical to
+/// `StyleMint.Modules.Identity.Enums.VerificationDocumentSide`.
 enum IdentityDocumentSide {
-  notApplicable(0),
-  front(1),
-  back(2);
+  notApplicable(1),
+  front(2),
+  back(3);
 
   const IdentityDocumentSide(this.wireValue);
 

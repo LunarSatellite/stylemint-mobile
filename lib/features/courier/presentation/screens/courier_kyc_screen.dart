@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -136,15 +137,37 @@ class _CourierKycScreenState extends ConsumerState<CourierKycScreen> {
           side: IdentityDocumentSide.notApplicable,
         ),
       ]);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       setState(() => _uploading = false);
       // The documents are what the review is made of, so a failed upload must
       // not fall through to submitting the KYC without them.
+      //
+      // Say WHAT failed. This used to blame the connection for everything,
+      // which sent a courier to check their wifi over a server-side rejection
+      // — and left no way to tell the two apart from a bug report either.
+      final failure = error is DioException ? error : null;
+      final status = failure?.response?.statusCode;
+      final offline =
+          failure?.type == DioExceptionType.connectionError ||
+          failure?.type == DioExceptionType.connectionTimeout ||
+          error is SocketException;
+
       SmSnackbar.error(
         context,
-        'Could not upload your documents. Check your connection and try '
-        'again — nothing has been submitted.',
+        offline
+            ? 'You appear to be offline. Nothing has been submitted — try '
+                  'again once you have a connection.'
+            : status == 413
+            ? 'Those photos are too large. Take them again — nothing has '
+                  'been submitted.'
+            : status == 401 || status == 403
+            ? 'Your session has expired. Sign in again — nothing has been '
+                  'submitted.'
+            : 'We could not accept those documents'
+                  '${status == null ? '' : ' (error $status)'}. Nothing has '
+                  'been submitted. Please try again, or contact support if '
+                  'it keeps happening.',
       );
       return;
     }
