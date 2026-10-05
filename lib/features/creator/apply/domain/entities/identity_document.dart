@@ -2,7 +2,7 @@
 /// module's `VerificationDocumentType` enum. Values 1-6 are personal
 /// documents; 7-10 are vendor business documents and are deliberately not
 /// surfaced in the creator flow.
-enum IdentityDocumentType {
+enum IdentityDocumentType implements WireEnum {
   passport(1),
   nationalIdCard(2),
   driversLicense(3),
@@ -12,6 +12,7 @@ enum IdentityDocumentType {
 
   const IdentityDocumentType(this.wireValue);
 
+  @override
   final int wireValue;
 
   String get label => switch (this) {
@@ -47,14 +48,94 @@ enum IdentityDocumentType {
 ///
 /// Nothing could be registered at all. Keep these numbers identical to
 /// `StyleMint.Modules.Identity.Enums.VerificationDocumentSide`.
-enum IdentityDocumentSide {
+enum IdentityDocumentSide implements WireEnum {
   notApplicable(1),
   front(2),
   back(3);
 
   const IdentityDocumentSide(this.wireValue);
 
+  @override
   final int wireValue;
+}
+
+/// An enum that travels as a number.
+///
+/// The API registers no global `JsonStringEnumConverter` — see
+/// `StyleMintPlatform.AddControllers`, which adds filters and no JSON options
+/// — so a C# enum serialises as its integer value unless it carries its own
+/// `[JsonConverter(typeof(JsonStringEnumConverter<T>))]` attribute. Plenty of
+/// them do; `KycSessionStatus` and `VerificationDocumentStatus` do not.
+abstract interface class WireEnum {
+  int get wireValue;
+
+  /// Supplied by every Dart enum, and matched against the server's member
+  /// name so a value still resolves if a `[JsonConverter]` is added later.
+  String get name;
+}
+
+/// Resolves [raw] — a number from the wire — to one of [values].
+///
+/// Accepts a string too, so adding `JsonStringEnumConverter` to one of these
+/// enums server-side changes the payload without breaking the client. A
+/// casual `as String?` here is what broke the whole KYC flow: the cast threw
+/// `_TypeError` on the integer the server actually sends, which is not a
+/// `DioException`, so it surfaced as "we could not accept those documents"
+/// from a server that had never been sent any.
+T? wireEnum<T extends WireEnum>(Object? raw, List<T> values) {
+  int? code;
+  if (raw is num) {
+    code = raw.toInt();
+  } else if (raw is String) {
+    final name = raw.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+    for (final value in values) {
+      if (value.name.toLowerCase() == name) return value;
+    }
+    code = int.tryParse(raw.trim());
+  }
+  if (code == null) return null;
+  for (final value in values) {
+    if (value.wireValue == code) return value;
+  }
+  return null;
+}
+
+/// Per-document review state. Mirrors
+/// `StyleMint.Modules.Identity.Enums.VerificationDocumentStatus`.
+enum IdentityDocumentStatus implements WireEnum {
+  /// Registered against the session, nobody has looked at it yet.
+  uploaded(1, 'Pending review'),
+  underReview(2, 'Under review'),
+  approved(3, 'Approved'),
+  rejected(4, 'Rejected'),
+  expired(5, 'Expired');
+
+  const IdentityDocumentStatus(this.wireValue, this.label);
+
+  @override
+  final int wireValue;
+
+  /// Shown to the applicant, so it reads as English rather than as the
+  /// server's member name.
+  final String label;
+}
+
+/// Session-level KYC state. Mirrors
+/// `StyleMint.Modules.Identity.Enums.KycSessionStatus`.
+enum KycSessionStatus implements WireEnum {
+  pending(1, 'Pending'),
+  submitted(2, 'Submitted'),
+  underReview(3, 'Under review'),
+  approved(4, 'Approved'),
+  rejected(5, 'Rejected'),
+  expired(6, 'Expired');
+
+  const KycSessionStatus(this.wireValue, this.label);
+
+  @override
+  final int wireValue;
+
+  final String label;
 }
 
 /// A file that has been pushed to blob storage but not yet registered
@@ -92,16 +173,15 @@ class IdentityDocument {
   final IdentityDocumentType type;
   final IdentityDocumentSide side;
 
-  /// Raw backend status string (Pending / UnderReview / Approved / Rejected).
-  final String status;
+  final IdentityDocumentStatus status;
   final String? originalFilename;
 
   /// Populated once a reviewer rejects the document, so the rejected screen
   /// can tell the creator which document to replace and why.
   final String? rejectionReason;
 
-  bool get isRejected => status.toLowerCase() == 'rejected';
-  bool get isApproved => status.toLowerCase() == 'approved';
+  bool get isRejected => status == IdentityDocumentStatus.rejected;
+  bool get isApproved => status == IdentityDocumentStatus.approved;
 }
 
 /// An identity-verification (KYC) session. Documents attach to one of these.
@@ -109,5 +189,5 @@ class KycSession {
   const KycSession({required this.id, required this.status});
 
   final String id;
-  final String status;
+  final KycSessionStatus status;
 }

@@ -52,4 +52,68 @@ void main() {
       }
     });
   });
+
+  /// These two arrive as NUMBERS. The API adds no global
+  /// `JsonStringEnumConverter`, and neither `KycSessionStatus` nor
+  /// `VerificationDocumentStatus` carries its own `[JsonConverter]`, so the
+  /// payload holds `"status": 1`. Reading that with `as String?` threw
+  /// `_TypeError` in the first call of the upload flow and stopped the whole
+  /// courier KYC submission before a single document was sent.
+  group('status wire values', () {
+    test('IdentityDocumentStatus matches VerificationDocumentStatus', () {
+      expect(IdentityDocumentStatus.uploaded.wireValue, 1);
+      expect(IdentityDocumentStatus.underReview.wireValue, 2);
+      expect(IdentityDocumentStatus.approved.wireValue, 3);
+      expect(IdentityDocumentStatus.rejected.wireValue, 4);
+      expect(IdentityDocumentStatus.expired.wireValue, 5);
+    });
+
+    test('KycSessionStatus matches the server enum', () {
+      expect(KycSessionStatus.pending.wireValue, 1);
+      expect(KycSessionStatus.submitted.wireValue, 2);
+      expect(KycSessionStatus.underReview.wireValue, 3);
+      expect(KycSessionStatus.approved.wireValue, 4);
+      expect(KycSessionStatus.rejected.wireValue, 5);
+      expect(KycSessionStatus.expired.wireValue, 6);
+    });
+  });
+
+  group('wireEnum', () {
+    test('reads the integer the server actually sends', () {
+      expect(
+        wireEnum(1, KycSessionStatus.values),
+        KycSessionStatus.pending,
+      );
+      expect(
+        wireEnum(4, IdentityDocumentStatus.values),
+        IdentityDocumentStatus.rejected,
+      );
+    });
+
+    test('also reads a name, so adding a string converter cannot break us', () {
+      // Server member names, including the casing and spelling they use.
+      expect(
+        wireEnum('UnderReview', KycSessionStatus.values),
+        KycSessionStatus.underReview,
+      );
+      expect(
+        wireEnum('under_review', IdentityDocumentStatus.values),
+        IdentityDocumentStatus.underReview,
+      );
+      expect(
+        wireEnum('Uploaded', IdentityDocumentStatus.values),
+        IdentityDocumentStatus.uploaded,
+      );
+    });
+
+    test('returns null rather than throwing on anything unexpected', () {
+      // The whole point: the caller substitutes a default, and a payload we
+      // do not recognise cannot take down the flow that reads it.
+      expect(wireEnum(null, KycSessionStatus.values), isNull);
+      expect(wireEnum(99, KycSessionStatus.values), isNull);
+      expect(wireEnum('', KycSessionStatus.values), isNull);
+      expect(wireEnum('nonsense', KycSessionStatus.values), isNull);
+      expect(wireEnum(<String, Object>{}, KycSessionStatus.values), isNull);
+    });
+  });
 }

@@ -140,28 +140,30 @@ class CreatorDocumentsRemoteDataSource {
     );
   }
 
+  /// `status` is a NUMBER on the wire, not a name — see [wireEnum]. Casting it
+  /// to `String?` threw `_TypeError` here, in the very first call of the
+  /// upload flow, which is why no document ever reached the server and why
+  /// the failure read as the server refusing the documents.
   KycSession _sessionFrom(Map<String, dynamic> m) => KycSession(
     id: (m['id'] as String?) ?? (m['sessionId'] as String?) ?? '',
-    status: (m['status'] as String?) ?? '',
+    status:
+        wireEnum(m['status'], KycSessionStatus.values) ??
+        KycSessionStatus.pending,
   );
 
-  IdentityDocument _documentFrom(Map<String, dynamic> m) {
-    final typeCode = (m['documentType'] as num?)?.toInt() ?? 0;
-    final sideCode = (m['side'] as num?)?.toInt() ?? 0;
-    return IdentityDocument(
-      id: (m['id'] as String?) ?? '',
-      sessionId: (m['sessionId'] as String?) ?? '',
-      type: IdentityDocumentType.values.firstWhere(
-        (t) => t.wireValue == typeCode,
-        orElse: () => IdentityDocumentType.nationalIdCard,
-      ),
-      side: IdentityDocumentSide.values.firstWhere(
-        (s) => s.wireValue == sideCode,
-        orElse: () => IdentityDocumentSide.notApplicable,
-      ),
-      status: (m['status'] as String?) ?? '',
-      originalFilename: m['originalFilename'] as String?,
-      rejectionReason: (m['rejectionReason'] ?? m['reviewNotes']) as String?,
-    );
-  }
+  IdentityDocument _documentFrom(Map<String, dynamic> m) => IdentityDocument(
+    id: (m['id'] as String?) ?? '',
+    sessionId: (m['sessionId'] as String?) ?? '',
+    type:
+        wireEnum(m['documentType'], IdentityDocumentType.values) ??
+        IdentityDocumentType.nationalIdCard,
+    side:
+        wireEnum(m['side'], IdentityDocumentSide.values) ??
+        IdentityDocumentSide.notApplicable,
+    status:
+        wireEnum(m['status'], IdentityDocumentStatus.values) ??
+        IdentityDocumentStatus.uploaded,
+    originalFilename: m['originalFilename'] as String?,
+    rejectionReason: (m['rejectionReason'] ?? m['reviewNotes']) as String?,
+  );
 }

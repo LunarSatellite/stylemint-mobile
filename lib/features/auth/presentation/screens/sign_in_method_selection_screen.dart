@@ -13,6 +13,8 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart'
+    show pendingRoleProvider, pendingRoleNeedsResume;
 import 'package:stylemint_mobile_frontend/features/auth/presentation/widgets/passkey_how_it_works.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -54,6 +56,26 @@ class _SignInMethodSelectionScreenState
       context.go(
         RouteNames.completeName,
         extra: {'accountId': auth.accountId},
+      );
+      return;
+    }
+    // A role picked before signing in has to survive the sign-in, and this
+    // was the last path that dropped it: tapping "Delivery partner", then
+    // Continue with Passkey, landed on the reels feed with the choice thrown
+    // away, while the same tap followed by Google worked. Every other
+    // path — OAuth, OTP, complete-name — already asks
+    // pendingRoleNeedsResume; this one went straight to home.
+    //
+    // The picker is the resume point, not this screen: it reads
+    // pendingRoleProvider and sends a delivery partner to the courier gate,
+    // which decides between apply, KYC, review and the dashboard.
+    if (pendingRoleNeedsResume(ref.read(pendingRoleProvider))) {
+      // `?new=` as a query param, not `extra`: the post-login session refresh
+      // rebuilds the router stack and does not preserve `extra`.
+      context.go(
+        auth.isNewAccount
+            ? '${RouteNames.userTypeSelection}?new=true'
+            : RouteNames.userTypeSelection,
       );
       return;
     }

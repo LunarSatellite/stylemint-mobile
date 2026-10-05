@@ -18,6 +18,8 @@ import '../notifiers/registration_notifier.dart';
 import '../providers/auth_state_provider.dart';
 import '../widgets/auth_code_field.dart';
 import '../widgets/registration_step_indicator.dart';
+import 'user_type_selection_screen.dart'
+    show pendingRoleProvider, pendingRoleNeedsResume;
 
 /// Legacy multi-step registration (email + phone OTP + password + terms).
 ///
@@ -185,7 +187,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         .maybeWhen(
           loadSuccess: (_) {
             SmSnackbar.success(context, 'Welcome to Style Mint!');
-            context.go(RouteNames.home);
+            // A role picked before registering has to survive it. The picker
+            // is the resume point — it reads pendingRoleProvider — and this
+            // account is new, so it is shown as onboarding either way.
+            context.go(
+              pendingRoleNeedsResume(ref.read(pendingRoleProvider))
+                  ? '${RouteNames.userTypeSelection}?new=true'
+                  : RouteNames.home,
+            );
           },
           orElse: () {
             SmSnackbar.success(context, 'Account created! Please log in.');

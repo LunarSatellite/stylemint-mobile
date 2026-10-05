@@ -39,7 +39,10 @@ class _FakeRepository implements CreatorDocumentsRepository {
   }
 }
 
-IdentityDocument _doc({String id = 'doc-1', String status = 'Pending'}) =>
+IdentityDocument _doc({
+  String id = 'doc-1',
+  IdentityDocumentStatus status = IdentityDocumentStatus.uploaded,
+}) =>
     IdentityDocument(
       id: id,
       sessionId: 'session-1',
@@ -140,7 +143,7 @@ void main() {
       final repo = _FakeRepository(
         listResult: networkRight([
           _doc(),
-          _doc(id: 'doc-2', status: 'Rejected'),
+          _doc(id: 'doc-2', status: IdentityDocumentStatus.rejected),
         ]),
       );
       final notifier = CreatorDocumentsNotifier(repo);

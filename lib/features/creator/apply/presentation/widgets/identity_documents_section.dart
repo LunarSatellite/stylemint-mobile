@@ -238,7 +238,7 @@ class _DocumentRow extends StatelessWidget {
                   style: DesignTokens.bodyText,
                 ),
                 Text(
-                  document.status.isEmpty ? 'Pending review' : document.status,
+                  document.status.label,
                   style: DesignTokens.smallRegular.copyWith(
                     color: DesignTokens.textMuted,
                   ),
