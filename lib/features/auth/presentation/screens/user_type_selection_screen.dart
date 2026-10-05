@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -99,12 +101,63 @@ class _UserTypeSelectionScreenState
     _deciding = widget.skipIfOnboarded;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final accountId = _accountId;
-      if (accountId != null) {
-        ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
-      } else {
+      if (accountId == null) {
         if (mounted) setState(() => _deciding = false);
+        return;
       }
+
+      // Resume a pending delivery-partner choice here, not from the roles
+      // listener below.
+      //
+      // That listener fires on a CHANGE to roleNotifierProvider. The roles are
+      // frequently already loaded and identical by the time this screen is
+      // reached — the profile screen loads them, and it reloads them on every
+      // visit to that tab — so `loadRoles` re-emits an equal state, nothing
+      // notifies, and the resume never ran: signing in as a delivery partner
+      // dropped the user back on this picker.
+      //
+      // Courier is the one option that needs no role data to act on. The gate
+      // reads the courier profile and decides between apply, KYC, review and
+      // the dashboard, so there is nothing to wait for.
+      if (ref.read(pendingRoleProvider) == deliveryPartnerOption) {
+        ref.read(pendingRoleProvider.notifier).state = null;
+        _toCourier();
+        return;
+      }
+
+      unawaited(_loadAndResume(accountId));
     });
+  }
+
+  /// Loads the roles, then resumes a pending Creator/Vendor choice if the
+  /// listener did not.
+  ///
+  /// Belt and braces for the same race as the courier case above: the
+  /// listener only sees a change, and an already-loaded equal state produces
+  /// none. Creator and Vendor genuinely need the role list to choose between
+  /// a dashboard and an application, so unlike courier they wait for it —
+  /// they just no longer depend on being *notified*.
+  ///
+  /// Idempotent with the listener: whichever gets there first clears
+  /// [pendingRoleProvider], and the other then finds nothing to do.
+  Future<void> _loadAndResume(String accountId) async {
+    await ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+    if (!mounted) return;
+
+    final pending = ref.read(pendingRoleProvider);
+    if (pending == null) return;
+    ref.read(pendingRoleProvider.notifier).state = null;
+
+    setState(() {
+      _existingRoles = ref
+          .read(roleNotifierProvider)
+          .maybeWhen(
+            loadSuccess: (roles) => roles,
+            orElse: () => _existingRoles,
+          );
+      _deciding = false;
+    });
+    await _selectRole(pending);
   }
 
   Future<void> _selectRole(int roleInt) async {
