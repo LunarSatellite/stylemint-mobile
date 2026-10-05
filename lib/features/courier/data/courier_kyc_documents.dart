@@ -17,6 +17,21 @@ class CourierDocumentCapture {
   final IdentityDocumentSide side;
 }
 
+/// A document that cannot be uploaded, with the reason to show the courier.
+///
+/// Carries a finished sentence because the alternative — a bare exception the
+/// screen renders as "we could not accept those documents" — tells a courier
+/// nothing they can act on, and tells a bug report nothing either. Every
+/// message here names what to do next.
+class CourierDocumentFailure implements Exception {
+  const CourierDocumentFailure(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// What the upload produced, for the caller to report and to reference.
 class CourierDocumentsSubmitted {
   const CourierDocumentsSubmitted({
@@ -56,6 +71,13 @@ class CourierKycDocuments {
   final CreatorDocumentsRemoteDataSource _documents;
   static const _uuid = Uuid();
 
+  /// `VerificationDocumentsController.MaxFileSizeBytes`, and the same number
+  /// again in the register-document validator and in nginx's
+  /// `client_max_body_size` for this host. Checked here so an oversized photo
+  /// is named as such before anything is sent, rather than surfacing as a
+  /// bare 413 from whichever of the three rejects it first.
+  static const _maxBytes = 25 * 1024 * 1024;
+
   /// Uploads and registers each capture, then submits the session for review.
   ///
   /// Reuses the account's open session when there is one. A courier who got
@@ -67,6 +89,8 @@ class CourierKycDocuments {
     if (captures.isEmpty) {
       throw ArgumentError.value(captures, 'captures', 'No documents to upload');
     }
+
+    await _checkReadable(captures);
 
     final session =
         await _documents.getActiveSession() ??
@@ -94,5 +118,51 @@ class CourierKycDocuments {
       sessionId: session.id,
       documents: registered,
     );
+  }
+
+  /// Refuses the batch before any of it is sent, if a page cannot be read.
+  ///
+  /// Runs first on purpose. `MultipartFile.fromFile` throws a
+  /// `FileSystemException` on a file that has gone — which is not a
+  /// `DioException`, so it arrived at the screen with no status code and was
+  /// reported as a server-side rejection of the documents. The server had in
+  /// fact never been asked: the only requests it saw for a failing submission
+  /// were the KYC-session reads, with no `upload-blob` after them.
+  ///
+  /// A picked photo really can disappear. `ImagePicker` writes its scaled copy
+  /// into the app's temporary directory, which the OS may reclaim, and a user
+  /// who picks, leaves the app and comes back can return to a path with
+  /// nothing behind it.
+  ///
+  /// Checking all of them up front also keeps a failure clean: the session is
+  /// not touched and nothing is half-registered, so "nothing has been
+  /// submitted" is true when we say it.
+  Future<void> _checkReadable(List<CourierDocumentCapture> captures) async {
+    for (final capture in captures) {
+      final page = capture.side == IdentityDocumentSide.notApplicable
+          ? capture.type.label.toLowerCase()
+          : '${capture.side.name} of your ${capture.type.label.toLowerCase()}';
+
+      if (!await capture.file.exists()) {
+        throw CourierDocumentFailure(
+          'The photo of the $page is no longer on this device — take or pick '
+          'it again. Nothing has been submitted.',
+        );
+      }
+
+      final length = await capture.file.length();
+      if (length == 0) {
+        throw CourierDocumentFailure(
+          'The photo of the $page came through empty. Take it again — '
+          'nothing has been submitted.',
+        );
+      }
+      if (length > _maxBytes) {
+        throw CourierDocumentFailure(
+          'The photo of the $page is larger than 25 MB. Take it again — '
+          'nothing has been submitted.',
+        );
+      }
+    }
   }
 }

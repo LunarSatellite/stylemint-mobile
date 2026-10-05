@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/core/network/upload_filename.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/domain/entities/identity_document.dart';
 
@@ -66,10 +67,16 @@ class CreatorDocumentsRemoteDataSource {
 
   /// Pushes the bytes to blob storage. Returns the descriptor that
   /// [registerDocument] needs — the file is not attached to anything yet.
+  ///
+  /// The filename is normalised rather than taken from the picked file: the
+  /// server reads the part's media type off this name, so a camera-roll
+  /// `IMG_0042.HEIC` is refused as "not JPG, PNG, or PDF" however good the
+  /// bytes are. See [uploadFilename].
   Future<UploadedDocumentBlob> uploadBlob(File file) async {
     final response = await apiClient.postFile(
       '${await _base()}/verification-documents/upload-blob',
       file: file,
+      filename: uploadFilename(file.path),
     );
     final m = response as Map<String, dynamic>;
     return UploadedDocumentBlob(

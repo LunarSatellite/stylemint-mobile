@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/upload_filename.dart';
 
 /// The courier surface, across three backend modules:
 ///
@@ -422,6 +423,11 @@ class CourierRemoteDataSource {
     final response = await apiClient.postFile(
       '/v1/deliveries/courier/proof-images',
       file: file,
+      // Normalised, not the picked name — `CourierProofMediaController`
+      // allows image/jpeg and image/png only, and the media type is read off
+      // this name. A camera-roll HEIC would be refused with the bytes
+      // untouched, and pickup and handoff cannot proceed without the URL.
+      filename: uploadFilename(file.path),
       options: _idempotent(idempotencyKey),
     );
     return ((response as Map)['url'] as String?) ?? '';
