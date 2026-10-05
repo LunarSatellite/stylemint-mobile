@@ -155,7 +155,11 @@ class _CourierKycScreenState extends ConsumerState<CourierKycScreen> {
 
       SmSnackbar.error(
         context,
-        offline
+        // A reason we worked out ourselves, before sending anything, already
+        // says which page failed and what to do. Pass it through untouched.
+        error is CourierDocumentFailure
+            ? error.message
+            : offline
             ? 'You appear to be offline. Nothing has been submitted — try '
                   'again once you have a connection.'
             : status == 413
@@ -164,10 +168,15 @@ class _CourierKycScreenState extends ConsumerState<CourierKycScreen> {
             : status == 401 || status == 403
             ? 'Your session has expired. Sign in again — nothing has been '
                   'submitted.'
-            : 'We could not accept those documents'
-                  '${status == null ? '' : ' (error $status)'}. Nothing has '
-                  'been submitted. Please try again, or contact support if '
-                  'it keeps happening.',
+            // Name the error. The first version of this said only "could not
+            // upload — check your connection", which sent couriers to look at
+            // their wifi over a fault that never touched the network, and gave
+            // a bug report nothing to go on. Anything that reaches here is
+            // unaccounted for, so it is worth the ugliness of a type name.
+            : 'We could not accept those documents '
+                  '(${status == null ? error.runtimeType : 'error $status'}). '
+                  'Nothing has been submitted. Please try again, or send '
+                  'support this message if it keeps happening.',
       );
       return;
     }
