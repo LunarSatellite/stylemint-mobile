@@ -64,8 +64,10 @@ enum CourierProfileState {
   /// an approved profile application, and exactly what Identity accepts as
   /// grounds for activating `RoleType.Courier`.
   ///
-  /// Broader than [canCarry] on purpose: Onboarded has cleared review but is
-  /// still in probation, so it holds the role without yet being offered work.
+  /// Was broader than [canCarry] when that meant Active only. Since 1e44f097
+  /// the two agree on membership — the server's candidate query filters
+  /// IsOnline && State IN (Onboarded, Active) — and availability is carried by
+  /// the rider's own online switch rather than by the lifecycle state.
   /// Suspended and Banned are excluded — they had it taken away, and a role
   /// claiming otherwise would disagree with the only thing that decides
   /// whether a parcel can be carried.

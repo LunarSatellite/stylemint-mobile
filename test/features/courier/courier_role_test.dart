@@ -48,9 +48,17 @@ void main() {
       expect(CourierProfileState.banned.hasClearedChecks, isFalse);
     });
 
-    test('is broader than canCarry — Onboarded holds the role, no work yet', () {
+    // 1e44f097 made canCarry include Onboarded, so the two now agree on
+    // membership: the server's candidate query filters
+    // IsOnline && State IN (Onboarded, Active), and the app has to match or it
+    // offers a capability the router refuses. They are still separate getters
+    // because they answer different questions — "has been vetted" and "may be
+    // handed a parcel" — and only one of them is tied to that query.
+    test('agrees with canCarry: Onboarded has cleared review and may carry', () {
       expect(CourierProfileState.onboarded.hasClearedChecks, isTrue);
-      expect(CourierProfileState.onboarded.canCarry, isFalse);
+      expect(CourierProfileState.onboarded.canCarry, isTrue);
+      expect(CourierProfileState.active.hasClearedChecks, isTrue);
+      expect(CourierProfileState.active.canCarry, isTrue);
     });
   });
 }
