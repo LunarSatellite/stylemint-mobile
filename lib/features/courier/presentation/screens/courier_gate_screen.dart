@@ -6,7 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_apply_screen.dart';
-import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_dashboard_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_shell_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_kyc_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/identity_roles.dart';
@@ -177,7 +177,7 @@ class CourierGateScreen extends ConsumerWidget {
       // courier profile — see [_ensureCourierRole].
       case CourierProfileState.onboarded:
       case CourierProfileState.active:
-        return CourierDashboardScreen(profile: profile);
+        return CourierShellScreen(profile: profile);
     }
   }
 }
