@@ -114,6 +114,21 @@ class CourierActionsNotifier extends StateNotifier<bool> {
   /// with a key the server has never heard of if registration failed, and every
   /// later pickup would fail at `Unknown signer public key id` with nothing on
   /// screen connecting the two.
+  /// Goes on or off shift.
+  ///
+  /// Takes the desired state rather than toggling, so a double tap or a retry
+  /// lands where the rider pointed instead of flipping back.
+  Future<CourierActionResult> setShift({
+    required String courierProfileId,
+    required bool online,
+  }) => _guarded(() async {
+    final result = await _repository.setShift(
+      courierProfileId: courierProfileId,
+      online: online,
+    );
+    return result.fold(CourierActionFailed.new, (_) => const CourierActionOk());
+  });
+
   Future<CourierActionResult> enrolDeviceKey({
     required String courierProfileId,
     required String deviceModel,

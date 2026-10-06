@@ -54,6 +54,18 @@ class CourierRepositoryImpl implements CourierRepository {
     return _profile(json);
   });
 
+  @override
+  Future<Either<NetworkExceptions, CourierProfile>> setShift({
+    required String courierProfileId,
+    required bool online,
+  }) => _guard(() async {
+    final json = await remoteDataSource.setShift(
+      courierProfileId: courierProfileId,
+      online: online,
+    );
+    return _profile(json);
+  });
+
   // ── Device keys ────────────────────────────────────────────────────────
 
   @override
@@ -328,6 +340,10 @@ class CourierRepositoryImpl implements CourierRepository {
     failureStreak: _int(json['failureStreak']) ?? 0,
     // Resolved from Identity server-side; absent on older responses, and
     // genuinely absent for an account with no name or no email set.
+    // Absent on an older response, which reads as off shift — the safe
+    // default: a courier is not presumed to be out on the road.
+    isOnline: json['isOnline'] as bool? ?? false,
+    onlineChangedUtc: _dateOrNull(json['onlineChangedUtc']),
     accountDisplayName: json['accountDisplayName'] as String?,
     accountEmail: json['accountEmail'] as String?,
     accountPhone: json['accountPhone'] as String?,
