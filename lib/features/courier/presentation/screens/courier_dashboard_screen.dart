@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_hop_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_offers_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_hop_map.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_signing_enrolment.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -21,7 +22,6 @@ class CourierDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hops = ref.watch(courierHopsProvider);
-    final canSign = ref.watch(courierCanSignProvider(profile.id));
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -67,25 +67,19 @@ class CourierDashboardScreen extends ConsumerWidget {
                       'yet, so no parcels will be offered. Nothing more is '
                       'needed from you.',
                 ),
-              canSign.maybeWhen(
-                data: (ready) => ready
-                    ? const SizedBox.shrink()
-                    : _Blocker(
-                        icon: Icons.gpp_maybe_rounded,
-                        message:
-                            'This phone cannot sign handovers yet, so you '
-                            'will not be able to collect a parcel.',
-                        action: 'Set up',
-                        onAction: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => CourierDeviceKeyScreen(
-                              courierProfileId: profile.id,
-                            ),
-                          ),
-                        ),
-                      ),
-                orElse: () => const SizedBox.shrink(),
-              ),
+              // The handover-signing blocker used to live here. It is gone
+              // from the rider's view on purpose: enrolling this phone's key
+              // is not a decision a courier should be asked to make, it is
+              // setup, and CourierSigningEnrolment now does it silently on
+              // first open.
+              //
+              // The key itself is NOT gone, and could not be. Every custody
+              // entry — pickup included — is rejected server-side without a
+              // valid signature from a registered key
+              // (ChainOfCustodyService.AppendAsync), so a courier with no key
+              // cannot collect a parcel at all. Removing the requirement
+              // rather than the friction would have taken the feature away.
+              CourierSigningEnrolment(courierProfileId: profile.id),
               if (profile.escrowShortfall)
                 _Blocker(
                   icon: Icons.account_balance_wallet_outlined,
@@ -96,22 +90,21 @@ class CourierDashboardScreen extends ConsumerWidget {
                       'topped up.',
                 ),
 
-              // The map leads, because when a rider has a parcel the only
-              // question is where to go next. It shows the active hop's two
-              // ends and which one they are travelling to; with no parcel in
-              // hand there is nothing to route to and it stays out of the way.
-              hops.maybeWhen(
-                data: (list) {
-                  final active = list
-                      .where((hop) => !hop.state.isFinished)
-                      .toList(growable: false);
-                  if (active.isEmpty) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: DesignTokens.s16),
-                    child: CourierHopMap(hop: active.first),
-                  );
-                },
-                orElse: () => const SizedBox.shrink(),
+              // Always on screen, with or without a parcel. It used to appear
+              // only when a hop was assigned, so a rider with no work saw no
+              // map and no way to tell the feature existed — which is exactly
+              // how it was reported. The job is drawn on top of the rider's
+              // own position when it arrives.
+              Padding(
+                padding: const EdgeInsets.only(bottom: DesignTokens.s16),
+                child: CourierHopMap(
+                  hop: hops.maybeWhen(
+                    data: (list) => list
+                        .where((hop) => !hop.state.isFinished)
+                        .firstOrNull,
+                    orElse: () => null,
+                  ),
+                ),
               ),
 
               _TierCard(profile: profile),
