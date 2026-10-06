@@ -24,6 +24,23 @@ enum CourierProfileState {
         orElse: () => CourierProfileState.applied,
       );
 
+  /// How to name this state to the courier themselves.
+  ///
+  /// Not the enum name: "kycInReview" is ours, and "Onboarded" tells a rider
+  /// nothing about why no work is arriving. The gate screen writes a full
+  /// explanation per state; this is the short form for a profile row.
+  String get label => switch (this) {
+    CourierProfileState.applied => 'Application submitted',
+    CourierProfileState.kycInReview => 'Documents under review',
+    CourierProfileState.rejected => 'Not approved',
+    // Named for what it means to them — cleared, not yet receiving work —
+    // because the backend only sends offers to Active couriers.
+    CourierProfileState.onboarded => 'Approved, awaiting activation',
+    CourierProfileState.active => 'Active',
+    CourierProfileState.suspended => 'Suspended',
+    CourierProfileState.banned => 'Closed',
+  };
+
   /// Whether this courier can be offered and carry work. Onboarded is not
   /// enough — the backend's own gating treats Active as the working state.
   bool get canCarry => this == CourierProfileState.active;
@@ -113,6 +130,9 @@ class CourierProfile {
     this.kycVerifiedUtc,
     this.suspendedReason,
     required this.failureStreak,
+    this.accountDisplayName,
+    this.accountEmail,
+    this.accountPhone,
   });
 
   final String id;
@@ -136,6 +156,17 @@ class CourierProfile {
   /// Consecutive failed hops. The backend demotes a tier on a streak, so this
   /// is the number worth showing before it costs the courier something.
   final int failureStreak;
+
+  /// Who the courier is, resolved from Identity by the server rather than
+  /// stored on the profile — a courier profile holds an account id and
+  /// nothing else about the person.
+  ///
+  /// Nullable because an account that signed up by phone may have set no
+  /// display name, and an account with no email has none. The profile screen
+  /// shows the gap rather than a placeholder.
+  final String? accountDisplayName;
+  final String? accountEmail;
+  final String? accountPhone;
 
   bool get escrowShortfall => escrowHeldAmount < escrowRequiredAmount;
 

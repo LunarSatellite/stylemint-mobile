@@ -115,6 +115,16 @@ abstract class CourierRepository {
   /// index but no hop id.
   Future<Either<NetworkExceptions, List<DeliveryHop>>> listMyHops();
 
+  /// What this courier has earned from completed hops.
+  ///
+  /// Distinct from the escrow balance, which is their own deposit. See
+  /// [CourierEarnings].
+  Future<Either<NetworkExceptions, CourierEarnings>> getEarnings();
+
+  /// The completed hops behind that total, newest first.
+  Future<Either<NetworkExceptions, List<CourierEarningRow>>>
+  listEarningsHistory({int skip, int take});
+
   /// [signature] must cover the canonical attestation for this event. Build it
   /// with `buildCustodyAttestation` and sign with `CourierDeviceKey.sign` —
   /// the server rebuilds the same string and verifies against it, so an

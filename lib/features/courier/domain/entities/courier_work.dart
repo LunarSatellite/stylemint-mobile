@@ -235,3 +235,70 @@ class DeliveryHop {
     return DateTime.now().toUtc().isAfter(eta);
   }
 }
+
+/// What a courier has earned, from the hops they completed.
+///
+/// Deliberately separate from escrow. Escrow is the rider's own security
+/// deposit — money they paid in and can withdraw again — and the two were the
+/// only numbers the dashboard could show, so a courier had no way to see what
+/// the work had actually paid. Showing a deposit under the word "earned"
+/// would have been worse than showing nothing.
+///
+/// Not a withdrawable wallet either: nothing in the platform pays a courier
+/// out yet, so this is the total earned and must be labelled as that.
+class CourierEarnings {
+  const CourierEarnings({
+    required this.totalEarned,
+    required this.last7Days,
+    required this.last30Days,
+    required this.completedHops,
+    required this.currency,
+    this.lastEarnedUtc,
+  });
+
+  /// What a courier with no completed hops has. Not null, because "nothing
+  /// yet" is a number the screen can render, and a null would make every
+  /// caller branch on a case that is normal on day one.
+  const CourierEarnings.none()
+    : totalEarned = 0,
+      last7Days = 0,
+      last30Days = 0,
+      completedHops = 0,
+      currency = '',
+      lastEarnedUtc = null;
+
+  final double totalEarned;
+  final double last7Days;
+  final double last30Days;
+  final int completedHops;
+
+  /// Empty until the first hop is completed — the server does not guess a
+  /// currency for a rider who has not been paid in one yet.
+  final String currency;
+  final DateTime? lastEarnedUtc;
+
+  bool get hasEarned => completedHops > 0;
+}
+
+/// One completed hop on the earnings history.
+class CourierEarningRow {
+  const CourierEarningRow({
+    required this.hopId,
+    required this.packageId,
+    required this.hopIndex,
+    required this.amount,
+    required this.currency,
+    required this.fromGeohash,
+    required this.toGeohash,
+    this.handedOffUtc,
+  });
+
+  final String hopId;
+  final String packageId;
+  final int hopIndex;
+  final double amount;
+  final String currency;
+  final String fromGeohash;
+  final String toGeohash;
+  final DateTime? handedOffUtc;
+}

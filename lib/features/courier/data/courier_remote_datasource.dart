@@ -273,6 +273,29 @@ class CourierRemoteDataSource {
     return _mapList(response);
   }
 
+  /// GET `/v1/deliveries/hops/earnings` — lifetime, 7-day and 30-day totals.
+  ///
+  /// Not escrow. `escrow/balance` is the rider's own security deposit, and it
+  /// was the only money figure the app could show, so the work's actual pay
+  /// was invisible. These come from the hops the courier completed.
+  Future<Map<String, dynamic>> getEarnings() async {
+    final response = await apiClient.get('/v1/deliveries/hops/earnings');
+    return (response as Map).cast<String, dynamic>();
+  }
+
+  /// GET `/v1/deliveries/hops/earnings/history` — the completed hops behind
+  /// that total, newest first.
+  Future<List<Map<String, dynamic>>> listEarningsHistory({
+    int skip = 0,
+    int take = 20,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/deliveries/hops/earnings/history',
+      queryParameters: {'skip': skip, 'take': take},
+    );
+    return _mapList(response);
+  }
+
   /// POST `/v1/deliveries/hops/{id}/pickup`.
   ///
   /// [signature] must be over the canonical attestation for this event — see

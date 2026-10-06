@@ -210,6 +210,20 @@ class CourierRepositoryImpl implements CourierRepository {
       });
 
   @override
+  Future<Either<NetworkExceptions, CourierEarnings>> getEarnings() =>
+      _guard(() async => _earnings(await remoteDataSource.getEarnings()));
+
+  @override
+  Future<Either<NetworkExceptions, List<CourierEarningRow>>>
+  listEarningsHistory({int skip = 0, int take = 20}) => _guard(() async {
+    final rows = await remoteDataSource.listEarningsHistory(
+      skip: skip,
+      take: take,
+    );
+    return rows.map(_earningRow).toList(growable: false);
+  });
+
+  @override
   Future<Either<NetworkExceptions, Unit>> pickup({
     required String hopId,
     required String geohashAtEvent,
@@ -312,6 +326,11 @@ class CourierRepositoryImpl implements CourierRepository {
     kycVerifiedUtc: _dateOrNull(json['kycVerifiedUtc']),
     suspendedReason: json['suspendedReason'] as String?,
     failureStreak: _int(json['failureStreak']) ?? 0,
+    // Resolved from Identity server-side; absent on older responses, and
+    // genuinely absent for an account with no name or no email set.
+    accountDisplayName: json['accountDisplayName'] as String?,
+    accountEmail: json['accountEmail'] as String?,
+    accountPhone: json['accountPhone'] as String?,
   );
 
   static CourierDeviceKeyInfo _deviceKey(Map<String, dynamic> json) =>
@@ -369,6 +388,31 @@ class CourierRepositoryImpl implements CourierRepository {
     offeredUtc: _date(json['offeredUtc']),
     expiresUtc: _date(json['expiresUtc']),
   );
+
+  static CourierEarnings _earnings(Map<String, dynamic> json) =>
+      CourierEarnings(
+        totalEarned: _double(json['totalEarned']),
+        last7Days: _double(json['last7Days']),
+        last30Days: _double(json['last30Days']),
+        completedHops: _int(json['completedHops']) ?? 0,
+        // Not defaulted to NPR. The server leaves this empty for a courier
+        // who has completed nothing, and stamping a currency on a zero would
+        // tell a rider they are paid in one we invented.
+        currency: (json['currency'] as String?) ?? '',
+        lastEarnedUtc: _dateOrNull(json['lastEarnedUtc']),
+      );
+
+  static CourierEarningRow _earningRow(Map<String, dynamic> json) =>
+      CourierEarningRow(
+        hopId: _string(json['hopId']),
+        packageId: _string(json['packageId']),
+        hopIndex: _int(json['hopIndex']) ?? 0,
+        amount: _double(json['amount']),
+        currency: (json['currency'] as String?) ?? '',
+        fromGeohash: _string(json['fromGeohash']),
+        toGeohash: _string(json['toGeohash']),
+        handedOffUtc: _dateOrNull(json['handedOffUtc']),
+      );
 
   static DeliveryHop _hop(Map<String, dynamic> json) => DeliveryHop(
     id: _string(json['id']),

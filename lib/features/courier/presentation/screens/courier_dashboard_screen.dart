@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_balance_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_device_key_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_hop_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_offers_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_hop_map.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -35,6 +38,17 @@ class CourierDashboardScreen extends ConsumerWidget {
               MaterialPageRoute(
                 builder: (_) =>
                     CourierDeviceKeyScreen(courierProfileId: profile.id),
+              ),
+            ),
+          ),
+          // Profile reaches balance, the signing key and invites, so the
+          // dashboard itself stays about the work.
+          IconButton(
+            icon: const Icon(Icons.person_rounded),
+            tooltip: 'Profile',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => CourierProfileScreen(profile: profile),
               ),
             ),
           ),
@@ -95,8 +109,36 @@ class CourierDashboardScreen extends ConsumerWidget {
                       'topped up.',
                 ),
 
+              // The map leads, because when a rider has a parcel the only
+              // question is where to go next. It shows the active hop's two
+              // ends and which one they are travelling to; with no parcel in
+              // hand there is nothing to route to and it stays out of the way.
+              hops.maybeWhen(
+                data: (list) {
+                  final active = list
+                      .where((hop) => !hop.state.isFinished)
+                      .toList(growable: false);
+                  if (active.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: DesignTokens.s16),
+                    child: CourierHopMap(hop: active.first),
+                  );
+                },
+                orElse: () => const SizedBox.shrink(),
+              ),
+
               _TierCard(profile: profile),
               const SizedBox(height: DesignTokens.s16),
+
+              _BalanceEntry(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        CourierBalanceScreen(courierProfileId: profile.id),
+                  ),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s8),
 
               _OffersEntry(
                 onTap: () => Navigator.of(context).push(
@@ -270,6 +312,44 @@ class _Stat extends StatelessWidget {
       Text(label, style: DesignTokens.tiny),
     ],
   );
+}
+
+/// What the work has paid, on the dashboard rather than buried in profile.
+///
+/// The figure a rider most wants after a shift was not reachable from this
+/// screen at all — the only money the app could show was their own escrow
+/// deposit, which is not pay.
+class _BalanceEntry extends ConsumerWidget {
+  const _BalanceEntry({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final earnings = ref.watch(courierEarningsProvider);
+
+    return Card(
+      color: DesignTokens.bgAppBody,
+      child: ListTile(
+        leading: const Icon(
+          Icons.account_balance_wallet_rounded,
+          color: DesignTokens.primaryGreen,
+        ),
+        title: Text('Balance', style: DesignTokens.mediumSemibold),
+        subtitle: Text(
+          earnings.maybeWhen(
+            data: (e) => e.currency.isEmpty
+                ? 'No deliveries completed yet'
+                : '${formatMoney(Money(amount: e.totalEarned, currency: e.currency))} earned',
+            orElse: () => 'What your deliveries have paid',
+          ),
+          style: DesignTokens.tiny,
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onTap,
+      ),
+    );
+  }
 }
 
 class _OffersEntry extends ConsumerWidget {

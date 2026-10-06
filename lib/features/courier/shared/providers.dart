@@ -129,6 +129,27 @@ final courierEscrowBalanceProvider =
       },
     );
 
+/// What the courier has earned from completed hops.
+///
+/// Keyed by nothing: the server resolves the courier from the caller's token,
+/// so unlike escrow and reliability this takes no profile id. autoDispose so
+/// the figure is re-read on return rather than shown stale after a delivery.
+final courierEarningsProvider = FutureProvider.autoDispose<CourierEarnings>(
+  (ref) async {
+    final result = await ref.watch(courierRepositoryProvider).getEarnings();
+    return result.fold((failure) => throw failure, (earnings) => earnings);
+  },
+);
+
+/// The completed hops behind that total, newest first.
+final courierEarningsHistoryProvider =
+    FutureProvider.autoDispose<List<CourierEarningRow>>((ref) async {
+      final result = await ref
+          .watch(courierRepositoryProvider)
+          .listEarningsHistory();
+      return result.fold((failure) => throw failure, (rows) => rows);
+    });
+
 /// Whether this device can sign custody events for the given courier.
 ///
 /// Both halves have to line up: the server must list an active key, and this
