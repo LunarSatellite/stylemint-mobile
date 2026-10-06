@@ -41,6 +41,13 @@ abstract class CourierRepository {
     required String selfieMatchRef,
   });
 
+  /// Goes on or off shift. Being online is what decides whether parcels are
+  /// offered — see the backend's CourierProfile.IsOnline.
+  Future<Either<NetworkExceptions, CourierProfile>> setShift({
+    required String courierProfileId,
+    required bool online,
+  });
+
   // ── Device keys ────────────────────────────────────────────────────────
 
   Future<Either<NetworkExceptions, List<CourierDeviceKeyInfo>>> listDeviceKeys(

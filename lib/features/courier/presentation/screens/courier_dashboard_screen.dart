@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_hop_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_offers_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_hop_map.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_shift_toggle.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_signing_enrolment.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
@@ -54,19 +55,16 @@ class CourierDashboardScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(DesignTokens.s20),
             children: [
-              // Three blockers, each stated as a cause rather than left for
-              // the courier to infer from an empty offers list. "No offers"
-              // looks identical whether there is no work, the account is not
-              // Active yet, or escrow is short — and only the first is
-              // nobody's fault.
-              if (!profile.state.canCarry)
-                const _Blocker(
-                  icon: Icons.hourglass_bottom_rounded,
-                  message:
-                      'Your checks have cleared but your account is not live '
-                      'yet, so no parcels will be offered. Nothing more is '
-                      'needed from you.',
-                ),
+              // Blockers state a cause rather than leaving the courier to
+              // infer one from an empty offers list: "no offers" looks
+              // identical whether there is no work, they are off shift, or
+              // escrow is short, and only the first is nobody's fault.
+              //
+              // The "not live yet" blocker that used to sit here is gone. It
+              // said "nothing more is needed from you", which was true and
+              // useless: it waited on an Active state nothing ever set, so it
+              // would never have cleared. Being on shift is the gate now, and
+              // the toggle below says so in a form the rider can act on.
               // The handover-signing blocker used to live here. It is gone
               // from the rider's view on purpose: enrolling this phone's key
               // is not a decision a courier should be asked to make, it is
@@ -80,6 +78,11 @@ class CourierDashboardScreen extends ConsumerWidget {
               // cannot collect a parcel at all. Removing the requirement
               // rather than the friction would have taken the feature away.
               CourierSigningEnrolment(courierProfileId: profile.id),
+
+              // Leads the dashboard: whether work can arrive at all matters
+              // more than where the current job is.
+              CourierShiftToggle(profile: profile),
+              const SizedBox(height: DesignTokens.s16),
               if (profile.escrowShortfall)
                 _Blocker(
                   icon: Icons.account_balance_wallet_outlined,

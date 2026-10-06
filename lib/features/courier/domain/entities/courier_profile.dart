@@ -41,9 +41,21 @@ enum CourierProfileState {
     CourierProfileState.banned => 'Closed',
   };
 
-  /// Whether this courier can be offered and carry work. Onboarded is not
-  /// enough — the backend's own gating treats Active as the working state.
-  bool get canCarry => this == CourierProfileState.active;
+  /// Whether this courier's STATE allows them to be offered and carry work.
+  ///
+  /// Onboarded counts. It did not used to: the backend gated on Active, and
+  /// nothing ever advanced a courier into Active — not a completed hop, not
+  /// approval, only an operator pressing the reinstate button — so an
+  /// approved rider was permanently ineligible. The gate is now being on
+  /// shift (`CourierProfile.isOnline`), with cleared review required
+  /// alongside it, which is what this answers.
+  ///
+  /// Must agree with the server's candidate query, which filters
+  /// `IsOnline && State IN (Onboarded, Active)`. State alone is not enough to
+  /// receive work — see [CourierProfile.isOnline].
+  bool get canCarry =>
+      this == CourierProfileState.onboarded ||
+      this == CourierProfileState.active;
 
   /// Whether the courier is waiting on someone else rather than on themselves.
   bool get isAwaitingReview => this == CourierProfileState.kycInReview;
@@ -130,6 +142,8 @@ class CourierProfile {
     this.kycVerifiedUtc,
     this.suspendedReason,
     required this.failureStreak,
+    this.isOnline = false,
+    this.onlineChangedUtc,
     this.accountDisplayName,
     this.accountEmail,
     this.accountPhone,
@@ -156,6 +170,17 @@ class CourierProfile {
   /// Consecutive failed hops. The backend demotes a tier on a streak, so this
   /// is the number worth showing before it costs the courier something.
   final int failureStreak;
+
+  /// Whether the courier is on shift and willing to be offered parcels.
+  ///
+  /// This, not [state], is what decides whether offers reach them: the
+  /// backend's router gates on it because nothing ever advanced a courier
+  /// into Active. Going on shift still requires cleared review, so a
+  /// suspended or rejected courier cannot switch it on.
+  final bool isOnline;
+
+  /// When they last went on or off shift.
+  final DateTime? onlineChangedUtc;
 
   /// Who the courier is, resolved from Identity by the server rather than
   /// stored on the profile — a courier profile holds an account id and

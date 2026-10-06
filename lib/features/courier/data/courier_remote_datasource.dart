@@ -91,6 +91,24 @@ class CourierRemoteDataSource {
     return (response as Map).cast<String, dynamic>();
   }
 
+  /// POST `/v1/courier/{id}/shift` — goes on or off shift.
+  ///
+  /// Being online is what decides whether parcels are offered; it replaced
+  /// `State == Active` as the router's gate, because nothing advanced a
+  /// courier into Active. One endpoint taking the desired state rather than
+  /// separate online/offline calls, so a retry lands one state instead of two
+  /// transitions.
+  Future<Map<String, dynamic>> setShift({
+    required String courierProfileId,
+    required bool online,
+  }) async {
+    final response = await apiClient.authPost(
+      '/v1/courier/$courierProfileId/shift',
+      data: {'online': online},
+    );
+    return (response as Map).cast<String, dynamic>();
+  }
+
   // ── Device keys ────────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> listDeviceKeys(
