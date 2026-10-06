@@ -14,6 +14,7 @@ import 'package:stylemint_mobile_frontend/features/profile/presentation/widgets/
 import 'package:stylemint_mobile_frontend/features/profile/presentation/widgets/profile_menu_section.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/widgets/profile_stats_row.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/core/device/device_push_registration.dart';
 import 'package:stylemint_mobile_frontend/core/device/push_notification_service.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/notifiers/settings_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
@@ -348,7 +349,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                     setState(() => _pushEnabled = false);
                     return;
                   }
-                  await PushNotificationService.getToken();
+                  // Register here, not just on sign-in: on iOS the token does
+                  // not exist until permission is granted, so the sign-in
+                  // attempt got null and this is the first moment there is
+                  // anything to send. The old code fetched the token and
+                  // dropped it, which is why the server had none.
+                  await ref.read(devicePushRegistrationProvider).start();
                 }
 
                 ref

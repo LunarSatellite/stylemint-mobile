@@ -14,6 +14,8 @@ import 'core/utils/format_date.dart';
 import 'app.dart';
 import 'features/auth/presentation/providers/auth_state_provider.dart';
 import 'core/config/api_config.dart';
+import 'core/device/device_push_registration.dart';
+import 'core/device/push_notification_service.dart';
 import 'core/storage/token_storage.dart';
 import 'features/messaging/shared/providers.dart';
 import 'features/creator/social_connect/shared/providers.dart';
@@ -422,6 +424,7 @@ void main() async {
   // manifest and iOS Info.plist lock it before Flutter starts too.
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   initTimezone();
+  await PushNotificationService.initialise();
 
   // ─── SINGLE SCREEN — CartScreen → CheckoutScreen preview (uncomment to use)─
   // runApp(
@@ -525,6 +528,7 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     // auth session. Connects on authenticated, drops on unauthenticated.
     ref.listenManual<AuthSessionState>(sessionControllerProvider, (_, next) {
       _syncRealtime(next);
+      unawaited(_syncPushRegistration(next));
     });
 
     // Signing out (or the session expiring) starts the next account from a
@@ -549,6 +553,27 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   void dispose() {
     _linkSubscription?.cancel();
     super.dispose();
+  }
+
+  /// Registers this device's push token for the signed-in account, and stops
+  /// following token rotations on sign-out.
+  ///
+  /// Sits alongside the realtime sync because it answers the same question —
+  /// "who is signed in on this device" — and because the push token is only
+  /// meaningful once there is an account to attach it to. Until this ran, the
+  /// token was fetched by the profile screen's toggle and discarded, so the
+  /// server had no address for any notification it routed.
+  Future<void> _syncPushRegistration(AuthSessionState session) async {
+    final registration = ref.read(devicePushRegistrationProvider);
+    final isAuthed = session.maybeWhen(
+      authenticated: (_) => true,
+      orElse: () => false,
+    );
+    if (isAuthed) {
+      await registration.start();
+    } else {
+      await registration.stop();
+    }
   }
 
   Future<void> _syncRealtime(AuthSessionState session) async {
