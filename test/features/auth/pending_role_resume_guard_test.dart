@@ -60,4 +60,53 @@ void main() {
           'the OAuth callback screen for the shape.',
     );
   });
+
+  /// The check above is per FILE, and that is not enough.
+  ///
+  /// The native Apple sign-in landed on a screen that already consulted
+  /// pendingRoleNeedsResume — in a different handler. Its own success branch
+  /// went straight to `RouteNames.home`, so the file passed and the bug
+  /// shipped anyway: the fourth path in the same shape, on a screen that had
+  /// just been fixed for the third.
+  ///
+  /// So look inside each success handler. A `loadSuccess` that reaches
+  /// `RouteNames.home` without passing through the shared router or the
+  /// pendingRole check is the fault, wherever else in the file those appear.
+  test('no sign-in success handler routes to home on its own', () {
+    final offenders = <String>[];
+
+    for (final entity in screens.listSync().whereType<File>()) {
+      if (!entity.path.endsWith('.dart')) continue;
+      final source = entity.readAsStringSync();
+
+      for (final match in RegExp('loadSuccess:').allMatches(source)) {
+        // The handler body, bounded generously: long enough to hold a
+        // multi-line branch, short enough not to run into the next handler.
+        final end = (match.start + 400).clamp(0, source.length);
+        final body = source.substring(match.start, end);
+        final upToNext = body.indexOf('loadFailure:');
+        final handler = upToNext == -1 ? body : body.substring(0, upToNext);
+
+        if (!handler.contains('RouteNames.home')) continue;
+        if (handler.contains('_routeAfterAuth')) continue;
+        if (handler.contains('pendingRoleNeedsResume')) continue;
+
+        offenders.add(
+          '${entity.uri.pathSegments.last}: '
+          '${handler.split('\n').first.trim()}',
+        );
+      }
+    }
+
+    expect(
+      offenders,
+      isEmpty,
+      reason:
+          'These success handlers navigate to home themselves, so a role '
+          'picked before signing in is dropped on that path even if the rest '
+          'of the file handles it:\n  ${offenders.join('\n  ')}\n'
+          'Delegate to the screen\'s shared post-auth router, or check '
+          'pendingRoleProvider here too.',
+    );
+  });
 }

@@ -286,12 +286,23 @@ class _SignInMethodSelectionScreenState
 
       // Routed here rather than through OAuthCallbackScreen: that screen
       // exists to receive a deep link, and this flow never produced one.
+      //
+      // Through _routeAfterAuth, though, not a fourth copy of the routing.
+      // This used to send an existing account straight to home, which
+      // discarded a role picked before signing in — the same fault that had
+      // already been fixed on the passkey, magic-link and register paths, and
+      // it arrived here precisely because bypassing OAuthCallbackScreen also
+      // bypassed the pendingRole check that screen does.
+      //
+      // One consequence worth naming: an account whose display name is not
+      // confirmed now stops at complete-name first, as it does on every other
+      // method. Apple withholds the name on the second and later sign-ins, so
+      // that is reachable, and collecting it is better than the blank profile
+      // the old branch produced.
       ref
           .read(oauthSignInProvider)
           .maybeWhen(
-            loadSuccess: (auth) => auth.isNewAccount
-                ? context.go('${RouteNames.userTypeSelection}?new=true')
-                : context.go(RouteNames.home),
+            loadSuccess: (auth) => _routeAfterAuth(auth),
             loadFailure: (failure) => SmSnackbar.error(
               context,
               failure.isConflict
