@@ -2,29 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>StyleMint converts speech to text only when you tap the microphone in Discover search.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>StyleMint uses the microphone only while you speak a Discover search.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Style Mint uses the camera to scan the QR code shown on the web login page.</string>
-	<key>NFCReaderUsageDescription</key>
-	<string>StyleMint uses NFC to write your shelf-code link to an NFC tag and check it.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>StyleMint opens your photo library so you can attach a photo — a KYC document, a return's condition evidence, a profile picture, or a screenshot to search with.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>StyleMint saves an image to your photo library only when you tap Save — for example a StyleMint code you want to keep or share.</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>StyleMint uses Face ID to unlock your passkey so you can sign in without typing a password.</string>
-	<!-- Declares that the app uses only exempt encryption: HTTPS/TLS, the
-	     iOS Keychain via flutter_secure_storage, and platform passkeys. All
-	     three are standard OS-provided cryptography and exempt under the
-	     export rules. Without this key App Store Connect blocks every
-	     TestFlight build on the export-compliance question until someone
-	     answers it by hand. Change this to <true/> if the app ever ships its
-	     own (non-OS) cryptography. -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -45,10 +22,51 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>app.stylemint.stylemintMobileFrontend</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>stylemint</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>viber</string>
+		<string>whatsapp</string>
+		<string>sms</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NFCReaderUsageDescription</key>
+	<string>StyleMint uses NFC to write your shelf-code link to an NFC tag and check it.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Style Mint uses the camera to scan the QR code shown on the web login page.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>StyleMint uses Face ID to unlock your passkey so you can sign in without typing a password.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>StyleMint only checks your location while you are using the app, to pin where your order should be delivered when you tap "Use my current location". It does not follow you in the background.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>StyleMint uses your location to pin where your order should be delivered, so you don't have to type out an address. We only check when you tap "Use my current location".</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>StyleMint uses the microphone only while you speak a Discover search.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>StyleMint saves an image to your photo library only when you tap Save — for example a StyleMint code you want to keep or share.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>StyleMint opens your photo library so you can attach a photo — a KYC document, a return's condition evidence, a profile picture, or a screenshot to search with.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>StyleMint converts speech to text only when you tap the microphone in Discover search.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -72,25 +90,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>CFBundleURLTypes</key>
+	<key>UIBackgroundModes</key>
 	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>app.stylemint.stylemintMobileFrontend</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>stylemint</string>
-			</array>
-		</dict>
+		<string>remote-notification</string>
 	</array>
-	<!-- Deep links are handled exclusively by the app_links plugin (see
-	     main.dart). Disable Flutter's built-in deep-linking so GoRouter doesn't
-	     also receive OS links and fail with "route not found" on non-route URIs
-	     like stylemint://social-connected. -->
-	<key>FlutterDeepLinkingEnabled</key>
-	<false/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -105,24 +108,6 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<!-- Shipping addresses are a map point plus the customer's own directions,
-	     not a typed street address. Location is read only when they tap "Use
-	     my current location" while adding or editing an address — never in the
-	     background. Pasting a Maps link is a full alternative if they decline. -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>StyleMint uses your location to pin where your order should be delivered, so you don't have to type out an address. We only check when you tap "Use my current location".</string>
-	<!-- Required by App Store Connect (ITMS-90683) because the geolocator
-	     plugin's binary references requestAlwaysAuthorization, even though
-	     StyleMint only ever asks for when-in-use access. The string is
-	     written to be true if iOS ever does show it. -->
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>StyleMint only checks your location while you are using the app, to pin where your order should be delivered when you tap "Use my current location". It does not follow you in the background.</string>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>viber</string>
-		<string>whatsapp</string>
-		<string>sms</string>
 	</array>
 </dict>
 </plist>
