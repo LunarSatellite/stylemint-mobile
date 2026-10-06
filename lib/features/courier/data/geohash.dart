@@ -93,3 +93,81 @@ String encodeGeohash(
 
   return out.toString();
 }
+
+/// A decoded geohash: the centre of the cell, and how big the cell is.
+///
+/// The error bounds travel with the point because a geohash is an area, not a
+/// position, and a map that draws a 5-character geohash as a pin is claiming
+/// 5 km of precision it does not have. A caller that knows the half-height and
+/// half-width can draw a circle instead, or decline to draw a pin at all.
+class GeohashArea {
+  const GeohashArea({
+    required this.latitude,
+    required this.longitude,
+    required this.latitudeError,
+    required this.longitudeError,
+  });
+
+  /// Centre of the cell.
+  final double latitude;
+  final double longitude;
+
+  /// Half the cell's height and width, in degrees.
+  final double latitudeError;
+  final double longitudeError;
+}
+
+/// Decodes a geohash back to the centre of the cell it names.
+///
+/// The counterpart of [encodeGeohash], and needed because the delivery backend
+/// stores hop endpoints as geohashes and nothing else: `FromGeohash` and
+/// `ToGeohash` on a hop are all the courier app has to put a pickup and a
+/// dropoff on a map.
+///
+/// Returns null for anything that is not a geohash — an empty string, or a
+/// character outside the alphabet. A caller gets to decide what to do with a
+/// hop it cannot place, and that is better than a pin in the Atlantic, which
+/// is where `(0, 0)` would put it.
+GeohashArea? decodeGeohash(String geohash) {
+  if (geohash.isEmpty) return null;
+
+  var latMin = -90.0;
+  var latMax = 90.0;
+  var lonMin = -180.0;
+  var lonMax = 180.0;
+
+  var isEven = true; // Longitude first, matching the encoder.
+
+  for (final char in geohash.toLowerCase().split('')) {
+    final charIndex = _base32.indexOf(char);
+    if (charIndex < 0) return null;
+
+    // Most significant bit first, five bits to a character.
+    for (var mask = 16; mask > 0; mask >>= 1) {
+      final isHigh = (charIndex & mask) != 0;
+      if (isEven) {
+        final mid = (lonMin + lonMax) / 2;
+        if (isHigh) {
+          lonMin = mid;
+        } else {
+          lonMax = mid;
+        }
+      } else {
+        final mid = (latMin + latMax) / 2;
+        if (isHigh) {
+          latMin = mid;
+        } else {
+          latMax = mid;
+        }
+      }
+      isEven = !isEven;
+    }
+  }
+
+  return GeohashArea(
+    latitude: (latMin + latMax) / 2,
+    longitude: (lonMin + lonMax) / 2,
+    latitudeError: (latMax - latMin) / 2,
+    longitudeError: (lonMax - lonMin) / 2,
+  );
+}
