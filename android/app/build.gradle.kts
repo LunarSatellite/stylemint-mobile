@@ -19,6 +19,25 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Firebase (push notifications). Applied only when the config file is here,
+// because google-services.json is gitignored under "Secrets / signing" and the
+// plugin FAILS the build when it cannot find it — so an unconditional apply
+// would stop anyone cloning the repo from building Android at all.
+//
+// Same shape as the release-keystore fallback above: degrade with a warning
+// rather than break the build, and say what is missing and what it costs.
+val googleServicesFile = file("google-services.json")
+if (googleServicesFile.exists()) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.warn(
+        "google-services.json not found in android/app — building WITHOUT " +
+        "Firebase, so push notifications will not work on this build. " +
+        "Download it from the Firebase console (project stylemint-7ece4, " +
+        "package app.stylemint.stylemint_mobile_frontend) and place it there."
+    )
+}
+
 android {
     namespace = "app.stylemint.stylemint_mobile_frontend"
     compileSdk = flutter.compileSdkVersion
