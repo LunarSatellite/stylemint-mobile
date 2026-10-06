@@ -192,8 +192,33 @@ class IdentityDocument {
 
 /// An identity-verification (KYC) session. Documents attach to one of these.
 class KycSession {
-  const KycSession({required this.id, required this.status});
+  const KycSession({
+    required this.id,
+    required this.status,
+    this.expiresUtc,
+  });
 
   final String id;
   final KycSessionStatus status;
+
+  /// When the applicant's window to finish uploading closes. Null when the
+  /// server did not say, which is treated as "no deadline known" rather than
+  /// as expired — refusing to reuse a session we simply cannot date would
+  /// strand anyone on an older API.
+  final DateTime? expiresUtc;
+
+  /// Whether documents can still be added to this session AND the session
+  /// can then be submitted.
+  ///
+  /// Both halves matter. A session past [expiresUtc] is a trap: documents
+  /// register into it happily and the submit is then refused with "Cannot
+  /// submit an expired KYC session", so the applicant uploads their ID and
+  /// selfie and is told it failed. Reuse is only safe while the session is
+  /// Pending and inside its window.
+  bool isOpenForUpload([DateTime? nowUtc]) {
+    if (status != KycSessionStatus.pending) return false;
+    final expiry = expiresUtc;
+    if (expiry == null) return true;
+    return expiry.isAfter(nowUtc ?? DateTime.now().toUtc());
+  }
 }

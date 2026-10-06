@@ -58,9 +58,14 @@ class CreatorDocumentsRepositoryImpl implements CreatorDocumentsRepository {
 
   /// Reuses the open session so a creator uploading a front and a back does
   /// not end up with two sessions holding one document each.
+  ///
+  /// Only while it can still be submitted, though. A session past its window
+  /// accepts documents and is then refused at submit, so reusing one blindly
+  /// means uploading an ID and being told the submission failed. See
+  /// [KycSession.isOpenForUpload].
   Future<KycSession> _ensureSession() async {
     final existing = await remoteDataSource.getActiveSession();
-    if (existing != null) return existing;
+    if (existing != null && existing.isOpenForUpload()) return existing;
     return remoteDataSource.startSession(idempotencyKey: const Uuid().v4());
   }
 

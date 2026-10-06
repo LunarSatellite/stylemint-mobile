@@ -78,6 +78,66 @@ void main() {
     });
   });
 
+  /// An expired session is worse than no session: it accepts every document
+  /// and the submit is then refused with "Cannot submit an expired KYC
+  /// session", so the applicant photographs their ID and is told it failed.
+  /// A courier who was a vendor first hit exactly that — the vendor
+  /// application's session had lapsed weeks earlier.
+  group('KycSession.isOpenForUpload', () {
+    final now = DateTime.utc(2026, 10, 6, 5, 35);
+
+    KycSession session(KycSessionStatus status, DateTime? expires) =>
+        KycSession(id: 's', status: status, expiresUtc: expires);
+
+    test('pending and inside its window is reusable', () {
+      expect(
+        session(
+          KycSessionStatus.pending,
+          now.add(const Duration(days: 1)),
+        ).isOpenForUpload(now),
+        isTrue,
+      );
+    });
+
+    test('pending but past its window is NOT reusable', () {
+      // The real one: started 23 Sep, expired 30 Sep, still Pending on 6 Oct
+      // because nothing sweeps Pending sessions into Expired.
+      expect(
+        session(
+          KycSessionStatus.pending,
+          DateTime.utc(2026, 9, 30, 7, 49),
+        ).isOpenForUpload(now),
+        isFalse,
+      );
+    });
+
+    test('a session already in review is not reusable for a new upload', () {
+      for (final status in [
+        KycSessionStatus.submitted,
+        KycSessionStatus.underReview,
+        KycSessionStatus.approved,
+        KycSessionStatus.rejected,
+        KycSessionStatus.expired,
+      ]) {
+        expect(
+          session(status, now.add(const Duration(days: 1)))
+              .isOpenForUpload(now),
+          isFalse,
+          reason: '${status.name} must not be added to',
+        );
+      }
+    });
+
+    test('an unknown expiry is treated as no deadline, not as expired', () {
+      // Refusing to reuse a session we cannot date would strand anyone on an
+      // older API that does not send expiresUtc.
+      expect(
+        session(KycSessionStatus.pending, null).isOpenForUpload(now),
+        isTrue,
+      );
+    });
+  });
+
   group('wireEnum', () {
     test('reads the integer the server actually sends', () {
       expect(

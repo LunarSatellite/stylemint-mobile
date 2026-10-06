@@ -92,9 +92,21 @@ class CourierKycDocuments {
 
     await _checkReadable(captures);
 
-    final session =
-        await _documents.getActiveSession() ??
-        await _documents.startSession(idempotencyKey: _uuid.v4());
+    // Reuse the open session only while it can still be submitted.
+    //
+    // An expired session is a trap: it accepts every document and then the
+    // submit is refused with "Cannot submit an expired KYC session", so the
+    // courier photographs their ID and is told it failed. A courier who was a
+    // vendor first hit exactly this — the session opened for the vendor
+    // application had lapsed weeks earlier, and the server still called it
+    // active, so this reused it and registered three documents into it before
+    // the refusal. Couriers with no prior session were fine, which is what
+    // made it look like the courier flow worked for some people and not
+    // others.
+    final open = await _documents.getActiveSession();
+    final session = open != null && open.isOpenForUpload()
+        ? open
+        : await _documents.startSession(idempotencyKey: _uuid.v4());
 
     final registered = <IdentityDocument>[];
     for (final capture in captures) {
@@ -112,7 +124,20 @@ class CourierKycDocuments {
       );
     }
 
-    await _documents.submitSession(session.id, _uuid.v4());
+    // Past this point the documents exist on the server, so a failure here
+    // must not be reported as "nothing has been submitted" — that is what the
+    // screen says for every other error, and it was a lie precisely when it
+    // mattered: three ID photos had been registered and the courier was told
+    // none had.
+    try {
+      await _documents.submitSession(session.id, _uuid.v4());
+    } catch (_) {
+      throw CourierDocumentFailure(
+        'Your ${registered.length} photo(s) were uploaded, but the review '
+        'could not be opened. Tap submit again — nothing needs to be '
+        'retaken.',
+      );
+    }
 
     return CourierDocumentsSubmitted(
       sessionId: session.id,

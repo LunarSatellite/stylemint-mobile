@@ -149,6 +149,11 @@ class CreatorDocumentsRemoteDataSource {
     status:
         wireEnum(m['status'], KycSessionStatus.values) ??
         KycSessionStatus.pending,
+    // Read so a caller can tell a reusable session from one that will accept
+    // documents and then refuse to be submitted. See KycSession.isOpenForUpload.
+    expiresUtc: DateTime.tryParse(
+      (m['expiresUtc'] as String?) ?? '',
+    )?.toUtc(),
   );
 
   IdentityDocument _documentFrom(Map<String, dynamic> m) => IdentityDocument(
