@@ -1,63 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/geohash.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/data/services/location_capture_service.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _osmTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const _osmUserAgent = 'app.stylemint.stylemint_mobile_frontend';
 
-/// Where the parcel has to go, and which end of it the rider is heading for.
+/// The rider's map: where they are, and — once there is work — where the
+/// parcel has to go and what the run pays.
 ///
-/// A hop stores its endpoints as geohashes and nothing else — there is no
-/// street address on the courier's view of it — so this decodes them and
-/// draws the two points. That is genuinely all the location data there is;
-/// pretending otherwise would mean inventing an address.
+/// Always on screen, with or without a parcel. An earlier version only
+/// appeared when a hop was assigned, which meant a courier with no work saw
+/// no map at all and had no way to tell whether the feature existed. A rider
+/// opening the app wants to see themselves on the map first; the job is
+/// drawn on top of that when it arrives.
 ///
-/// The leg that matters changes as the job progresses: before collection the
-/// rider is going to the pickup, after it they are going to the dropoff. The
-/// map says which, and the Navigate button hands that one point to whichever
-/// maps app the phone has, because turn-by-turn is not something to reimplement
-/// inside a delivery app.
-class CourierHopMap extends StatelessWidget {
-  const CourierHopMap({required this.hop, super.key});
+/// Location comes through the app's existing [LocationCaptureService], which
+/// already handles the four ways this goes wrong — services off, denied,
+/// denied-forever, timeout — and each is reported as itself rather than as a
+/// blank map.
+class CourierHopMap extends ConsumerStatefulWidget {
+  const CourierHopMap({this.hop, super.key});
 
-  final DeliveryHop hop;
+  /// The active hop, or null when the rider has no parcel.
+  final DeliveryHop? hop;
 
-  /// Height chosen so the map is usable at a glance without pushing the work
-  /// list below the fold on a small phone.
-  static const double height = 200;
+  static const double height = 220;
 
-  /// True once the parcel is with the rider, so the destination is what they
-  /// are travelling to.
+  @override
+  ConsumerState<CourierHopMap> createState() => _CourierHopMapState();
+}
+
+class _CourierHopMapState extends ConsumerState<CourierHopMap> {
+  LocationCaptureResult? _location;
+  bool _locating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Asked on open rather than behind a button: a delivery app without the
+    // rider's position cannot do its main job, so the permission prompt
+    // belongs at the point the map appears.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _locate());
+  }
+
+  Future<void> _locate() async {
+    if (_locating) return;
+    setState(() => _locating = true);
+    final result = await ref.read(locationCaptureServiceProvider).capture();
+    if (!mounted) return;
+    setState(() {
+      _location = result;
+      _locating = false;
+    });
+  }
+
+  LatLng? get _me {
+    final result = _location;
+    return result is LocationCaptured
+        ? LatLng(result.latitude, result.longitude)
+        : null;
+  }
+
+  /// True once the parcel is with the rider, so the drop-off is what they are
+  /// travelling to.
   bool get _headingToDropoff =>
-      hop.state == HopState.pickedUp || hop.state == HopState.enRouteHandoff;
+      widget.hop?.state == HopState.pickedUp ||
+      widget.hop?.state == HopState.enRouteHandoff;
 
   @override
   Widget build(BuildContext context) {
-    final pickup = decodeGeohash(hop.fromGeohash);
-    final dropoff = decodeGeohash(hop.toGeohash);
-
-    // Neither endpoint is placeable. Say so rather than drawing an empty map
-    // of the Atlantic, which is where a failed decode would otherwise centre.
-    if (pickup == null && dropoff == null) {
-      return _Surface(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            child: Text(
-              'No location on this parcel yet.',
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textMuted,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-      );
-    }
+    final hop = widget.hop;
+    final pickup = hop == null ? null : decodeGeohash(hop.fromGeohash);
+    final dropoff = hop == null ? null : decodeGeohash(hop.toGeohash);
 
     final pickupPoint = pickup == null
         ? null
@@ -70,60 +93,69 @@ class CourierHopMap extends StatelessWidget {
         ? (dropoffPoint ?? pickupPoint)
         : (pickupPoint ?? dropoffPoint);
 
+    // Centre on the job when there is one, otherwise on the rider. With
+    // neither, the map still renders over its own background rather than
+    // dropping to (0,0) in the Atlantic.
+    final centre = target ?? _me;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Surface(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
-            child: _map(pickupPoint, dropoffPoint, target!),
+        SizedBox(
+          height: CourierHopMap.height,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: DesignTokens.surfaceRaised,
+              borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+              child: centre == null
+                  ? _Placeholder(
+                      locating: _locating,
+                      location: _location,
+                      onRetry: _locate,
+                      onOpenSettings: _openSettings,
+                    )
+                  : _map(centre, pickupPoint, dropoffPoint),
+            ),
           ),
         ),
-        const SizedBox(height: DesignTokens.s8),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                _headingToDropoff
-                    ? 'Heading to the drop-off'
-                    : 'Heading to the pick-up',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textMuted,
-                ),
-              ),
+        if (hop != null) ...[
+          const SizedBox(height: DesignTokens.s8),
+          _JobBar(
+            hop: hop,
+            headingToDropoff: _headingToDropoff,
+            onNavigate: target == null ? null : () => _navigate(target),
+          ),
+        ] else ...[
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            _me == null
+                ? 'Your location is needed so parcels near you can be offered.'
+                : 'No parcel right now. When one is offered, the pick-up and '
+                      'drop-off appear here with what the run pays.',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
             ),
-            TextButton.icon(
-              onPressed: () => _navigate(context, target),
-              icon: const Icon(Icons.navigation_rounded, size: 18),
-              label: const Text('Navigate'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _map(LatLng? pickup, LatLng? dropoff, LatLng target) {
-    final points = [
+  Widget _map(LatLng centre, LatLng? pickup, LatLng? dropoff) {
+    final pins = [
       if (pickup != null) pickup,
       if (dropoff != null) dropoff,
     ];
 
-    // Centred between the two ends when there are two, so both are on screen,
-    // and pulled back a little because the gap between them is unknown. Done
-    // with plain centre and zoom rather than a camera fit: this widget cannot
-    // be compiled here, so it stays on the map API the app already uses.
-    final centre = points.length < 2
-        ? target
-        : LatLng(
-            (points[0].latitude + points[1].latitude) / 2,
-            (points[0].longitude + points[1].longitude) / 2,
-          );
-
     return FlutterMap(
       options: MapOptions(
         initialCenter: centre,
-        initialZoom: points.length < 2 ? 15 : 12.5,
+        // Tighter on a single point, pulled back when both ends of a run are
+        // on screen and the distance between them is unknown.
+        initialZoom: pins.length < 2 ? 15 : 12.5,
         backgroundColor: DesignTokens.surfaceRaised,
         interactionOptions: const InteractionOptions(
           flags:
@@ -136,18 +168,23 @@ class CourierHopMap extends StatelessWidget {
         TileLayer(
           urlTemplate: _osmTileUrl,
           userAgentPackageName: _osmUserAgent,
-          // OSM's tile policy forbids prefetching and bulk download, so only
-          // what the viewport needs.
+          // OSM's tile policy forbids prefetching and bulk download.
           panBuffer: 0,
           keepBuffer: 1,
           tileDisplay: const TileDisplay.instantaneous(),
-          // Offline, or a 4xx from the tile server, must leave the pins and
-          // the Navigate button working over the plain background rather than
-          // painting an error box.
+          // Offline or a 4xx must leave the pins and the Navigate button
+          // working over the plain background, not paint an error box.
           errorTileCallback: (_, _, _) {},
         ),
         MarkerLayer(
           markers: [
+            if (_me != null)
+              Marker(
+                point: _me!,
+                width: 22,
+                height: 22,
+                child: const _MeDot(),
+              ),
             if (pickup != null)
               _pin(
                 pickup,
@@ -163,8 +200,7 @@ class CourierHopMap extends StatelessWidget {
           ],
         ),
         // OSM requires the credit to be permanently visible, not folded
-        // behind a tap, which is why this is a plain attribution and not
-        // RichAttributionWidget.
+        // behind a tap — hence a plain attribution, not RichAttributionWidget.
         const Align(
           alignment: Alignment.bottomRight,
           child: Padding(
@@ -185,8 +221,8 @@ class CourierHopMap extends StatelessWidget {
     );
   }
 
-  /// The leg the rider is on is drawn solid; the other is dimmed, so which end
-  /// they are going to is readable without reading the caption.
+  /// The end the rider is travelling to is solid; the other is dimmed, so
+  /// which one is live reads without reading the caption.
   Marker _pin(LatLng at, IconData icon, {required bool active}) => Marker(
     point: at,
     width: 36,
@@ -201,12 +237,21 @@ class CourierHopMap extends StatelessWidget {
     ),
   );
 
+  Future<void> _openSettings() async {
+    final service = ref.read(locationCaptureServiceProvider);
+    if (_location is LocationServicesDisabled) {
+      await service.openLocationSettings();
+    } else {
+      await service.openAppSettings();
+    }
+  }
+
   /// Hands the point to the phone's maps app.
   ///
-  /// A `geo:` URI with a `q` label is the Android convention and iOS resolves
-  /// it through Apple Maps; where neither is installed the launch fails and
-  /// the courier keeps the map above, so this reports rather than throws.
-  Future<void> _navigate(BuildContext context, LatLng to) async {
+  /// A `geo:` URI is the Android convention and iOS resolves it through Apple
+  /// Maps. Where neither is installed the launch fails, so this reports
+  /// rather than throws — the rider still has the map above.
+  Future<void> _navigate(LatLng to) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final uri = Uri.parse(
       'geo:${to.latitude},${to.longitude}'
@@ -219,7 +264,6 @@ class CourierHopMap extends StatelessWidget {
     } catch (_) {
       launched = false;
     }
-
     if (!launched) {
       messenger?.showSnackBar(
         const SnackBar(
@@ -230,20 +274,151 @@ class CourierHopMap extends StatelessWidget {
   }
 }
 
-class _Surface extends StatelessWidget {
-  const _Surface({required this.child});
-
-  final Widget child;
+/// The rider's own position. Deliberately a different shape from the job
+/// pins — a dot, not a teardrop — so "me" is never mistaken for a
+/// destination.
+class _MeDot extends StatelessWidget {
+  const _MeDot();
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: CourierHopMap.height,
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: DesignTokens.surfaceRaised,
-        borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
-      ),
-      child: child,
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: DesignTokens.primaryGreen,
+      shape: BoxShape.circle,
+      border: Border.all(color: Colors.white, width: 3),
     ),
   );
+}
+
+/// What the run pays, and where the rider is headed.
+///
+/// The payout is on the map card rather than only in the parcel list,
+/// because "is this worth the trip" is the question a rider asks while
+/// looking at the distance.
+class _JobBar extends StatelessWidget {
+  const _JobBar({
+    required this.hop,
+    required this.headingToDropoff,
+    required this.onNavigate,
+  });
+
+  final DeliveryHop hop;
+  final bool headingToDropoff;
+  final VoidCallback? onNavigate;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              headingToDropoff
+                  ? 'Heading to the drop-off'
+                  : 'Heading to the pick-up',
+              style: DesignTokens.mediumSemibold,
+            ),
+            Text(
+              'You earn ${formatMoney(Money(amount: hop.payoutAmount, currency: hop.payoutCurrency))} '
+              'when this run is complete',
+              style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+            ),
+          ],
+        ),
+      ),
+      TextButton.icon(
+        onPressed: onNavigate,
+        icon: const Icon(Icons.navigation_rounded, size: 18),
+        label: const Text('Navigate'),
+      ),
+    ],
+  );
+}
+
+/// Shown while locating, and when location cannot be had.
+///
+/// Each failure says what went wrong and offers the one action that fixes
+/// it, because "map didn't load" is indistinguishable between a denied
+/// permission, location services switched off at the OS level, and a slow
+/// GPS fix — and the recovery differs for each.
+class _Placeholder extends StatelessWidget {
+  const _Placeholder({
+    required this.locating,
+    required this.location,
+    required this.onRetry,
+    required this.onOpenSettings,
+  });
+
+  final bool locating;
+  final LocationCaptureResult? location;
+  final VoidCallback onRetry;
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    if (locating) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(DesignTokens.s16),
+          child: Text('Finding your location…'),
+        ),
+      );
+    }
+
+    final (message, actionLabel, settings) = switch (location) {
+      LocationPermissionDenied() => (
+        'Allow location so parcels near you can be offered.',
+        'Allow',
+        false,
+      ),
+      LocationPermissionDeniedForever() => (
+        'Location is blocked for this app. Turn it on in Settings to get '
+            'parcels near you.',
+        'Open settings',
+        true,
+      ),
+      LocationServicesDisabled() => (
+        'Location services are off on this phone.',
+        'Open settings',
+        true,
+      ),
+      LocationTimedOut() => (
+        'Could not get a GPS fix. Try again outdoors.',
+        'Try again',
+        false,
+      ),
+      LocationCaptureFailed(message: final detail) => (detail, 'Try again', false),
+      _ => ('Your location is needed to show the map.', 'Allow', false),
+    };
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.my_location_rounded,
+              color: DesignTokens.textMuted,
+              size: 28,
+            ),
+            const SizedBox(height: DesignTokens.s8),
+            Text(
+              message,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: DesignTokens.s4),
+            TextButton(
+              onPressed: settings ? onOpenSettings : onRetry,
+              child: Text(actionLabel),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
