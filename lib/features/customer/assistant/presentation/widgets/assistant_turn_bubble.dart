@@ -11,12 +11,14 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// carries who said what.
 class AssistantTurnBubble extends StatelessWidget {
   const AssistantTurnBubble({
-    required this.conversationId,
+    required this.threadKey,
     required this.turn,
     super.key,
   });
 
-  final String conversationId;
+  /// The `assistantThreadProvider` family key of the screen hosting this
+  /// turn — `''` for a chat that started new — handed straight to the shelf.
+  final String threadKey;
   final CompanionTurn turn;
 
   static Key keyFor(String turnId) => Key('assistant-turn-$turnId');
@@ -124,7 +126,7 @@ class AssistantTurnBubble extends StatelessWidget {
           // Only a turn that can suggest ever builds a shelf; a user turn's
           // suggestion list is empty by construction.
           AssistantSuggestionShelf(
-            conversationId: conversationId,
+            threadKey: threadKey,
             turn: turn,
           ),
         ],

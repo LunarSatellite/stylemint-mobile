@@ -20,6 +20,7 @@ Future<void> _pumpThread(
   Size size = const Size(390, 844),
   TextScaler scaler = TextScaler.noScaling,
   List<int>? cartCounts,
+  bool newChat = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -37,7 +38,10 @@ Future<void> _pumpThread(
       child: MaterialApp(
         home: MediaQuery(
           data: MediaQueryData(size: size, textScaler: scaler),
-          child: const AssistantConversationScreen(conversationId: 'conv-1'),
+          // /minty/new builds the screen with no id; /minty/:id with one.
+          child: newChat
+              ? const AssistantConversationScreen()
+              : const AssistantConversationScreen(conversationId: 'conv-1'),
         ),
       ),
     ),
@@ -284,6 +288,107 @@ void main() {
 
     expect(find.byKey(AssistantSuggestionShelf.shelfKey), findsNothing);
     expect(find.text('Minty suggested'), findsNothing);
+  });
+
+  testWidgets('a thread that fails to load says so and offers a retry, '
+      'instead of posing as an empty chat', (tester) async {
+    final repository = FakeAssistantRepository(
+      turns: [turnFrom(id: 'm-1', role: 'minty', message: 'Welcome back.')],
+      failFirstPageTimes: 1,
+    );
+
+    await _pumpThread(tester, repository);
+
+    expect(find.byKey(AssistantConversationScreen.errorKey), findsOneWidget);
+    expect(find.text("We couldn't load this conversation"), findsOneWidget);
+    expect(find.text('Ask Minty anything'), findsNothing);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(repository.conversationCursors, [null, null]);
+    expect(find.byKey(AssistantConversationScreen.errorKey), findsNothing);
+    expect(find.text('Welcome back.'), findsOneWidget);
+  });
+
+  testWidgets('a brand-new chat with no turns still shows the empty state', (
+    tester,
+  ) async {
+    final repository = FakeAssistantRepository();
+
+    await _pumpThread(tester, repository, newChat: true);
+
+    expect(find.text('Ask Minty anything'), findsOneWidget);
+    expect(find.byKey(AssistantConversationScreen.errorKey), findsNothing);
+    expect(
+      repository.conversationCursors,
+      isEmpty,
+      reason: 'a thread that does not exist yet is never fetched',
+    );
+  });
+
+  testWidgets('a failed older page keeps the thread and says so quietly', (
+    tester,
+  ) async {
+    final repository = FakeAssistantRepository(
+      turns: [turnFrom(id: 'm-1', role: 'minty', message: 'Hello.')],
+      firstPageCursor: 'cursor-2',
+      failCursorPages: true,
+    );
+
+    await _pumpThread(tester, repository);
+
+    await tester.tap(find.byKey(AssistantConversationScreen.loadMoreKey));
+    await tester.pumpAndSettle();
+
+    expect(repository.conversationCursors, [null, 'cursor-2']);
+    expect(find.text('Hello.'), findsOneWidget);
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(
+      find.byKey(AssistantConversationScreen.loadMoreKey),
+      findsOneWidget,
+      reason: 'the cursor is kept, so the control can be pressed again',
+    );
+  });
+
+  testWidgets('in a new chat, adding a suggestion shows the receipt turn and '
+      'the bag count on this screen', (tester) async {
+    final counts = <int>[];
+    final repository = FakeAssistantRepository(
+      resolved: {productA: 'Field coat'},
+      receiptOnAdd: true,
+    )
+      ..replyBuilder = (_) => turnFrom(
+        id: 'm-new',
+        role: 'minty',
+        message: 'Try this field coat',
+        suggested: productA,
+      );
+
+    await _pumpThread(tester, repository, cartCounts: counts, newChat: true);
+
+    await tester.enterText(
+      find.byKey(AssistantConversationScreen.composerKey),
+      'A winter coat please',
+    );
+    await tester.tap(find.byKey(AssistantConversationScreen.sendKey));
+    await tester.pumpAndSettle();
+
+    // The send minted 'conv-1' server-side; the screen is still keyed ''.
+    expect(find.text('Try this field coat'), findsOneWidget);
+
+    await tester.tap(find.byKey(AssistantSuggestionShelf.addKey(productA)));
+    await tester.pumpAndSettle();
+
+    expect(repository.addCalls, hasLength(1));
+    expect(counts, [3]);
+    expect(find.text('In your bag'), findsOneWidget);
+    expect(
+      find.text('Added to your bag from this chat.'),
+      findsOneWidget,
+      reason: 'the receipt lands on the notifier this screen watches',
+    );
+    expect(find.text('3 in bag'), findsOneWidget);
   });
 
   testWidgets('the cursor control appears only when the API sent one', (

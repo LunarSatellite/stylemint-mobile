@@ -56,6 +56,10 @@ class FakeAssistantRepository implements AssistantRepository {
     this.turns = const <CompanionTurn>[],
     this.resolved = const <String, String>{},
     this.failAddOnce = false,
+    this.failFirstPageTimes = 0,
+    this.firstPageCursor,
+    this.failCursorPages = false,
+    this.receiptOnAdd = false,
   });
 
   List<CompanionTurn> turns;
@@ -65,6 +69,18 @@ class FakeAssistantRepository implements AssistantRepository {
 
   /// Makes the first add fail, so a retry can be observed.
   bool failAddOnce;
+
+  /// How many first-page fetches fail before one succeeds.
+  int failFirstPageTimes;
+
+  /// The cursor the first page carries, so the "load more" control shows.
+  String? firstPageCursor;
+
+  /// Makes every cursor (second and later) page fail.
+  bool failCursorPages;
+
+  /// Makes a successful add carry the backend's system receipt turn.
+  bool receiptOnAdd;
 
   final List<({String turnId, String productId, String key})> addCalls = [];
   final List<String> sentMessages = [];
@@ -95,6 +111,13 @@ class FakeAssistantRepository implements AssistantRepository {
     String? cursor,
   }) async {
     conversationCursors.add(cursor);
+    if (cursor == null && failFirstPageTimes > 0) {
+      failFirstPageTimes--;
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    if (cursor != null && failCursorPages) {
+      return left(const NetworkExceptions.serverUnavailable());
+    }
     return right(
       ConversationPage(
         conversation: ConversationSummary(
@@ -103,8 +126,9 @@ class FakeAssistantRepository implements AssistantRepository {
           messageCount: turns.length,
           lastMessageUtc: DateTime.utc(2026, 9, 19),
         ),
-        turns: turns,
+        turns: cursor == null ? turns : const <CompanionTurn>[],
         totalTurns: turns.length,
+        nextCursor: cursor == null ? firstPageCursor : null,
       ),
     );
   }
@@ -167,6 +191,13 @@ class FakeAssistantRepository implements AssistantRepository {
         quantity: quantity,
         cartItemCount: 3,
         addedUtc: DateTime.utc(2026, 9, 19),
+        receiptTurn: receiptOnAdd
+            ? turnFrom(
+                id: 'receipt-${addCalls.length}',
+                role: 'system',
+                message: 'Added to your bag from this chat.',
+              )
+            : null,
       ),
     );
   }

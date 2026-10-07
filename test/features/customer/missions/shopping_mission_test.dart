@@ -53,6 +53,24 @@ void main() {
       expect(mission.items.map((i) => i.name), ['Kettle', 'Floor lamp']);
     });
 
+    test('states are read whatever their casing', () {
+      for (final raw in ['completed', 'COMPLETED', ' Completed ']) {
+        expect(MissionState.parse(raw), MissionState.completed, reason: raw);
+      }
+      expect(MissionState.parse('abandoned'), MissionState.abandoned);
+      expect(MissionState.parse('active'), MissionState.active);
+      for (final raw in ['alreadyOwned', 'alreadyowned', 'already_owned']) {
+        expect(
+          MissionItemState.parse(raw),
+          MissionItemState.alreadyOwned,
+          reason: raw,
+        );
+      }
+      expect(MissionItemState.parse('acquired'), MissionItemState.acquired);
+      // The wire form sent back is unchanged.
+      expect(MissionItemState.alreadyOwned.wire, 'AlreadyOwned');
+    });
+
     test('an unknown state is read as planned rather than crashing', () {
       final mission = shoppingMissionFromJson(missionJson(state: 'Sideways'));
       expect(mission.state, MissionState.planned);

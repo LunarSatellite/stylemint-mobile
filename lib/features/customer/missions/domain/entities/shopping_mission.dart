@@ -6,6 +6,12 @@
 /// here buys, reserves or pays for anything.
 library;
 
+/// A wire enum string folded to one comparable form: trimmed, lower-case,
+/// with `_` and `-` dropped. Anything that is not a string folds to null.
+String? _normalizeWire(Object? raw) => raw is String
+    ? raw.trim().toLowerCase().replaceAll(RegExp('[_-]'), '')
+    : null;
+
 /// Mission lifecycle. These arrive as **strings** on the wire, while the
 /// assistant's mood/context arrive as numbers. That split is deliberate on
 /// the backend for now, so each is parsed as it comes.
@@ -15,11 +21,14 @@ enum MissionState {
   completed,
   abandoned;
 
-  static MissionState parse(Object? raw) => switch (raw) {
-    'Planned' => MissionState.planned,
-    'Active' => MissionState.active,
-    'Completed' => MissionState.completed,
-    'Abandoned' => MissionState.abandoned,
+  /// Case-insensitive: a casing change in the backend's enum serializer
+  /// (`Completed` vs `completed`) must not quietly turn a finished mission
+  /// back into an editable "Planned" one.
+  static MissionState parse(Object? raw) => switch (_normalizeWire(raw)) {
+    'planned' => MissionState.planned,
+    'active' => MissionState.active,
+    'completed' => MissionState.completed,
+    'abandoned' => MissionState.abandoned,
     _ => MissionState.planned,
   };
 
@@ -50,10 +59,11 @@ enum MissionItemState {
   alreadyOwned,
   acquired;
 
-  static MissionItemState parse(Object? raw) => switch (raw) {
-    'Suggested' => MissionItemState.suggested,
-    'AlreadyOwned' => MissionItemState.alreadyOwned,
-    'Acquired' => MissionItemState.acquired,
+  /// Case-insensitive, and tolerant of `already_owned` / `already-owned`.
+  static MissionItemState parse(Object? raw) => switch (_normalizeWire(raw)) {
+    'suggested' => MissionItemState.suggested,
+    'alreadyowned' => MissionItemState.alreadyOwned,
+    'acquired' => MissionItemState.acquired,
     _ => MissionItemState.suggested,
   };
 

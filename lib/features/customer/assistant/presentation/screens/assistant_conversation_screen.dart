@@ -28,6 +28,7 @@ class AssistantConversationScreen extends ConsumerStatefulWidget {
   static const Key listKey = Key('assistant-turns');
   static const Key loadMoreKey = Key('assistant-load-more');
   static const Key evidenceKey = Key('assistant-evidence-entry');
+  static const Key errorKey = Key('assistant-thread-error');
 
   @override
   ConsumerState<AssistantConversationScreen> createState() =>
@@ -65,7 +66,6 @@ class _AssistantConversationScreenState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(assistantThreadProvider(_familyKey));
-    final conversationId = state.conversationId ?? '';
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppBody,
@@ -112,7 +112,7 @@ class _AssistantConversationScreenState
       body: SafeArea(
         child: Column(
           children: [
-            Expanded(child: _body(state, conversationId)),
+            Expanded(child: _body(state)),
             _Composer(
               controller: _controller,
               sending: state.sending,
@@ -124,9 +124,22 @@ class _AssistantConversationScreenState
     );
   }
 
-  Widget _body(AssistantThreadState state, String conversationId) {
+  Widget _body(AssistantThreadState state) {
     if (state.loading && state.turns.isEmpty) {
       return const Center(child: CircularProgressIndicator());
+    }
+    final loadError = state.loadError;
+    if (loadError != null && state.turns.isEmpty) {
+      // An existing thread that could not be fetched is not an empty one:
+      // showing "Ask Minty anything" here would quietly hide the history.
+      return MallErrorState(
+        key: AssistantConversationScreen.errorKey,
+        title: "We couldn't load this conversation",
+        body: loadError,
+        onRetry: () => unawaited(
+          ref.read(assistantThreadProvider(_familyKey).notifier).load(),
+        ),
+      );
     }
     if (state.turns.isEmpty) {
       // MallEmptyState scrolls itself when it is given less room than it
@@ -163,13 +176,7 @@ class _AssistantConversationScreenState
                 key: AssistantConversationScreen.loadMoreKey,
                 onPressed: state.loadingMore
                     ? null
-                    : () => unawaited(
-                        ref
-                            .read(
-                              assistantThreadProvider(_familyKey).notifier,
-                            )
-                            .loadMore(),
-                      ),
+                    : () => unawaited(_loadMore()),
                 child: Semantics(
                   button: true,
                   label: 'Load the rest of this conversation',
@@ -183,11 +190,29 @@ class _AssistantConversationScreenState
           );
         }
         return AssistantTurnBubble(
-          conversationId: conversationId,
+          // The screen's own family key, not the server's conversation id: in
+          // a new chat those differ ('' vs the minted id), and the shelf must
+          // reach this same notifier or its receipt turn and the "in bag"
+          // pill land on an instance nothing on screen is watching.
+          threadKey: _familyKey,
           turn: state.turns[index],
         );
       },
     );
+  }
+
+  /// A failed older page leaves the thread exactly as it was; the shopper
+  /// gets a short note and the control stays there to press again.
+  Future<void> _loadMore() async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final ok = await ref
+        .read(assistantThreadProvider(_familyKey).notifier)
+        .loadMore();
+    if (ok || !mounted) return;
+    // No error means there was simply nothing to fetch.
+    final error = ref.read(assistantThreadProvider(_familyKey)).error;
+    if (error == null) return;
+    messenger?.showSnackBar(SnackBar(content: Text(error)));
   }
 
   Future<void> _send() async {

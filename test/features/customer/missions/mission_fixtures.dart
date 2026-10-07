@@ -87,6 +87,12 @@ class FakeMissionsRepository implements MissionsRepository {
   /// Set to make the next mutation fail the way a terminal mission does.
   bool refuseAsTerminal = false;
 
+  /// Set to make [start] fail with exactly this.
+  NetworkExceptions? startFailure;
+
+  /// The budget each [start] call carried.
+  final List<double?> startBudgets = [];
+
   final List<({String itemId, MissionItemState state})> itemChanges = [];
   int replans = 0;
   int completes = 0;
@@ -119,7 +125,11 @@ class FakeMissionsRepository implements MissionsRepository {
     required String missionText,
     required int maxItems,
     double? budgetAmount,
-  }) async => right(initial);
+  }) async {
+    startBudgets.add(budgetAmount);
+    final failure = startFailure;
+    return failure == null ? right(initial) : left(failure);
+  }
 
   @override
   Future<Either<NetworkExceptions, ShoppingMission>> replan(

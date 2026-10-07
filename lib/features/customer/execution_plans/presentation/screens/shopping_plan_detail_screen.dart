@@ -33,7 +33,45 @@ class ShoppingPlanDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(executionPlansNotifierProvider);
     final notifier = ref.read(executionPlansNotifierProvider.notifier);
-    final plan = state.byId(planId);
+    final cached = state.byId(planId);
+
+    // The cached list is the usual source. Once it has been read and does
+    // not hold this plan — most often because that read failed — ask for
+    // the plan by id before saying anything about it.
+    final direct = cached == null && state.loaded
+        ? ref.watch(executionPlanByIdProvider(planId))
+        : null;
+    // `hasValue` rather than `asData`: it keeps the plan on screen while a
+    // re-read of it is in flight instead of flashing the loader.
+    final plan =
+        cached ??
+        (direct != null && direct.hasValue && !direct.hasError
+            ? direct.value
+            : null);
+
+    Future<void> reload() async {
+      ref.invalidate(executionPlanByIdProvider(planId));
+      await notifier.refresh();
+    }
+
+    final Widget body;
+    if (plan != null) {
+      body = _PlanBody(
+        plan: plan,
+        busy: state.busyPlanId == plan.id,
+        failure: state.failure,
+        onDismissFailure: notifier.dismissFailure,
+      );
+    } else if (direct == null || direct.isLoading) {
+      body = const _Missing(state: _MissingState.loading);
+    } else if (direct.hasError) {
+      body = _Missing(
+        state: _MissingState.unreadable,
+        onRetry: () => unawaited(reload()),
+      );
+    } else {
+      body = const _Missing(state: _MissingState.notOnAccount);
+    }
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppBody,
@@ -41,39 +79,43 @@ class ShoppingPlanDetailScreen extends ConsumerWidget {
         backgroundColor: DesignTokens.bgAppBody,
         title: const Text(ExecutionPlanCopy.surfaceTitle),
       ),
-      body: RefreshIndicator(
-        onRefresh: notifier.refresh,
-        child: plan == null
-            ? _Missing(loaded: state.loaded)
-            : _PlanBody(
-                plan: plan,
-                busy: state.busyPlanId == plan.id,
-                failure: state.failure,
-                onDismissFailure: notifier.dismissFailure,
-              ),
-      ),
+      body: RefreshIndicator(onRefresh: reload, child: body),
     );
   }
 }
 
-class _Missing extends StatelessWidget {
-  const _Missing({required this.loaded});
+enum _MissingState { loading, unreadable, notOnAccount }
 
-  final bool loaded;
+/// Everything the screen can show when it has no plan to draw — kept apart
+/// so "still reading", "could not read" and "not yours" never blur together.
+class _Missing extends StatelessWidget {
+  const _Missing({required this.state, this.onRetry});
+
+  final _MissingState state;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(DesignTokens.s24),
     children: [
-      if (!loaded)
-        const SizedBox(height: 160, child: SmPageLoader())
-      else
-        const MallEmptyState(
+      switch (state) {
+        _MissingState.loading => const SizedBox(
+          height: 160,
+          child: SmPageLoader(),
+        ),
+        _MissingState.unreadable => MallErrorState(
+          key: const ValueKey('plan-unreadable'),
+          title: "Couldn't read this plan",
+          body: 'Check your connection and try again.',
+          onRetry: onRetry,
+        ),
+        _MissingState.notOnAccount => const MallEmptyState(
           key: ValueKey('plan-missing'),
           title: 'This plan is not on your account',
           body: 'Pull down to read your plans again.',
           icon: Icons.search_off_rounded,
         ),
+      },
     ],
   );
 }
@@ -102,7 +144,15 @@ class _PlanBody extends ConsumerWidget {
     await ref
         .read(executionPlansNotifierProvider.notifier)
         .approvePlan(plan.id);
+    if (context.mounted) _rereadDirect(ref);
   }
+
+  /// A plan drawn from the by-id fallback is not refreshed by the list
+  /// re-read a change triggers, so it is re-read on its own. When the plan
+  /// came from the list this provider is not being watched and this is a
+  /// no-op.
+  void _rereadDirect(WidgetRef ref) =>
+      ref.invalidate(executionPlanByIdProvider(plan.id));
 
   Future<void> _approveStep(
     BuildContext context,
@@ -122,6 +172,7 @@ class _PlanBody extends ConsumerWidget {
     await ref
         .read(executionPlansNotifierProvider.notifier)
         .approveStep(plan.id, step.taskKey);
+    if (context.mounted) _rereadDirect(ref);
   }
 
   Future<void> _cancel(BuildContext context, WidgetRef ref) async {
@@ -133,6 +184,7 @@ class _PlanBody extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
     await ref.read(executionPlansNotifierProvider.notifier).cancel(plan.id);
+    if (context.mounted) _rereadDirect(ref);
   }
 
   static Future<bool> _confirm(

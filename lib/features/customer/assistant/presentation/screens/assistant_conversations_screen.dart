@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,7 +33,9 @@ class AssistantConversationsScreen extends ConsumerWidget {
         excludeSemantics: true,
         child: FloatingActionButton.extended(
           key: newChatKey,
-          onPressed: () => context.push(RouteNames.assistantNewConversation),
+          onPressed: () => unawaited(
+            _openThread(context, ref, RouteNames.assistantNewConversation),
+          ),
           backgroundColor: DesignTokens.primaryGreen,
           foregroundColor: DesignTokens.bgAppBody,
           icon: const Icon(Icons.add_comment_outlined),
@@ -71,7 +75,9 @@ class AssistantConversationsScreen extends ConsumerWidget {
                 'wardrobe. Minty suggests — you decide what goes in '
                 'your bag.',
             actionLabel: 'Start a conversation',
-            onAction: () => context.push(RouteNames.assistantNewConversation),
+            onAction: () => unawaited(
+              _openThread(context, ref, RouteNames.assistantNewConversation),
+            ),
           )
         : ListView.separated(
             key: listKey,
@@ -83,16 +89,49 @@ class AssistantConversationsScreen extends ConsumerWidget {
             ),
             itemCount: list.items.length,
             separatorBuilder: (_, _) => const SizedBox(height: DesignTokens.s8),
-            itemBuilder: (context, index) =>
-                _ConversationRow(summary: list.items[index]),
+            // The screen's context, not the row's: the row may be rebuilt
+            // away by the refetch, the screen is what must still be mounted.
+            itemBuilder: (_, index) {
+              final summary = list.items[index];
+              return _ConversationRow(
+                summary: summary,
+                onTap: () => unawaited(
+                  _openThread(
+                    context,
+                    ref,
+                    RouteNames.assistantConversation.replaceFirst(
+                      ':conversationId',
+                      summary.id,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
   );
+
+  /// Opens a thread and refetches the history once the shopper comes back.
+  ///
+  /// A chat changes the list it was opened from — a new chat adds a row, a
+  /// reply bumps a message count — and this route stays mounted underneath,
+  /// so without the refetch the list shows what it held before the visit.
+  /// The previous rows stay on screen while the refetch runs.
+  static Future<void> _openThread(
+    BuildContext context,
+    WidgetRef ref,
+    String location,
+  ) async {
+    await context.push<void>(location);
+    if (!context.mounted) return;
+    ref.invalidate(assistantConversationsProvider);
+  }
 }
 
 class _ConversationRow extends StatelessWidget {
-  const _ConversationRow({required this.summary});
+  const _ConversationRow({required this.summary, required this.onTap});
 
   final ConversationSummary summary;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -107,12 +146,7 @@ class _ConversationRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
         child: InkWell(
           borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-          onTap: () => context.push(
-            RouteNames.assistantConversation.replaceFirst(
-              ':conversationId',
-              summary.id,
-            ),
-          ),
+          onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(DesignTokens.s16),
             child: Row(

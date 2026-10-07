@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,8 +27,27 @@ class _FakeDataSource implements ExecutionPlansDataSource {
     return plans;
   }
 
+  /// Set to make [get] fail the way a dropped connection does.
+  Exception? getFailure;
+
+  /// Answers with the plan of that id, or a 404 as the backend does for a
+  /// plan that is not on this account.
   @override
-  Future<CommerceExecutionPlan> get(String planId) async => plans.first;
+  Future<CommerceExecutionPlan> get(String planId) async {
+    calls.add('get:$planId');
+    final failure = getFailure;
+    if (failure != null) throw failure;
+    for (final plan in plans) {
+      if (plan.id == planId) return plan;
+    }
+    final request = RequestOptions(
+      path: '/v1/commerce-execution-plans/$planId',
+    );
+    throw DioException(
+      requestOptions: request,
+      response: Response<dynamic>(requestOptions: request, statusCode: 404),
+    );
+  }
 
   @override
   Future<CommerceExecutionPlan> compile({
@@ -259,11 +279,23 @@ void main() {
       expect(find.textContaining('Waiting on you'), findsWidgets);
     });
 
-    testWidgets('failure: the read failure is quiet and says nothing loaded', (
+    testWidgets('failure: the read failure is shown, never as "no plans"', (
       tester,
     ) async {
-      await pumpList(tester, source: _FailingDataSource());
+      final ds = await pumpList(tester, source: _FailingDataSource());
 
+      expect(find.byKey(const ValueKey('plans-load-failed')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('plans-empty')),
+        findsNothing,
+        reason: 'a failed read says nothing about whether plans exist',
+      );
+      expect(find.text(ExecutionPlanCopy.emptyTitle), findsNothing);
+
+      // And it can be retried from where it is shown.
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+      expect(ds.calls.where((c) => c == 'list'), hasLength(2));
       expect(find.byKey(const ValueKey('plans-load-failed')), findsOneWidget);
     });
 
@@ -440,6 +472,68 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('plan-missing')), findsOneWidget);
+    });
+
+    Future<_FakeDataSource> pumpDetailOver(
+      WidgetTester tester,
+      _FakeDataSource ds,
+    ) async {
+      tester.view.physicalSize = const Size(320, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            executionPlansDataSourceProvider.overrideWithValue(ds),
+          ],
+          child: const MaterialApp(
+            home: ShoppingPlanDetailScreen(planId: 'plan-1'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return ds;
+    }
+
+    testWidgets('a failed list read falls back to reading the plan by id', (
+      tester,
+    ) async {
+      final ds = await pumpDetailOver(
+        tester,
+        _FailingDataSource()..plans = <CommerceExecutionPlan>[_plan()],
+      );
+
+      expect(ds.calls, contains('get:plan-1'));
+      expect(find.byKey(const ValueKey('plan-missing')), findsNothing);
+      expect(
+        find.text('A rain jacket and boots for a trek in November'),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('when neither read works it offers a retry, not "missing"', (
+      tester,
+    ) async {
+      final ds = await pumpDetailOver(
+        tester,
+        _FailingDataSource()..getFailure = Exception('offline'),
+      );
+
+      expect(find.byKey(const ValueKey('plan-unreadable')), findsOneWidget);
+      expect(find.byKey(const ValueKey('plan-missing')), findsNothing);
+
+      // The connection comes back: retrying reads the plan.
+      ds
+        ..getFailure = null
+        ..plans = <CommerceExecutionPlan>[_plan()];
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('plan-unreadable')), findsNothing);
+      expect(
+        find.text('A rain jacket and boots for a trek in November'),
+        findsWidgets,
+      );
     });
 
     testWidgets('320dp at 1.3x does not overflow', (tester) async {

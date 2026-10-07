@@ -28,12 +28,19 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// here to checkout.
 class AssistantSuggestionShelf extends ConsumerWidget {
   const AssistantSuggestionShelf({
-    required this.conversationId,
+    required this.threadKey,
     required this.turn,
     super.key,
   });
 
-  final String conversationId;
+  /// The `assistantThreadProvider` family key the hosting screen watches.
+  ///
+  /// Deliberately not the server's conversation id: a chat opened at
+  /// `/minty/new` is keyed `''` for its whole life, even after the first send
+  /// mints a real id. Keying the shelf on that id would read and write a
+  /// second, unwatched notifier — the add would land, but the receipt turn
+  /// and the "in bag" pill would never reach the screen.
+  final String threadKey;
   final CompanionTurn turn;
 
   static const Key shelfKey = Key('assistant-suggestion-shelf');
@@ -95,7 +102,7 @@ class AssistantSuggestionShelf extends ConsumerWidget {
               itemBuilder: (context, index) => loading
                   ? SmSkeleton.box(width: tileWidth, height: height)
                   : _Suggestion(
-                      conversationId: conversationId,
+                      threadKey: threadKey,
                       turn: turn,
                       product: products[index],
                     ),
@@ -109,12 +116,12 @@ class AssistantSuggestionShelf extends ConsumerWidget {
 
 class _Suggestion extends ConsumerWidget {
   const _Suggestion({
-    required this.conversationId,
+    required this.threadKey,
     required this.turn,
     required this.product,
   });
 
-  final String conversationId;
+  final String threadKey;
   final CompanionTurn turn;
   final MallProductVm product;
 
@@ -122,7 +129,7 @@ class _Suggestion extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final add = ref.watch(
       assistantThreadProvider(
-        conversationId,
+        threadKey,
       ).select((s) => s.adds[suggestionKey(turn.id, product.id)]),
     );
     final busy = add?.busy ?? false;
@@ -166,12 +173,12 @@ class _Suggestion extends ConsumerWidget {
   Future<void> _add(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final notifier = ref.read(
-      assistantThreadProvider(conversationId).notifier,
+      assistantThreadProvider(threadKey).notifier,
     );
     final ok = await notifier.addSuggestion(turn: turn, productId: product.id);
-    if (ok || messenger == null) return;
+    if (ok || messenger == null || !context.mounted) return;
     final failure = ref
-        .read(assistantThreadProvider(conversationId))
+        .read(assistantThreadProvider(threadKey))
         .adds[suggestionKey(turn.id, product.id)]
         ?.error;
     messenger.showSnackBar(

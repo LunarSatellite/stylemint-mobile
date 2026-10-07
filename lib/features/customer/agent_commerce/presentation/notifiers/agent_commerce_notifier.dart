@@ -26,7 +26,9 @@ class AgentCommerceState {
     this.activity = const <AgentActivityEntry>[],
     this.loading = false,
     this.loaded = false,
-    this.loadFailed = false,
+    this.mandatesFailed = false,
+    this.proposalsFailed = false,
+    this.activityFailed = false,
     this.revokingId,
     this.decidingProposalId,
     this.failure,
@@ -47,8 +49,16 @@ class AgentCommerceState {
   /// at all", so the screen does not flash an empty state.
   final bool loaded;
 
-  /// The last read did not come back.
-  final bool loadFailed;
+  /// Whether the last read of each list failed. Tracked per list because the
+  /// three are separate endpoints: one of them failing must not blank the
+  /// other two — least of all the mandates, where an empty list reads as
+  /// "no assistant can act on your behalf" moments after issuing one.
+  final bool mandatesFailed;
+  final bool proposalsFailed;
+  final bool activityFailed;
+
+  /// Any of the three lists did not come back on the last read.
+  bool get loadFailed => mandatesFailed || proposalsFailed || activityFailed;
 
   /// The mandate whose revoke call is in flight, if any.
   final String? revokingId;
@@ -90,7 +100,9 @@ class AgentCommerceState {
     List<AgentActivityEntry>? activity,
     bool? loading,
     bool? loaded,
-    bool? loadFailed,
+    bool? mandatesFailed,
+    bool? proposalsFailed,
+    bool? activityFailed,
     String? revokingId,
     bool clearRevoking = false,
     String? decidingProposalId,
@@ -105,7 +117,9 @@ class AgentCommerceState {
     activity: activity ?? this.activity,
     loading: loading ?? this.loading,
     loaded: loaded ?? this.loaded,
-    loadFailed: loadFailed ?? this.loadFailed,
+    mandatesFailed: mandatesFailed ?? this.mandatesFailed,
+    proposalsFailed: proposalsFailed ?? this.proposalsFailed,
+    activityFailed: activityFailed ?? this.activityFailed,
     revokingId: clearRevoking ? null : (revokingId ?? this.revokingId),
     decidingProposalId: clearDeciding
         ? null
@@ -137,27 +151,45 @@ class AgentCommerceNotifier extends StateNotifier<AgentCommerceState> {
 
   /// Re-reads all three lists. Failures here are quiet: the customer did not
   /// ask for this read, so a red box would be noise.
+  ///
+  /// The three reads run side by side but succeed or fail on their own. A
+  /// list that fails keeps whatever it last showed and is flagged, so only
+  /// its own section says it may be out of date.
   Future<void> refresh() async {
     if (!mounted) return;
-    state = state.copyWith(loading: true, loadFailed: false);
+    state = state.copyWith(loading: true);
+    // Started before any is awaited, so they still run concurrently.
+    final mandatesRead = _attempt(_ds.listMandates);
+    final proposalsRead = _attempt(_ds.listProposals);
+    final activityRead = _attempt(
+      () => _ds.listActivity(limit: kAgentActivityPageSize),
+    );
+    final mandates = await mandatesRead;
+    final proposals = await proposalsRead;
+    final activity = await activityRead;
+    if (!mounted) return;
+    state = state.copyWith(
+      // A null here means that read failed; copyWith then keeps the last
+      // good list rather than replacing it with nothing.
+      mandates: mandates,
+      proposals: proposals,
+      activity: activity,
+      loading: false,
+      loaded: true,
+      mandatesFailed: mandates == null,
+      proposalsFailed: proposals == null,
+      activityFailed: activity == null,
+    );
+  }
+
+  /// One read, with any failure folded into `null`.
+  static Future<T?> _attempt<T extends Object>(
+    Future<T> Function() read,
+  ) async {
     try {
-      final results = await Future.wait(<Future<Object>>[
-        _ds.listMandates(),
-        _ds.listProposals(),
-        _ds.listActivity(limit: kAgentActivityPageSize),
-      ]);
-      if (!mounted) return;
-      state = state.copyWith(
-        mandates: results[0] as List<AgentMandate>,
-        proposals: results[1] as List<AgentProposal>,
-        activity: results[2] as List<AgentActivityEntry>,
-        loading: false,
-        loaded: true,
-        loadFailed: false,
-      );
+      return await read();
     } on Object {
-      if (!mounted) return;
-      state = state.copyWith(loading: false, loaded: true, loadFailed: true);
+      return null;
     }
   }
 

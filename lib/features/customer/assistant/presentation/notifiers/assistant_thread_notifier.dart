@@ -45,6 +45,7 @@ class AssistantThreadState {
     this.loadingMore = false,
     this.sending = false,
     this.error,
+    this.loadError,
     this.adds = const <String, SuggestionAddState>{},
     this.lastCartItemCount,
   });
@@ -58,6 +59,14 @@ class AssistantThreadState {
   final bool loadingMore;
   final bool sending;
   final String? error;
+
+  /// Why the first page of an existing thread could not be fetched.
+  ///
+  /// Kept apart from [error] (which every copyWith clears, and which a failed
+  /// send also uses) because the screen has to keep showing "couldn't load"
+  /// with a retry until a load actually succeeds — otherwise a thread that
+  /// failed to load reads as an empty "Ask Minty anything" thread.
+  final String? loadError;
   final Map<String, SuggestionAddState> adds;
 
   /// The cart count the last successful add reported.
@@ -74,6 +83,8 @@ class AssistantThreadState {
     bool? loadingMore,
     bool? sending,
     String? error,
+    String? loadError,
+    bool clearLoadError = false,
     Map<String, SuggestionAddState>? adds,
     int? lastCartItemCount,
   }) => AssistantThreadState(
@@ -84,6 +95,7 @@ class AssistantThreadState {
     loadingMore: loadingMore ?? this.loadingMore,
     sending: sending ?? this.sending,
     error: error,
+    loadError: clearLoadError ? null : loadError ?? this.loadError,
     adds: adds ?? this.adds,
     lastCartItemCount: lastCartItemCount ?? this.lastCartItemCount,
   );
@@ -116,17 +128,23 @@ class AssistantThreadNotifier extends StateNotifier<AssistantThreadState> {
   Future<void> load() async {
     final id = state.conversationId;
     if (id == null || id.isEmpty) return;
-    state = state.copyWith(loading: true, nextCursor: state.nextCursor);
+    state = state.copyWith(
+      loading: true,
+      clearLoadError: true,
+      nextCursor: state.nextCursor,
+    );
     final result = await _repository.getConversation(id);
     if (!mounted) return;
     state = result.fold(
       (failure) => state.copyWith(
         loading: false,
         error: _message(failure),
+        loadError: _message(failure),
         nextCursor: state.nextCursor,
       ),
       (page) => state.copyWith(
         loading: false,
+        clearLoadError: true,
         turns: page.turns,
         nextCursor: page.nextCursor,
       ),
@@ -135,14 +153,19 @@ class AssistantThreadNotifier extends StateNotifier<AssistantThreadState> {
 
   /// Pulls the next cursor page. The API pages a thread oldest-first, so a
   /// further page is *later* messages and is appended at the end.
-  Future<void> loadMore() async {
+  ///
+  /// Returns true only when a page was appended. A failed fetch also sets
+  /// [AssistantThreadState.error] to say why; the turns already on screen
+  /// and the cursor are kept, so the control can simply be pressed again.
+  Future<bool> loadMore() async {
     final id = state.conversationId;
     final cursor = state.nextCursor;
-    if (id == null || id.isEmpty) return;
-    if (cursor == null || cursor.isEmpty || state.loadingMore) return;
+    if (id == null || id.isEmpty) return false;
+    if (cursor == null || cursor.isEmpty || state.loadingMore) return false;
     state = state.copyWith(loadingMore: true, nextCursor: cursor);
     final result = await _repository.getConversation(id, cursor: cursor);
-    if (!mounted) return;
+    if (!mounted) return false;
+    var ok = false;
     state = result.fold(
       (failure) => state.copyWith(
         loadingMore: false,
@@ -150,6 +173,7 @@ class AssistantThreadNotifier extends StateNotifier<AssistantThreadState> {
         nextCursor: cursor,
       ),
       (page) {
+        ok = true;
         final seen = state.turns.map((t) => t.id).toSet();
         return state.copyWith(
           loadingMore: false,
@@ -161,6 +185,7 @@ class AssistantThreadNotifier extends StateNotifier<AssistantThreadState> {
         );
       },
     );
+    return ok;
   }
 
   /// Sends [message] and appends both the customer's turn and the reply.

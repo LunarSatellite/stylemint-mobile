@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/missions/domain/entities/shopping_mission.dart';
 import 'package:stylemint_mobile_frontend/features/customer/missions/presentation/widgets/mission_budget_summary.dart';
@@ -190,6 +191,7 @@ class _MissionComposerSheetState extends ConsumerState<_MissionComposerSheet> {
   int _maxItems = 5;
   bool _busy = false;
   String? _error;
+  String? _budgetError;
 
   @override
   void dispose() {
@@ -257,14 +259,21 @@ class _MissionComposerSheetState extends ConsumerState<_MissionComposerSheet> {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp('[0-9.]')),
                 ],
+                onChanged: (_) {
+                  if (_budgetError != null) {
+                    setState(() => _budgetError = null);
+                  }
+                },
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 14,
                   color: DesignTokens.textWhite,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Budget (optional)',
                   prefixText: 'Rs ',
+                  errorText: _budgetError,
+                  errorMaxLines: 2,
                 ),
               ),
             ),
@@ -335,26 +344,61 @@ class _MissionComposerSheetState extends ConsumerState<_MissionComposerSheet> {
       setState(() => _error = 'Tell Minty what you are trying to get done.');
       return;
     }
+    // The budget is optional, but a typed one that does not read as a
+    // positive amount ("1.2.3", ".") must not be sent as "no budget" — the
+    // plan would then come back with no budget verdict and no explanation.
+    final budgetText = _budget.text.trim();
+    double? budget;
+    if (budgetText.isNotEmpty) {
+      budget = double.tryParse(budgetText);
+      if (budget == null || !budget.isFinite || budget <= 0) {
+        setState(
+          () => _budgetError =
+              'Enter an amount like 40000, or leave it empty for no budget.',
+        );
+        return;
+      }
+    }
     setState(() {
       _busy = true;
       _error = null;
+      _budgetError = null;
     });
     final result = await ref
         .read(missionsRepositoryProvider)
         .start(
           missionText: text,
           maxItems: _maxItems,
-          budgetAmount: double.tryParse(_budget.text.trim()),
+          budgetAmount: budget,
         );
     if (!mounted) return;
     result.fold(
       (failure) => setState(() {
         _busy = false;
-        _error = 'That mission could not be planned. Try again.';
+        _error = missionPlanFailure(failure);
       }),
       (mission) => Navigator.of(context).pop(mission),
     );
   }
+}
+
+/// Why a mission could not be planned, in the shopper's words.
+///
+/// A 4xx carries the server's own reason (RFC 7807 `detail`, else a
+/// meaningful `title`, else the per-field errors) and that is what the
+/// shopper needs to fix the request — retrying the same sentence would only
+/// be refused again. Transport failures get the same plain sentences the
+/// mission screen uses.
+String missionPlanFailure(NetworkExceptions failure) {
+  if (failure.validationCode != null) {
+    return NetworkExceptions.getMessage(failure);
+  }
+  if (failure.isNoInternet) return 'You appear to be offline.';
+  if (failure.isServerUnavailable) {
+    return 'Missions are unreachable right now. Try again.';
+  }
+  if (failure.isAuth) return 'Please sign in again.';
+  return 'That mission could not be planned. Try again.';
 }
 
 MallStatusTone missionStateTone(MissionState state) => switch (state) {

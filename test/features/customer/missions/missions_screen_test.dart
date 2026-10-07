@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/missions/presentation/screens/missions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/missions/presentation/widgets/mission_budget_summary.dart';
 import 'package:stylemint_mobile_frontend/features/customer/missions/shared/providers.dart';
@@ -101,6 +102,64 @@ void main() {
     expect(
       find.text('Tell Minty what you are trying to get done.'),
       findsOneWidget,
+    );
+  });
+
+  testWidgets('a budget that is not an amount is flagged, not dropped', (
+    tester,
+  ) async {
+    final repository = FakeMissionsRepository(
+      initial: missionFrom(missionJson()),
+    );
+
+    await _pump(tester, repository);
+    await tester.tap(find.byKey(MissionsScreen.startKey));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(MissionsScreen.textFieldKey),
+      'Kit out a new flat',
+    );
+    await tester.enterText(find.byKey(MissionsScreen.budgetFieldKey), '1.2.3');
+    await tester.tap(find.byKey(MissionsScreen.createKey));
+    await tester.pumpAndSettle();
+
+    expect(repository.startBudgets, isEmpty, reason: 'nothing was sent');
+    expect(
+      find.text('Enter an amount like 40000, or leave it empty for no budget.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets("the planner's own reason is shown when it refuses", (
+    tester,
+  ) async {
+    final repository = FakeMissionsRepository(
+      initial: missionFrom(missionJson()),
+    )
+      ..startFailure = const NetworkExceptions.validation(
+        code: 'mission.too_vague',
+        message: 'Name at least one thing you need for the flat.',
+      );
+
+    await _pump(tester, repository);
+    await tester.tap(find.byKey(MissionsScreen.startKey));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(MissionsScreen.textFieldKey),
+      'stuff',
+    );
+    await tester.enterText(find.byKey(MissionsScreen.budgetFieldKey), '40000');
+    await tester.tap(find.byKey(MissionsScreen.createKey));
+    await tester.pumpAndSettle();
+
+    expect(repository.startBudgets, [40000]);
+    expect(
+      find.text('Name at least one thing you need for the flat.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('That mission could not be planned. Try again.'),
+      findsNothing,
     );
   });
 

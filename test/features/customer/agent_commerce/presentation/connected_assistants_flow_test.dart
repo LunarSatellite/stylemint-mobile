@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -461,6 +463,32 @@ void main() {
       expect(find.text('sma_ 7f3K q9Zb T2'), findsNothing);
     });
 
+    testWidgets('going back while the credential is drawn asks first', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(const AgentMandateIssueSheet(clock: _clock)),
+      );
+      await tester.pumpAndSettle();
+      await fillAndIssue(tester);
+      expect(find.text('sma_ 7f3K q9Zb T2'), findsOne);
+
+      // What the system back gesture does: a pop the route may refuse.
+      unawaited(
+        Navigator.maybePop(tester.element(find.byType(AgentMandateIssueSheet))),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Close before handing it over?'), findsOne);
+
+      await tester.tap(find.text('Stay'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('sma_ 7f3K q9Zb T2'),
+        findsOne,
+        reason: 'staying keeps the credential on screen',
+      );
+    });
+
     testWidgets('the credential lands in no storage, no log and no route', (
       tester,
     ) async {
@@ -532,7 +560,7 @@ void main() {
   // ── Revocation ───────────────────────────────────────────────────────────
 
   group('revoking', () {
-    testWidgets('is one step from the mandate, and says what it stops', (
+    testWidgets('sits on the mandate, says what it stops, and asks once', (
       tester,
     ) async {
       when(dataSource.listMandates).thenAnswer((_) async => [_mandate()]);
@@ -547,8 +575,18 @@ void main() {
 
       await tapVisible(tester, button);
 
-      // One tap. No confirmation dialog stands between the customer and
-      // stopping somebody else's software.
+      // Revoking cannot be undone, so the tap alone does nothing yet.
+      verifyNever(
+        () => dataSource.revokeMandate(
+          mandateId: any(named: 'mandateId'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      );
+      expect(find.text('Revoke Marlowe’s mandate?'), findsOne);
+
+      await tester.tap(find.byKey(const ValueKey('agent-revoke-confirm')));
+      await tester.pumpAndSettle();
+
       verify(
         () => dataSource.revokeMandate(
           mandateId: 'm-1',
@@ -557,6 +595,33 @@ void main() {
       ).called(1);
       expect(
         find.byKey(const ValueKey('agent-revoked-confirmation')),
+        findsOne,
+      );
+    });
+
+    testWidgets('backing out of the dialog leaves the mandate alone', (
+      tester,
+    ) async {
+      when(dataSource.listMandates).thenAnswer((_) async => [_mandate()]);
+      useSurface(tester, const Size(390, 3000));
+      await tester.pumpWidget(screen());
+      await tester.pumpAndSettle();
+
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('agent-revoke-button-m-1')),
+      );
+      await tester.tap(find.text('Keep it'));
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => dataSource.revokeMandate(
+          mandateId: any(named: 'mandateId'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      );
+      expect(
+        find.byKey(const ValueKey('agent-revoke-button-m-1')),
         findsOne,
       );
     });
@@ -777,6 +842,88 @@ void main() {
       await tester.pumpWidget(screen());
       await tester.pumpAndSettle();
       expect(find.text('future.verb'), findsOne);
+    });
+  });
+
+  // ── One list failing does not blank the others ───────────────────────────
+
+  group('loading the three lists', () {
+    testWidgets('a failed basket read keeps the mandates on screen', (
+      tester,
+    ) async {
+      when(dataSource.listMandates).thenAnswer((_) async => [_mandate()]);
+      when(dataSource.listProposals).thenThrow(Exception('offline'));
+      when(
+        () => dataSource.listActivity(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => [_activity()]);
+      useSurface(tester, const Size(390, 3000));
+      await tester.pumpWidget(screen());
+      await tester.pumpAndSettle();
+
+      // The mandate just issued is still there, and nobody is told that no
+      // assistant can act for them.
+      expect(find.byKey(const ValueKey('agent-mandate-card-m-1')), findsOne);
+      expect(find.byKey(const ValueKey('agent-no-mandates')), findsNothing);
+      expect(find.byKey(const ValueKey('agent-activity-a-1')), findsOne);
+      // Only the failed section carries a note.
+      expect(
+        find.byKey(const ValueKey('agent-load-failure-proposals')),
+        findsOne,
+      );
+      expect(
+        find.byKey(const ValueKey('agent-load-failure-mandates')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('agent-load-failure-activity')),
+        findsNothing,
+      );
+      expect(
+        find.text('No assistant has a basket waiting on you.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a failed mandate read is not shown as "no mandates"', (
+      tester,
+    ) async {
+      when(dataSource.listMandates).thenThrow(Exception('offline'));
+      useSurface(tester, const Size(390, 3000));
+      await tester.pumpWidget(screen());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('agent-load-failure-mandates')),
+        findsOne,
+      );
+      expect(find.byKey(const ValueKey('agent-no-mandates')), findsNothing);
+      // The lists that did load still say what they hold.
+      expect(find.byKey(const ValueKey('agent-no-activity')), findsOne);
+      expect(
+        find.text('No assistant has a basket waiting on you.'),
+        findsOne,
+      );
+    });
+
+    testWidgets('a failed re-read keeps the last good list', (tester) async {
+      when(dataSource.listMandates).thenAnswer((_) async => [_mandate()]);
+      useSurface(tester, const Size(390, 3000));
+      await tester.pumpWidget(screen());
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('agent-mandate-card-m-1')), findsOne);
+
+      when(dataSource.listMandates).thenThrow(Exception('offline'));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ConnectedAssistantsScreen)),
+      );
+      await container.read(agentCommerceNotifierProvider.notifier).refresh();
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('agent-mandate-card-m-1')), findsOne);
+      expect(
+        find.byKey(const ValueKey('agent-load-failure-mandates')),
+        findsOne,
+      );
     });
   });
 

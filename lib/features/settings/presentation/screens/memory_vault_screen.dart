@@ -370,7 +370,11 @@ class _MemoryTile extends ConsumerWidget {
                   await notifier.correct(memory.id, corrected);
                 }
               case _MemoryAction.forget:
-                await notifier.forget(memory.id);
+                // Forgetting is permanent and sits one slip away from
+                // "Correct" in the same menu, so it asks first — in the same
+                // words and colours as "Forget everything".
+                final confirmed = await _confirmForget(context);
+                if (confirmed) await notifier.forget(memory.id);
             }
           },
           itemBuilder: (_) => const [
@@ -380,6 +384,44 @@ class _MemoryTile extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Resolves to true only on an explicit "Forget"; dismissing the dialog
+  /// keeps the memory.
+  Future<bool> _confirmForget(BuildContext context) async {
+    final answer = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: DesignTokens.bgAppBody,
+        title: const Text(
+          'Forget this memory?',
+          style: TextStyle(color: DesignTokens.textWhite),
+        ),
+        // A memory can run to 2,000 characters, so the quote scrolls.
+        content: SingleChildScrollView(
+          child: Text(
+            '“${memory.content}”\n\nYour companion will no longer remember '
+            'this. This cannot be undone.',
+            style: const TextStyle(color: DesignTokens.textLight),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            key: const ValueKey('memory-forget-confirm'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(
+              foregroundColor: DesignTokens.colorError,
+            ),
+            child: const Text('Forget'),
+          ),
+        ],
+      ),
+    );
+    return answer ?? false;
   }
 }
 

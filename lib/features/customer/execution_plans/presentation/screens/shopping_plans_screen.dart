@@ -117,7 +117,19 @@ class _ShoppingPlansScreenState extends ConsumerState<ShoppingPlansScreen> {
                 onDismiss: notifier.dismissFailure,
               ),
             ],
-            if (state.loadFailed) ...[
+            // A failed read with nothing cached is an error with a retry —
+            // never also "No plans yet", which would be a claim about the
+            // account that the failed read cannot support. With plans
+            // already on screen it stays a quiet note that they may be stale.
+            if (state.loadFailed && state.plans.isEmpty) ...[
+              const SizedBox(height: DesignTokens.s24),
+              MallErrorState(
+                key: const ValueKey('plans-load-failed'),
+                title: "Couldn't read your plans",
+                body: ExecutionPlanCopy.loadFailed,
+                onRetry: () => unawaited(notifier.refresh()),
+              ),
+            ] else if (state.loadFailed) ...[
               const SizedBox(height: DesignTokens.s16),
               const Text(
                 ExecutionPlanCopy.loadFailed,
@@ -125,7 +137,7 @@ class _ShoppingPlansScreenState extends ConsumerState<ShoppingPlansScreen> {
                 style: DesignTokens.smallDescription,
               ),
             ],
-            if (state.loaded && state.plans.isEmpty) ...[
+            if (state.loaded && !state.loadFailed && state.plans.isEmpty) ...[
               const SizedBox(height: DesignTokens.s24),
               const MallEmptyState(
                 key: ValueKey('plans-empty'),

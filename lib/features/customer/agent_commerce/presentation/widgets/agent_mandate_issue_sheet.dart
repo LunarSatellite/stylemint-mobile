@@ -29,6 +29,13 @@ Future<bool> showAgentMandateIssueSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    // A swipe or a stray tap on the scrim would close the sheet without a
+    // word — and once the credential is on screen, closing loses it for
+    // good. The form step has its own Cancel button and the system back
+    // gesture still works there; on the credential step the sheet asks
+    // first (see the PopScope in the sheet's build).
+    isDismissible: false,
+    enableDrag: false,
     backgroundColor: DesignTokens.bgAppBody,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -163,28 +170,76 @@ class _AgentMandateIssueSheetState
   @override
   Widget build(BuildContext context) {
     final credential = _issuedCredential;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.92,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16,
-              DesignTokens.s12,
-              DesignTokens.s16,
-              DesignTokens.s24,
+    return PopScope<Object?>(
+      // While the credential is drawn, system back asks before it closes.
+      canPop: credential == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        unawaited(_confirmCloseWithCredential());
+      },
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SafeArea(
+          top: false,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.92,
             ),
-            child: credential == null
-                ? _form(context)
-                : _issued(context, credential),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s12,
+                DesignTokens.s16,
+                DesignTokens.s24,
+              ),
+              child: credential == null
+                  ? _form(context)
+                  : _issued(context, credential),
+            ),
           ),
         ),
       ),
     );
+  }
+
+  /// Back was pressed while the credential is still on screen.
+  Future<void> _confirmCloseWithCredential() async {
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: DesignTokens.bgAppBody,
+        title: const Text(
+          'Close before handing it over?',
+          style: DesignTokens.sectionInnerTitle,
+        ),
+        content: const Text(
+          'Once this sheet closes the credential is gone for good — StyleMint '
+          'keeps only a scrambled version. If the assistant does not have it '
+          'yet, send it first. The mandate itself stays in place either way.',
+          style: DesignTokens.smallDescription,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Stay'),
+          ),
+          TextButton(
+            key: const ValueKey('agent-credential-leave-confirm'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: DesignTokens.colorError,
+            ),
+            child: const Text('Close anyway'),
+          ),
+        ],
+      ),
+    );
+    if (leave != true || !mounted) return;
+    // Same order as the done button: drop it, then close.
+    setState(() => _issuedCredential = null);
+    Navigator.of(context).pop(true);
   }
 
   // ── Step 1: every limit, visible and settable ────────────────────────────

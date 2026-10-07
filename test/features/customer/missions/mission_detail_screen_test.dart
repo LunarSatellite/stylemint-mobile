@@ -226,6 +226,8 @@ void main() {
       await _reveal(tester, find.byKey(MissionDetailScreen.completeKey));
       await tester.tap(find.byKey(MissionDetailScreen.completeKey));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(MissionDetailScreen.confirmActionKey));
+      await tester.pumpAndSettle();
 
       expect(
         find.text(
@@ -250,10 +252,40 @@ void main() {
       await _reveal(tester, find.byKey(MissionDetailScreen.abandonKey));
       await tester.tap(find.byKey(MissionDetailScreen.abandonKey));
       await tester.pumpAndSettle();
+      expect(find.text('Abandon this mission?'), findsOneWidget);
+      await tester.tap(find.byKey(MissionDetailScreen.confirmActionKey));
+      await tester.pumpAndSettle();
 
       expect(repository.replans, 1);
       expect(repository.abandons, 1);
       expect(repository.completes, 0);
+    });
+
+    testWidgets('complete and abandon do nothing until confirmed', (
+      tester,
+    ) async {
+      final repository = FakeMissionsRepository(
+        initial: missionFrom(missionJson()),
+      );
+
+      await _pump(tester, repository);
+
+      await _reveal(tester, find.byKey(MissionDetailScreen.completeKey));
+      await tester.tap(find.byKey(MissionDetailScreen.completeKey));
+      await tester.pumpAndSettle();
+      expect(find.text('Complete this mission?'), findsOneWidget);
+      await tester.tap(find.text('Not now'));
+      await tester.pumpAndSettle();
+
+      await _reveal(tester, find.byKey(MissionDetailScreen.abandonKey));
+      await tester.tap(find.byKey(MissionDetailScreen.abandonKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Not now'));
+      await tester.pumpAndSettle();
+
+      expect(repository.completes, 0);
+      expect(repository.abandons, 0);
+      expect(find.byKey(MissionDetailScreen.completeKey), findsOneWidget);
     });
   });
 

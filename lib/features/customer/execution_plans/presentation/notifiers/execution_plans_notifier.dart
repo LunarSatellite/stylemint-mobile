@@ -126,9 +126,13 @@ class ExecutionPlansNotifier extends StateNotifier<ExecutionPlansState> {
 
   /// Re-reads the list. Failures here are quiet: the shopper did not ask for
   /// this read.
+  ///
+  /// [ExecutionPlansState.loadFailed] is left as it was until the read
+  /// settles, so a retry after a failure does not flash "No plans yet" while
+  /// it is still in flight.
   Future<void> refresh() async {
     if (!mounted) return;
-    state = state.copyWith(loading: true, loadFailed: false);
+    state = state.copyWith(loading: true);
     try {
       final plans = await _ds.list();
       if (!mounted) return;

@@ -32,6 +32,7 @@ class MissionDetailScreen extends ConsumerStatefulWidget {
   static const Key replanKey = Key('mission-replan');
   static const Key completeKey = Key('mission-complete');
   static const Key abandonKey = Key('mission-abandon');
+  static const Key confirmActionKey = Key('mission-confirm-action');
   static const Key closedNoticeKey = Key('mission-closed-notice');
 
   static Key ownedKey(String itemId) => Key('mission-item-owned-$itemId');
@@ -243,7 +244,21 @@ class _MissionActions extends ConsumerWidget {
           excludeSemantics: true,
           child: FilledButton.icon(
             key: MissionDetailScreen.completeKey,
-            onPressed: busy ? null : () => unawaited(notifier.complete()),
+            onPressed: busy
+                ? null
+                : () => unawaited(
+                    _confirmThen(
+                      context,
+                      title: 'Complete this mission?',
+                      body:
+                          'Completing closes the checklist: you will not be '
+                          'able to mark items or re-plan it afterwards. This '
+                          'cannot be undone.',
+                      action: 'Complete',
+                      destructive: false,
+                      run: notifier.complete,
+                    ),
+                  ),
             icon: const Icon(Icons.check_rounded, size: 16),
             label: const Text('Complete'),
             style: FilledButton.styleFrom(
@@ -259,7 +274,21 @@ class _MissionActions extends ConsumerWidget {
           excludeSemantics: true,
           child: TextButton.icon(
             key: MissionDetailScreen.abandonKey,
-            onPressed: busy ? null : () => unawaited(notifier.abandon()),
+            onPressed: busy
+                ? null
+                : () => unawaited(
+                    _confirmThen(
+                      context,
+                      title: 'Abandon this mission?',
+                      body:
+                          'Abandoning closes the checklist for good: you will '
+                          'not be able to mark items or re-plan it afterwards. '
+                          'Anything you have already bought is unaffected.',
+                      action: 'Abandon',
+                      destructive: true,
+                      run: notifier.abandon,
+                    ),
+                  ),
             icon: const Icon(Icons.close_rounded, size: 16),
             label: const Text('Abandon'),
             style: TextButton.styleFrom(
@@ -269,6 +298,47 @@ class _MissionActions extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// Complete and abandon are terminal — the server refuses every change to
+  /// a closed mission — so each asks once before it runs. Re-plan is not
+  /// gated: it can simply be run again.
+  static Future<void> _confirmThen(
+    BuildContext context, {
+    required String title,
+    required String body,
+    required String action,
+    required bool destructive,
+    required Future<bool> Function() run,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: DesignTokens.bgAppBody,
+        title: Text(title, style: DesignTokens.sectionInnerTitle),
+        content: SingleChildScrollView(
+          child: Text(body, style: DesignTokens.smallDescription),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Not now'),
+          ),
+          TextButton(
+            key: MissionDetailScreen.confirmActionKey,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: destructive
+                ? TextButton.styleFrom(
+                    foregroundColor: DesignTokens.colorError,
+                  )
+                : null,
+            child: Text(action),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await run();
   }
 }
 

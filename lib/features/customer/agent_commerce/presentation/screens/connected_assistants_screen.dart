@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/customer/agent_commerce/domain/entities/agent_mandate.dart';
@@ -88,20 +90,25 @@ class ConnectedAssistantsScreen extends ConsumerWidget {
                 onDismiss: notifier.dismissRevokeConfirmation,
               ),
             ],
-            if (state.loadFailed) ...[
-              const SizedBox(height: DesignTokens.s16),
-              const _QuietLoadFailure(),
-            ],
+            // Each list below fails on its own and says so in its own section;
+            // the other two keep showing what they loaded.
 
             // ── 1. Waiting on the customer ──
             const SizedBox(height: DesignTokens.s24),
             _SectionHeader(
               title: 'Waiting on you',
-              subtitle: awaiting.isEmpty
+              subtitle: state.proposalsFailed && awaiting.isEmpty
+                  // Not "no basket": we do not know that.
+                  ? null
+                  : awaiting.isEmpty
                   ? 'No assistant has a basket waiting on you.'
                   : 'An assistant has prepared these. Nothing is bought until '
                         'you open one and confirm it.',
             ),
+            if (state.proposalsFailed) ...[
+              const SizedBox(height: DesignTokens.s12),
+              const _QuietLoadFailure(section: 'proposals'),
+            ],
             for (final proposal in awaiting) ...[
               const SizedBox(height: DesignTokens.s12),
               _ProposalCard(proposal: proposal, nowUtc: now, clock: clock),
@@ -113,7 +120,13 @@ class ConnectedAssistantsScreen extends ConsumerWidget {
               title: 'Assistants with a mandate',
               subtitle: AgentCommerceCopy.revocationPromise,
             ),
-            if (state.loaded && active.isEmpty) ...[
+            if (state.mandatesFailed) ...[
+              const SizedBox(height: DesignTokens.s12),
+              const _QuietLoadFailure(section: 'mandates'),
+            ],
+            // Only claimed when the mandates actually loaded: a failed read
+            // is not evidence that nobody holds authority.
+            if (state.loaded && !state.mandatesFailed && active.isEmpty) ...[
               const SizedBox(height: DesignTokens.s12),
               const MallEmptyState(
                 key: ValueKey('agent-no-mandates'),
@@ -130,7 +143,13 @@ class ConnectedAssistantsScreen extends ConsumerWidget {
                 mandate: mandate,
                 nowUtc: now,
                 revoking: state.revokingId == mandate.id,
-                onRevoke: () => notifier.revoke(mandate),
+                onRevoke: () => unawaited(
+                  _confirmRevoke(
+                    context,
+                    mandate,
+                    () => notifier.revoke(mandate),
+                  ),
+                ),
               ),
             ],
 
@@ -158,7 +177,13 @@ class ConnectedAssistantsScreen extends ConsumerWidget {
                   'refusal is the proof your limits are doing something, so '
                   'none are hidden.',
             ),
-            if (state.loaded && state.activity.isEmpty) ...[
+            if (state.activityFailed) ...[
+              const SizedBox(height: DesignTokens.s12),
+              const _QuietLoadFailure(section: 'activity'),
+            ],
+            if (state.loaded &&
+                !state.activityFailed &&
+                state.activity.isEmpty) ...[
               const SizedBox(height: DesignTokens.s12),
               const MallEmptyState(
                 key: ValueKey('agent-no-activity'),
@@ -182,6 +207,52 @@ class ConnectedAssistantsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Revoking cannot be undone — the assistant would need a brand-new
+  /// mandate and credential — so a stray tap on the card asks once before
+  /// it cuts the assistant off. Still one dialog from the mandate itself,
+  /// never buried in a menu.
+  Future<void> _confirmRevoke(
+    BuildContext context,
+    AgentMandate mandate,
+    Future<bool> Function() revoke,
+  ) async {
+    final name = mandate.agentName.isEmpty
+        ? 'this assistant'
+        : mandate.agentName;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: DesignTokens.bgAppBody,
+        title: Text(
+          'Revoke $name’s mandate?',
+          style: DesignTokens.sectionInnerTitle,
+        ),
+        content: Text(
+          '$name will stop being able to act on your behalf. '
+          '${AgentCommerceCopy.revocationPromise} To let it shop for you '
+          'again you would issue a new mandate.',
+          style: DesignTokens.smallDescription,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep it'),
+          ),
+          TextButton(
+            key: const ValueKey('agent-revoke-confirm'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: DesignTokens.colorError,
+            ),
+            child: const Text('Revoke'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await revoke();
   }
 }
 
@@ -619,12 +690,16 @@ class _RevokedConfirmation extends StatelessWidget {
   );
 }
 
+/// Sits inside the one section whose list did not come back.
 class _QuietLoadFailure extends StatelessWidget {
-  const _QuietLoadFailure();
+  const _QuietLoadFailure({required this.section});
+
+  /// `mandates`, `proposals` or `activity` — keys the note to its section.
+  final String section;
 
   @override
   Widget build(BuildContext context) => Container(
-    key: const ValueKey('agent-load-failure'),
+    key: ValueKey('agent-load-failure-$section'),
     width: double.infinity,
     padding: const EdgeInsets.all(DesignTokens.s12),
     decoration: BoxDecoration(
