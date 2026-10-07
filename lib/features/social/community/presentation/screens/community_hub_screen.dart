@@ -131,19 +131,10 @@ class CommunityHubScreen extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: _ShortcutRow(shortcuts: _shortcuts),
                 ),
-                // A Facebook-style band separates the "chrome" from the feed.
-                const SliverToBoxAdapter(
-                  child: ColoredBox(
-                    color: DesignTokens.bgAppBody,
-                    child: SizedBox(
-                      height: DesignTokens.s8,
-                      width: double.infinity,
-                    ),
-                  ),
-                ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: DesignTokens.s4),
-                ),
+                // A divider and a small heading separate the "chrome" from the
+                // feed, whose posts follow as separate cards.
+                const SliverToBoxAdapter(child: _ThinDivider()),
+                const SliverToBoxAdapter(child: _FeedHeading()),
                 FeedPostsSliver(
                   emptyBuilder: (_) => const _NewUserEmptyState(),
                 ),
@@ -168,6 +159,24 @@ class _ThinDivider extends StatelessWidget {
       height: 1,
       thickness: 0.5,
       color: DesignTokens.borderDefault,
+    );
+  }
+}
+
+/// "LATEST POSTS" eyebrow above the feed cards.
+class _FeedHeading extends StatelessWidget {
+  const _FeedHeading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s4,
+      ),
+      child: Text('Latest posts'.toUpperCase(), style: DesignTokens.eyebrow),
     );
   }
 }

@@ -213,6 +213,7 @@ void main() {
     );
     expect(find.text('Asha Gurung'), findsOneWidget);
     expect(find.text('View all 3 comments'), findsOneWidget);
+    expect(find.byKey(const Key('feed-post-card-post-1')), findsOneWidget);
     expect(find.byKey(const Key('community-hub-empty')), findsNothing);
 
     await tester.scrollUntilVisible(
@@ -222,6 +223,8 @@ void main() {
     );
     expect(find.text('Bikash Thapa'), findsOneWidget);
     expect(find.byType(FeedPostCard), findsWidgets);
+    // Each post is its own card.
+    expect(find.byKey(const Key('feed-post-card-post-2')), findsOneWidget);
   });
 
   testWidgets('pull-to-refresh reloads both the feed and the stories', (

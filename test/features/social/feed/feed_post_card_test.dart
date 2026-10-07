@@ -50,12 +50,18 @@ Future<void> _doubleTap(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
-  testWidgets('reads like an Instagram post', (tester) async {
+  testWidgets('reads like an Instagram post, inside its own card', (
+    tester,
+  ) async {
     final calls = _Calls();
     await tester.pumpWidget(_card(samplePost(), calls));
 
+    expect(find.byKey(const Key('feed-post-card-post-1')), findsOneWidget);
     expect(find.text('Asha Gurung'), findsOneWidget);
-    expect(find.text('  •  2h'), findsOneWidget);
+    expect(find.text('2h'), findsOneWidget);
+    expect(find.text('Photo'), findsOneWidget);
+    // Two hours old is not "New".
+    expect(find.byKey(const Key('feed-post-new')), findsNothing);
     expect(find.text('12 likes'), findsOneWidget);
     expect(find.text('View all 3 comments'), findsOneWidget);
     // The caption leads with the author's name.
@@ -142,7 +148,8 @@ void main() {
       _card(samplePost(taggedProducts: const [sampleProduct]), calls),
     );
 
-    expect(find.text('Shop'), findsOneWidget);
+    expect(find.text('Shop this post'), findsOneWidget);
+    expect(find.text('Shop the look'), findsOneWidget);
     expect(find.text('Denim Jacket'), findsOneWidget);
 
     await _tap(tester, find.byKey(const Key('feed-post-product-prod-42')));
@@ -185,10 +192,135 @@ void main() {
 
     expect(find.byType(AspectRatio), findsNothing);
     expect(find.text('Big sale today'), findsOneWidget);
+    expect(find.byKey(const Key('feed-post-text-panel')), findsOneWidget);
+    // A plain status has no post-kind chip.
+    expect(find.byKey(const Key('feed-post-kind')), findsNothing);
 
     await _doubleTap(tester, find.text('Big sale today'));
     expect(calls.likes, 1);
     await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('two posts are two separate cards with a gap between', (
+    tester,
+  ) async {
+    final calls = _Calls();
+    FeedPostCard card(FeedPost post, int index) => FeedPostCard(
+      post: post,
+      index: index,
+      onLikeToggle: () => calls.likes++,
+      onComment: () => calls.comments++,
+      onShare: () => calls.shares++,
+      onTaggedProductTap: calls.products.add,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                card(samplePost(), 0),
+                card(
+                  samplePost(
+                    id: 'post-2',
+                    userName: 'Bikash Thapa',
+                    images: const [],
+                    content: 'Anyone at the pop-up?',
+                  ),
+                  1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final first = find.byKey(const Key('feed-post-card-post-1'));
+    final second = find.byKey(const Key('feed-post-card-post-2'));
+    expect(first, findsOneWidget);
+    expect(second, findsOneWidget);
+    expect(
+      find.descendant(of: first, matching: find.text('Asha Gurung')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: second, matching: find.text('Bikash Thapa')),
+      findsOneWidget,
+    );
+    // The cards never touch: page background shows between them.
+    expect(
+      tester.getRect(first).bottom,
+      lessThan(tester.getRect(second).top),
+    );
+  });
+
+  testWidgets('the comment count in the summary opens the comments', (
+    tester,
+  ) async {
+    final calls = _Calls();
+    await tester.pumpWidget(_card(samplePost(), calls));
+
+    expect(find.text('3 comments'), findsOneWidget);
+    await _tap(tester, find.byKey(const Key('feed-post-comment-count')));
+
+    expect(calls.comments, 1);
+  });
+
+  testWidgets('a video post is labelled Video', (tester) async {
+    await tester.pumpWidget(
+      _card(
+        samplePost(images: const ['https://cdn.test/social-media/a.mp4']),
+        _Calls(),
+      ),
+    );
+
+    expect(find.text('Video'), findsOneWidget);
+  });
+
+  testWidgets('a post under an hour old wears a New badge', (tester) async {
+    final fresh = samplePost().copyWith(
+      createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+    );
+    await tester.pumpWidget(_card(fresh, _Calls()));
+
+    expect(find.byKey(const Key('feed-post-new')), findsOneWidget);
+    expect(find.text('5m'), findsOneWidget);
+  });
+
+  testWidgets('with reduced motion the double-tap heart still shows', (
+    tester,
+  ) async {
+    final calls = _Calls();
+    await tester.pumpWidget(
+      MaterialApp(
+        // MaterialApp builds its MediaQuery from the view, so reduced motion
+        // has to be switched on beneath it.
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: FeedPostCard(
+              post: samplePost(),
+              index: 0,
+              onLikeToggle: () => calls.likes++,
+              onComment: () => calls.comments++,
+              onShare: () => calls.shares++,
+              onTaggedProductTap: calls.products.add,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await _doubleTap(tester, find.byType(AspectRatio));
+
+    expect(calls.likes, 1);
+    expect(find.byKey(const Key('feed-post-heart-pop')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byKey(const Key('feed-post-heart-pop')), findsNothing);
   });
 
   group('formatters', () {

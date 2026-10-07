@@ -55,7 +55,7 @@ class FeedPagingListener extends ConsumerWidget {
 
 /// The posts themselves, as one sliver: a loader while the first page loads,
 /// [emptyBuilder] when there is nothing to show, the error view with a retry,
-/// or the infinite list of [FeedPostCard]s.
+/// or the infinite list of [FeedPostCard]s, one card per post.
 class FeedPostsSliver extends ConsumerWidget {
   const FeedPostsSliver({this.emptyBuilder, super.key});
 
@@ -81,16 +81,21 @@ class FeedPostsSliver extends ConsumerWidget {
                 ),
           );
         }
-        return SliverList.builder(
-          itemCount: posts.length + (hasMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index >= posts.length) return const _NextPageLoader();
-            return FeedPostTile(
-              key: ValueKey<String>(posts[index].id),
-              post: posts[index],
-              index: index,
-            );
-          },
+        // Each post is its own card with its own margins; this only gives the
+        // first one room to breathe below whatever sits above the feed.
+        return SliverPadding(
+          padding: const EdgeInsets.only(top: DesignTokens.s8),
+          sliver: SliverList.builder(
+            itemCount: posts.length + (hasMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index >= posts.length) return const _NextPageLoader();
+              return FeedPostTile(
+                key: ValueKey<String>(posts[index].id),
+                post: posts[index],
+                index: index,
+              );
+            },
+          ),
         );
       },
       loadFailure: (_) => SliverFillRemaining(
