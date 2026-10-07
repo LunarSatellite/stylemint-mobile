@@ -152,10 +152,9 @@ void main() {
     expect(find.text('reel reel-human'), findsOneWidget);
   });
 
-  testWidgets('the home reels rail plays in the window, not the pager', (
+  testWidgets('the home reels rail opens the full-screen pager', (
     tester,
   ) async {
-    addTearDown(ReelWindow.debugResetOpenState);
     storefront.creatorReels[CreatorReelSort.latest] = right(page([aiReel]));
     await pump(tester);
 
@@ -165,10 +164,11 @@ void main() {
     await tester.tap(card, warnIfMissed: false);
     await settleStorefront(tester);
 
-    expect(find.byType(ReelWindow), findsOneWidget);
-    // The disclosure follows the reel into the window's chrome.
-    expect(find.byKey(ReelWindow.aiLabelKey), findsOneWidget);
-    expect(find.text('reel reel-ai'), findsNothing);
+    // Reversed on 2026-10-07: a tapped reel fills the screen. The AI
+    // disclosure the window drew in its chrome now comes from the feed page
+    // that renders the reel, so there is nothing of the window's to assert.
+    expect(find.text('reel reel-ai'), findsOneWidget);
+    expect(find.byType(ReelWindow), findsNothing);
   });
 
   testWidgets('shop groups by brand and sorts most loved', (tester) async {

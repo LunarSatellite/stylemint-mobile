@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_view_models.dart';
@@ -38,19 +39,40 @@ final reelWindowReelProvider = FutureProvider.autoDispose.family<Reel?, String>(
   },
 );
 
-/// Opens [reel] in a window over whatever screen is showing (owner decision,
-/// 2026-09-16: "it's like a play button tile — users will click it and we
-/// will play reels as a window").
-Future<void> openMallReelWindow(BuildContext context, MallReelRef reel) =>
-    ReelWindow.open(
-      context,
-      reelId: reel.reelId,
-      hook: reel.hook,
-      isAiGenerated: reel.isAiGenerated,
-    );
+/// Opens [reel] full screen, in the same pager the Home feed uses.
+///
+/// This used to raise [ReelWindow] — a small player layered over the screen
+/// that opened it (owner decision, 2026-09-16: "it's like a play button tile
+/// — users will click it and we will play reels as a window"). Owner decision
+/// reversed, 2026-10-07: a tapped reel should fill the screen.
+///
+/// Full screen is also what the rest of the app already did. A share link,
+/// a search result, the Companion's shelf and the in-store product reels
+/// section all push `/reels/:reelId`; only the Mall tiles opened a window, so
+/// the same reel behaved differently depending on which surface you found it
+/// on. One behaviour now.
+///
+/// ReelDetailScreen is the destination rather than a new full-screen
+/// variant of the window: it already plays the landed reel first, then its
+/// related reels, then the general feed, so a viewer who taps one reel on a
+/// product page can keep scrolling instead of being returned to the product.
+///
+/// The hook and AI-generated flag the window drew in its own chrome are not
+/// passed on. The feed page renders both from the reel it loads, so repeating
+/// them here would be a second source of truth for the same two facts.
+Future<void> openMallReelWindow(BuildContext context, MallReelRef reel) async =>
+    context.push(MallRoutes.reel(reel.reelId));
 
-/// One reel, played in a window layered over the screen that opened it —
-/// never a full-screen push, never inline in the tile.
+/// One reel, played in a window layered over the screen that opened it.
+///
+/// NO LONGER REACHED. [openMallReelWindow] pushed this until 2026-10-07 and
+/// now navigates to ReelDetailScreen instead; nothing else calls
+/// [ReelWindow.open]. Kept rather than deleted because the decision it
+/// implements has been reversed once already, and because what it solves is
+/// not obvious from the outside: the player rectangle is untouchable under
+/// YouTube embedded-player terms, so every control lives in chrome above and
+/// below it. A future windowed player must honour that again. Delete it if
+/// the full-screen pager is settled.
 ///
 /// **The player rectangle is untouchable.** YouTube's embedded player terms
 /// forbid drawing anything in front of it, so the close control, the

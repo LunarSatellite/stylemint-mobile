@@ -127,8 +127,19 @@ Future<_Taps> _pumpTile(
                 builder: (context) => MallProductTile(
                   product: _product(reel),
                   onTap: () => taps.product = 'p-reel',
-                  onReelTap: (ref) =>
-                      unawaited(openMallReelWindow(context, ref)),
+                  // ReelWindow.open directly, not openMallReelWindow: that
+                  // helper pushes the full-screen reel screen as of
+                  // 2026-10-07, so going through it would test navigation
+                  // rather than this widget. The window is no longer reached
+                  // from the app; these tests keep it honest while it exists.
+                  onReelTap: (ref) => unawaited(
+                    ReelWindow.open(
+                      context,
+                      reelId: ref.reelId,
+                      hook: ref.hook,
+                      isAiGenerated: ref.isAiGenerated,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -234,7 +245,12 @@ void main() {
       // The tile is still tappable under the window; a second open is
       // refused rather than stacked.
       final context = tester.element(find.byType(MallReelTile));
-      await openMallReelWindow(context, _reelRef);
+      await ReelWindow.open(
+        context,
+        reelId: _reelRef.reelId,
+        hook: _reelRef.hook,
+        isAiGenerated: _reelRef.isAiGenerated,
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(ReelWindow), findsOneWidget);

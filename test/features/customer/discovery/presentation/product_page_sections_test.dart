@@ -240,7 +240,7 @@ void main() {
   });
 
   group('See it in reels', () {
-    testWidgets('lists reels tagging the product and plays one in the window', (
+    testWidgets('lists reels tagging the product and opens one full screen', (
       tester,
     ) async {
       addTearDown(ReelWindow.debugResetOpenState);
@@ -265,11 +265,13 @@ void main() {
 
       await tester.tap(find.byType(MallReelCard).first);
       await _settle(tester);
-      // The window over the product page, not a push to the reel screen —
-      // and r-1 is AI-generated, so the disclosure comes with it.
-      expect(find.byType(ReelWindow), findsOneWidget);
-      expect(find.byKey(ReelWindow.aiLabelKey), findsOneWidget);
-      expect(find.text('reel r-1'), findsNothing);
+      // A push to the full-screen reel screen, not a window over the product
+      // page. Reversed on 2026-10-07: a tapped reel fills the screen. The AI
+      // disclosure now comes from the feed page that renders the reel rather
+      // than from window chrome, so there is no aiLabelKey to find here — the
+      // rail's own badge above is what covers it on this screen.
+      expect(find.text('reel r-1'), findsOneWidget);
+      expect(find.byType(ReelWindow), findsNothing);
     });
 
     testWidgets('is hidden when no reel tags the product', (tester) async {

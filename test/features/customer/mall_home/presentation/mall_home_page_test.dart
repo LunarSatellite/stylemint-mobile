@@ -283,23 +283,26 @@ void main() {
       expect(find.text('product:p-1'), findsOneWidget);
     });
 
-    testWidgets('a reel rail plays in the window, not the pager', (
-      tester,
-    ) async {
-      addTearDown(ReelWindow.debugResetOpenState);
+    testWidgets('a reel rail opens the reel full screen', (tester) async {
       await _pump(tester, height: 6000);
       await tester.tap(find.text('Aarav'), warnIfMissed: false);
       await settleTransition(tester);
-      expect(find.byType(ReelWindow), findsOneWidget);
-      expect(find.text('reel:r-human'), findsNothing);
+      // Reversed on 2026-10-07: tapping a Mall reel tile pushes the
+      // full-screen reel screen instead of raising a window over the Mall.
+      expect(find.text('reel:r-human'), findsOneWidget);
+      expect(find.byType(ReelWindow), findsNothing);
     });
 
-    testWidgets('the window keeps the reel rail AI disclosure', (tester) async {
-      addTearDown(ReelWindow.debugResetOpenState);
+    testWidgets('an AI-generated reel tile opens full screen too', (
+      tester,
+    ) async {
       await _pump(tester, height: 6000);
       await tester.tap(find.text('Priya'), warnIfMissed: false);
       await settleTransition(tester);
-      expect(find.byKey(ReelWindow.aiLabelKey), findsOneWidget);
+      // The window carried its own AI disclosure in chrome; the full-screen
+      // feed page renders that from the reel it loads, so the only thing to
+      // assert here is that the right reel was opened.
+      expect(find.text('reel:r-ai'), findsOneWidget);
     });
 
     testWidgets('a brand opens its storefront', (tester) async {

@@ -195,8 +195,12 @@ void main() {
     expect(_key('discover-product-p-2'), findsOneWidget);
   });
 
-  testWidgets('a reel in the For you rail plays in the window', (tester) async {
-    addTearDown(ReelWindow.debugResetOpenState);
+  // The rail and the grid now agree. Until 2026-10-07 a reel in the For you
+  // rail raised a window while the same reel in the Reels grid pushed the
+  // full-screen pager, so the one reel behaved two ways on one screen.
+  testWidgets('a reel in the For you rail opens the full-screen pager', (
+    tester,
+  ) async {
     await pumpDiscover(
       tester,
       // Tall enough that the For you feed lays its reels rail out.
@@ -213,9 +217,8 @@ void main() {
     await tester.tap(card, warnIfMissed: false);
     await settleTransition(tester);
 
-    expect(find.byType(ReelWindow), findsOneWidget);
-    expect(find.byKey(ReelWindow.aiLabelKey), findsOneWidget);
-    expect(find.text('reel:r-ai'), findsNothing);
+    expect(find.text('reel:r-ai'), findsOneWidget);
+    expect(find.byType(ReelWindow), findsNothing);
   });
 
   // The Reels chip's block is the feed's own wall of reels, not a rail: it
