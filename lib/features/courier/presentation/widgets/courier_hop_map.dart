@@ -28,11 +28,26 @@ const _osmUserAgent = 'app.stylemint.stylemint_mobile_frontend';
 /// denied-forever, timeout — and each is reported as itself rather than as a
 /// blank map.
 class CourierHopMap extends ConsumerStatefulWidget {
-  const CourierHopMap({this.hop, super.key});
+  const CourierHopMap({
+    this.hop,
+    this.fill = false,
+    this.bottomInset = 0,
+    super.key,
+  });
 
   /// The active hop, or null when the rider has no parcel.
   final DeliveryHop? hop;
 
+  /// Fill the parent instead of occupying a fixed [height] with cards below
+  /// it. Use inside a [Stack] that gives the map the whole screen.
+  final bool fill;
+
+  /// How much of the bottom of a [fill] map is covered by something the
+  /// parent has drawn over it — a bottom sheet, typically. The job card is
+  /// lifted above it rather than hidden behind it.
+  final double bottomInset;
+
+  /// Height of the boxed (non-[fill]) form.
   static const double height = 220;
 
   @override
@@ -98,6 +113,60 @@ class _CourierHopMapState extends ConsumerState<CourierHopMap> {
     // dropping to (0,0) in the Atlantic.
     final centre = target ?? _me;
 
+    final surface = centre == null
+        ? _Placeholder(
+            locating: _locating,
+            location: _location,
+            onRetry: _locate,
+            onOpenSettings: _openSettings,
+          )
+        : _map(centre, pickupPoint, dropoffPoint);
+
+    // Full-bleed: the map fills whatever the parent gives it, square corners,
+    // and the job details float on top of it instead of sitting underneath.
+    //
+    // A rider glancing at a phone on a handlebar mount needs the streets, not
+    // a 220px window onto them with cards below. `bottomInset` lifts the job
+    // card clear of whatever the parent has parked at the bottom of the
+    // screen, so the one number that decides whether a run is worth taking is
+    // never behind a sheet.
+    if (widget.fill) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          ColoredBox(color: DesignTokens.surfaceRaised, child: surface),
+          if (hop != null)
+            Positioned(
+              left: DesignTokens.s16,
+              right: DesignTokens.s16,
+              bottom: widget.bottomInset + DesignTokens.s12,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: DesignTokens.bgAppBody.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.radiusMedium,
+                  ),
+                  border: Border.all(
+                    color: DesignTokens.primaryGreen.withValues(alpha: 0.45),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s12,
+                    vertical: DesignTokens.s8,
+                  ),
+                  child: _JobBar(
+                    hop: hop,
+                    headingToDropoff: _headingToDropoff,
+                    onNavigate: target == null ? null : () => _navigate(target),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -110,14 +179,7 @@ class _CourierHopMapState extends ConsumerState<CourierHopMap> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
-              child: centre == null
-                  ? _Placeholder(
-                      locating: _locating,
-                      location: _location,
-                      onRetry: _locate,
-                      onOpenSettings: _openSettings,
-                    )
-                  : _map(centre, pickupPoint, dropoffPoint),
+              child: surface,
             ),
           ),
         ),

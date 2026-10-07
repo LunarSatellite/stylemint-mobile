@@ -2,32 +2,55 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
+import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_device_key_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_hop_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_offers_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_hop_map.dart';
-import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_shift_toggle.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_shift_slider.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_signing_enrolment.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// The courier's home screen: whether they can work, what work they have, and
-/// the two things that most often stop offers arriving.
+/// The courier's home screen: the map they work from, whether work can reach
+/// them, and the parcels they are carrying.
+///
+/// Laid out map-first. It used to be a list of cards with a 220px map wedged
+/// between two of them, which read as a dashboard about deliveries rather than
+/// a tool for doing one — and the map was reported as missing entirely more
+/// than once, because at that size, below the fold, it was easy to miss. The
+/// map now fills the screen, the shift control floats over it, and everything
+/// that is reference rather than live sits in a sheet the rider pulls up.
 class CourierDashboardScreen extends ConsumerWidget {
   const CourierDashboardScreen({required this.profile, super.key});
 
   final CourierProfile profile;
 
+  /// How much of the screen the detail sheet covers at rest.
+  ///
+  /// Shared with the map so the job card can sit directly above the sheet
+  /// rather than at a guessed offset.
+  static const double _sheetRest = 0.24;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hops = ref.watch(courierHopsProvider);
 
+    final activeHop = hops.maybeWhen(
+      data: (list) => list.where((hop) => !hop.state.isFinished).firstOrNull,
+      orElse: () => null,
+    );
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: DesignTokens.bgAppFoundation,
+        // Transparent so the map runs under it: the status bar area is map,
+        // not a band of chrome above one.
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text('Deliveries'),
         actions: [
           IconButton(
@@ -42,34 +65,39 @@ class CourierDashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref
-              ..invalidate(courierHopsProvider)
-              ..invalidate(courierOffersProvider)
-              ..invalidate(courierCanSignProvider(profile.id))
-              ..invalidate(courierEscrowBalanceProvider(profile.id))
-              ..invalidate(courierReliabilityProvider(profile.id));
-          },
-          child: ListView(
-            padding: const EdgeInsets.all(DesignTokens.s20),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final sheetRestHeight = constraints.maxHeight * _sheetRest;
+
+          return Stack(
             children: [
-              // Blockers state a cause rather than leaving the courier to
-              // infer one from an empty offers list: "no offers" looks
-              // identical whether there is no work, they are off shift, or
-              // escrow is short, and only the first is nobody's fault.
-              //
-              // The "not live yet" blocker that used to sit here is gone. It
-              // said "nothing more is needed from you", which was true and
-              // useless: it waited on an Active state nothing ever set, so it
-              // would never have cleared. Being on shift is the gate now, and
-              // the toggle below says so in a form the rider can act on.
-              // The handover-signing blocker used to live here. It is gone
-              // from the rider's view on purpose: enrolling this phone's key
-              // is not a decision a courier should be asked to make, it is
-              // setup, and CourierSigningEnrolment now does it silently on
-              // first open.
+              // Always on screen, with or without a parcel. It used to appear
+              // only when a hop was assigned, so a rider with no work saw no
+              // map and no way to tell the feature existed — which is exactly
+              // how it was reported. The job is drawn on top of the rider's
+              // own position when it arrives.
+              Positioned.fill(
+                child: CourierHopMap(
+                  hop: activeHop,
+                  fill: true,
+                  bottomInset: sheetRestHeight,
+                ),
+              ),
+
+              // Over the map, under the app bar. Whether work can arrive at
+              // all matters more than anything else on this screen, and the
+              // rider has to be able to reach it without pulling the sheet
+              // up first.
+              Positioned(
+                top: MediaQuery.paddingOf(context).top + kToolbarHeight,
+                left: DesignTokens.s16,
+                right: DesignTokens.s16,
+                child: CourierShiftSlider(profile: profile),
+              ),
+
+              // Enrolling this phone's signing key is not a decision a
+              // courier should be asked to make, it is setup, so it happens
+              // silently on first open and renders nothing.
               //
               // The key itself is NOT gone, and could not be. Every custody
               // entry — pickup included — is rejected server-side without a
@@ -79,113 +107,171 @@ class CourierDashboardScreen extends ConsumerWidget {
               // rather than the friction would have taken the feature away.
               CourierSigningEnrolment(courierProfileId: profile.id),
 
-              // Leads the dashboard: whether work can arrive at all matters
-              // more than where the current job is.
-              CourierShiftToggle(profile: profile),
-              const SizedBox(height: DesignTokens.s16),
-              if (profile.escrowShortfall)
-                _Blocker(
-                  icon: Icons.account_balance_wallet_outlined,
-                  message:
-                      'Your deposit is short by '
-                      '${formatMoney(Money(amount: profile.escrowOutstanding, currency: profile.escrowCurrency))}. '
-                      'Parcels above your tier are not offered until it is '
-                      'topped up.',
-                ),
-
-              // Always on screen, with or without a parcel. It used to appear
-              // only when a hop was assigned, so a rider with no work saw no
-              // map and no way to tell the feature existed — which is exactly
-              // how it was reported. The job is drawn on top of the rider's
-              // own position when it arrives.
-              Padding(
-                padding: const EdgeInsets.only(bottom: DesignTokens.s16),
-                child: CourierHopMap(
-                  hop: hops.maybeWhen(
-                    data: (list) => list
-                        .where((hop) => !hop.state.isFinished)
-                        .firstOrNull,
-                    orElse: () => null,
-                  ),
+              DraggableScrollableSheet(
+                initialChildSize: _sheetRest,
+                minChildSize: 0.12,
+                maxChildSize: 0.88,
+                builder: (context, controller) => _DetailSheet(
+                  controller: controller,
+                  profile: profile,
+                  hops: hops,
+                  onRefresh: () async {
+                    ref
+                      ..invalidate(courierHopsProvider)
+                      ..invalidate(courierOffersProvider)
+                      ..invalidate(courierCanSignProvider(profile.id))
+                      ..invalidate(courierEscrowBalanceProvider(profile.id))
+                      ..invalidate(courierReliabilityProvider(profile.id));
+                  },
                 ),
               ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
 
-              _TierCard(profile: profile),
-              const SizedBox(height: DesignTokens.s16),
+/// Everything that is reference rather than live: standing, offers, parcels.
+///
+/// Scrollable, and the sheet's own controller drives it, which is what keeps
+/// the map's pan gesture and the list's scroll gesture from fighting — a
+/// drag that starts on the sheet moves the sheet, a drag that starts on the
+/// map moves the map.
+class _DetailSheet extends StatelessWidget {
+  const _DetailSheet({
+    required this.controller,
+    required this.profile,
+    required this.hops,
+    required this.onRefresh,
+  });
 
+  final ScrollController controller;
+  final CourierProfile profile;
+  final AsyncValue<List<DeliveryHop>> hops;
+  final Future<void> Function() onRefresh;
 
-              _OffersEntry(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const CourierOffersScreen(),
-                  ),
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: DesignTokens.bgAppFoundation,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(color: Color(0x66000000), blurRadius: 18),
+        ],
+      ),
+      child: RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.s20,
+            DesignTokens.s8,
+            DesignTokens.s20,
+            DesignTokens.s24,
+          ),
+          children: [
+            // Says "there is more down here" without a line of copy.
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: DesignTokens.s12),
+                decoration: BoxDecoration(
+                  color: DesignTokens.textMuted.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: DesignTokens.s24),
+            ),
 
-              Text('Your parcels', style: DesignTokens.h3),
-              const SizedBox(height: DesignTokens.s8),
-              hops.when(
-                loading: () => const Center(child: SmBrandLoader()),
-                error: (_, _) => Text(
-                  "Couldn't load your parcels. Pull to refresh.",
-                  style: DesignTokens.smallRegular,
-                ),
-                data: (list) {
-                  final open = list
-                      .where((hop) => !hop.state.isFinished)
-                      .toList(growable: false);
-                  if (open.isEmpty) {
-                    return Text(
-                      'Nothing to carry right now. Accepted parcels appear '
-                      'here with what to do next.',
-                      style: DesignTokens.smallRegular,
-                    );
-                  }
-                  return Column(
-                    children: open
-                        .map(
-                          (hop) => Card(
-                            color: DesignTokens.bgAppBody,
-                            margin: const EdgeInsets.only(
-                              bottom: DesignTokens.s12,
+            // Blockers state a cause rather than leaving the courier to infer
+            // one from an empty offers list: "no offers" looks identical
+            // whether there is no work, they are off shift, or escrow is
+            // short, and only the first is nobody's fault.
+            if (profile.escrowShortfall)
+              _Blocker(
+                icon: Icons.account_balance_wallet_outlined,
+                message:
+                    'Your deposit is short by '
+                    '${formatMoney(Money(amount: profile.escrowOutstanding, currency: profile.escrowCurrency))}. '
+                    'Parcels above your tier are not offered until it is '
+                    'topped up.',
+              ),
+
+            _TierCard(profile: profile),
+            const SizedBox(height: DesignTokens.s16),
+
+            _OffersEntry(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CourierOffersScreen()),
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s24),
+
+            Text('Your parcels', style: DesignTokens.h3),
+            const SizedBox(height: DesignTokens.s8),
+            hops.when(
+              loading: () => const Center(child: SmBrandLoader()),
+              error: (_, _) => Text(
+                "Couldn't load your parcels. Pull to refresh.",
+                style: DesignTokens.smallRegular,
+              ),
+              data: (list) {
+                final open = list
+                    .where((hop) => !hop.state.isFinished)
+                    .toList(growable: false);
+                if (open.isEmpty) {
+                  return Text(
+                    'Nothing to carry right now. Accepted parcels appear '
+                    'here with what to do next.',
+                    style: DesignTokens.smallRegular,
+                  );
+                }
+                return Column(
+                  children: open
+                      .map(
+                        (hop) => Card(
+                          color: DesignTokens.bgAppBody,
+                          margin: const EdgeInsets.only(
+                            bottom: DesignTokens.s12,
+                          ),
+                          child: ListTile(
+                            title: Text(
+                              hop.state.label,
+                              style: DesignTokens.mediumSemibold,
                             ),
-                            child: ListTile(
-                              title: Text(
-                                hop.state.label,
-                                style: DesignTokens.mediumSemibold,
-                              ),
-                              subtitle: Text(
-                                '${hop.fromGeohash} → ${hop.toGeohash}'
-                                '${hop.isLate ? ' · running late' : ''}',
-                                style: DesignTokens.tiny,
-                              ),
-                              trailing: Text(
-                                formatMoney(
-                                  Money(
-                                    amount: hop.payoutAmount,
-                                    currency: hop.payoutCurrency,
-                                  ),
+                            subtitle: Text(
+                              '${hop.fromGeohash} → ${hop.toGeohash}'
+                              '${hop.isLate ? ' · running late' : ''}',
+                              style: DesignTokens.tiny,
+                            ),
+                            trailing: Text(
+                              formatMoney(
+                                Money(
+                                  amount: hop.payoutAmount,
+                                  currency: hop.payoutCurrency,
                                 ),
-                                style: DesignTokens.mediumSemibold,
                               ),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => CourierHopScreen(
-                                    hop: hop,
-                                    courierProfileId: profile.id,
-                                  ),
+                              style: DesignTokens.mediumSemibold,
+                            ),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => CourierHopScreen(
+                                  hop: hop,
+                                  courierProfileId: profile.id,
                                 ),
                               ),
                             ),
                           ),
-                        )
-                        .toList(growable: false),
-                  );
-                },
-              ),
-            ],
-          ),
+                        ),
+                      )
+                      .toList(growable: false),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
