@@ -17,6 +17,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/w
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reels_pager.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api.dart';
+import 'package:stylemint_mobile_frontend/features/social/stories/presentation/widgets/stories_tray.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -180,6 +181,20 @@ void main() {
       tester.widget<ReelCard>(find.byType(ReelCard).first).reel.id,
       'landed',
     );
+  });
+
+  // The stories tray belongs to the Home feed. A reel opened from a link is
+  // about that reel: nothing sits over its top, and the first reel's rail is
+  // laid out with no clearance.
+  testWidgets('a shared reel has no stories tray over it', (tester) async {
+    await pumpLanding(tester);
+
+    expect(find.byType(StoriesTray), findsNothing);
+    expect(
+      tester.widget<ReelsPager>(find.byType(ReelsPager)).firstReelTopClearance,
+      0,
+    );
+    expect(tester.widget<ReelCard>(find.byType(ReelCard).first).topClearance, 0);
   });
 
   testWidgets('a failed related page keeps the landed reel on screen', (

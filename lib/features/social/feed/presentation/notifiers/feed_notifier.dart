@@ -55,27 +55,68 @@ class FeedNotifier extends StateNotifier<FeedState> {
     );
   }
 
-  Future<void> loadMore() async {
-    state.maybeWhen(
-      loadSuccess: (posts, hasMore, nextCursor) {
-        if (!hasMore) return;
-        _loadMoreInternal(posts, nextCursor);
-      },
-      orElse: () {},
+  /// Re-fetches the first page for pull-to-refresh. Unlike [loadFeed] it keeps
+  /// the current posts on screen until the new page arrives, and a failed
+  /// refresh leaves them in place instead of blanking the feed.
+  Future<void> refresh({int limit = 20}) async {
+    final hasPosts = state.maybeWhen(
+      loadSuccess: (_, _, _) => true,
+      orElse: () => false,
+    );
+    if (!hasPosts) return loadFeed(limit: limit);
+    final either = await _repository.getFeed(limit: limit);
+    either.fold<void>(
+      (_) {},
+      (result) => state = FeedState.loadSuccess(
+        posts: result.items,
+        hasMore: result.hasMore,
+        nextCursor: result.nextCursor,
+      ),
     );
   }
 
-  Future<void> _loadMoreInternal(
-    List<FeedPost> existing,
-    String? cursor,
-  ) async {
+  /// True while a next page is in flight. Scroll listeners fire on every frame
+  /// near the end of the list, so without this one page is requested many
+  /// times over.
+  bool _loadingMore = false;
+
+  Future<void> loadMore() async {
+    if (_loadingMore) return;
+    final cursor = state.maybeWhen(
+      loadSuccess: (_, hasMore, nextCursor) => hasMore ? nextCursor : null,
+      orElse: () => null,
+    );
+    final canLoad = state.maybeWhen(
+      loadSuccess: (_, hasMore, _) => hasMore,
+      orElse: () => false,
+    );
+    if (!canLoad) return;
+    _loadingMore = true;
+    try {
+      await _loadMoreInternal(cursor);
+    } finally {
+      _loadingMore = false;
+    }
+  }
+
+  Future<void> _loadMoreInternal(String? cursor) async {
     final either = await _repository.getFeed(cursor: cursor);
-    state = either.fold(
-      FeedState.loadFailure,
-      (result) => FeedState.loadSuccess(
-        posts: [...existing, ...result.items],
-        hasMore: result.hasMore,
-        nextCursor: result.nextCursor,
+    // Append to whatever is on screen now (likes may have changed it while the
+    // page loaded). A refresh in the meantime moved the cursor, so this page
+    // no longer follows on and is dropped. A failed page keeps the posts; the
+    // next scroll to the end retries.
+    either.fold<void>(
+      (_) {},
+      (result) => state.maybeWhen<void>(
+        loadSuccess: (posts, _, nextCursor) {
+          if (nextCursor != cursor) return;
+          state = FeedState.loadSuccess(
+            posts: [...posts, ...result.items],
+            hasMore: result.hasMore,
+            nextCursor: result.nextCursor,
+          );
+        },
+        orElse: () {},
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
@@ -38,6 +39,16 @@ class ReelsPagerController with WidgetsBindingObserver {
 
   int _currentIndex = 0;
 
+  /// The page the viewer is on, published for chrome that lives outside the
+  /// pager — the Home feed's stories tray steps aside once they leave the
+  /// first reel. Follows [PageView.onPageChanged], so it flips halfway through
+  /// a swipe the way a reel's own "is active" does; the embedded players keep
+  /// following [_settledIndex], which this never touches.
+  final ValueNotifier<int> _page = ValueNotifier<int>(0);
+
+  /// The page the viewer is on; see [_page].
+  ValueListenable<int> get currentPage => _page;
+
   /// The page the pager last came to rest on. Embedded players follow this
   /// rather than the page on screen, which changes halfway through a drag.
   int _settledIndex = 0;
@@ -57,6 +68,9 @@ class ReelsPagerController with WidgetsBindingObserver {
       _currentIndex = 0;
       _settledIndex = 0;
     }
+    // Whether or not a pager is mounted (the feed may be empty, or still
+    // loading), anything keyed off the page is back at the start too.
+    _page.value = 0;
   }
 
   void _setTabVisible(bool visible) {
@@ -78,6 +92,7 @@ class ReelsPagerController with WidgetsBindingObserver {
     _disposed = true;
     WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
+    _page.dispose();
     embedPool.dispose();
   }
 }
@@ -98,6 +113,7 @@ class ReelsPager extends StatefulWidget {
     this.onNearEnd,
     this.onRefresh,
     this.onReelDwell,
+    this.firstReelTopClearance = 0,
     this.clock = DateTime.now,
     super.key,
   });
@@ -135,6 +151,13 @@ class ReelsPager extends StatefulWidget {
   /// pager says about attention: it fires per reel, not per frame, and the
   /// caller decides what a given dwell means.
   final void Function(Reel reel, Duration dwell)? onReelDwell;
+
+  /// How far from the top of the page the first reel's own controls must
+  /// stay, because something is laid over that strip while the viewer is on
+  /// the first reel (the Home feed's stories tray). Handed to that reel's
+  /// [ReelCard.topClearance]. Zero — the default, and what every other reel
+  /// gets — draws the card exactly as before.
+  final double firstReelTopClearance;
 
   /// The clock behind [onReelDwell]; tests pin it.
   final DateTime Function() clock;
@@ -274,6 +297,7 @@ class _ReelsPagerState extends State<ReelsPager> {
           .._settledIndex = 0;
       });
     }
+    _controller._page.value = 0;
     _syncEmbeds();
   }
 
@@ -384,6 +408,7 @@ class _ReelsPagerState extends State<ReelsPager> {
                   _reportDwell(_dwellIndex, next: index);
                 }
                 setState(() => _controller._currentIndex = index);
+                _controller._page.value = index;
                 // Page in more reels before the viewer actually hits the end —
                 // otherwise the pager dead-ends and further swipes have
                 // nothing new to show.
@@ -394,6 +419,7 @@ class _ReelsPagerState extends State<ReelsPager> {
               itemBuilder: (_, index) => ReelCard(
                 reel: reels[index],
                 isActive: index == _controller._currentIndex,
+                topClearance: index == 0 ? widget.firstReelTopClearance : 0,
               ),
               ),
             ),

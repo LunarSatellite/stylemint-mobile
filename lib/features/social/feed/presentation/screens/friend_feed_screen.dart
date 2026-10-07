@@ -1,55 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/social/feed/presentation/notifiers/feed_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/feed_comments_sheet.dart';
-import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/feed_post_card.dart';
-import 'package:stylemint_mobile_frontend/features/social/feed/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/feed_posts_sliver.dart';
+import 'package:stylemint_mobile_frontend/features/social/stories/presentation/widgets/stories_tray.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
-class FriendFeedScreen extends ConsumerStatefulWidget {
+/// The friend feed on its own: stories along the top, then posts, Instagram
+/// style. The Community home shows the same feed inline (see
+/// [FeedPostsSliver]).
+class FriendFeedScreen extends ConsumerWidget {
   const FriendFeedScreen({super.key});
 
   @override
-  ConsumerState<FriendFeedScreen> createState() => _FriendFeedScreenState();
-}
-
-class _FriendFeedScreenState extends ConsumerState<FriendFeedScreen> {
-  final _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      ref.read(feedNotifierProvider.notifier).loadMore();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(feedNotifierProvider);
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         title: const Text('Friend Feed', style: DesignTokens.titleLarge),
         backgroundColor: DesignTokens.bgAppFoundation,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         actions: [
+          IconButton(
+            key: const Key('friend-feed-create-post'),
+            tooltip: 'Create Post',
+            icon: const Icon(
+              Icons.add_box_outlined,
+              color: DesignTokens.textWhite,
+            ),
+            // Uses the registered /feed/create route so the composer is
+            // deep-linkable and keeps the router's auth guard.
+            onPressed: () => context.push(RouteNames.feedCreatePost),
+          ),
           IconButton(
             key: const Key('friend-feed-stories'),
             tooltip: 'Stories',
@@ -61,89 +44,28 @@ class _FriendFeedScreenState extends ConsumerState<FriendFeedScreen> {
           ),
         ],
       ),
-      body: state.when(
-        initial: _loader,
-        loadInProgress: _loader,
-        loadSuccess: (posts, hasMore, _) {
-          if (posts.isEmpty) {
-            return const SmEmptyState(
-              message: 'No posts yet. Follow friends to see their posts here.',
-              icon: Icons.article_outlined,
-            );
-          }
-          return RefreshIndicator(
-            color: DesignTokens.primaryGreen,
-            onRefresh: () => ref.read(feedNotifierProvider.notifier).loadFeed(),
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: posts.length + (hasMore ? 1 : 0),
-              padding: const EdgeInsets.only(
-                top: DesignTokens.s8,
-                bottom: DesignTokens.s48,
+      body: FeedPagingListener(
+        child: RefreshIndicator(
+          color: DesignTokens.primaryGreen,
+          backgroundColor: DesignTokens.bgAppBody,
+          onRefresh: () => refreshFeedAndStories(ref),
+          child: const CustomScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(child: StoriesTray()),
+              SliverToBoxAdapter(
+                child: Divider(
+                  height: DesignTokens.s16,
+                  thickness: 0.5,
+                  color: DesignTokens.borderDefault,
+                ),
               ),
-              itemBuilder: (context, index) {
-                if (index >= posts.length) {
-                  return _loader();
-                }
-                return FeedPostCard(
-                  post: posts[index],
-                  index: index,
-                  onLikeToggle: () {
-                    final notifier = ref.read(feedNotifierProvider.notifier);
-                    if (posts[index].isLiked) {
-                      notifier.unlikePost(posts[index].id, index);
-                    } else {
-                      notifier.likePost(posts[index].id, index);
-                    }
-                  },
-                  onComment: () {
-                    showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: DesignTokens.bgAppBody,
-                      builder: (_) => FeedCommentsSheet(
-                        postId: posts[index].id,
-                        postIndex: index,
-                      ),
-                    );
-                  },
-                  onShare: () {
-                    ref
-                        .read(feedNotifierProvider.notifier)
-                        .sharePost(
-                          posts[index].id,
-                          index,
-                        );
-                  },
-                  onTaggedProductTap: (productId) {
-                    context.push(
-                      RouteNames.productDetail.replaceFirst(
-                        ':productId',
-                        productId,
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          );
-        },
-        loadFailure: (failure) => SmErrorView(
-          message: 'Failed to load feed.',
-          onRetry: () => ref.read(feedNotifierProvider.notifier).loadFeed(),
+              FeedPostsSliver(),
+              SliverToBoxAdapter(child: SizedBox(height: DesignTokens.s48)),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('friend-feed-create-post'),
-        tooltip: 'Create Post',
-        backgroundColor: DesignTokens.primaryGreen,
-        // Uses the registered /feed/create route so the composer is
-        // deep-linkable and keeps the router's auth guard.
-        onPressed: () => context.push(RouteNames.feedCreatePost),
-        child: const Icon(Icons.add, color: DesignTokens.buttonPrimaryText),
       ),
     );
   }
-
-  Widget _loader() => const SmPageLoader();
 }

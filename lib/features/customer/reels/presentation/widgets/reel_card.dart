@@ -56,10 +56,30 @@ Rect reelPlayerRect(Reel reel, Size page, {double topInset = 0}) {
 /// [isActive] must be true for the reel currently visible in the viewport
 /// so that [ReelPlayer] auto-plays it and pauses all others.
 class ReelCard extends StatefulWidget {
-  const ReelCard({required this.reel, required this.isActive, super.key});
+  const ReelCard({
+    required this.reel,
+    required this.isActive,
+    this.topClearance = 0,
+    super.key,
+  });
+
+  /// How far the right rail is anchored above the bottom of the card.
+  static const double railBottom = 180;
+
+  /// The least room the rail is ever squeezed into. Below this the clearance
+  /// is ignored rather than shrinking the rail into something unreadable — on
+  /// a page that short there is no strip to keep clear in the first place.
+  static const double minRailExtent = 160;
 
   final Reel reel;
   final bool isActive;
+
+  /// The strip at the top of the card, from its top edge, that something is
+  /// drawn over — the Home feed's stories tray, on the first reel. The right
+  /// rail stays below it: on a short phone the rail is tall enough to reach
+  /// up under the tray, where the tray would swallow its taps, so it scales
+  /// down to fit instead. Zero lays the rail out exactly as before.
+  final double topClearance;
 
   @override
   State<ReelCard> createState() => _ReelCardState();
@@ -96,6 +116,16 @@ class _ReelCardState extends State<ReelCard> {
             constraints.biggest,
             topInset: topInset,
           );
+          // Only bound the rail from above when there is something to keep
+          // clear AND room to do it; otherwise it hangs from its bottom anchor
+          // at its natural size, as it always has.
+          final clearance = widget.topClearance;
+          final railTop =
+              clearance > 0 &&
+                  constraints.maxHeight - ReelCard.railBottom - clearance >=
+                      ReelCard.minRailExtent
+              ? clearance
+              : null;
           return Stack(
             fit: StackFit.expand,
             // The player can be larger than the page; the page clips it.
@@ -163,13 +193,28 @@ class _ReelCardState extends State<ReelCard> {
               // product or cart), drawn over the video for every platform —
               // pulled down so it sits near the creator row instead of
               // floating high above it.
+              //
+              // The Align + FittedBox are always there, whether or not a top
+              // clearance applies, so the rail's state (comment count, follow
+              // in flight) survives the stories tray appearing or going away.
+              // Unbounded from above they are a no-op: the rail keeps its
+              // natural size. Bounded by [railTop], scaleDown shrinks it only
+              // when it would otherwise reach up under the stories tray.
               Positioned(
                 right: DesignTokens.s12,
-                bottom: 180,
-                child: ReelActions(
-                  reel: widget.reel,
-                  // Only the watched reel's rail flips its product photos.
-                  isActive: widget.isActive,
+                bottom: ReelCard.railBottom,
+                top: railTop,
+                child: Align(
+                  alignment: Alignment.bottomRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.bottomRight,
+                    child: ReelActions(
+                      reel: widget.reel,
+                      // Only the watched reel's rail flips its product photos.
+                      isActive: widget.isActive,
+                    ),
+                  ),
                 ),
               ),
 

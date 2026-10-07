@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/screens/create_post_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/screens/friend_feed_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/stories/presentation/screens/stories_screen.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
-import '../../../smoke/fake_api_client.dart';
+import 'social_feed_fakes.dart';
 
 /// The feed could be read but not posted to through a route, and `/stories`
 /// had no caller anywhere — both now hang off the Friend Feed surface.
@@ -26,10 +24,7 @@ Widget _feedApp() {
       ),
     ],
   );
-  return ProviderScope(
-    overrides: [apiClientProvider.overrideWithValue(FakeApiClient())],
-    child: MaterialApp.router(routerConfig: router),
-  );
+  return socialTestScope(child: MaterialApp.router(routerConfig: router));
 }
 
 void main() {

@@ -28,8 +28,10 @@ abstract class StoryDto with _$StoryDto {
   factory StoryDto.fromStoryJson(Map<String, dynamic> json) {
     final rawMediaType = json['mediaType'];
     final mediaTypeText = rawMediaType.toString().toLowerCase();
+    // StoryMediaType arrives as a number: Image = 1, Video = 2, Boomerang = 3.
     final isVideo =
         rawMediaType == 2 ||
+        rawMediaType == 3 ||
         mediaTypeText == 'video' ||
         mediaTypeText == 'boomerang';
     final rawProductIds = json['taggedProductIds'];
@@ -45,11 +47,15 @@ abstract class StoryDto with _$StoryDto {
               .toString(),
       userAvatarUrl: (json['userAvatarUrl'] ?? json['authorAvatarUrl'] ?? '')
           .toString(),
-      mediaUrl: json['mediaUrl'].toString(),
+      mediaUrl: (json['mediaUrl'] ?? '').toString(),
       mediaType: isVideo ? 'video' : 'image',
-      expiresAt: DateTime.parse(
-        (json['expiresAt'] ?? json['expiresUtc']).toString(),
-      ),
+      // The backend sends `expiresUtc` (`PostedUtc + 24h`). A row without one
+      // is treated as just posted rather than failing the whole tray.
+      expiresAt:
+          DateTime.tryParse(
+            (json['expiresAt'] ?? json['expiresUtc'] ?? '').toString(),
+          ) ??
+          DateTime.now().toUtc().add(storyLifetime),
       taggedProductIds: productIds,
       caption: json['caption'] as String?,
       viewCount: (json['viewCount'] as num?)?.toInt() ?? 0,

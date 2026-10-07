@@ -1,79 +1,100 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
+/// The Instagram-style action row under a post: like, comment and share on
+/// the left. Counts are not drawn here — the card prints "N likes" and
+/// "View all N comments" underneath, as Instagram does.
+///
+/// [indicator] sits centred in the row; the card passes its carousel dots.
 class PostActionBar extends StatelessWidget {
   const PostActionBar({
     required this.isLiked,
-    required this.likeCount,
-    required this.commentCount,
-    required this.shareCount,
     required this.onLike,
     required this.onComment,
     required this.onShare,
+    this.indicator,
     super.key,
   });
 
   final bool isLiked;
-  final int likeCount;
-  final int commentCount;
-  final int shareCount;
   final VoidCallback onLike;
   final VoidCallback onComment;
   final VoidCallback onShare;
+  final Widget? indicator;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: DesignTokens.s4),
-      child: Row(
+    return SizedBox(
+      height: DesignTokens.s48,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          _ActionButton(
-            semanticLabel: isLiked ? 'Unlike post' : 'Like post',
-            icon: isLiked ? Icons.favorite : Icons.favorite_outline,
-            label: _formatCount(likeCount),
-            color: isLiked ? DesignTokens.colorError : DesignTokens.iconLight,
-            onTap: onLike,
-          ),
-          const SizedBox(width: DesignTokens.s16),
-          _ActionButton(
-            semanticLabel: 'Comment on post',
-            icon: Icons.chat_bubble_outline,
-            label: _formatCount(commentCount),
-            onTap: onComment,
-          ),
-          const Spacer(),
-          _ActionButton(
-            semanticLabel: 'Share post',
-            icon: Icons.share_outlined,
-            label: _formatCount(shareCount),
-            onTap: onShare,
+          if (indicator != null) indicator!,
+          Row(
+            children: [
+              _ActionButton(
+                key: const Key('post-action-like'),
+                semanticLabel: isLiked ? 'Unlike post' : 'Like post',
+                onTap: onLike,
+                child: AnimatedSwitcher(
+                  duration: DesignTokens.motionFast,
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: Icon(
+                    isLiked ? Icons.favorite : Icons.favorite_border,
+                    key: ValueKey<bool>(isLiked),
+                    size: 26,
+                    color: isLiked
+                        ? DesignTokens.accentHeart
+                        : DesignTokens.iconWhite,
+                  ),
+                ),
+              ),
+              _ActionButton(
+                key: const Key('post-action-comment'),
+                semanticLabel: 'Comment on post',
+                onTap: onComment,
+                child: const Icon(
+                  Icons.mode_comment_outlined,
+                  size: DesignTokens.iconMedium,
+                  color: DesignTokens.iconWhite,
+                ),
+              ),
+              _ActionButton(
+                key: const Key('post-action-share'),
+                semanticLabel: 'Share post',
+                onTap: onShare,
+                // A paper plane tilted up, like Instagram's share glyph.
+                child: Transform.rotate(
+                  angle: -math.pi / 9,
+                  child: const Icon(
+                    Icons.send_outlined,
+                    size: DesignTokens.iconMedium,
+                    color: DesignTokens.iconWhite,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
-  }
-
-  String _formatCount(int count) {
-    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return count > 0 ? '$count' : '';
   }
 }
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.semanticLabel,
-    required this.icon,
     required this.onTap,
-    this.label,
-    this.color = DesignTokens.iconLight,
+    required this.child,
+    super.key,
   });
 
   final String semanticLabel;
-  final IconData icon;
   final VoidCallback onTap;
-  final String? label;
-  final Color color;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -84,18 +105,10 @@ class _ActionButton extends StatelessWidget {
         child: GestureDetector(
           onTap: onTap,
           behavior: HitTestBehavior.opaque,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: DesignTokens.iconMedium, color: color),
-              if (label != null && label!.isNotEmpty) ...[
-                const SizedBox(width: DesignTokens.s4),
-                Text(
-                  label!,
-                  style: DesignTokens.smallRegular.copyWith(color: color),
-                ),
-              ],
-            ],
+          child: SizedBox(
+            width: DesignTokens.minTouchTarget,
+            height: DesignTokens.minTouchTarget,
+            child: Center(child: child),
           ),
         ),
       ),

@@ -1,3 +1,7 @@
+/// How long a story stays up. The backend stamps `ExpiresUtc = PostedUtc +
+/// 24h`, and deriving the posted time from the expiry spares the DTO a field.
+const Duration storyLifetime = Duration(hours: 24);
+
 class Story {
   const Story({
     required this.id,
@@ -24,6 +28,11 @@ class Story {
   final DateTime expiresAt;
   final int viewCount;
   final bool hasWatched;
+
+  bool get isVideo => mediaType == 'video';
+
+  /// When the story went up — exact for backend stories (see [storyLifetime]).
+  DateTime get postedAt => expiresAt.subtract(storyLifetime);
 
   Story copyWith({
     String? id,
