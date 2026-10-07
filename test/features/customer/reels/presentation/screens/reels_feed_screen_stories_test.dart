@@ -159,6 +159,17 @@ void main() {
 
   tearDown(() => ReelsPager.debugHostEmbedPlayers = true);
 
+  /// Lets a page snap and the strip's own motion finish. Fixed pumps rather
+  /// than pumpAndSettle: the tray is free to animate its rings forever. The
+  /// strip only starts to move once the page has come to rest, so this waits
+  /// out the snap first and the strip after it.
+  Future<void> settle(WidgetTester tester) async {
+    await tester.pump();
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 250));
+    }
+  }
+
   Future<ProviderContainer> pumpFeed(WidgetTester tester) async {
     await pumpMallApp(
       tester,
@@ -174,7 +185,9 @@ void main() {
         followApiProvider.overrideWithValue(_FakeFollowApi()),
       ],
     );
-    await tester.pump();
+    // The stories may answer after the reels, and the strip then opens with
+    // its usual motion.
+    await settle(tester);
     return ProviderScope.containerOf(
       tester.element(find.byType(ReelsFeedScreen)),
     );
@@ -182,28 +195,24 @@ void main() {
 
   final tray = find.byKey(ReelsFeedScreen.storiesTrayKey);
 
-  /// Whether the tray is up and taking touches. Hidden, it must both vanish
-  /// and let every touch through to the reel beneath.
-  bool trayShown(WidgetTester tester) {
+  /// Whether the strip is open: taking room and taking touches. Closed, it
+  /// must both give all its height back and let every touch through.
+  bool stripOpen(WidgetTester tester) {
     final ignoring = tester.widget<IgnorePointer>(tray).ignoring;
-    final opacity = tester
-        .widget<AnimatedOpacity>(
-          // The outermost one is the wrapper's; the tray may animate inside.
-          find
-              .descendant(of: tray, matching: find.byType(AnimatedOpacity))
-              .first,
-        )
-        .opacity;
-    expect(ignoring, opacity == 0, reason: 'hidden and untouchable together');
+    final height = tester.getSize(tray).height;
+    expect(ignoring, height == 0, reason: 'closed and untouchable together');
     return !ignoring;
   }
 
-  /// Lets a page snap and the tray's own motion finish. Fixed pumps rather
-  /// than pumpAndSettle: the tray is free to animate its rings forever.
-  Future<void> settle(WidgetTester tester) async {
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump(const Duration(milliseconds: 500));
+  /// The strip sits above [below], sharing no pixel with it.
+  void expectStripAbove(WidgetTester tester, Finder below) {
+    final strip = tester.getRect(tray);
+    expect(strip.height, greaterThan(ReelsFeedScreen.storiesTrayExtent));
+    expect(
+      strip.bottom,
+      lessThanOrEqualTo(tester.getRect(below).top),
+      reason: 'the strip ends where the content below it begins',
+    );
   }
 
   Future<void> swipe(WidgetTester tester, double dy) async {
@@ -211,7 +220,11 @@ void main() {
     await settle(tester);
   }
 
-  testWidgets('with someone on stories, the overlay tray tops the first reel', (
+  /// The page the pager rests on, read off the PageView itself.
+  double? pagerPage(WidgetTester tester) =>
+      tester.widget<PageView>(find.byType(PageView)).controller?.page;
+
+  testWidgets('with someone on stories, the strip sits above the first reel', (
     tester,
   ) async {
     stories.groups = right([_group('a'), _group('b')]);
@@ -219,22 +232,27 @@ void main() {
 
     expect(find.byType(ReelsPager), findsOneWidget);
     expect(tray, findsOneWidget);
-    expect(trayShown(tester), isTrue);
+    expect(stripOpen(tester), isTrue);
 
     final storiesTray = tester.widget<StoriesTray>(
       find.descendant(of: tray, matching: find.byType(StoriesTray)).first,
     );
-    expect(storiesTray.style, StoriesTrayStyle.overlay);
+    expect(storiesTray.style, StoriesTrayStyle.surface);
     expect(storiesTray.hideWhenEmpty, isTrue);
 
-    // The first reel's rail is told to keep below the tray; the rest are not.
+    // Above the pager, and above the first reel: nothing of the strip lies
+    // over the video any more.
+    expectStripAbove(tester, find.byType(PageView));
+    // Only the reel on screen is found; its neighbours are built offstage.
+    expectStripAbove(tester, find.byType(ReelCard));
     expect(
-      tester.widget<ReelsPager>(find.byType(ReelsPager)).firstReelTopClearance,
-      greaterThan(ReelsFeedScreen.storiesTrayExtent),
+      tester.getRect(find.byType(ReelCard)).bottom,
+      tester.getRect(find.byType(ReelsFeedScreen)).bottom,
+      reason: 'the first reel takes the rest of the screen',
     );
   });
 
-  testWidgets('with nobody on stories there is no tray and no clearance', (
+  testWidgets('with nobody on stories there is no strip and a full reel', (
     tester,
   ) async {
     await pumpFeed(tester);
@@ -242,12 +260,13 @@ void main() {
     expect(find.byType(ReelsPager), findsOneWidget);
     expect(tray, findsNothing);
     expect(
-      tester.widget<ReelsPager>(find.byType(ReelsPager)).firstReelTopClearance,
-      0,
+      tester.getRect(find.byType(ReelCard)),
+      tester.getRect(find.byType(ReelsFeedScreen)),
+      reason: 'the first reel is full height, exactly as before stories',
     );
   });
 
-  testWidgets('a stories failure never puts a tray over the reels', (
+  testWidgets('a stories failure never puts a strip above the reels', (
     tester,
   ) async {
     stories.groups = left(const NetworkExceptions.server('boom'));
@@ -255,29 +274,51 @@ void main() {
 
     expect(find.byType(ReelsPager), findsOneWidget);
     expect(tray, findsNothing);
+    expect(
+      tester.getRect(find.byType(ReelCard)),
+      tester.getRect(find.byType(ReelsFeedScreen)),
+    );
   });
 
-  testWidgets('the tray steps aside past the first reel and returns to it', (
+  testWidgets('the strip collapses past the first reel and returns to it', (
     tester,
   ) async {
     stories.groups = right([_group('a')]);
     await pumpFeed(tester);
-    expect(trayShown(tester), isTrue);
+    expect(stripOpen(tester), isTrue);
 
     await swipe(tester, -600);
-    // Only the reel on screen is found; its neighbours are built offstage.
     expect(
       tester.widget<ReelCard>(find.byType(ReelCard)).reel.id,
       'r-2',
       reason: 'the swipe landed on the second reel',
     );
-    expect(trayShown(tester), isFalse);
+    expect(stripOpen(tester), isFalse);
+    expect(tester.getSize(tray).height, 0);
+    // Closed, nothing of the strip can be touched.
+    expect(
+      find
+          .descendant(of: tray, matching: find.byType(StoriesTray))
+          .hitTestable(),
+      findsNothing,
+    );
+    // The pager grew into the strip's room without leaving its page, and the
+    // second reel has the whole screen.
+    expect(pagerPage(tester), closeTo(1, 0.001));
+    expect(
+      tester.getRect(find.byType(ReelCard)),
+      tester.getRect(find.byType(ReelsFeedScreen)),
+      reason: 'later reels are full height',
+    );
 
     await swipe(tester, 600);
-    expect(trayShown(tester), isTrue);
+    expect(tester.widget<ReelCard>(find.byType(ReelCard)).reel.id, 'r-1');
+    expect(stripOpen(tester), isTrue);
+    expect(pagerPage(tester), closeTo(0, 0.001));
+    expectStripAbove(tester, find.byType(ReelCard));
   });
 
-  testWidgets('re-tapping Home refreshes stories and brings the tray back', (
+  testWidgets('re-tapping Home refreshes stories and brings the strip back', (
     tester,
   ) async {
     stories.groups = right([_group('a')]);
@@ -285,15 +326,15 @@ void main() {
     expect(stories.groupCalls, 1);
 
     await swipe(tester, -600);
-    expect(trayShown(tester), isFalse);
+    expect(stripOpen(tester), isFalse);
 
     container.read(homeTabReselectedProvider.notifier).state++;
-    await tester.pump();
-    await tester.pump();
+    await settle(tester);
 
     expect(reels.feedCalls, 2);
     expect(stories.groupCalls, 2);
-    expect(trayShown(tester), isTrue);
+    expect(stripOpen(tester), isTrue);
+    expectStripAbove(tester, find.byType(ReelCard));
   });
 
   testWidgets('pulling down on the first reel refreshes stories too', (
@@ -308,7 +349,8 @@ void main() {
     await settle(tester);
 
     expect(stories.groupCalls, 2);
-    expect(trayShown(tester), isTrue);
+    expect(stripOpen(tester), isTrue);
+    expectStripAbove(tester, find.byType(ReelCard));
   });
 
   testWidgets('an empty feed still shows who has a story', (tester) async {
@@ -318,6 +360,7 @@ void main() {
 
     expect(find.byType(SmEmptyState), findsOneWidget);
     expect(tray, findsOneWidget);
-    expect(trayShown(tester), isTrue);
+    expect(stripOpen(tester), isTrue);
+    expectStripAbove(tester, find.byType(SmEmptyState));
   });
 }

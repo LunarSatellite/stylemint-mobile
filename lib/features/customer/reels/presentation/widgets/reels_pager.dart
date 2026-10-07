@@ -39,19 +39,30 @@ class ReelsPagerController with WidgetsBindingObserver {
 
   int _currentIndex = 0;
 
-  /// The page the viewer is on, published for chrome that lives outside the
-  /// pager — the Home feed's stories tray steps aside once they leave the
-  /// first reel. Follows [PageView.onPageChanged], so it flips halfway through
-  /// a swipe the way a reel's own "is active" does; the embedded players keep
-  /// following [_settledIndex], which this never touches.
-  final ValueNotifier<int> _page = ValueNotifier<int>(0);
-
-  /// The page the viewer is on; see [_page].
-  ValueListenable<int> get currentPage => _page;
-
   /// The page the pager last came to rest on. Embedded players follow this
   /// rather than the page on screen, which changes halfway through a drag.
   int _settledIndex = 0;
+
+  /// [_settledIndex], published for chrome that lives outside the pager — the
+  /// Home feed's stories strip collapses once the viewer has left the first
+  /// reel and comes back when they return to it.
+  ///
+  /// The settled page rather than [PageView.onPageChanged]'s, which flips
+  /// halfway through a swipe: the strip resizes the pager's viewport, and
+  /// doing that while the page is still moving would fight the swipe. Once
+  /// the page has come to rest a resize is harmless — the PageView keeps its
+  /// page index as its viewport grows or shrinks.
+  final ValueNotifier<int> _settledPage = ValueNotifier<int>(0);
+
+  /// The page the pager last came to rest on; see [_settledPage].
+  ValueListenable<int> get settledPage => _settledPage;
+
+  /// Records [index] as the page the pager rests on, for the players and for
+  /// [settledPage] alike.
+  void _settleOn(int index) {
+    _settledIndex = index;
+    if (!_disposed) _settledPage.value = index;
+  }
 
   bool _tabVisible = true;
   bool _appResumed = true;
@@ -66,11 +77,10 @@ class ReelsPagerController with WidgetsBindingObserver {
       pager._backToStart();
     } else {
       _currentIndex = 0;
-      _settledIndex = 0;
     }
     // Whether or not a pager is mounted (the feed may be empty, or still
     // loading), anything keyed off the page is back at the start too.
-    _page.value = 0;
+    _settleOn(0);
   }
 
   void _setTabVisible(bool visible) {
@@ -92,7 +102,7 @@ class ReelsPagerController with WidgetsBindingObserver {
     _disposed = true;
     WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
-    _page.dispose();
+    _settledPage.dispose();
     embedPool.dispose();
   }
 }
@@ -113,7 +123,6 @@ class ReelsPager extends StatefulWidget {
     this.onNearEnd,
     this.onRefresh,
     this.onReelDwell,
-    this.firstReelTopClearance = 0,
     this.clock = DateTime.now,
     super.key,
   });
@@ -151,13 +160,6 @@ class ReelsPager extends StatefulWidget {
   /// pager says about attention: it fires per reel, not per frame, and the
   /// caller decides what a given dwell means.
   final void Function(Reel reel, Duration dwell)? onReelDwell;
-
-  /// How far from the top of the page the first reel's own controls must
-  /// stay, because something is laid over that strip while the viewer is on
-  /// the first reel (the Home feed's stories tray). Handed to that reel's
-  /// [ReelCard.topClearance]. Zero — the default, and what every other reel
-  /// gets — draws the card exactly as before.
-  final double firstReelTopClearance;
 
   /// The clock behind [onReelDwell]; tests pin it.
   final DateTime Function() clock;
@@ -291,13 +293,9 @@ class _ReelsPagerState extends State<ReelsPager> {
   void _backToStart() {
     if (_dwellIndex != 0) _reportDwell(_dwellIndex, next: 0);
     if (_controller._currentIndex != 0 || _controller._settledIndex != 0) {
-      setState(() {
-        _controller
-          .._currentIndex = 0
-          .._settledIndex = 0;
-      });
+      setState(() => _controller._currentIndex = 0);
     }
-    _controller._page.value = 0;
+    _controller._settleOn(0);
     _syncEmbeds();
   }
 
@@ -343,7 +341,7 @@ class _ReelsPagerState extends State<ReelsPager> {
     if (notification.depth != 0 || !pages.hasClients) return false;
     final page = pages.page?.round();
     if (page != null && page != _controller._settledIndex) {
-      setState(() => _controller._settledIndex = page);
+      setState(() => _controller._settleOn(page));
       _syncEmbeds();
     }
     return false;
@@ -360,7 +358,13 @@ class _ReelsPagerState extends State<ReelsPager> {
     if (_controller._settledIndex >= reels.length) {
       _controller._settledIndex = 0;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncEmbeds());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Published after the frame rather than here: this runs while the tree
+      // is building, and [ReelsPagerController.settledPage] rebuilds the
+      // screen around this pager.
+      if (mounted) _controller._settleOn(_controller._settledIndex);
+      _syncEmbeds();
+    });
   }
 
   @override
@@ -408,7 +412,6 @@ class _ReelsPagerState extends State<ReelsPager> {
                   _reportDwell(_dwellIndex, next: index);
                 }
                 setState(() => _controller._currentIndex = index);
-                _controller._page.value = index;
                 // Page in more reels before the viewer actually hits the end —
                 // otherwise the pager dead-ends and further swipes have
                 // nothing new to show.
@@ -419,7 +422,6 @@ class _ReelsPagerState extends State<ReelsPager> {
               itemBuilder: (_, index) => ReelCard(
                 reel: reels[index],
                 isActive: index == _controller._currentIndex,
-                topClearance: index == 0 ? widget.firstReelTopClearance : 0,
               ),
               ),
             ),

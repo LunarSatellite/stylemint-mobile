@@ -183,18 +183,17 @@ void main() {
     );
   });
 
-  // The stories tray belongs to the Home feed. A reel opened from a link is
-  // about that reel: nothing sits over its top, and the first reel's rail is
-  // laid out with no clearance.
-  testWidgets('a shared reel has no stories tray over it', (tester) async {
+  // The stories strip belongs to the Home feed. A reel opened from a link is
+  // about that reel: no strip above it, and the landed reel keeps the whole
+  // screen.
+  testWidgets('a shared reel has no stories strip above it', (tester) async {
     await pumpLanding(tester);
 
     expect(find.byType(StoriesTray), findsNothing);
     expect(
-      tester.widget<ReelsPager>(find.byType(ReelsPager)).firstReelTopClearance,
-      0,
+      tester.getRect(find.byType(ReelCard).first),
+      tester.getRect(find.byType(ReelDetailScreen)),
     );
-    expect(tester.widget<ReelCard>(find.byType(ReelCard).first).topClearance, 0);
   });
 
   testWidgets('a failed related page keeps the landed reel on screen', (

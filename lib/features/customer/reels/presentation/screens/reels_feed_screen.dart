@@ -24,24 +24,34 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// screen, so the embedded players warm up while the feed loads and survive a
 /// refresh.
 ///
-/// When anyone the viewer can see has an active story, a [StoriesTray] is
-/// pinned across the top, under Home's "Mall | Reels" switch — the way
-/// Instagram and Facebook put stories above everything else. It belongs to
-/// the first reel: swipe on and it steps aside so the video has the screen,
-/// swipe back (or pull to refresh, or re-tap Home) and it returns. With no
-/// stories there is no tray, no scrim and nothing in the way.
+/// When anyone the viewer can see has an active story, a strip of
+/// [StoriesTray] bubbles sits ABOVE the first reel, directly under Home's
+/// "Mall | Reels" switch — the way Instagram and Facebook put stories above
+/// everything else. It is a solid block with its own height, not something
+/// laid over the video: the first reel is laid out below it, that much
+/// shorter, and nothing of the strip covers any part of a reel.
+///
+/// The strip belongs to the first reel. Swipe on and, once the next reel has
+/// come to rest, it collapses so every later reel has the whole screen; swipe
+/// back (or pull to refresh, or re-tap Home) and it opens again. With no
+/// stories there is no strip and the first reel is full height, exactly as
+/// before stories existed.
 class ReelsFeedScreen extends ConsumerStatefulWidget {
   const ReelsFeedScreen({super.key});
 
-  /// The stories tray's wrapper — present only while there are stories.
+  /// The stories strip's wrapper — present only while there are stories (or
+  /// while the strip is still closing after they ran out).
   static const Key storiesTrayKey = Key('reels-stories-tray');
 
-  /// How tall the overlay-style tray draws (bubble, ring and name). Used to
-  /// keep the first reel's rail clear of it; the tray itself sizes freely.
-  static const double storiesTrayExtent = 104;
+  /// How tall the stories row in the strip is: [StoriesTray]'s surface style
+  /// (a 72 bubble, a 4 gap, a 16 label and 8 above and below). The strip is
+  /// this plus Home's top band, and the reel beneath it gives up exactly that
+  /// much. Fixed rather than measured, so the reel's own top inset can follow
+  /// the strip frame by frame as it opens and closes.
+  static const double storiesTrayExtent = 108;
 
-  /// How quickly the tray steps aside and comes back.
-  static const Duration storiesTrayMotion = Duration(milliseconds: 200);
+  /// How quickly the strip closes and opens again.
+  static const Duration storiesStripMotion = Duration(milliseconds: 220);
 
   @override
   ConsumerState<ReelsFeedScreen> createState() => _ReelsFeedScreenState();
@@ -61,7 +71,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
 
   /// Whether anyone has an active story, as of the last answer the stories
   /// feed gave. Held through a reload rather than dropped, so a refresh does
-  /// not blink the scrim off and back or make the first reel's rail jump.
+  /// not snap the strip shut and open again, resizing the first reel twice.
   bool _hasStories = false;
 
   @override
@@ -98,8 +108,8 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
     ref.listen<int>(homeTabReselectedProvider, (_, _) => _refresh());
 
     // The same rule the tray's hideWhenEmpty draws by — any story group at
-    // all — read here too because the scrim, the tray's touch area and the
-    // first reel's rail clearance all have to agree with whether it shows.
+    // all — read here too because the strip's height, and so the first reel's,
+    // has to agree with whether the tray shows.
     _hasStories = ref
         .watch(storiesNotifierProvider)
         .when(
@@ -118,26 +128,20 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
         loadInProgress: _loader,
         loadSuccess: (reels) {
           if (reels.isEmpty) {
-            // No reels is no reason to hide who has a story: the tray still
-            // sits at the top, and stays put — there is no reel to leave.
-            return _withStoriesTray(
+            // No reels is no reason to hide who has a story: the strip still
+            // sits above the message, and stays open — there is no reel to
+            // leave.
+            return _withStoriesStrip(
               const SmEmptyState(
                 message: 'No reels yet. Check back soon for new content.',
                 icon: Icons.video_library_outlined,
               ),
             );
           }
-          return _withStoriesTray(
+          return _withStoriesStrip(
             ReelsPager(
               controller: _pager,
               reels: reels,
-              // While the tray is up the first reel's rail keeps below it, so
-              // nothing on the rail ends up under the tray, out of reach.
-              firstReelTopClearance: _hasStories
-                  ? homeTopInset(context) +
-                        ReelsFeedScreen.storiesTrayExtent +
-                        DesignTokens.s8
-                  : 0,
               onNearEnd: () => unawaited(
                 ref.read(reelsFeedNotifierProvider.notifier).fetchNextPage(),
               ),
@@ -161,7 +165,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
                 _views.recordDwell(reel, dwell);
               },
             ),
-            page: _pager.currentPage,
+            settledPage: _pager.settledPage,
           );
         },
         loadFailure: (failure) {
@@ -183,126 +187,150 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
     );
   }
 
-  /// [content] with the stories tray laid over its top, when there are
-  /// stories. Over the pager the tray follows [page]; with no [page] it
-  /// simply stays.
+  /// [content] laid out below the stories strip.
   ///
-  /// Laid over rather than stacked above in a Column: shrinking the pager to
-  /// make room would resize every page — and every embedded player placed
-  /// against those pages — each time the tray came or went.
+  /// Over the pager the strip is open while [settledPage] rests on the first
+  /// reel and closed on every other; with no [settledPage] (the empty feed)
+  /// it simply stays open. It follows the page the pager has come to REST on,
+  /// not the one it is passing through, so the pager's viewport only grows or
+  /// shrinks once a swipe has finished: the PageView keeps its page index
+  /// across that resize, and the embedded players follow the same settled
+  /// page, so nothing jumps.
   ///
-  /// The Stack is there with or without stories, and [content] is always its
-  /// first child, so stories arriving (or running out) only adds or drops the
-  /// overlay. Returning [content] bare when there are none would remount the
-  /// pager the moment the first story loads — a new PageView position, which
-  /// throws the viewer back to the first reel mid-feed.
-  Widget _withStoriesTray(Widget content, {ValueListenable<int>? page}) =>
-      Stack(
-        fit: StackFit.expand,
-        children: [
-          content,
-          if (_hasStories)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: _ReelsStoriesOverlay(
-                page: page,
-                trayTop: homeTopInset(context),
-              ),
-            ),
-        ],
+  /// The same layout is there with or without stories, and [content] keeps
+  /// its place in it, so stories arriving (or running out) only opens or
+  /// closes the strip. Returning [content] bare when there are none would
+  /// remount the pager the moment the first story loads — a new PageView
+  /// position, which throws the viewer back to the first reel mid-feed.
+  Widget _withStoriesStrip(
+    Widget content, {
+    ValueListenable<int>? settledPage,
+  }) {
+    final hasStories = _hasStories;
+    if (settledPage == null) {
+      return _ReelsStoriesStrip(
+        hasStories: hasStories,
+        open: hasStories,
+        content: content,
       );
+    }
+    return ValueListenableBuilder<int>(
+      valueListenable: settledPage,
+      child: content,
+      builder: (context, page, child) => _ReelsStoriesStrip(
+        hasStories: hasStories,
+        open: hasStories && page == 0,
+        content: child!,
+      ),
+    );
+  }
 
   Widget _loader() => const SmPageLoader();
 }
 
-/// The stories tray over the reels, with a soft top scrim so its white names
-/// read over a bright video.
+/// The stories strip above the reels, and [content] below it.
 ///
-/// Shown while [page] is on the first reel (always, with no [page]). Hidden,
-/// it slides up and fades out, and ignores the pointer outright: an invisible
-/// tray must never eat a tap meant for the reel beneath it.
+/// The strip is a solid block: the height of Home's top band (the status bar
+/// and the "Mall | Reels" switch row — the switch floats over this band) plus
+/// the stories row. [content] gets the height that is left, so the first reel
+/// is laid out below the strip instead of under it.
 ///
-/// Shown, only the tray itself takes touches. The scrim never does, and
-/// neither does the band above the tray (status bar and Home's switch row,
-/// which sit on top of this anyway). Because the tray is drawn above the
-/// pager rather than inside it, a drag that starts on the tray is the
+/// Opening and closing animate the strip's height over
+/// [ReelsFeedScreen.storiesStripMotion], easing out — at once when the
+/// platform asks for reduced motion. It is clipped as it closes and stays aligned to its bottom edge,
+/// so the bubbles slide up and away like content scrolling off the top. It
+/// ignores the pointer the moment it starts to close: a strip on its way out
+/// must never eat a tap meant for the reel growing into its place.
+///
+/// Because the strip sits outside the pager, a drag that starts on it is the
 /// tray's: sideways it scrolls the bubbles, and the vertical pager never
 /// enters the gesture arena for it.
-class _ReelsStoriesOverlay extends StatelessWidget {
-  const _ReelsStoriesOverlay({required this.trayTop, this.page});
+///
+/// [content]'s top inset follows the strip. While the strip covers the
+/// status bar, the reel beneath it has no status bar to keep clear of (a
+/// TikTok player, which otherwise starts below the status bar, would leave a
+/// black band under the strip). As the strip closes the inset comes back,
+/// pixel for pixel, until a later reel has the whole screen and the whole
+/// inset, exactly as without stories.
+class _ReelsStoriesStrip extends StatelessWidget {
+  const _ReelsStoriesStrip({
+    required this.hasStories,
+    required this.open,
+    required this.content,
+  });
 
-  final ValueListenable<int>? page;
+  /// Whether anyone has an active story at all.
+  final bool hasStories;
 
-  /// Where the tray starts: below the status bar and Home's switch row.
-  final double trayTop;
+  /// Whether the strip should be open: there are stories and the viewer is on
+  /// the first reel (or there are no reels to leave).
+  final bool open;
+
+  final Widget content;
 
   @override
   Widget build(BuildContext context) {
-    final page = this.page;
-    if (page == null) return _overlay(context, visible: true);
-    return ValueListenableBuilder<int>(
-      valueListenable: page,
-      builder: (context, index, _) => _overlay(context, visible: index == 0),
-    );
-  }
-
-  Widget _overlay(BuildContext context, {required bool visible}) {
     final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    final duration = reduceMotion
-        ? Duration.zero
-        : ReelsFeedScreen.storiesTrayMotion;
-    return IgnorePointer(
-      key: ReelsFeedScreen.storiesTrayKey,
-      ignoring: !visible,
-      child: AnimatedOpacity(
-        opacity: visible ? 1 : 0,
-        duration: duration,
-        curve: DesignTokens.motionCurve,
-        child: AnimatedSlide(
-          offset: visible ? Offset.zero : const Offset(0, -0.5),
-          duration: duration,
-          curve: DesignTokens.motionCurve,
-          child: Stack(
-            children: [
-              // From the very top of the screen down past the tray: keeps
-              // white names legible over a bright video, and the status bar
-              // and the switch above it with them.
-              const Positioned.fill(
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x99000000),
-                          Color(0x59000000),
-                          Color(0x00000000),
-                        ],
-                        stops: [0, 0.65, 1],
+    final media = MediaQuery.of(context);
+    final band = homeTopInset(context);
+    final extent = band + ReelsFeedScreen.storiesTrayExtent;
+    return TweenAnimationBuilder<double>(
+      // No begin: the first build starts where it should be, so a feed that
+      // opens with stories already loaded shows the strip without a flourish.
+      tween: Tween<double>(end: open ? 1 : 0),
+      duration: reduceMotion
+          ? Duration.zero
+          : ReelsFeedScreen.storiesStripMotion,
+      curve: Curves.easeOut,
+      child: content,
+      builder: (context, openness, child) {
+        final height = extent * openness;
+        // What is left of an inset once the strip covers [height] of it.
+        double below(double inset) => inset > height ? inset - height : 0;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: height,
+              // Built while there are stories, and while a strip whose stories
+              // just ran out is still closing — never for a feed with none.
+              child: hasStories || openness > 0
+                  ? IgnorePointer(
+                      key: ReelsFeedScreen.storiesTrayKey,
+                      ignoring: !open,
+                      child: ClipRect(
+                        child: OverflowBox(
+                          alignment: Alignment.bottomCenter,
+                          minHeight: extent,
+                          maxHeight: extent,
+                          child: ColoredBox(
+                            color: DesignTokens.bgAppFoundation,
+                            child: Padding(
+                              padding: EdgeInsets.only(top: band),
+                              child: const StoriesTray(hideWhenEmpty: true),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    )
+                  : null,
+            ),
+            Expanded(
+              child: MediaQuery(
+                data: media.copyWith(
+                  padding: media.padding.copyWith(
+                    top: below(media.padding.top),
+                  ),
+                  viewPadding: media.viewPadding.copyWith(
+                    top: below(media.viewPadding.top),
                   ),
                 ),
+                child: child!,
               ),
-              Padding(
-                // The extra room underneath is where the scrim fades out; it
-                // takes no touches (padding never does).
-                padding: EdgeInsets.only(
-                  top: trayTop,
-                  bottom: DesignTokens.s16,
-                ),
-                child: const StoriesTray(
-                  style: StoriesTrayStyle.overlay,
-                  hideWhenEmpty: true,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
