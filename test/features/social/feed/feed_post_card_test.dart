@@ -31,6 +31,17 @@ Widget _card(FeedPost post, _Calls calls) {
   );
 }
 
+/// The card is taller than the 800x600 test viewport, so anything below the
+/// media needs scrolling into view first — and the scroll has to settle before
+/// the tap, or it is dispatched against the old layout and hits the
+/// SingleChildScrollView rather than the target.
+Future<void> _tap(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pump();
+}
+
 Future<void> _doubleTap(WidgetTester tester, Finder finder) async {
   await tester.tap(finder);
   await tester.pump(kDoubleTapMinTime);
@@ -86,11 +97,10 @@ void main() {
     final calls = _Calls();
     await tester.pumpWidget(_card(samplePost(), calls));
 
-    await tester.tap(find.byKey(const Key('post-action-like')));
-    await tester.tap(find.byKey(const Key('post-action-comment')));
-    await tester.tap(find.byKey(const Key('post-action-share')));
-    await tester.tap(find.byKey(const Key('feed-post-view-comments')));
-    await tester.pump();
+    await _tap(tester, find.byKey(const Key('post-action-like')));
+    await _tap(tester, find.byKey(const Key('post-action-comment')));
+    await _tap(tester, find.byKey(const Key('post-action-share')));
+    await _tap(tester, find.byKey(const Key('feed-post-view-comments')));
 
     expect(calls.likes, 1);
     expect(calls.comments, 2);
@@ -135,8 +145,7 @@ void main() {
     expect(find.text('Shop'), findsOneWidget);
     expect(find.text('Denim Jacket'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('feed-post-product-prod-42')));
-    await tester.pump();
+    await _tap(tester, find.byKey(const Key('feed-post-product-prod-42')));
 
     expect(calls.products, ['prod-42']);
   });
@@ -150,8 +159,7 @@ void main() {
     final more = find.byKey(const Key('feed-post-caption-more'));
     expect(more, findsOneWidget);
 
-    await tester.tap(more);
-    await tester.pump();
+    await _tap(tester, more);
 
     expect(more, findsNothing);
   });

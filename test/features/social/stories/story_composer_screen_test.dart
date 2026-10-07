@@ -66,8 +66,7 @@ void main() {
       '  New drop  ',
     );
     await tester.tap(find.byKey(_share));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
 
     expect(repository.created, hasLength(1));
     expect(repository.created.single.mediaFile, _mediaPath);

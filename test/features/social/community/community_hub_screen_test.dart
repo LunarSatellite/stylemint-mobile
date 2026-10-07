@@ -134,6 +134,8 @@ void main() {
         120,
         scrollable: _shortcutScrollable(),
       );
+      await tester.ensureVisible(chip);
+      await _settle(tester);
       await tester.tap(chip);
       await _settle(tester);
 

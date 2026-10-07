@@ -127,6 +127,16 @@ const Map<String, String> _exemptions = {
   // for that reel.
   'lib/features/creator/reel_import/presentation/screens/tag_products_screen.dart':
       'Suggestions are requested for this specific reel by platform + post id.',
+  // ── Agency, not provenance ──────────────────────────────────────────────
+  // "To let it shop for you again you would issue a new mandate" — the
+  // revoke-mandate dialog. "for you" here means *on your behalf*: the
+  // assistant acts as the customer, which is the whole subject of a mandate.
+  // It asserts nothing about how any content was chosen, so it is outside what
+  // this guard is for. Relabelling it would make the sentence wrong.
+  'lib/features/customer/agent_commerce/presentation/screens/connected_assistants_screen.dart':
+      'Describes the assistant acting on the customer\'s behalf under a '
+      'mandate, not a selection made for the reader.',
+
   // "Added for you" describes an action the app just took, not a selection.
   'lib/features/creator/reel_import/presentation/widgets/caption_standard_sheet.dart':
       'Describes an action the app performed, not a selection for the reader.',

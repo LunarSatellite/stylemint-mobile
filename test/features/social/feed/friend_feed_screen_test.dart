@@ -17,6 +17,17 @@ Future<void> _settle(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 50));
 }
 
+/// Pumps past a modal route's entry animation *and* the async load behind it.
+/// [_settle]'s three 50ms frames are enough for the feed itself, but the
+/// comments sheet has to finish transitioning before its loader resolves, and
+/// pumpAndSettle cannot be used here — SmBrandLoader animates indefinitely, so
+/// settling never terminates.
+Future<void> _settleSheet(WidgetTester tester) async {
+  for (var i = 0; i < 12; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
 void main() {
   testWidgets('stories sit above the posts', (tester) async {
     await tester.pumpWidget(_app(FakeFeedRepository(posts: [samplePost()])));
@@ -33,7 +44,11 @@ void main() {
     await tester.pumpWidget(_app(feed));
     await _settle(tester);
 
+    // ensureVisible only schedules the scroll — without settling first, the
+    // tap is dispatched against the pre-scroll layout and lands on the
+    // scrollable instead of the button.
     await tester.ensureVisible(find.byKey(const Key('post-action-like')));
+    await _settle(tester);
     await tester.tap(find.byKey(const Key('post-action-like')));
     await _settle(tester);
 
@@ -56,13 +71,16 @@ void main() {
 
     final viewComments = find.text('View all 3 comments');
     await tester.ensureVisible(viewComments);
+    await _settle(tester);
     await tester.tap(viewComments);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await _settleSheet(tester);
 
     expect(find.byType(FeedCommentsSheet), findsOneWidget);
     expect(find.text('Comments'), findsOneWidget);
-    expect(find.text('Bikash'), findsOneWidget);
+    // The author's name is a TextSpan inside the Text.rich that also carries
+    // the time-ago, so the span's plain text is "Bikash  5m" and find.text —
+    // which compares the whole string — never matches it.
+    expect(find.textContaining('Bikash'), findsOneWidget);
     expect(find.text('Where is it from?'), findsOneWidget);
 
     TextButton post() =>
