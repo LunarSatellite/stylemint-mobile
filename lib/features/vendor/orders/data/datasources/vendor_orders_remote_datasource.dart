@@ -312,4 +312,41 @@ class VendorOrdersRemoteDataSource {
     );
     return response as Map<String, dynamic>;
   }
+
+  /// GET /v1/vendor/sub-orders/{id}/delivery-candidates — the delivery
+  /// partners routing would accept for this order's parcel, best first.
+  ///
+  /// An empty list is a real answer: either the parcel does not exist yet
+  /// (parcels are created when the order is paid) or nobody is on shift and in
+  /// range. The handover sheet says so rather than showing an empty picker.
+  Future<List<Map<String, dynamic>>> listDeliveryCandidates(
+    String subOrderId,
+  ) async {
+    final response = await apiClient.get(
+      '/v1/vendor/sub-orders/$subOrderId/delivery-candidates',
+    );
+    return (response as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .toList(growable: false);
+  }
+
+  /// POST /v1/vendor/sub-orders/{id}/offer-to-courier/{courierProfileId}.
+  ///
+  /// Offers, never assigns: the partner accepts, or the offer expires and the
+  /// parcel goes to every eligible courier. A refusal — off shift, outside
+  /// their tier's locality, no parcel yet — arrives as a 422 the caller
+  /// surfaces, because it is something the vendor can act on.
+  Future<void> offerToCourier(
+    String subOrderId,
+    String courierProfileId, {
+    required String idempotencyKey,
+    String? note,
+  }) async {
+    final n = note?.trim() ?? '';
+    await apiClient.post(
+      '/v1/vendor/sub-orders/$subOrderId/offer-to-courier/$courierProfileId',
+      data: {if (n.isNotEmpty) 'note': n},
+      options: _idempotent(idempotencyKey),
+    );
+  }
 }

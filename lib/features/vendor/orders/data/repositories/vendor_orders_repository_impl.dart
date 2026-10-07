@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/data/datasource
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_return_request_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
@@ -581,4 +582,27 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
     }
     return BulkActionResult(succeededIds: succeeded, failed: failed);
   }
+
+  @override
+  Future<Either<NetworkExceptions, List<DeliveryCandidate>>>
+  listDeliveryCandidates(String orderId) =>
+      guardedNetworkCall(networkInfo, () async {
+        final rows = await remoteDataSource.listDeliveryCandidates(orderId);
+        return rows.map(DeliveryCandidate.fromJson).toList();
+      });
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> offerToCourier(
+    String orderId,
+    String courierProfileId, {
+    String? note,
+  }) => guardedNetworkCall(networkInfo, () async {
+    await remoteDataSource.offerToCourier(
+      orderId,
+      courierProfileId,
+      idempotencyKey: _uuid.v4(),
+      note: note,
+    );
+    return unit;
+  });
 }

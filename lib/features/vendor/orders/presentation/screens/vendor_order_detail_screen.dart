@@ -51,13 +51,29 @@ class _VendorOrderDetailScreenState
       case VendorOrderAction.markPacked:
         run = notifier.markPacked;
       case VendorOrderAction.handOver:
-        final input = await showVendorHandoverSheet(context);
-        if (input == null) return;
-        run = () => notifier.handOver(
-          carrier: input.carrier,
-          trackingNumber: input.trackingNumber,
-          note: input.note,
+        // Fetched before the sheet so the sheet stays presentational, like
+        // every other step sheet here. An empty list is normal: the sheet
+        // says so, and the carrier fields carry a third-party courier.
+        final partners = await notifier.deliveryCandidates();
+        if (!mounted) return;
+        final input = await showVendorHandoverSheet(
+          context,
+          candidates: partners,
         );
+        if (input == null) return;
+        final picked = input.courierProfileId;
+        run = picked == null
+            ? () => notifier.handOver(
+                carrier: input.carrier,
+                trackingNumber: input.trackingNumber,
+                note: input.note,
+              )
+            : () => notifier.offerThenHandOver(
+                courierProfileId: picked,
+                carrier: input.carrier,
+                trackingNumber: input.trackingNumber,
+                note: input.note,
+              );
       case VendorOrderAction.readyToShip:
         run = notifier.markReadyToShip;
       case VendorOrderAction.markDelivered:

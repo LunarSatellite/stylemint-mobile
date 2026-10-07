@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// What the reject sheet hands back.
@@ -10,14 +13,24 @@ class VendorRejectInput {
   final String? note;
 }
 
-/// What the handover sheet hands back; carrier and tracking number are both
-/// set or both null.
+/// What the handover sheet collected.
+///
+/// [courierProfileId] is the delivery partner the vendor picked, when they
+/// picked one. Null means they are handing to a third-party courier and the
+/// carrier/tracking fields carry that instead — a different case, not a
+/// worse one.
 class VendorHandoverInput {
-  const VendorHandoverInput({this.carrier, this.trackingNumber, this.note});
+  const VendorHandoverInput({
+    this.carrier,
+    this.trackingNumber,
+    this.note,
+    this.courierProfileId,
+  });
 
   final String? carrier;
   final String? trackingNumber;
   final String? note;
+  final String? courierProfileId;
 }
 
 Future<VendorRejectInput?> showVendorRejectSheet(BuildContext context) =>
@@ -34,7 +47,10 @@ Future<VendorRejectInput?> showVendorRejectSheet(BuildContext context) =>
       builder: (_) => const VendorRejectSheet(),
     );
 
-Future<VendorHandoverInput?> showVendorHandoverSheet(BuildContext context) =>
+Future<VendorHandoverInput?> showVendorHandoverSheet(
+  BuildContext context, {
+  List<DeliveryCandidate> candidates = const [],
+}) =>
     showModalBottomSheet<VendorHandoverInput>(
       context: context,
       isScrollControlled: true,
@@ -45,7 +61,7 @@ Future<VendorHandoverInput?> showVendorHandoverSheet(BuildContext context) =>
           top: Radius.circular(DesignTokens.radiusLarge),
         ),
       ),
-      builder: (_) => const VendorHandoverSheet(),
+      builder: (_) => VendorHandoverSheet(candidates: candidates),
     );
 
 /// Reject: one reason code from the contract plus a note (≤ 200) that the
@@ -133,7 +149,12 @@ class _VendorRejectSheetState extends State<VendorRejectSheet> {
 /// Hand over to a courier: optional carrier + tracking number (both or
 /// neither) and an optional note shown on the buyer's "Picked up" step.
 class VendorHandoverSheet extends StatefulWidget {
-  const VendorHandoverSheet({super.key});
+  const VendorHandoverSheet({this.candidates = const [], super.key});
+
+  /// Delivery partners routing would accept for this parcel, best first.
+  /// Fetched by the screen before the sheet opens, so this stays
+  /// presentational like every other sheet here.
+  final List<DeliveryCandidate> candidates;
 
   static const Key submitKey = ValueKey<String>('vendor-handover-submit');
   static const Key carrierFieldKey = ValueKey<String>(
@@ -155,6 +176,7 @@ class _VendorHandoverSheetState extends State<VendorHandoverSheet> {
   final _carrier = TextEditingController();
   final _tracking = TextEditingController();
   final _note = TextEditingController();
+  String? _courierProfileId;
   bool _attempted = false;
 
   @override
@@ -187,6 +209,7 @@ class _VendorHandoverSheetState extends State<VendorHandoverSheet> {
         carrier: _c.isEmpty ? null : _c,
         trackingNumber: _t.isEmpty ? null : _t,
         note: note.isEmpty ? null : note,
+        courierProfileId: _courierProfileId,
       ),
     );
   }
@@ -196,12 +219,32 @@ class _VendorHandoverSheetState extends State<VendorHandoverSheet> {
     return _SheetScaffold(
       title: 'Hand over to the courier',
       body:
-          'Add the courier’s tracking details if you have them — both the '
-          'carrier and the tracking number, or neither.',
+          'Pick the StyleMint partner taking it, or add your own courier’s '
+          'tracking details — both the carrier and the number, or neither.',
       primaryLabel: 'Confirm handover',
       primaryKey: VendorHandoverSheet.submitKey,
       onPrimary: _submit,
       children: [
+        Text(
+          'Delivery partner',
+          style: DesignTokens.tiny.copyWith(color: DesignTokens.textLight),
+        ),
+        const SizedBox(height: DesignTokens.s8),
+        _PartnerPicker(
+          candidates: widget.candidates,
+          selected: _courierProfileId,
+          onSelected: (id) => setState(() => _courierProfileId = id),
+        ),
+        if (_courierProfileId != null) ...[
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            'They get it to themselves for 90 seconds. If they do not accept, '
+            'it goes to every partner nearby — so picking someone cannot hold '
+            'the parcel up.',
+            style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+          ),
+        ],
+        const SizedBox(height: DesignTokens.s16),
         _SheetTextField(
           fieldKey: VendorHandoverSheet.carrierFieldKey,
           controller: _carrier,
@@ -230,6 +273,153 @@ class _VendorHandoverSheetState extends State<VendorHandoverSheet> {
       ],
     );
   }
+}
+
+/// The delivery partners offered to the vendor on the handover sheet.
+///
+/// Presentational on purpose: the list is fetched by the screen before the
+/// sheet opens and the chosen id is handed back on pop, so this widget — like
+/// every other sheet here — does no network work and needs no provider.
+class _PartnerPicker extends StatelessWidget {
+  const _PartnerPicker({
+    required this.candidates,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<DeliveryCandidate> candidates;
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (candidates.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(DesignTokens.s12),
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBodyLight,
+          borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+        ),
+        child: Text(
+          'No StyleMint delivery partner can take this right now — none is on '
+          'shift and in range, or the parcel has not been created yet. Hand it '
+          'to your own courier and add their details below.',
+          style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < candidates.length; i++) ...[
+          if (i > 0) const SizedBox(height: DesignTokens.s8),
+          _PartnerTile(
+            candidate: candidates[i],
+            isFirstChoice: i == 0,
+            selected: candidates[i].courierProfileId == selected,
+            // Tapping the selected partner clears it, so a vendor who changes
+            // their mind can fall back to a third-party courier without
+            // closing the sheet.
+            onTap: () => onSelected(
+              candidates[i].courierProfileId == selected
+                  ? null
+                  : candidates[i].courierProfileId,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PartnerTile extends StatelessWidget {
+  const _PartnerTile({
+    required this.candidate,
+    required this.isFirstChoice,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final DeliveryCandidate candidate;
+  final bool isFirstChoice;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+    child: Container(
+      padding: const EdgeInsets.all(DesignTokens.s12),
+      decoration: BoxDecoration(
+        color: selected
+            ? DesignTokens.primaryGreenLight
+            : DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+        border: Border.all(
+          color: selected
+              ? DesignTokens.primaryGreen
+              : DesignTokens.textMuted.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            selected
+                ? Icons.radio_button_checked_rounded
+                : Icons.radio_button_unchecked_rounded,
+            size: 18,
+            color: selected
+                ? DesignTokens.primaryGreen
+                : DesignTokens.textMuted,
+          ),
+          const SizedBox(width: DesignTokens.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      candidate.tierLabel,
+                      style: DesignTokens.mediumSemibold,
+                    ),
+                    if (isFirstChoice) ...[
+                      const SizedBox(width: DesignTokens.s8),
+                      Text(
+                        'best match',
+                        style: DesignTokens.tiny.copyWith(
+                          color: DesignTokens.primaryGreen,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                Text(
+                  '${(candidate.reliability * 100).round()}% reliable · '
+                  '${candidate.rating.toStringAsFixed(1)}★'
+                  '${candidate.recentDeclines24h > 0 ? ' · ${candidate.recentDeclines24h} declined today' : ''}',
+                  style: DesignTokens.tiny.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            formatMoney(
+              Money(
+                amount: candidate.payoutAmount,
+                currency: candidate.payoutCurrency,
+              ),
+            ),
+            style: DesignTokens.tiny.copyWith(color: DesignTokens.textLight),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _SheetScaffold extends StatelessWidget {

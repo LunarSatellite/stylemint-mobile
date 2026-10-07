@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
@@ -109,4 +110,18 @@ abstract interface class VendorOrdersRepository {
   Future<Either<NetworkExceptions, BulkActionResult>> bulkPackingSlips(
     List<String> orderIds,
   );
+
+  /// Delivery partners routing would accept for this order's parcel.
+  /// An empty list means there is nobody to hand to — no parcel yet, or
+  /// nobody on shift and in range.
+  Future<Either<NetworkExceptions, List<DeliveryCandidate>>>
+  listDeliveryCandidates(String orderId);
+
+  /// Offers this order's parcel to one partner. Offering, not assigning: they
+  /// accept, or the offer expires and it goes to every eligible courier.
+  Future<Either<NetworkExceptions, Unit>> offerToCourier(
+    String orderId,
+    String courierProfileId, {
+    String? note,
+  });
 }

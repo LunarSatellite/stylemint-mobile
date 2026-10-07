@@ -5,6 +5,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/repositories/vendor_orders_repository.dart';
@@ -237,6 +238,51 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
       note: note,
     ),
   );
+
+  /// Delivery partners routing would accept for this order's parcel.
+  ///
+  /// Read-only and outside [_runAction]: it changes no state, so it must not
+  /// put the screen into actionInProgress or leave it in actionFailure when
+  /// nobody is available. An empty list is a normal answer.
+  Future<List<DeliveryCandidate>> deliveryCandidates() async {
+    final order = state.maybeWhen(
+      loadSuccess: (o) => o,
+      actionFailure: (o, _) => o,
+      orElse: () => null,
+    );
+    if (order == null) return const [];
+    final either = await _repository.listDeliveryCandidates(order.id);
+    return either.fold((_) => const [], (candidates) => candidates);
+  }
+
+  /// Offers the parcel to one partner, then records the handover.
+  ///
+  /// Both in one action because they are one step to the vendor: the parcel is
+  /// in the partner's hands either way, and leaving the sub-order in Packed
+  /// after a successful offer would misreport where it is. A refused offer
+  /// stops before the handover so the vendor can pick someone else.
+  Future<void> offerThenHandOver({
+    required String courierProfileId,
+    String? carrier,
+    String? trackingNumber,
+    String? note,
+  }) => _runAction((order) async {
+    final offered = await _repository.offerToCourier(
+      order.id,
+      courierProfileId,
+      note: note,
+    );
+    return offered.fold(
+      // Both branches must be the same Future type for fold to infer one.
+      (failure) async => left<NetworkExceptions, VendorOrder>(failure),
+      (_) => _repository.handOver(
+        order.id,
+        carrier: carrier,
+        trackingNumber: trackingNumber,
+        note: note,
+      ),
+    );
+  });
 
   /// One state change: actionInProgress while it runs, then the refreshed
   /// order, or actionFailure (the screen shows a snackbar and keeps the
