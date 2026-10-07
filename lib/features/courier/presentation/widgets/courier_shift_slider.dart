@@ -144,7 +144,7 @@ class _CourierShiftSliderState extends ConsumerState<CourierShiftSlider> {
                 color: online
                     ? DesignTokens.primaryGreen
                     : DesignTokens.textMuted.withValues(alpha: 0.35),
-                width: online ? 1.5 : 1,
+                width: online ? 1.5 : 1.0,
               ),
               boxShadow: [
                 BoxShadow(
