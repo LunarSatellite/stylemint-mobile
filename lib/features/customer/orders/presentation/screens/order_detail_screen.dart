@@ -2286,8 +2286,14 @@ class _OrderSummarySheet extends StatelessWidget {
                           label: 'Shipping',
                           value: formatMoney(order.shipping),
                         ),
+                        // VAT is INSIDE the subtotal, not a line added to it.
+                        // Labelled 'Tax' in a ledger whose last row is what
+                        // was paid, it read as a charge on top and the column
+                        // did not add up — which is exactly how "tax is added
+                        // later" was reported. Cart and checkout already say
+                        // this; these two screens were missed.
                         MallAmount(
-                          label: 'Tax',
+                          label: 'Includes VAT',
                           value: formatMoney(order.tax),
                         ),
                         MallAmount(

@@ -1,5 +1,6 @@
-import 'package:dio/dio.dart' show Options;
+import 'package:dio/dio.dart' show FormData, MultipartFile, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/upload_filename.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/data/models/review_dto.dart';
 
 class ReviewsRemoteDataSource {
@@ -39,12 +40,44 @@ class ReviewsRemoteDataSource {
     );
   }
 
+  /// POST `/v1/customer/reviews/images` — multipart upload, one call per
+  /// photo, returning the CDN URL to submit as an entry of
+  /// `imageCdnUrls`.
+  ///
+  /// The filename is fixed rather than taken from the picked path: dio derives
+  /// the part's Content-Type from the name and never from the bytes, and the
+  /// endpoint allows only image/jpeg and image/png. See [uploadFilename].
+  Future<String> uploadReviewImage(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        filePath,
+        filename: uploadFilename(filePath),
+      ),
+    });
+    final response = await apiClient.rawPost(
+      '/v1/customer/reviews/images',
+      data: formData,
+      options: Options(headers: {'requiresToken': true}),
+    );
+    final data = response.data as Map<String, dynamic>;
+    return data['url'] as String;
+  }
+
   /// POST `/v1/customer/products/{productId}/reviews`. `orderId` is
   /// required server-side as proof of purchase; `kind` is always Written
   /// (0) here — Reel-review submission is a separate, still-unbuilt path
-  /// (see `RateReviewSheet`'s ponytail note). `imagePaths` are local file
-  /// paths only — there's no upload endpoint yet (skipped, needs storage
-  /// infra), so images are picked for local preview but not sent.
+  /// (see `RateReviewSheet`'s ponytail note).
+  ///
+  /// [imagePaths] are local files. Each is uploaded first and the resulting
+  /// CDN URLs are sent as `imageCdnUrls`, which is what the server attaches to
+  /// the review. Until 2026-10-07 they were picked, previewed and then
+  /// dropped — the comment here said "there's no upload endpoint yet", which
+  /// was true of the API and quietly meant a review submitted with photos
+  /// saved its text and none of its images.
+  ///
+  /// An image that fails to upload is skipped rather than failing the whole
+  /// submission: losing one photo is better than losing the written review
+  /// with it, and the server requires none.
   Future<Map<String, dynamic>> submitReview(
     String productId,
     String orderId,
@@ -53,6 +86,15 @@ class ReviewsRemoteDataSource {
     String idempotencyKey, {
     List<String>? imagePaths,
   }) async {
+    final imageUrls = <String>[];
+    for (final path in imagePaths ?? const <String>[]) {
+      try {
+        imageUrls.add(await uploadReviewImage(path));
+      } catch (_) {
+        // Skipped on purpose — see the note above.
+      }
+    }
+
     final response = await apiClient.post(
       '/v1/customer/products/$productId/reviews',
       data: {
@@ -60,6 +102,7 @@ class ReviewsRemoteDataSource {
         'kind': 0,
         'rating': rating,
         'text': comment,
+        if (imageUrls.isNotEmpty) 'imageCdnUrls': imageUrls,
       },
       options: _idempotent(idempotencyKey),
     );
