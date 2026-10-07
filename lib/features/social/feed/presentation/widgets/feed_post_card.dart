@@ -1,9 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/domain/entities/feed_post.dart';
+import 'package:stylemint_mobile_frontend/features/social/feed/domain/entities/post_media.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/feed_avatar.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/feed_formatters.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/post_action_bar.dart';
+import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/post_video_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -318,6 +320,11 @@ class _PostImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Posts list their media as bare URLs; a video upload is stored as
+    // .mp4/.mov, so the extension says which tile to draw.
+    if (isVideoMediaUrl(url)) {
+      return PostVideoView.network(url, key: const Key('feed-post-video'));
+    }
     if (url.isEmpty) {
       return const ColoredBox(
         color: DesignTokens.bgAppBody,

@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/data/datasources/feed_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/data/models/feed_post_dto.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/domain/entities/feed_post.dart';
+import 'package:stylemint_mobile_frontend/features/social/feed/domain/entities/post_media.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/domain/repositories/feed_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 import 'package:uuid/uuid.dart';
@@ -70,6 +71,7 @@ class FeedRepositoryImpl implements FeedRepository {
     required String content,
     List<String>? imagePaths,
     List<String>? taggedProductIds,
+    List<UploadedPostMedia>? media,
   }) async {
     if (await networkInfo.isConnected) {
       try {
@@ -77,7 +79,37 @@ class FeedRepositoryImpl implements FeedRepository {
           content: content,
           imagePaths: imagePaths,
           taggedProductIds: taggedProductIds,
+          media: media,
           idempotencyKey: _uuid.v4(),
+        );
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(mapDioExceptionToNetworkException(e));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, UploadedPostMedia>> uploadPostMedia({
+    required String path,
+    required PostMediaKind kind,
+    void Function(int sent, int total)? onProgress,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.uploadPostMedia(
+          path: path,
+          kind: kind,
+          idempotencyKey: _uuid.v4(),
+          onProgress: onProgress,
         );
         return right(dto.toDomain());
       } catch (e) {

@@ -5,6 +5,14 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 part 'feed_post_dto.freezed.dart';
 part 'feed_post_dto.g.dart';
 
+/// The author's name from a post/comment payload. A missing or blank name
+/// becomes [unknownFeedAuthorName], which the feed recognises and replaces
+/// with the viewer's own name on content the viewer just created.
+String _authorName(Map<String, dynamic> json) {
+  final raw = (json['userName'] ?? json['authorDisplayName'])?.toString();
+  return raw == null || raw.trim().isEmpty ? unknownFeedAuthorName : raw;
+}
+
 @freezed
 abstract class FeedPostDto with _$FeedPostDto {
   const factory FeedPostDto({
@@ -44,9 +52,7 @@ abstract class FeedPostDto with _$FeedPostDto {
     return FeedPostDto(
       id: json['id'].toString(),
       userId: (json['userId'] ?? json['authorAccountId']).toString(),
-      userName:
-          (json['userName'] ?? json['authorDisplayName'] ?? 'StyleMint user')
-              .toString(),
+      userName: _authorName(json),
       userAvatarUrl: (json['userAvatarUrl'] ?? json['authorAvatarUrl'] ?? '')
           .toString(),
       content: (json['content'] ?? json['body'] ?? '').toString(),
@@ -59,7 +65,9 @@ abstract class FeedPostDto with _$FeedPostDto {
           ((json['likeCount'] ?? json['reactionCount']) as num?)?.toInt() ?? 0,
       commentCount: (json['commentCount'] as num?)?.toInt() ?? 0,
       shareCount: (json['shareCount'] as num?)?.toInt() ?? 0,
-      isLiked: json['isLiked'] as bool? ?? false,
+      // The feed stamps the viewer's own reaction as isLiked/viewerReaction;
+      // any reaction lights the heart.
+      isLiked: json['isLiked'] as bool? ?? (json['viewerReaction'] != null),
     );
   }
 
@@ -124,9 +132,7 @@ abstract class FeedCommentDto with _$FeedCommentDto {
       FeedCommentDto(
         id: json['id'].toString(),
         userId: (json['userId'] ?? json['authorAccountId']).toString(),
-        userName:
-            (json['userName'] ?? json['authorDisplayName'] ?? 'StyleMint user')
-                .toString(),
+        userName: _authorName(json),
         userAvatarUrl: (json['userAvatarUrl'] ?? json['authorAvatarUrl'] ?? '')
             .toString(),
         content: (json['content'] ?? json['body'] ?? '').toString(),

@@ -31,7 +31,9 @@ void main() {
   testWidgets('Post enables only after entering non-whitespace content', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: CreatePostScreen()));
+    await tester.pumpWidget(
+      socialTestScope(child: const MaterialApp(home: CreatePostScreen())),
+    );
 
     ElevatedButton button() =>
         tester.widget(find.widgetWithText(ElevatedButton, 'Post'));

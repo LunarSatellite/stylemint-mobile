@@ -43,7 +43,8 @@ abstract class StoryDto with _$StoryDto {
       id: json['id'].toString(),
       userId: (json['userId'] ?? json['authorAccountId']).toString(),
       userName:
-          (json['userName'] ?? json['authorDisplayName'] ?? 'StyleMint user')
+          (json['userName'] ?? json['authorDisplayName'] ??
+                  unknownStoryAuthorName)
               .toString(),
       userAvatarUrl: (json['userAvatarUrl'] ?? json['authorAvatarUrl'] ?? '')
           .toString(),

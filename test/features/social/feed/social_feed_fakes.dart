@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/providers/current_user_avatar_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/domain/entities/feed_post.dart';
+import 'package:stylemint_mobile_frontend/features/social/feed/domain/entities/post_media.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/domain/repositories/feed_repository.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/providers/feed_viewer_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/shared/providers.dart';
@@ -83,6 +84,14 @@ class FakeFeedRepository implements FeedRepository {
     required String content,
     List<String>? imagePaths,
     List<String>? taggedProductIds,
+    List<UploadedPostMedia>? media,
+  }) async => left(const NetworkExceptions.unexpectedError());
+
+  @override
+  Future<Either<NetworkExceptions, UploadedPostMedia>> uploadPostMedia({
+    required String path,
+    required PostMediaKind kind,
+    void Function(int sent, int total)? onProgress,
   }) async => left(const NetworkExceptions.unexpectedError());
 
   @override

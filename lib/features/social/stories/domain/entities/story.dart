@@ -2,6 +2,10 @@
 /// 24h`, and deriving the posted time from the expiry spares the DTO a field.
 const Duration storyLifetime = Duration(hours: 24);
 
+/// Shown for a story whose payload carried no author name. The viewer's own
+/// new story is filled from their profile instead (see StoriesNotifier).
+const String unknownStoryAuthorName = 'StyleMint user';
+
 class Story {
   const Story({
     required this.id,

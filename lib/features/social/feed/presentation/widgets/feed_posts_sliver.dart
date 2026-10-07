@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 // The friend feed as slivers, shared by the Friend Feed screen and the
@@ -122,14 +123,7 @@ class FeedPostTile extends ConsumerWidget {
     return FeedPostCard(
       post: post,
       index: index,
-      onLikeToggle: () {
-        final notifier = ref.read(feedNotifierProvider.notifier);
-        if (post.isLiked) {
-          unawaited(notifier.unlikePost(post.id, index));
-        } else {
-          unawaited(notifier.likePost(post.id, index));
-        }
-      },
+      onLikeToggle: () => unawaited(_toggleLike(context, ref)),
       onComment: () => unawaited(
         showFeedCommentsSheet(context, postId: post.id, postIndex: index),
       ),
@@ -140,6 +134,25 @@ class FeedPostTile extends ConsumerWidget {
         RouteNames.productDetail.replaceFirst(':productId', productId),
       ),
     );
+  }
+
+  /// The heart flips at once; if the server refuses, the notifier flips it
+  /// back and this says so, rather than leaving a like that silently never
+  /// existed.
+  Future<void> _toggleLike(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(feedNotifierProvider.notifier);
+    final wasLiked = post.isLiked;
+    final result = wasLiked
+        ? await notifier.unlikePost(post.id)
+        : await notifier.likePost(post.id);
+    if (result.isLeft() && context.mounted) {
+      SmSnackbar.error(
+        context,
+        wasLiked
+            ? 'Could not unlike the post. Please try again.'
+            : 'Could not like the post. Please try again.',
+      );
+    }
   }
 }
 

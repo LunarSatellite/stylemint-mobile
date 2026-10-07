@@ -21,12 +21,24 @@ sealed class StoriesState with _$StoriesState {
       _StoriesLoadFailure;
 }
 
+/// The signed-in viewer's name and photo, as the stories notifier needs them.
+typedef StoryViewerIdentity = ({String displayName, String avatarUrl});
+
 class StoriesNotifier extends StateNotifier<StoriesState> {
-  StoriesNotifier(this._repository) : super(const StoriesState.initial()) {
+  /// [readViewer] returns the signed-in viewer at call time; it fills the
+  /// author on a story the viewer just posted (see [createStory]).
+  StoriesNotifier(
+    this._repository, {
+    StoryViewerIdentity? Function()? readViewer,
+  }) : _readViewer = readViewer ?? _noViewer,
+       super(const StoriesState.initial()) {
     unawaited(loadStoryGroups());
   }
 
   final StoriesRepository _repository;
+  final StoryViewerIdentity? Function() _readViewer;
+
+  static StoryViewerIdentity? _noViewer() => null;
 
   List<StoryGroup>? get _loadedGroups =>
       state.maybeWhen(loadSuccess: (groups) => groups, orElse: () => null);
@@ -83,15 +95,34 @@ class StoriesNotifier extends StateNotifier<StoriesState> {
     String? caption,
     List<String>? taggedProductIds,
   }) async {
-    final either = await _repository.createStory(
+    final either = (await _repository.createStory(
       mediaFile: mediaFile,
       caption: caption,
       taggedProductIds: taggedProductIds,
-    );
+    )).map(_asViewersStory);
     either.map((_) {
       unawaited(loadStoryGroups());
     });
     return either;
+  }
+
+  /// The create response is the viewer's own story. If it came without the
+  /// author's name or photo, take them from the signed-in viewer rather than
+  /// hand back a "StyleMint user" story.
+  Story _asViewersStory(Story story) {
+    final viewer = _readViewer();
+    if (viewer == null) return story;
+    final name = story.userName.trim();
+    final hasName = name.isNotEmpty && name != unknownStoryAuthorName;
+    return story.copyWith(
+      userName: hasName || viewer.displayName.trim().isEmpty
+          ? null
+          : viewer.displayName.trim(),
+      userAvatarUrl:
+          story.userAvatarUrl.trim().isNotEmpty || viewer.avatarUrl.isEmpty
+          ? null
+          : viewer.avatarUrl,
+    );
   }
 
   /// Deletes one of the caller's stories. On success it leaves the tray at

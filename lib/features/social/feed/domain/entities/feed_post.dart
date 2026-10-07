@@ -1,5 +1,17 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
+/// Shown for a post or comment whose payload carried no author name. Only a
+/// stand-in: the viewer's own new post/comment is filled from their profile
+/// instead (see FeedNotifier), so it never reads as someone anonymous.
+const String unknownFeedAuthorName = 'StyleMint user';
+
+/// True when [name] is a real author name rather than missing or the
+/// [unknownFeedAuthorName] stand-in.
+bool isKnownFeedAuthorName(String name) {
+  final trimmed = name.trim();
+  return trimmed.isNotEmpty && trimmed != unknownFeedAuthorName;
+}
+
 class FeedPost {
   const FeedPost({
     required this.id,

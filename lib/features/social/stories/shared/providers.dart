@@ -24,7 +24,15 @@ final storiesRepositoryProvider = Provider<StoriesRepository>(
 
 final storiesNotifierProvider =
     StateNotifierProvider<StoriesNotifier, StoriesState>(
-      (ref) => StoriesNotifier(ref.watch(storiesRepositoryProvider)),
+      (ref) => StoriesNotifier(
+        ref.watch(storiesRepositoryProvider),
+        // Read at call time: fills the author on the viewer's just-posted
+        // story. Watching it would rebuild the notifier and blink the tray.
+        readViewer: () {
+          final me = ref.read(storiesCurrentUserProvider);
+          return (displayName: me.displayName, avatarUrl: me.avatarUrl);
+        },
+      ),
     );
 
 /// The signed-in person as the stories UI needs them: who owns "Your story"
