@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_warranty_workspace.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_action_bar.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_return_card.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
@@ -263,24 +264,43 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
               ],
             ),
           ),
-          orElse: () => TabBarView(
-            controller: _tabController,
+          orElse: () => Column(
             children: [
-              _OrderList(
-                orders: toShipVisible,
-                header: _ToShipFilterChips(
-                  selected: _toShipFilter,
-                  onSelected: (f) => setState(() => _toShipFilter = f),
+              // Outside the TabBarView on purpose: the strip belongs to the
+              // Orders section, not to one tab, so it stays put while the
+              // seller looks at Returns or Warranty.
+              //
+              // Hidden during bulk select, where the app bar has already
+              // become "Select orders to accept" and a second set of tappable
+              // orders underneath it would be ambiguous about which list the
+              // selection applies to.
+              if (!_selectMode)
+                _ToShipHeader(
+                  orders: toShip,
+                  onSeeAll: () => _tabController.animateTo(0),
                 ),
-                selectMode: _selectMode,
-                selectedIds: _selectedIds,
-                onToggle: _toggleSelection,
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _OrderList(
+                      orders: toShipVisible,
+                      header: _ToShipFilterChips(
+                        selected: _toShipFilter,
+                        onSelected: (f) => setState(() => _toShipFilter = f),
+                      ),
+                      selectMode: _selectMode,
+                      selectedIds: _selectedIds,
+                      onToggle: _toggleSelection,
+                    ),
+                    _OrderList(orders: inTransit),
+                    _OrderList(orders: shipped),
+                    _OrderList(orders: completed),
+                    const _VendorReturnsWorkspace(),
+                    const VendorWarrantyWorkspace(),
+                  ],
+                ),
               ),
-              _OrderList(orders: inTransit),
-              _OrderList(orders: shipped),
-              _OrderList(orders: completed),
-              const _VendorReturnsWorkspace(),
-              const VendorWarrantyWorkspace(),
             ],
           ),
         ),
@@ -1335,6 +1355,240 @@ class _VendorReturnsWorkspaceState
               },
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// The "to ship" strip that sits under the tabs on every tab of the Orders
+/// section, so a seller who opened Orders to check a return still sees what
+/// is waiting to go out.
+///
+/// It is deliberately the SAME bucket as the "To Ship" tab
+/// ([VendorOrderStatusBucketing.isPreShipment]) rather than the narrower
+/// [VendorOrderStatusBucketing.isToShip] set of immediately-actionable
+/// orders. Two counts on one screen both labelled "to ship" that disagree
+/// would read as a bug, and the honest fix is to show one number, not to
+/// explain the difference in the UI.
+///
+/// Hidden entirely when the bucket is empty: a header announcing that there
+/// is nothing to ship costs vertical space on a screen whose tabs already
+/// say so.
+class _ToShipHeader extends StatelessWidget {
+  const _ToShipHeader({required this.orders, required this.onSeeAll});
+
+  /// Pre-shipment orders, already bucketed by the caller.
+  final List<VendorOrder> orders;
+
+  /// Jumps to the To Ship tab, where the filter chips and the bulk actions
+  /// live. The strip is a shortcut, not a replacement for that tab.
+  final VoidCallback onSeeAll;
+
+  static const Key headerKey = ValueKey<String>('vendor-to-ship-header');
+  static const double _cardWidth = 164;
+
+  /// Oldest first: the order that has been waiting longest is the one that
+  /// should be looked at first, and it is the one at risk of breaching the
+  /// fulfilment promise. Orders with no timestamp sort last rather than
+  /// first, because an unknown placement time is not evidence of urgency.
+  static List<VendorOrder> _byWaitingLongest(List<VendorOrder> source) {
+    final sorted = [...source];
+    sorted.sort((a, b) {
+      final left = a.placedAt;
+      final right = b.placedAt;
+      if (left == null && right == null) return 0;
+      if (left == null) return 1;
+      if (right == null) return -1;
+      return left.compareTo(right);
+    });
+    return sorted;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (orders.isEmpty) return const SizedBox.shrink();
+    final queue = _byWaitingLongest(orders);
+
+    return Container(
+      key: headerKey,
+      padding: const EdgeInsets.only(top: 10, bottom: 12),
+      decoration: const BoxDecoration(
+        color: DesignTokens.bgAppFoundation,
+        border: Border(
+          bottom: BorderSide(color: DesignTokens.bgAppBodyLight),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.local_shipping_outlined,
+                  size: 16,
+                  color: DesignTokens.primaryGreen,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'To ship',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textWhite,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: DesignTokens.primaryGreen,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${orders.length}',
+                    style: DesignTokens.tiny.copyWith(
+                      color: DesignTokens.buttonPrimaryText,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: onSeeAll,
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(0, 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'See all',
+                    style: DesignTokens.tiny.copyWith(
+                      color: DesignTokens.primaryGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 92,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: queue.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) =>
+                  _ToShipCard(order: queue[i], width: _cardWidth),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One parcel in the strip: who it is for, and the single next step.
+class _ToShipCard extends StatelessWidget {
+  const _ToShipCard({required this.order, required this.width});
+
+  final VendorOrder order;
+  final double width;
+
+  /// The primary next action, or null when the state allows none. A Pending
+  /// order is real and belongs in the count, but there is nothing to press on
+  /// it yet, so the card shows its status rather than inventing a step.
+  VendorOrderAction? get _next {
+    final actions = vendorActionsForState(
+      order.stateCode,
+      channel: order.fulfillmentChannel,
+    );
+    return actions.isEmpty ? null : actions.first;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final action = _next;
+    final step = action == null
+        ? order.status.label
+        : VendorOrderActionBar.labelForChannel(
+            action,
+            order.fulfillmentChannel,
+          );
+    final who = order.customerName?.trim();
+
+    return SizedBox(
+      width: width,
+      child: Material(
+        color: DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+          onTap: () => context.push(
+            RouteNames.vendorOrderDetail.replaceFirst(':orderId', order.id),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '#${order.orderNumber}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.tiny.copyWith(
+                        color: DesignTokens.textWhite,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      who != null && who.isNotEmpty
+                          ? who
+                          : '${order.itemCount} item(s)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.tiny.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: action == null
+                        ? DesignTokens.bgAppFoundation
+                        : DesignTokens.primaryGreen,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    step,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignTokens.tiny.copyWith(
+                      color: action == null
+                          ? DesignTokens.textMuted
+                          : DesignTokens.buttonPrimaryText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
