@@ -605,4 +605,26 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
     );
     return unit;
   });
+
+  @override
+  Future<Either<NetworkExceptions, String>> uploadSealPhoto(String filePath) =>
+      guardedNetworkCall(
+        networkInfo,
+        () => remoteDataSource.uploadSealPhoto(filePath),
+      );
+
+  @override
+  Future<Either<NetworkExceptions, VendorOrder>> sealThenMarkPacked(
+    String orderId, {
+    required String sealId,
+    required String sealPhotoUrl,
+  }) => _stepThenRefetch(orderId, () async {
+    await remoteDataSource.sealPackage(
+      orderId,
+      sealId: sealId,
+      sealPhotoUrl: sealPhotoUrl,
+      idempotencyKey: _uuid.v4(),
+    );
+    await remoteDataSource.markPacked(orderId, _uuid.v4());
+  });
 }

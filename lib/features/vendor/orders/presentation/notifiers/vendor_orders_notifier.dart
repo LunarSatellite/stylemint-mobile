@@ -218,6 +218,30 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
   );
 
   /// Accepted -> Packed.
+  /// Uploads a seal photo. Outside [_runAction]: it changes no order state, so
+  /// it must not put the screen into actionInProgress. Null when it failed.
+  Future<String?> uploadSealPhoto(String filePath) async {
+    final either = await _repository.uploadSealPhoto(filePath);
+    return either.fold((_) => null, (url) => url);
+  }
+
+  /// Seals the parcel and marks it packed, in that order.
+  ///
+  /// The seal has to come first: packing is reversible in practice, a dropped
+  /// hop assignment is not — an unsealed parcel is refused when a courier
+  /// accepts it, and that failure lands in a dead-letter queue nobody is
+  /// watching rather than in front of the vendor.
+  Future<void> sealThenMarkPacked({
+    required String sealId,
+    required String sealPhotoUrl,
+  }) => _runAction(
+    (order) => _repository.sealThenMarkPacked(
+      order.id,
+      sealId: sealId,
+      sealPhotoUrl: sealPhotoUrl,
+    ),
+  );
+
   Future<void> markPacked() =>
       _runAction((order) => _repository.markPacked(order.id));
 

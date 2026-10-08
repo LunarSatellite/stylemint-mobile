@@ -124,4 +124,19 @@ abstract interface class VendorOrdersRepository {
     String courierProfileId, {
     String? note,
   });
+
+  /// Uploads one seal photo and returns its URL.
+  Future<Either<NetworkExceptions, String>> uploadSealPhoto(String filePath);
+
+  /// Seals the parcel, then marks the order packed.
+  ///
+  /// One call because they are one step: a parcel sealed but left unpacked, or
+  /// packed but unsealed, are both states the vendor did not ask for. An
+  /// unsealed parcel is also refused by hop assignment later, so packing
+  /// without sealing would quietly break the delivery.
+  Future<Either<NetworkExceptions, VendorOrder>> sealThenMarkPacked(
+    String orderId, {
+    required String sealId,
+    required String sealPhotoUrl,
+  });
 }

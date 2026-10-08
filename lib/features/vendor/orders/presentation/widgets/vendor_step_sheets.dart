@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// What the reject sheet hands back.
@@ -420,6 +424,173 @@ class _PartnerTile extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// What the seal sheet hands back: the number on the sticker and the local
+/// path of the photo. The photo is uploaded by the caller, not here, so the
+/// sheet stays free of network work like every other sheet in this file.
+class VendorSealInput {
+  const VendorSealInput({required this.sealId, required this.photoPath});
+
+  final String sealId;
+  final String photoPath;
+}
+
+Future<VendorSealInput?> showVendorSealSheet(BuildContext context) =>
+    showModalBottomSheet<VendorSealInput>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: DesignTokens.bgAppBody,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.radiusLarge),
+        ),
+      ),
+      builder: (_) => const VendorSealSheet(),
+    );
+
+/// Seal the parcel: the number printed on the tamper-evident sticker, and a
+/// photo of it on the closed box.
+///
+/// Both are required and neither can be filled in for the vendor. The seal
+/// exists so a buyer can tell whether the box was opened in transit, so a
+/// number the platform invented, or a photo it did not take, would prove
+/// nothing. `Package.ApplySeal` guards both server-side for the same reason.
+///
+/// This is also not optional in a weaker sense: an unsealed parcel is refused
+/// when a courier accepts it, and that refusal lands in a dead-letter queue
+/// rather than in front of anyone. Sealing at packing is what keeps the
+/// delivery from failing silently later.
+class VendorSealSheet extends StatefulWidget {
+  const VendorSealSheet({super.key});
+
+  static const Key submitKey = ValueKey<String>('vendor-seal-submit');
+  static const Key sealFieldKey = ValueKey<String>('vendor-seal-id');
+  static const Key photoKey = ValueKey<String>('vendor-seal-photo');
+  static const sealMissingError = 'Enter the number printed on the seal.';
+  static const photoMissingError = 'Add a photo of the seal on the box.';
+
+  /// Matches the server guard on `sealId`.
+  static const int sealIdMaxLength = 64;
+
+  @override
+  State<VendorSealSheet> createState() => _VendorSealSheetState();
+}
+
+class _VendorSealSheetState extends State<VendorSealSheet> {
+  final _sealId = TextEditingController();
+  String? _photoPath;
+  bool _attempted = false;
+
+  @override
+  void dispose() {
+    _sealId.dispose();
+    super.dispose();
+  }
+
+  String get _s => _sealId.text.trim();
+
+  String? get _sealError =>
+      _s.isEmpty ? VendorSealSheet.sealMissingError : null;
+  String? get _photoError =>
+      _photoPath == null ? VendorSealSheet.photoMissingError : null;
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    XFile? picked;
+    try {
+      picked = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 80,
+      );
+    } on PlatformException catch (error) {
+      if (!mounted) return;
+      final denied = error.code.contains('access_denied');
+      SmSnackbar.error(
+        context,
+        denied
+            ? 'Camera or photo access was not granted.'
+            : 'Could not open the image picker. Please try again.',
+      );
+      return;
+    }
+    if (picked == null) return;
+    setState(() => _photoPath = picked!.path);
+  }
+
+  void _submit() {
+    if (_sealError != null || _photoError != null) {
+      setState(() => _attempted = true);
+      return;
+    }
+    Navigator.of(context).pop(
+      VendorSealInput(sealId: _s, photoPath: _photoPath!),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _SheetScaffold(
+      title: 'Seal the parcel',
+      body:
+          'Stick the seal on the closed box, then enter its number and take a '
+          'photo. The buyer checks both on arrival, so neither can be skipped.',
+      primaryLabel: 'Seal and mark packed',
+      primaryKey: VendorSealSheet.submitKey,
+      onPrimary: _submit,
+      children: [
+        _SheetTextField(
+          fieldKey: VendorSealSheet.sealFieldKey,
+          controller: _sealId,
+          label: 'Seal number',
+          maxLength: VendorSealSheet.sealIdMaxLength,
+          errorText: _attempted ? _sealError : null,
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        if (_photoPath != null)
+          ClipRRect(
+            key: VendorSealSheet.photoKey,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+            child: Image.file(
+              File(_photoPath!),
+              height: 140,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+        if (_photoPath != null) const SizedBox(height: DesignTokens.s8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _pickPhoto(ImageSource.camera),
+                icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                label: Text(_photoPath == null ? 'Take photo' : 'Retake'),
+              ),
+            ),
+            const SizedBox(width: DesignTokens.s8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _pickPhoto(ImageSource.gallery),
+                icon: const Icon(Icons.photo_library_outlined, size: 18),
+                label: const Text('Choose'),
+              ),
+            ),
+          ],
+        ),
+        if (_attempted && _photoError != null) ...[
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            _photoError!,
+            style: DesignTokens.tiny.copyWith(color: DesignTokens.colorError),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 class _SheetScaffold extends StatelessWidget {

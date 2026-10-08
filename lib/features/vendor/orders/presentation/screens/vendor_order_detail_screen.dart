@@ -15,6 +15,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 
 class VendorOrderDetailScreen extends ConsumerStatefulWidget {
   const VendorOrderDetailScreen({required this.orderId, super.key});
@@ -49,7 +50,26 @@ class _VendorOrderDetailScreenState
         if (input == null) return;
         run = () => notifier.reject(reason: input.reason, note: input.note);
       case VendorOrderAction.markPacked:
-        run = notifier.markPacked;
+        // Sealing happens here, with packing, because the seal goes on a
+        // closed box. The upload is done before _runAction so a failed photo
+        // leaves the order untouched rather than in actionFailure.
+        final seal = await showVendorSealSheet(context);
+        if (seal == null) return;
+        if (!mounted) return;
+        final sealUrl = await notifier.uploadSealPhoto(seal.photoPath);
+        if (!mounted) return;
+        if (sealUrl == null) {
+          SmSnackbar.error(
+            context,
+            'The seal photo could not be uploaded. Check your connection and '
+            'try again — nothing has been packed.',
+          );
+          return;
+        }
+        run = () => notifier.sealThenMarkPacked(
+          sealId: seal.sealId,
+          sealPhotoUrl: sealUrl,
+        );
       case VendorOrderAction.handOver:
         // Fetched before the sheet so the sheet stays presentational, like
         // every other step sheet here. An empty list is normal: the sheet

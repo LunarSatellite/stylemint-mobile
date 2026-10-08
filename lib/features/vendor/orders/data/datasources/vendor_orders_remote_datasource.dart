@@ -1,5 +1,6 @@
-import 'package:dio/dio.dart' show Options;
+import 'package:dio/dio.dart' show FormData, MultipartFile, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/upload_filename.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_dto.dart';
 
@@ -346,6 +347,45 @@ class VendorOrdersRemoteDataSource {
     await apiClient.post(
       '/v1/vendor/sub-orders/$subOrderId/offer-to-courier/$courierProfileId',
       data: {if (n.isNotEmpty) 'note': n},
+      options: _idempotent(idempotencyKey),
+    );
+  }
+
+  /// POST /v1/vendor/packages/seal-images — multipart upload, returns the CDN
+  /// URL to pass as `sealPhotoUrl` when sealing.
+  ///
+  /// Filename is fixed via [uploadFilename]: dio derives Content-Type from the
+  /// name and never from the bytes, and the endpoint allows only JPG and PNG.
+  Future<String> uploadSealPhoto(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        filePath,
+        filename: uploadFilename(filePath),
+      ),
+    });
+    final response = await apiClient.rawPost(
+      '/v1/vendor/packages/seal-images',
+      data: formData,
+      options: Options(headers: {'requiresToken': true}),
+    );
+    final data = response.data as Map<String, dynamic>;
+    return data['url'] as String;
+  }
+
+  /// POST /v1/vendor/sub-orders/{id}/seal — the seal number plus a photo URL.
+  ///
+  /// Required before any courier can be assigned: an unsealed parcel is
+  /// refused by the hop assignment, so without this an accepted offer is
+  /// dropped. Idempotent for the same seal number.
+  Future<void> sealPackage(
+    String orderId, {
+    required String sealId,
+    required String sealPhotoUrl,
+    required String idempotencyKey,
+  }) async {
+    await apiClient.post(
+      '/v1/vendor/sub-orders/$orderId/seal',
+      data: {'sealId': sealId, 'sealPhotoUrl': sealPhotoUrl},
       options: _idempotent(idempotencyKey),
     );
   }
