@@ -33,6 +33,7 @@ class _CourierDeliveryPushListenerState
     extends ConsumerState<CourierDeliveryPushListener> {
   StreamSubscription<DeliveryPushEvent>? _subscription;
   Timer? _poll;
+  Timer? _hopRetry;
 
   /// Whether any vendor-select offer is waiting on the vendor — the only
   /// time polling from the dashboard is worth it.
@@ -53,6 +54,12 @@ class _CourierDeliveryPushListenerState
         ref
           ..invalidate(courierHopsProvider)
           ..invalidate(courierOffersProvider);
+        // The push can beat the hop row: Delivery writes it from the same
+        // assignment event a moment later. One more read catches it.
+        _hopRetry?.cancel();
+        _hopRetry = Timer(const Duration(seconds: 3), () {
+          if (mounted) ref.invalidate(courierHopsProvider);
+        });
       case DeliveryPushType.request:
       case DeliveryPushType.notSelected:
         ref.invalidate(courierOffersProvider);
@@ -87,6 +94,7 @@ class _CourierDeliveryPushListenerState
   @override
   void dispose() {
     _poll?.cancel();
+    _hopRetry?.cancel();
     unawaited(_subscription?.cancel());
     super.dispose();
   }
