@@ -16,6 +16,15 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<!-- Push notifications. The value is the APNs environment this build talks
+	     to: `development` is the sandbox, and the app-store-connect export
+	     re-signs it to `production`, which is what TestFlight and the App Store
+	     use. Requires "Push Notifications" on the App ID — without it automatic
+	     signing cannot produce a profile carrying this entitlement and the
+	     archive fails rather than shipping a build that silently never
+	     registers with APNs. -->
+	<key>aps-environment</key>
+	<string>development</string>
 	<key>com.apple.developer.nfc.readersession.formats</key>
 	<array>
 		<string>TAG</string>
