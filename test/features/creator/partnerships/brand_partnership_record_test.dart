@@ -243,7 +243,6 @@ void main() {
         'getBrandTrust',
         'trustScore',
         'TrustTier',
-        'tierLabel',
         'totalCampaignValue',
         'verifiedByCount',
         'partnershipCompletionRate',
@@ -274,6 +273,14 @@ void main() {
       // — the app has unrelated tier surfaces, and one of them lives right
       // here. Each carve-out names the file and its reason, and is checked
       // for existence below so it cannot quietly outlive the code.
+      // `tierLabel` is checked here rather than in the exact-name list above.
+      // That list is global, and every other name on it is distinctive enough
+      // to be unambiguous — BrandTrustDto, trustScore, verifiedByCount. This
+      // one is not: it is the obvious name for any tier, and the delivery
+      // handover sheet now has a real one (courier tier 1/2/3 →
+      // Neighbour/Traveller/Pro, from a server field). Banning the token
+      // everywhere flagged that honest surface, which is the same reason the
+      // word check below is scoped to this feature rather than to the word.
       final offenders = <String, int>{};
       _libCode().forEach((path, code) {
         if (!path.contains('features/creator/partnerships/')) return;
