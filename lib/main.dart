@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:firebase_messaging/firebase_messaging.dart' show RemoteMessage;
+import 'package:stylemint_mobile_frontend/core/device/push_destination.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -498,6 +500,7 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
 
   late final AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
+  StreamSubscription<RemoteMessage>? _pushTapSubscription;
 
   /// A deep link that arrived while the session was still bootstrapping
   /// (`AuthSessionState.unknown`). The router's redirect bounces every
@@ -511,6 +514,7 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     super.initState();
     _appLinks = AppLinks();
     _listenDeepLinks();
+    _listenPushTaps();
     // Replay any deferred deep link as soon as the session leaves `unknown`.
     ref.listenManual<AuthSessionState>(sessionControllerProvider, (_, next) {
       final stillUnknown = next.maybeWhen(
@@ -552,6 +556,7 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   @override
   void dispose() {
     _linkSubscription?.cancel();
+    _pushTapSubscription?.cancel();
     super.dispose();
   }
 
@@ -620,6 +625,50 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
           // ignore: avoid_print
           print('[OAUTH-DEBUG] getInitialLink error: $e');
         });
+  }
+
+  /// A tapped notification goes through the same door as a deep link.
+  ///
+  /// Registration was the only half of push that existed: the token reached
+  /// the server, so a notification could be delivered and shown, but tapping
+  /// it did nothing — there was no listener. These three cases are distinct in
+  /// FCM and all three were missing:
+  ///
+  ///  * tapped while the app was backgrounded -> onMessageOpenedApp
+  ///  * tapped from terminated -> getInitialMessage, which reads once
+  ///  * arriving in the foreground -> the OS shows nothing on iOS unless asked
+  ///
+  /// [_handleUri] already resolves StyleMint codes, storefront links and plain
+  /// routes, and defers anything that arrives before the session does, so a
+  /// cold launch from a notification lands correctly rather than on splash.
+  void _listenPushTaps() {
+    unawaited(PushNotificationService.enableForegroundPresentation());
+
+    _pushTapSubscription = PushNotificationService.onMessageOpenedApp.listen(
+      _handlePushMessage,
+    );
+
+    // One-shot: this is the notification that launched the app, and asking
+    // twice returns null.
+    unawaited(
+      PushNotificationService.initialMessage().then((message) {
+        if (message != null) _handlePushMessage(message);
+      }),
+    );
+  }
+
+  /// Pulls a destination out of a notification payload.
+  ///
+  /// The server's FCM data keys are not documented in this repo — the
+  /// notifications contract here covers the inbox API, not the push payload —
+  /// so this accepts the forms a backend plausibly sends and ignores anything
+  /// it does not recognise rather than guessing a route. A payload with no
+  /// destination still opens the app, which is the sensible default for a
+  /// notification that is only telling the user something.
+  void _handlePushMessage(RemoteMessage message) {
+    final uri = pushDestinationUri(message.data);
+    if (uri == null) return;
+    _handleUri(uri);
   }
 
   void _handleUri(Uri uri) {
