@@ -75,6 +75,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/sc
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/screens/social_connect_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_gate_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_offers_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/screens/assistant_conversation_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/screens/assistant_conversations_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_scenarios_screen.dart';
@@ -1287,6 +1288,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.courier,
         builder: (ctx, state) => const CourierGateScreen(),
+        routes: [
+          // Reachable by route only so a "vendor needs a rider" notification
+          // can open it; from the dashboard it is still pushed directly.
+          GoRoute(
+            path: _subPath(RouteNames.courier, RouteNames.courierOffers),
+            builder: (ctx, state) => const CourierOffersScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.partnerships,
@@ -1581,6 +1590,8 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.vendorOrderDetail,
         builder: (ctx, state) => VendorOrderDetailScreen(
           orderId: state.pathParameters['orderId']!,
+          openPartnerSheet:
+              state.uri.queryParameters[RouteNames.partnerSheetQuery] == '1',
         ),
       ),
       GoRoute(

@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/ven
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_return_request_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
@@ -612,6 +613,38 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
       note: note,
     );
     return unit;
+  });
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryRequest>> openDeliveryRequest(
+    String orderId,
+  ) => guardedNetworkCall(networkInfo, () async {
+    final json = await remoteDataSource.openDeliveryRequest(
+      orderId,
+      idempotencyKey: _uuid.v4(),
+    );
+    return DeliveryRequest.fromJson(json);
+  });
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryRequest?>> currentDeliveryRequest(
+    String orderId,
+  ) => guardedNetworkCall(networkInfo, () async {
+    final json = await remoteDataSource.getCurrentDeliveryRequest(orderId);
+    return json == null ? null : DeliveryRequest.fromJson(json);
+  });
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryRequest>> selectDeliveryPartner(
+    String orderId,
+    String offerId,
+  ) => guardedNetworkCall(networkInfo, () async {
+    final json = await remoteDataSource.selectDeliveryPartner(
+      orderId,
+      offerId: offerId,
+      idempotencyKey: _uuid.v4(),
+    );
+    return DeliveryRequest.fromJson(json);
   });
 
   @override

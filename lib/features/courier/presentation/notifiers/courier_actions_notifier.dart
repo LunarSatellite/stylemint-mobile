@@ -107,6 +107,44 @@ class CourierActionsNotifier extends StateNotifier<bool> {
     return result.fold(CourierActionFailed.new, (_) => const CourierActionOk());
   });
 
+  /// Goes on or off shift.
+  ///
+  /// Takes the desired state rather than toggling, so a double tap or a retry
+  /// lands where the rider pointed instead of flipping back.
+  ///
+  /// Going online carries the rider's position when one can be had quickly,
+  /// so they are matched by distance at once. Best effort and bounded: no fix
+  /// within a few seconds, or no permission, and the rider goes online
+  /// without one — the location reporter sends it as soon as it has it.
+  Future<CourierActionResult> setShift({
+    required String courierProfileId,
+    required bool online,
+  }) => _guarded(() async {
+    double? latitude;
+    double? longitude;
+    if (online) {
+      try {
+        final fix = await _location.capture(timeout: _shiftFixTimeout);
+        if (fix is LocationCaptured) {
+          latitude = fix.latitude;
+          longitude = fix.longitude;
+        }
+      } catch (_) {
+        // A position is a nicety here; going online is the point.
+      }
+    }
+    final result = await _repository.setShift(
+      courierProfileId: courierProfileId,
+      online: online,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    return result.fold(CourierActionFailed.new, (_) => const CourierActionOk());
+  });
+
+  /// How long going online waits for a GPS fix before going without one.
+  static const _shiftFixTimeout = Duration(seconds: 4);
+
   /// Generates a keypair, registers the public half, and only then marks it as
   /// this device's signing key.
   ///
@@ -114,21 +152,6 @@ class CourierActionsNotifier extends StateNotifier<bool> {
   /// with a key the server has never heard of if registration failed, and every
   /// later pickup would fail at `Unknown signer public key id` with nothing on
   /// screen connecting the two.
-  /// Goes on or off shift.
-  ///
-  /// Takes the desired state rather than toggling, so a double tap or a retry
-  /// lands where the rider pointed instead of flipping back.
-  Future<CourierActionResult> setShift({
-    required String courierProfileId,
-    required bool online,
-  }) => _guarded(() async {
-    final result = await _repository.setShift(
-      courierProfileId: courierProfileId,
-      online: online,
-    );
-    return result.fold(CourierActionFailed.new, (_) => const CourierActionOk());
-  });
-
   Future<CourierActionResult> enrolDeviceKey({
     required String courierProfileId,
     required String deviceModel,
@@ -174,6 +197,16 @@ class CourierActionsNotifier extends StateNotifier<bool> {
     final result = await _repository.acceptOffer(offerId);
     return result.fold(CourierActionFailed.new, (_) => const CourierActionOk());
   });
+
+  /// Takes back interest in a vendor-select offer.
+  Future<CourierActionResult> withdrawInterest(String offerId) =>
+      _guarded(() async {
+        final result = await _repository.withdrawInterest(offerId);
+        return result.fold(
+          CourierActionFailed.new,
+          (_) => const CourierActionOk(),
+        );
+      });
 
   Future<CourierActionResult> declineOffer({
     required String offerId,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_to_ship_count_provider.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_action_bar.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_delivery_partner_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_step_sheets.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -19,9 +22,17 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 
 class VendorOrderDetailScreen extends ConsumerStatefulWidget {
-  const VendorOrderDetailScreen({required this.orderId, super.key});
+  const VendorOrderDetailScreen({
+    required this.orderId,
+    this.openPartnerSheet = false,
+    super.key,
+  });
 
   final String orderId;
+
+  /// Open the delivery-partner sheet as soon as the order has loaded. Set by
+  /// a "rider is interested" notification, whose whole point is that sheet.
+  final bool openPartnerSheet;
 
   @override
   ConsumerState<VendorOrderDetailScreen> createState() =>
@@ -33,6 +44,10 @@ class _VendorOrderDetailScreenState
   bool _itemsExpanded = true;
   bool _revenueExpanded = true;
   bool _requested = false;
+
+  /// Whether [VendorOrderDetailScreen.openPartnerSheet] has been honoured.
+  /// Once only: a reload after the handover must not pop the sheet again.
+  bool _partnerSheetOpened = false;
 
   /// The step whose request is in flight, so only its button spins.
   VendorOrderAction? _pendingAction;
@@ -72,29 +87,29 @@ class _VendorOrderDetailScreenState
           sealPhotoUrl: sealUrl,
         );
       case VendorOrderAction.handOver:
-        // Fetched before the sheet so the sheet stays presentational, like
-        // every other step sheet here. An empty list is normal: the sheet
-        // says so, and the carrier fields carry a third-party courier.
-        final partners = await notifier.deliveryCandidates();
-        if (!mounted) return;
-        final input = await showVendorHandoverSheet(
+        // StyleMint riders first: the partner sheet asks riders nearby, shows
+        // who is interested and lets the vendor choose. It does its own
+        // network work (and polls) because it stays open while riders answer;
+        // closing it changes nothing, so a request can be watched again.
+        final outcome = await showVendorDeliveryPartnerSheet(
           context,
-          candidates: partners,
+          subOrderId: widget.orderId,
         );
-        if (input == null) return;
-        final picked = input.courierProfileId;
-        run = picked == null
-            ? () => notifier.handOver(
-                carrier: input.carrier,
-                trackingNumber: input.trackingNumber,
-                note: input.note,
-              )
-            : () => notifier.offerThenHandOver(
-                courierProfileId: picked,
-                carrier: input.carrier,
-                trackingNumber: input.trackingNumber,
-                note: input.note,
-              );
+        if (outcome == null || !mounted) return;
+        switch (outcome) {
+          case VendorPartnerHandedOver(:final rider):
+            run = () => notifier.handOver(
+              note: 'Collected by StyleMint rider ${rider.displayName}',
+            );
+          case VendorPartnerUseOwnCourier():
+            final input = await showVendorHandoverSheet(context);
+            if (input == null) return;
+            run = () => notifier.handOver(
+              carrier: input.carrier,
+              trackingNumber: input.trackingNumber,
+              note: input.note,
+            );
+        }
       case VendorOrderAction.readyToShip:
         run = notifier.markReadyToShip;
       case VendorOrderAction.markDelivered:
@@ -214,6 +229,12 @@ class _VendorOrderDetailScreenState
           );
         },
         loadSuccess: (_) {
+          if (widget.openPartnerSheet && !_partnerSheetOpened) {
+            _partnerSheetOpened = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) unawaited(_onAction(VendorOrderAction.handOver));
+            });
+          }
           final wasInProgress = previous?.maybeWhen(
             actionInProgress: (_) => true,
             orElse: () => false,

@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // StateNotifierProvider lives here in Riverpod 3; without it the type
 // cannot resolve, `ref` degrades to dynamic and every ref.watch in the
@@ -9,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_kyc_documents.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_device_key.dart';
+import 'package:stylemint_mobile_frontend/features/courier/data/courier_location_reporter.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
@@ -186,6 +188,41 @@ final courierActionsNotifierProvider =
         location: ref.watch(locationCaptureServiceProvider),
       ),
     );
+
+/// Where the rider's live position comes from. Overridden in tests.
+final courierPositionSourceProvider = Provider<CourierPositionSource>(
+  (ref) => GeolocatorCourierPositionSource(
+    ref.watch(locationCaptureServiceProvider),
+  ),
+);
+
+/// Reports the rider's position while they are online and the app is open.
+/// One per app: started and stopped by `CourierLocationBeacon`, and stopped
+/// for good when the provider graph is torn down (sign-out).
+final courierLocationReporterProvider = Provider<CourierLocationReporter>((
+  ref,
+) {
+  final repository = ref.watch(courierRepositoryProvider);
+  final reporter = CourierLocationReporter(
+    positions: ref.watch(courierPositionSourceProvider),
+    send: (fix) async {
+      final result = await repository.reportLocation(
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+        accuracyMeters: fix.accuracyMetres,
+      );
+      // Silent by design: a missed report is replaced within a minute, and a
+      // rider should never see an error about something they did not do.
+      result.fold((failure) {
+        if (kDebugMode) {
+          debugPrint('[courier-location] report refused: $failure');
+        }
+      }, (_) {});
+    },
+  );
+  ref.onDispose(reporter.stop);
+  return reporter;
+});
 
 /// The signed-in account id, or empty when there is no session.
 ///

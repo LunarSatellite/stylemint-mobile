@@ -6,7 +6,9 @@ import 'package:stylemint_mobile_frontend/features/courier/domain/entities/couri
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_device_key_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_hop_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_offers_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_delivery_push_listener.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_hop_map.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_location_beacon.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_shift_slider.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_signing_enrolment.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
@@ -106,6 +108,14 @@ class CourierDashboardScreen extends ConsumerWidget {
               // cannot collect a parcel at all. Removing the requirement
               // rather than the friction would have taken the feature away.
               CourierSigningEnrolment(courierProfileId: profile.id),
+
+              // Also render nothing. The beacon reports the rider's position
+              // while on shift and in the foreground, which is what puts them
+              // inside a vendor's 5 km; the listener re-reads offers and
+              // parcels when a delivery push lands, so a vendor choosing this
+              // rider puts the job on the map at once.
+              CourierLocationBeacon(profile: profile),
+              const CourierDeliveryPushListener(),
 
               DraggableScrollableSheet(
                 initialChildSize: _sheetRest,
@@ -243,7 +253,8 @@ class _DetailSheet extends StatelessWidget {
                               style: DesignTokens.mediumSemibold,
                             ),
                             subtitle: Text(
-                              '${hop.fromGeohash} → ${hop.toGeohash}'
+                              '${hop.pickup?.label ?? hop.fromGeohash} → '
+                              '${hop.dropoff?.label ?? hop.toGeohash}'
                               '${hop.isLate ? ' · running late' : ''}',
                               style: DesignTokens.tiny,
                             ),

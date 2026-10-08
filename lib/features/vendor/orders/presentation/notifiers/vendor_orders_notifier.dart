@@ -268,15 +268,21 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
   /// Read-only and outside [_runAction]: it changes no state, so it must not
   /// put the screen into actionInProgress or leave it in actionFailure when
   /// nobody is available. An empty list is a normal answer.
-  Future<List<DeliveryCandidate>> deliveryCandidates() async {
+  ///
+  /// A failure is returned as one, not as an empty list. Folding every error
+  /// into `[]` is what told vendors "no delivery partner can take this right
+  /// now" when the real answer was a 500 or a dropped connection.
+  Future<Either<NetworkExceptions, List<DeliveryCandidate>>>
+  deliveryCandidates() async {
     final order = state.maybeWhen(
       loadSuccess: (o) => o,
       actionFailure: (o, _) => o,
       orElse: () => null,
     );
-    if (order == null) return const [];
-    final either = await _repository.listDeliveryCandidates(order.id);
-    return either.fold((_) => const [], (candidates) => candidates);
+    if (order == null) {
+      return right<NetworkExceptions, List<DeliveryCandidate>>(const []);
+    }
+    return _repository.listDeliveryCandidates(order.id);
   }
 
   /// Offers the parcel to one partner, then records the handover.

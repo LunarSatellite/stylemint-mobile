@@ -43,9 +43,23 @@ abstract class CourierRepository {
 
   /// Goes on or off shift. Being online is what decides whether parcels are
   /// offered — see the backend's CourierProfile.IsOnline.
+  ///
+  /// [latitude]/[longitude] travel with going online when a fix is to hand,
+  /// so the rider is matchable by distance from the first second rather than
+  /// from their home area until the first location report.
   Future<Either<NetworkExceptions, CourierProfile>> setShift({
     required String courierProfileId,
     required bool online,
+    double? latitude,
+    double? longitude,
+  });
+
+  /// Where the rider is now. Only accepted while online; riders within 5 km
+  /// of a pick-up (by this, fresh within 30 minutes) are the ones notified.
+  Future<Either<NetworkExceptions, Unit>> reportLocation({
+    required double latitude,
+    required double longitude,
+    double? accuracyMeters,
   });
 
   // ── Device keys ────────────────────────────────────────────────────────
@@ -107,7 +121,13 @@ abstract class CourierRepository {
 
   Future<Either<NetworkExceptions, List<HopOffer>>> listOffers();
 
+  /// For an auction offer this takes it. For a vendor-select offer it only
+  /// records interest — the returned offer says `Interested` — and nothing is
+  /// assigned until the vendor chooses.
   Future<Either<NetworkExceptions, HopOffer>> acceptOffer(String offerId);
+
+  /// Takes back interest in a vendor-select offer, before the vendor chooses.
+  Future<Either<NetworkExceptions, Unit>> withdrawInterest(String offerId);
 
   Future<Either<NetworkExceptions, Unit>> declineOffer({
     required String offerId,

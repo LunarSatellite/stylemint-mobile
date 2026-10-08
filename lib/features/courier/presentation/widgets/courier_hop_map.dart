@@ -94,15 +94,14 @@ class _CourierHopMapState extends ConsumerState<CourierHopMap> {
   @override
   Widget build(BuildContext context) {
     final hop = widget.hop;
-    final pickup = hop == null ? null : decodeGeohash(hop.fromGeohash);
-    final dropoff = hop == null ? null : decodeGeohash(hop.toGeohash);
-
-    final pickupPoint = pickup == null
+    // Exact points when the server sends them; the geohash cell's centre
+    // otherwise, which is what every hop had before.
+    final pickupPoint = hop == null
         ? null
-        : LatLng(pickup.latitude, pickup.longitude);
-    final dropoffPoint = dropoff == null
+        : _pointOf(hop.pickup, hop.fromGeohash);
+    final dropoffPoint = hop == null
         ? null
-        : LatLng(dropoff.latitude, dropoff.longitude);
+        : _pointOf(hop.dropoff, hop.toGeohash);
 
     final target = _headingToDropoff
         ? (dropoffPoint ?? pickupPoint)
@@ -206,6 +205,12 @@ class _CourierHopMapState extends ConsumerState<CourierHopMap> {
     );
   }
 
+  static LatLng? _pointOf(DeliveryPlace? place, String geohash) {
+    if (place != null) return LatLng(place.latitude, place.longitude);
+    final cell = decodeGeohash(geohash);
+    return cell == null ? null : LatLng(cell.latitude, cell.longitude);
+  }
+
   Widget _map(LatLng centre, LatLng? pickup, LatLng? dropoff) {
     final pins = [
       if (pickup != null) pickup,
@@ -213,11 +218,30 @@ class _CourierHopMapState extends ConsumerState<CourierHopMap> {
     ];
 
     return FlutterMap(
+      // Keyed by the job, because the camera options below are only read
+      // when the map is first built. Without this, a rider whose map opened
+      // on their own position and was then chosen by a vendor kept looking
+      // at themselves while the pick-up sat off screen.
+      key: ValueKey<String>('courier-map-${widget.hop?.id ?? 'none'}'),
       options: MapOptions(
         initialCenter: centre,
         // Tighter on a single point, pulled back when both ends of a run are
         // on screen and the distance between them is unknown.
         initialZoom: pins.length < 2 ? 15 : 12.5,
+        // Both ends known: frame them, clear of the shift slider at the top
+        // and the sheet and job card at the bottom.
+        initialCameraFit: pins.length < 2
+            ? null
+            : CameraFit.coordinates(
+                coordinates: pins,
+                padding: EdgeInsets.fromLTRB(
+                  48,
+                  widget.fill ? 160 : 32,
+                  48,
+                  (widget.fill ? widget.bottomInset + 96 : 32),
+                ),
+                maxZoom: 16,
+              ),
         backgroundColor: DesignTokens.surfaceRaised,
         interactionOptions: const InteractionOptions(
           flags:
@@ -381,6 +405,14 @@ class _JobBar extends StatelessWidget {
                   : 'Heading to the pick-up',
               style: DesignTokens.mediumSemibold,
             ),
+            if ((headingToDropoff ? hop.dropoff : hop.pickup)?.label
+                case final label?)
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: DesignTokens.tiny,
+              ),
             Text(
               'You earn ${formatMoney(Money(amount: hop.payoutAmount, currency: hop.payoutCurrency))} '
               'when this run is complete',

@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
@@ -131,6 +132,23 @@ abstract interface class VendorOrdersRepository {
     String courierProfileId, {
     String? note,
   });
+
+  /// Opens (or re-opens) a "find a delivery partner" request: every eligible
+  /// rider nearby is notified and can say they are interested.
+  Future<Either<NetworkExceptions, DeliveryRequest>> openDeliveryRequest(
+    String orderId,
+  );
+
+  /// The current request for this sub-order, or null when none was opened.
+  Future<Either<NetworkExceptions, DeliveryRequest?>> currentDeliveryRequest(
+    String orderId,
+  );
+
+  /// Chooses one interested rider. The answer carries the assigned rider.
+  Future<Either<NetworkExceptions, DeliveryRequest>> selectDeliveryPartner(
+    String orderId,
+    String offerId,
+  );
 
   /// Uploads one seal photo and returns its URL.
   Future<Either<NetworkExceptions, String>> uploadSealPhoto(String filePath);

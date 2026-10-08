@@ -1,4 +1,5 @@
-import 'package:dio/dio.dart' show FormData, MultipartFile, Options;
+import 'package:dio/dio.dart'
+    show DioException, FormData, MultipartFile, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/upload_filename.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_detail_dto.dart';
@@ -369,6 +370,59 @@ class VendorOrdersRemoteDataSource {
       data: {if (n.isNotEmpty) 'note': n},
       options: _idempotent(idempotencyKey),
     );
+  }
+
+  /// POST /v1/vendor/sub-orders/{id}/delivery-requests — opens (or re-opens)
+  /// a request: the parcel is re-planned and every eligible rider within the
+  /// radius is notified. Riders answer with interest; nothing is assigned
+  /// until [selectDeliveryPartner].
+  Future<Map<String, dynamic>> openDeliveryRequest(
+    String subOrderId, {
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/vendor/sub-orders/$subOrderId/delivery-requests',
+      data: const <String, dynamic>{},
+      options: _idempotent(idempotencyKey),
+    );
+    return (response as Map).cast<String, dynamic>();
+  }
+
+  /// GET /v1/vendor/sub-orders/{id}/delivery-requests/current, or null when
+  /// no request was ever opened for it.
+  ///
+  /// 404 is that normal "none yet" answer, not a failure — the sheet offers
+  /// "Find a delivery partner" for it. Every other status still throws, so a
+  /// real error is never shown as "nobody has been asked".
+  Future<Map<String, dynamic>?> getCurrentDeliveryRequest(
+    String subOrderId,
+  ) async {
+    try {
+      final response = await apiClient.get(
+        '/v1/vendor/sub-orders/$subOrderId/delivery-requests/current',
+      );
+      if (response == null) return null;
+      return (response as Map).cast<String, dynamic>();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  /// POST /v1/vendor/sub-orders/{id}/delivery-requests/current/select —
+  /// assigns the hop to the rider behind [offerId] and tells the others it
+  /// was taken.
+  Future<Map<String, dynamic>> selectDeliveryPartner(
+    String subOrderId, {
+    required String offerId,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/vendor/sub-orders/$subOrderId/delivery-requests/current/select',
+      data: {'offerId': offerId},
+      options: _idempotent(idempotencyKey),
+    );
+    return (response as Map).cast<String, dynamic>();
   }
 
   /// POST /v1/vendor/packages/seal-images — multipart upload, returns the CDN

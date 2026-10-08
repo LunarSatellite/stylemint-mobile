@@ -58,12 +58,30 @@ class CourierRepositoryImpl implements CourierRepository {
   Future<Either<NetworkExceptions, CourierProfile>> setShift({
     required String courierProfileId,
     required bool online,
+    double? latitude,
+    double? longitude,
   }) => _guard(() async {
     final json = await remoteDataSource.setShift(
       courierProfileId: courierProfileId,
       online: online,
+      latitude: latitude,
+      longitude: longitude,
     );
     return _profile(json);
+  });
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> reportLocation({
+    required double latitude,
+    required double longitude,
+    double? accuracyMeters,
+  }) => _guard(() async {
+    await remoteDataSource.reportLocation(
+      latitude: latitude,
+      longitude: longitude,
+      accuracyMeters: accuracyMeters,
+    );
+    return unit;
   });
 
   // ── Device keys ────────────────────────────────────────────────────────
@@ -195,6 +213,16 @@ class CourierRepositoryImpl implements CourierRepository {
           idempotencyKey: _uuid.v4(),
         );
         return _offer(json);
+      });
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> withdrawInterest(String offerId) =>
+      _guard(() async {
+        await remoteDataSource.withdrawOffer(
+          offerId: offerId,
+          idempotencyKey: _uuid.v4(),
+        );
+        return unit;
       });
 
   @override
@@ -403,7 +431,37 @@ class CourierRepositoryImpl implements CourierRepository {
     state: HopOfferState.fromWire(_int(json['state'])),
     offeredUtc: _date(json['offeredUtc']),
     expiresUtc: _date(json['expiresUtc']),
+    // The delivery-selection fields. All optional: an offer without them is
+    // an auction offer, exactly as before they existed.
+    mode: OfferMode.fromWire(json['mode']),
+    interestState: OfferInterestState.fromWire(json['interestState']),
+    pickup: _place(json['pickup']),
+    dropoff: _place(json['dropoff']),
+    distanceToPickupKm: _doubleOrNull(json['distanceToPickupKm']),
   );
+
+  /// `{ latitude, longitude, label }`, or null when absent or not a real
+  /// point — a 0,0 from a failed lookup would put the pin in the Atlantic.
+  static DeliveryPlace? _place(dynamic value) {
+    if (value is! Map) return null;
+    final latitude = _doubleOrNull(value['latitude']);
+    final longitude = _doubleOrNull(value['longitude']);
+    if (latitude == null || longitude == null) return null;
+    if (latitude.abs() > 90 || longitude.abs() > 180) return null;
+    if (latitude == 0 && longitude == 0) return null;
+    final label = value['label'];
+    return DeliveryPlace(
+      latitude: latitude,
+      longitude: longitude,
+      label: label is String && label.trim().isNotEmpty ? label.trim() : null,
+    );
+  }
+
+  static double? _doubleOrNull(dynamic value) => switch (value) {
+    final num v => v.toDouble(),
+    final String v => double.tryParse(v),
+    _ => null,
+  };
 
   static CourierEarnings _earnings(Map<String, dynamic> json) =>
       CourierEarnings(
@@ -447,6 +505,10 @@ class CourierRepositoryImpl implements CourierRepository {
     etaUtc: _dateOrNull(json['etaUtc']),
     failureCode: _exceptionCode(_intOrNull(json['failureCode'])),
     failureNote: json['failureNote'] as String?,
+    // Not in the contract for hops yet; read if the server adds them, so the
+    // map can pin the shop rather than the centre of its geohash cell.
+    pickup: _place(json['pickup']),
+    dropoff: _place(json['dropoff']),
   );
 
   static DeliveryExceptionCode? _exceptionCode(int? wire) => wire == null

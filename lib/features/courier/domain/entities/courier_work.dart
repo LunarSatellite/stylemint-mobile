@@ -44,10 +44,77 @@ enum DeclineReason {
   };
 }
 
+/// How an offer is decided. Mirrors the delivery-selection contract's `mode`.
+enum OfferMode {
+  /// The first courier to accept gets it — the original Dutch auction.
+  auction,
+
+  /// The vendor chooses: accepting only says "I'm interested", and nothing
+  /// is the rider's until the vendor picks them.
+  vendorSelect;
+
+  /// Unknown or absent reads as [auction], which is what every offer was
+  /// before the field existed — so an older backend keeps working unchanged.
+  static OfferMode fromWire(Object? value) {
+    final raw = value?.toString().trim().toLowerCase().replaceAll('_', '');
+    return raw == 'vendorselect' || raw == '2'
+        ? OfferMode.vendorSelect
+        : OfferMode.auction;
+  }
+}
+
+/// Where a rider stands on a [OfferMode.vendorSelect] offer.
+enum OfferInterestState {
+  none,
+  interested,
+  selected,
+  notSelected,
+  expired;
+
+  /// Strings per the contract; a 0-based number is read too. Unknown is
+  /// [none], which shows the "I'm interested" button — the server refuses it
+  /// if that is wrong, which is better than hiding an offer that is live.
+  static OfferInterestState fromWire(Object? value) {
+    if (value is num) {
+      final index = value.toInt();
+      return index >= 0 && index < values.length
+          ? values[index]
+          : OfferInterestState.none;
+    }
+    final raw = value?.toString().trim().toLowerCase().replaceAll('_', '');
+    for (final state in values) {
+      if (state.name.toLowerCase() == raw) return state;
+    }
+    return OfferInterestState.none;
+  }
+}
+
+/// A named point — the pick-up or drop-off of an offer or hop.
+///
+/// Exact coordinates, unlike the geohash cells the routing engine works in,
+/// so the map can put a pin on the shop rather than in the middle of a
+/// neighbourhood.
+class DeliveryPlace {
+  const DeliveryPlace({
+    required this.latitude,
+    required this.longitude,
+    this.label,
+  });
+
+  final double latitude;
+  final double longitude;
+
+  /// "Thamel, Kathmandu" or similar; null when the server sent none.
+  final String? label;
+}
+
 /// A hop the router is offering, in a Dutch auction: each round raises the
 /// payout, so an offer left to expire may come back worth more. It also means
 /// an offer has a hard deadline, which is why [expiresUtc] is shown as a
 /// countdown rather than a timestamp.
+///
+/// A [OfferMode.vendorSelect] offer is not an auction: the payout is fixed,
+/// accepting records interest, and [interestState] says where that stands.
 class HopOffer {
   const HopOffer({
     required this.id,
@@ -62,12 +129,27 @@ class HopOffer {
     required this.state,
     required this.offeredUtc,
     required this.expiresUtc,
+    this.mode = OfferMode.auction,
+    this.interestState = OfferInterestState.none,
+    this.pickup,
+    this.dropoff,
+    this.distanceToPickupKm,
   });
 
   final String id;
   final String packageId;
   final DeliveryTier tier;
   final int hopIndex;
+  final OfferMode mode;
+  final OfferInterestState interestState;
+  final DeliveryPlace? pickup;
+  final DeliveryPlace? dropoff;
+
+  /// From the rider's live location when the request went out; null when the
+  /// server could not tell.
+  final double? distanceToPickupKm;
+
+  bool get isVendorSelect => mode == OfferMode.vendorSelect;
 
   /// Which auction round this is. A high number means earlier couriers passed,
   /// which is worth surfacing: it usually means the hop is awkward, not that
@@ -210,6 +292,8 @@ class DeliveryHop {
     this.etaUtc,
     this.failureCode,
     this.failureNote,
+    this.pickup,
+    this.dropoff,
   });
 
   final String id;
@@ -218,6 +302,11 @@ class DeliveryHop {
   final DeliveryTier tier;
   final String courierProfileId;
   final HopState state;
+
+  /// Exact ends of the hop, when the server sends them. The map falls back to
+  /// the centre of [fromGeohash] / [toGeohash] without them.
+  final DeliveryPlace? pickup;
+  final DeliveryPlace? dropoff;
   final String fromGeohash;
   final String toGeohash;
   final double payoutAmount;

@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/notifiers/courier_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_action_feedback.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_offer_card.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -18,32 +20,183 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// expire can come back worth more. That makes the deadline the most important
 /// thing on the card — a static "expires at 14:32" is useless to someone on a
 /// bike, so this ticks.
+///
+/// Vendor-select offers are not first-come: the rider says they are
+/// interested and the vendor chooses, minutes later. So this screen re-reads
+/// while it is open — every [pollInterval] while the rider is online and the
+/// app is in front, and at once on a delivery push — and the card follows the
+/// answer: waiting, chosen (and off to the map), or not chosen.
 class CourierOffersScreen extends ConsumerStatefulWidget {
-  const CourierOffersScreen({super.key});
+  const CourierOffersScreen({
+    this.pollInterval = const Duration(seconds: 10),
+    super.key,
+  });
+
+  final Duration pollInterval;
 
   @override
   ConsumerState<CourierOffersScreen> createState() =>
       _CourierOffersScreenState();
 }
 
-class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen> {
+class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen>
+    with WidgetsBindingObserver {
   Timer? _ticker;
+  Timer? _poll;
+  StreamSubscription<DeliveryPushEvent>? _pushSubscription;
+  bool _foreground = true;
+
+  /// The last interest state seen per offer, to tell a fresh "Selected" — the
+  /// vendor just chose this rider — from one that was already there when the
+  /// screen opened. Only the fresh one navigates.
+  final Map<String, OfferInterestState> _known = {};
+
+  /// What a tap just did, shown until the re-read it triggered lands, so the
+  /// card does not flick back to "I'm interested" for a round trip.
+  final Map<String, OfferInterestState> _optimistic = {};
+
+  /// Seconds each "not chosen" card has been on screen, counted by the
+  /// ticker. It fades out after [_notSelectedLingerSeconds] — long enough to
+  /// read, not long enough to clutter the list.
+  final Map<String, int> _notSelectedAge = {};
+  final Set<String> _faded = {};
+
+  static const _notSelectedLingerSeconds = 4;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _foreground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
+
     // One timer for the screen, not one per card: a dozen offers would
     // otherwise mean a dozen timers all redrawing the same second.
-    _ticker = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) => setState(() {}),
-    );
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        for (final id in _notSelectedAge.keys.toList()) {
+          _notSelectedAge[id] = _notSelectedAge[id]! + 1;
+        }
+      });
+    });
+    _poll = Timer.periodic(widget.pollInterval, (_) => _pollTick());
+    _pushSubscription = ref
+        .read(deliveryPushBusProvider)
+        .events
+        .listen(_onPush);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _ticker?.cancel();
+    _poll?.cancel();
+    unawaited(_pushSubscription?.cancel());
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _foreground = true;
+        // Whatever happened while away — a vendor choosing, most likely —
+        // is worth seeing now rather than at the next tick.
+        _refresh();
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        _foreground = false;
+      case AppLifecycleState.inactive:
+        break;
+    }
+  }
+
+  /// Polls only when it can matter: in the foreground, and on shift — an
+  /// offline rider is offered nothing, so re-reading would be pure traffic.
+  void _pollTick() {
+    if (!mounted || !_foreground || !_online) return;
+    _refresh();
+  }
+
+  bool get _online {
+    final accountId = ref.read(courierAccountIdProvider);
+    if (accountId.isEmpty) return true;
+    // Unknown counts as online: polling a little too much is cheaper than a
+    // rider missing the answer they are waiting on.
+    return ref
+        .read(courierProfileProvider(accountId))
+        .maybeWhen(
+          data: (profile) => profile?.isOnline ?? true,
+          orElse: () => true,
+        );
+  }
+
+  void _refresh() {
+    if (mounted) ref.invalidate(courierOffersProvider);
+  }
+
+  void _onPush(DeliveryPushEvent event) {
+    if (!mounted) return;
+    switch (event.type) {
+      case DeliveryPushType.selected:
+        ref.invalidate(courierHopsProvider);
+        _refresh();
+      case DeliveryPushType.request:
+      case DeliveryPushType.notSelected:
+        _refresh();
+      case DeliveryPushType.interest:
+        break;
+    }
+  }
+
+  /// Reacts to each fresh read: forgets optimistic overrides, starts the fade
+  /// on newly "not chosen" cards, and goes to the map when this rider has
+  /// just been chosen.
+  void _onOffers(List<HopOffer> offers) {
+    _optimistic.clear();
+    HopOffer? newlySelected;
+    for (final offer in offers) {
+      if (!offer.isVendorSelect) continue;
+      final before = _known[offer.id];
+      if (offer.interestState == OfferInterestState.selected &&
+          before != null &&
+          before != OfferInterestState.selected) {
+        newlySelected = offer;
+      }
+      if (offer.interestState == OfferInterestState.notSelected) {
+        _notSelectedAge.putIfAbsent(offer.id, () => 0);
+      }
+      _known[offer.id] = offer.interestState;
+    }
+    final chosen = newlySelected;
+    if (chosen != null) _celebrate(chosen);
+  }
+
+  void _celebrate(HopOffer offer) {
+    final where = offer.pickup?.label;
+    SmSnackbar.success(
+      context,
+      where == null
+          ? "You've got it! Head to the pick-up."
+          : "You've got it! Pick up at $where.",
+    );
+    _openMap();
+  }
+
+  /// Back to the dashboard, which is the map. Popped when there is somewhere
+  /// to pop to — the dashboard pushed this screen, or the router stacked it
+  /// over `/courier` — and routed there otherwise.
+  void _openMap() {
+    // The hop the selection created is what the dashboard's map draws.
+    ref.invalidate(courierHopsProvider);
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    GoRouter.maybeOf(context)?.go(RouteNames.courier);
   }
 
   Future<void> _accept(HopOffer offer) async {
@@ -53,12 +206,37 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen> {
     if (!mounted) return;
 
     if (result is CourierActionOk) {
+      if (offer.isVendorSelect) {
+        // Interest only — nothing is the rider's yet, so the parcels list is
+        // left alone and the card switches to waiting.
+        setState(() => _optimistic[offer.id] = OfferInterestState.interested);
+        _refresh();
+        SmSnackbar.success(
+          context,
+          'Sent. The vendor sees you and will choose soon.',
+        );
+        return;
+      }
       // Both lists move: the offer leaves, and a hop appears. Refreshing only
       // the offers would leave the courier wondering where the parcel went.
       ref
         ..invalidate(courierOffersProvider)
         ..invalidate(courierHopsProvider);
       SmSnackbar.success(context, 'Accepted. It is in your parcels now.');
+      return;
+    }
+    showCourierActionFeedback(context, result);
+  }
+
+  Future<void> _withdraw(HopOffer offer) async {
+    final result = await ref
+        .read(courierActionsNotifierProvider.notifier)
+        .withdrawInterest(offer.id);
+    if (!mounted) return;
+
+    if (result is CourierActionOk) {
+      setState(() => _optimistic[offer.id] = OfferInterestState.none);
+      _refresh();
       return;
     }
     showCourierActionFeedback(context, result);
@@ -107,8 +285,31 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen> {
     showCourierActionFeedback(context, result);
   }
 
+  /// Which offers are on screen.
+  ///
+  /// Auctions as before: pending and not yet expired. Vendor-select offers
+  /// stay through their whole arc — waiting, chosen, not chosen, expired —
+  /// because each is an answer the rider is owed; only a pass removes one,
+  /// and a "not chosen" one fades out on its own.
+  List<HopOffer> _visible(List<HopOffer> offers, DateTime now) => offers
+      .where((offer) {
+        if (!offer.isVendorSelect) {
+          return offer.isPending && !offer.hasExpiredAt(now);
+        }
+        if (offer.state == HopOfferState.declined) return false;
+        return !_faded.contains(offer.id);
+      })
+      .toList(growable: false);
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<List<HopOffer>>>(courierOffersProvider, (_, next) {
+      // Fresh reads only. A refresh in flight still carries the previous
+      // list, and treating that as an answer would drop the optimistic state
+      // a round trip early.
+      if (next case AsyncData(:final value)) _onOffers(value);
+    });
+
     final offers = ref.watch(courierOffersProvider);
     final busy = ref.watch(courierActionsNotifierProvider);
     final now = DateTime.now().toUtc();
@@ -134,9 +335,7 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen> {
               ],
             ),
             data: (list) {
-              final live = list
-                  .where((o) => o.isPending && !o.hasExpiredAt(now))
-                  .toList(growable: false);
+              final live = _visible(list, now);
               if (live.isEmpty) {
                 return ListView(
                   padding: const EdgeInsets.all(DesignTokens.s20),
@@ -157,126 +356,41 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen> {
                 itemCount: live.length,
                 separatorBuilder: (_, _) =>
                     const SizedBox(height: DesignTokens.s12),
-                itemBuilder: (_, index) => _OfferCard(
-                  offer: live[index],
-                  now: now,
-                  busy: busy,
-                  onAccept: () => _accept(live[index]),
-                  onDecline: () => _decline(live[index]),
-                ),
+                itemBuilder: (_, index) {
+                  final offer = live[index];
+                  final card = CourierOfferCard(
+                    key: ValueKey<String>('offer-${offer.id}'),
+                    offer: offer,
+                    now: now,
+                    busy: busy,
+                    interestState: _optimistic[offer.id],
+                    onAccept: () => _accept(offer),
+                    onDecline: () => _decline(offer),
+                    onWithdraw: () => _withdraw(offer),
+                    onOpenMap: _openMap,
+                  );
+                  final age = _notSelectedAge[offer.id];
+                  if (age == null ||
+                      offer.interestState != OfferInterestState.notSelected) {
+                    return card;
+                  }
+                  final fading = age >= _notSelectedLingerSeconds;
+                  return AnimatedOpacity(
+                    opacity: fading ? 0 : 1,
+                    duration: const Duration(milliseconds: 600),
+                    onEnd: () {
+                      if (fading && mounted) {
+                        setState(() => _faded.add(offer.id));
+                      }
+                    },
+                    child: card,
+                  );
+                },
               );
             },
           ),
         ),
       ),
     );
-  }
-}
-
-class _OfferCard extends StatelessWidget {
-  const _OfferCard({
-    required this.offer,
-    required this.now,
-    required this.busy,
-    required this.onAccept,
-    required this.onDecline,
-  });
-
-  final HopOffer offer;
-  final DateTime now;
-  final bool busy;
-  final VoidCallback onAccept;
-  final VoidCallback onDecline;
-
-  @override
-  Widget build(BuildContext context) {
-    final left = offer.remainingAt(now);
-    final urgent = left.inSeconds <= 30;
-
-    return Container(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-        border: Border.all(
-          color: urgent
-              ? DesignTokens.colorError.withValues(alpha: 0.5)
-              : Colors.transparent,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  formatMoney(
-                    Money(
-                      amount: offer.proposedPayoutAmount,
-                      currency: offer.proposedPayoutCurrency,
-                    ),
-                  ),
-                  style: DesignTokens.h2,
-                ),
-              ),
-              Text(
-                _countdown(left),
-                style: DesignTokens.mediumSemibold.copyWith(
-                  color: urgent
-                      ? DesignTokens.colorError
-                      : DesignTokens.textLight,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: DesignTokens.s4),
-          Text(
-            '${offer.fromGeohash} → ${offer.toGeohash} · ${offer.tier.label}',
-            style: DesignTokens.tiny,
-          ),
-          // Worth surfacing rather than hiding: a high round number means
-          // earlier couriers passed on this one, which usually means it is
-          // awkward rather than generous.
-          if (offer.roundNumber > 1)
-            Padding(
-              padding: const EdgeInsets.only(top: DesignTokens.s4),
-              child: Text(
-                'Offered round ${offer.roundNumber} — others passed on it',
-                style: DesignTokens.tiny.copyWith(
-                  color: DesignTokens.textLight,
-                ),
-              ),
-            ),
-          const SizedBox(height: DesignTokens.s12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: busy ? null : onDecline,
-                  child: const Text('Pass'),
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: busy ? null : onAccept,
-                  child: const Text('Accept'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  static String _countdown(Duration left) {
-    if (left == Duration.zero) return 'expired';
-    final minutes = left.inMinutes;
-    final seconds = left.inSeconds % 60;
-    return minutes > 0
-        ? '${minutes}m ${seconds.toString().padLeft(2, '0')}s'
-        : '${seconds}s';
   }
 }

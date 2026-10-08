@@ -201,6 +201,10 @@ abstract class RouteNames {
   /// show from the courier's profile state, so callers never have to know
   /// whether this account has applied, is in review, or is live.
   static const courier = '/courier';
+
+  /// The rider's offers. Nested under [courier] so a notification that opens
+  /// it still has the dashboard beneath it to go back to.
+  static const courierOffers = '/courier/offers';
   static const brandDetail = '/creator/partnerships/:partnershipId';
   static const partnershipApply = '/creator/partnerships/:partnershipId/apply';
   static const activePartnerships = '/creator/partnerships/active';
@@ -227,6 +231,10 @@ abstract class RouteNames {
   static const addProduct = '/vendor/add-product';
   static const vendorOrders = '/vendor/orders';
   static const vendorOrderDetail = '/vendor/orders/:orderId';
+
+  /// Query flag on [vendorOrderDetail] that opens the delivery-partner sheet
+  /// once the order has loaded — where a "rider is interested" push lands.
+  static const partnerSheetQuery = 'partnerSheet';
   static const vendorOrdersReadyToShip = '/vendor/orders/ready-to-ship';
   static const vendorOrdersWaitingTracking = '/vendor/orders/waiting-tracking';
   static const vendorPendingInquiries = '/vendor/orders/pending-inquiries';

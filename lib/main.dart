@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart' show RemoteMessage;
+import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
 import 'package:stylemint_mobile_frontend/core/device/push_destination.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -501,6 +502,7 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   late final AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
   StreamSubscription<RemoteMessage>? _pushTapSubscription;
+  StreamSubscription<RemoteMessage>? _pushForegroundSubscription;
 
   /// A deep link that arrived while the session was still bootstrapping
   /// (`AuthSessionState.unknown`). The router's redirect bounces every
@@ -557,6 +559,7 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   void dispose() {
     _linkSubscription?.cancel();
     _pushTapSubscription?.cancel();
+    _pushForegroundSubscription?.cancel();
     super.dispose();
   }
 
@@ -648,6 +651,10 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
       _handlePushMessage,
     );
 
+    _pushForegroundSubscription = PushNotificationService.onMessage.listen(
+      _handleForegroundPush,
+    );
+
     // One-shot: this is the notification that launched the app, and asking
     // twice returns null.
     unawaited(
@@ -666,9 +673,64 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   /// destination still opens the app, which is the sensible default for a
   /// notification that is only telling the user something.
   void _handlePushMessage(RemoteMessage message) {
+    // Delivery notifications carry a `type`, not a link — the contract pins
+    // that — so they are routed by type before the generic key guess runs.
+    final delivery = DeliveryPushEvent.fromData(message.data);
+    if (delivery != null) {
+      ref.read(deliveryPushBusProvider).publish(delivery);
+      final route = delivery.route;
+      // Through _handleUri rather than straight to the router, so a cold
+      // launch from the notification is deferred until the session is known.
+      if (route != null) _handleUri(Uri.parse('stylemint:/$route'));
+      return;
+    }
     final uri = pushDestinationUri(message.data);
     if (uri == null) return;
     _handleUri(uri);
+  }
+
+  /// A notification that arrived while the app is open.
+  ///
+  /// Delivery ones are time-critical — a request is open for minutes, and a
+  /// vendor is waiting on the rider — so the screens showing them refresh at
+  /// once via [DeliveryPushBus], and anything not on screen gets an in-app
+  /// banner with a way to it. FCM draws nothing itself in the foreground on
+  /// Android, so without this the rider would learn of it on the next poll.
+  void _handleForegroundPush(RemoteMessage message) {
+    final delivery = DeliveryPushEvent.fromData(message.data);
+    if (delivery == null) return;
+    ref.read(deliveryPushBusProvider).publish(delivery);
+
+    final route = delivery.route;
+    final router = ref.read(appRouterProvider);
+    final navigatorContext =
+        router.routerDelegate.navigatorKey.currentContext;
+    if (route == null || navigatorContext == null) return;
+    final messenger = ScaffoldMessenger.maybeOf(navigatorContext);
+    if (messenger == null) return;
+
+    final text =
+        message.notification?.title ??
+        message.notification?.body ??
+        switch (delivery.type) {
+          DeliveryPushType.request => 'A vendor near you needs a rider',
+          DeliveryPushType.interest => 'A rider is ready to take your parcel',
+          DeliveryPushType.selected => "You've got the delivery",
+          DeliveryPushType.notSelected => 'Another rider was chosen',
+        };
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 6),
+          content: Text(text),
+          action: SnackBarAction(
+            label: 'View',
+            onPressed: () => router.go(route),
+          ),
+        ),
+      );
   }
 
   void _handleUri(Uri uri) {

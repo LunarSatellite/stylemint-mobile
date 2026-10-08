@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/datasources/vendor_orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/repositories/vendor_orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/repositories/vendor_orders_repository.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/delivery_partner_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
 
 final vendorOrdersRemoteDataSourceProvider =
@@ -30,6 +31,16 @@ final vendorOrderDetailNotifierProvider =
     StateNotifierProvider<VendorOrderDetailNotifier, OrderDetailState>(
       (ref) =>
           VendorOrderDetailNotifier(ref.watch(vendorOrdersRepositoryProvider)),
+    );
+
+/// One sub-order's "find a delivery partner" sheet. autoDispose so closing
+/// the sheet disposes the notifier, and its poll timer with it.
+final deliveryPartnerNotifierProvider = StateNotifierProvider.autoDispose
+    .family<DeliveryPartnerNotifier, DeliveryPartnerState, String>(
+      (ref, subOrderId) => DeliveryPartnerNotifier(
+        ref.watch(vendorOrdersRepositoryProvider),
+        subOrderId,
+      ),
     );
 
 final vendorReturnsProvider = FutureProvider.autoDispose((ref) {

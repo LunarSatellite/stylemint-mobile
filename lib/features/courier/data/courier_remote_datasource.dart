@@ -98,15 +98,49 @@ class CourierRemoteDataSource {
   /// courier into Active. One endpoint taking the desired state rather than
   /// separate online/offline calls, so a retry lands one state instead of two
   /// transitions.
+  ///
+  /// The position is optional and only sent when going online: it seeds the
+  /// rider's live location so distance matching works before the first
+  /// location report lands.
   Future<Map<String, dynamic>> setShift({
     required String courierProfileId,
     required bool online,
+    double? latitude,
+    double? longitude,
   }) async {
     final response = await apiClient.authPost(
       '/v1/courier/$courierProfileId/shift',
-      data: {'online': online},
+      data: {
+        'online': online,
+        if (online && latitude != null && longitude != null) ...{
+          'latitude': latitude,
+          'longitude': longitude,
+        },
+      },
+      // authPost defaults to requiresToken: false, which sent this without a
+      // bearer and only worked by way of a 401 and a token refresh.
+      options: Options(headers: {'requiresToken': true}),
     );
     return (response as Map).cast<String, dynamic>();
+  }
+
+  /// POST `/v1/courier/location` — the rider's live position, while online.
+  /// 204 on success; 400 when offline or out of range. Not idempotent-keyed:
+  /// a repeated report of the same position is harmless.
+  Future<void> reportLocation({
+    required double latitude,
+    required double longitude,
+    double? accuracyMeters,
+  }) async {
+    await apiClient.authPost(
+      '/v1/courier/location',
+      data: {
+        'latitude': latitude,
+        'longitude': longitude,
+        if (accuracyMeters != null) 'accuracyMeters': accuracyMeters,
+      },
+      options: Options(headers: {'requiresToken': true}),
+    );
   }
 
   // ── Device keys ────────────────────────────────────────────────────────
@@ -263,6 +297,18 @@ class CourierRemoteDataSource {
       options: _idempotent(idempotencyKey),
     );
     return (response as Map).cast<String, dynamic>();
+  }
+
+  /// POST `/v1/courier/offers/{id}/withdraw` — takes back interest in a
+  /// vendor-select offer before the vendor chooses. 204.
+  Future<void> withdrawOffer({
+    required String offerId,
+    required String idempotencyKey,
+  }) async {
+    await apiClient.authPost(
+      '/v1/courier/offers/$offerId/withdraw',
+      options: _idempotent(idempotencyKey),
+    );
   }
 
   Future<void> declineOffer({
