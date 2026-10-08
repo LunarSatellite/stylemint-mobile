@@ -71,6 +71,14 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, int>> getSubOrderCountForStates(
+    List<int> states,
+  ) => guardedNetworkCall(
+    networkInfo,
+    () => remoteDataSource.getSubOrderCountForStates(states),
+  );
+
+  @override
   Future<Either<NetworkExceptions, int>> getSubOrderCount(int state) async {
     if (await networkInfo.isConnected) {
       try {

@@ -58,6 +58,26 @@ class VendorOrdersRemoteDataSource {
     return (response as Map<String, dynamic>)['totalCount'] as int? ?? 0;
   }
 
+  /// `totalCount` across SEVERAL states in one request, via the repeatable
+  /// `states` param.
+  ///
+  /// The "to ship" bucket spans seven backend states, and [getSubOrderCount]
+  /// takes one — so this exists to keep the nav-bar badge at one request
+  /// instead of seven on every screen.
+  ///
+  /// Dio's default `ListFormat.multi` sends `?states=1&states=2&…`, which is
+  /// the shape ASP.NET Core binds to `SubOrderState[]`. A comma-joined string
+  /// would arrive as a single unparseable value, so the list is passed as a
+  /// list rather than pre-joined.
+  Future<int> getSubOrderCountForStates(List<int> states) async {
+    if (states.isEmpty) return 0;
+    final response = await apiClient.get(
+      '/v1/vendor/sub-orders',
+      queryParameters: {'states': states, 'pageSize': 1},
+    );
+    return (response as Map<String, dynamic>)['totalCount'] as int? ?? 0;
+  }
+
   /// GET /v1/vendor/sub-orders/{subOrderId} — vendor sub-order detail
   /// (SM-BG-2). `orderId` here is the sub-order id (the list row's `id`).
   /// Requires backend PR #53 deployed.

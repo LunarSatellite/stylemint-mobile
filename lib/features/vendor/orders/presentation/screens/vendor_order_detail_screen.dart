@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_to_ship_count_provider.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_action_bar.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_step_sheets.dart';
@@ -110,6 +111,12 @@ class _VendorOrderDetailScreenState
     setState(() => _pendingAction = action);
     await run();
     if (mounted) setState(() => _pendingAction = null);
+
+    // Every action here moves the order through, or out of, the "to ship"
+    // bucket, so the nav badge is now wrong. It refreshes itself on
+    // navigation, but the vendor is still standing on this screen — and may
+    // take several actions before leaving it.
+    ref.invalidate(vendorToShipCountProvider);
   }
 
   /// Whether the counter handover's refusal is worth putting on screen.

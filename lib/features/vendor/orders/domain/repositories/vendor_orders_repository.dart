@@ -18,6 +18,13 @@ abstract interface class VendorOrdersRepository {
   /// int) — used for dashboard "Pending Actions" tile counts.
   Future<Either<NetworkExceptions, int>> getSubOrderCount(int state);
 
+  /// `totalCount` across several `SubOrderState` values in one request —
+  /// used for the vendor nav-bar "to ship" badge, whose bucket spans seven
+  /// states.
+  Future<Either<NetworkExceptions, int>> getSubOrderCountForStates(
+    List<int> states,
+  );
+
   Future<Either<NetworkExceptions, VendorOrder>> getOrderDetail(String orderId);
 
   Future<Either<NetworkExceptions, VendorOrder>> updateOrderStatus(

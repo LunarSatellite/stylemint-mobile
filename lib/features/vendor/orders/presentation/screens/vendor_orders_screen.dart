@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_to_ship_count_provider.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_warranty_workspace.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_action_bar.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
@@ -90,6 +91,9 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
       _selectMode = false;
       _selectedIds.clear();
     });
+    // Accepting moves orders along within the bucket, so the nav badge needs
+    // recomputing even though the vendor has not navigated anywhere.
+    ref.invalidate(vendorToShipCountProvider);
     final message = result == null
         ? 'Couldn’t accept those orders. Please try again.'
         : result.failureCount == 0
