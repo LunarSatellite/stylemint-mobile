@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/rider_profile_for_vendor.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/repositories/vendor_orders_repository.dart';
@@ -645,6 +646,15 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
       idempotencyKey: _uuid.v4(),
     );
     return DeliveryRequest.fromJson(json);
+  });
+
+  @override
+  Future<Either<NetworkExceptions, RiderProfileForVendor?>> riderProfile(
+    String orderId,
+    String courierId,
+  ) => guardedNetworkCall(networkInfo, () async {
+    final json = await remoteDataSource.getRiderProfile(orderId, courierId);
+    return json == null ? null : RiderProfileForVendor.fromJson(json);
   });
 
   @override

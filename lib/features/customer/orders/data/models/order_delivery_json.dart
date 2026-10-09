@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_delivery.dart';
+import 'package:stylemint_mobile_frontend/features/rider_ratings/domain/entities/rider_rating.dart';
 
 /// Reads the `delivery` block the delivery-complete contract adds to the
 /// buyer's order detail.
@@ -19,12 +20,22 @@ abstract final class OrderDeliveryJson {
             ?parse(sub['delivery'], subOrderId: _text(sub['id'])),
     ];
     if (candidates.isEmpty) return null;
+    // Then one whose rider is still waiting to be rated, so "How was your
+    // rider?" follows the parcel that was just delivered.
     return candidates.where((d) => d.awaitingConfirmation).firstOrNull ??
+        candidates
+            .where(
+              (d) =>
+                  d.riderRating?.canRateRider == true &&
+                  d.riderRating?.rating == null,
+            )
+            .firstOrNull ??
         candidates.first;
   }
 
-  /// `{ packageNumber, status, riderName, awaitingConfirmation }`, or null
-  /// when absent or not an object.
+  /// `{ packageNumber, status, riderName, awaitingConfirmation }` — plus the
+  /// rider-rating contract's `courierId`, `canRateRider` and `riderRating` —
+  /// or null when absent or not an object.
   static OrderDelivery? parse(Object? value, {String? subOrderId}) {
     if (value is! Map) return null;
     final awaiting = value['awaitingConfirmation'];
@@ -35,6 +46,7 @@ abstract final class OrderDeliveryJson {
       awaitingConfirmation:
           awaiting == true || awaiting?.toString().toLowerCase() == 'true',
       subOrderId: _text(value['subOrderId']) ?? subOrderId,
+      riderRating: RiderRatingEligibility.fromJson(value),
     );
   }
 

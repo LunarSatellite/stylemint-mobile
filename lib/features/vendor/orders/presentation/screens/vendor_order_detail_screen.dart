@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/rider_ratings/domain/entities/rider_rating.dart';
+import 'package:stylemint_mobile_frontend/features/rider_ratings/presentation/widgets/rider_rating_card.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker_binding.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
@@ -351,6 +353,20 @@ class _VendorOrderDetailScreenState
                 else
                   _ShippingCard(order: order),
                 const SizedBox(height: 12),
+                // "Rate the rider" once a StyleMint rider has picked the
+                // parcel up — or the rating given. Absent otherwise,
+                // including from a backend without ratings.
+                if (RiderRatingCard.isShownFor(order.riderRating, order.id)) ...[
+                  RiderRatingCard(
+                    role: RiderRaterRole.vendor,
+                    subOrderId: order.id,
+                    eligibility: order.riderRating,
+                    onSaved: () => ref
+                        .read(vendorOrderDetailNotifierProvider.notifier)
+                        .refreshSilently(order.id),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 _OrderItemsCard(
                   order: order,
                   expanded: _itemsExpanded,

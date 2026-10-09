@@ -60,23 +60,36 @@ class InterestedRider {
     this.avatarUrl,
     this.vehicle,
     this.interestedUtc,
+    this.ratingCount,
+    this.verified,
   });
 
-  factory InterestedRider.fromJson(Map<String, dynamic> json) =>
-      InterestedRider(
-        offerId: _string(json['offerId']),
-        courierId: _string(json['courierId']),
-        displayName: _string(json['displayName']).isEmpty
-            ? 'StyleMint rider'
-            : _string(json['displayName']),
-        avatarUrl: _stringOrNull(json['avatarUrl']),
-        tier: _tier(json['tier']),
-        rating: _double(json['rating']),
-        completedDeliveries: _double(json['completedDeliveries']).toInt(),
-        distanceKm: _double(json['distanceKm']),
-        vehicle: _stringOrNull(json['vehicle']),
-        interestedUtc: _date(json['interestedUtc']),
-      );
+  factory InterestedRider.fromJson(Map<String, dynamic> json) {
+    final rating = _double(json['rating']);
+    final count = json['ratingCount'];
+    final verified = json['verified'];
+    return InterestedRider(
+      offerId: _string(json['offerId']),
+      courierId: _string(json['courierId']),
+      displayName: _string(json['displayName']).isEmpty
+          ? 'StyleMint rider'
+          : _string(json['displayName']),
+      avatarUrl: _stringOrNull(json['avatarUrl']),
+      tier: riderTierLabel(json['tier']),
+      // Null (fewer than 3 ratings) and zero both read "New rider".
+      rating: rating > 0 ? rating : null,
+      completedDeliveries: _double(json['completedDeliveries']).toInt(),
+      distanceKm: _double(json['distanceKm']),
+      vehicle: riderVehicleLabel(json['vehicle']),
+      interestedUtc: _date(json['interestedUtc']),
+      ratingCount: count == null ? null : _double(count).toInt(),
+      verified: verified is bool
+          ? verified
+          : verified == null
+          ? null
+          : verified.toString().toLowerCase() == 'true',
+    );
+  }
 
   /// What the vendor names when choosing — the select call takes this, not
   /// the courier id.
@@ -88,13 +101,23 @@ class InterestedRider {
   /// Neighbour, Traveller or Pro, already worded for a vendor.
   final String tier;
 
-  /// Zero when the rider has no ratings yet — the card says "new" rather
-  /// than showing a zero star score.
-  final double rating;
+  /// The average of their ratings; null until they have three — the card
+  /// says "New rider" rather than showing a zero or a one-review score.
+  final double? rating;
   final int completedDeliveries;
   final double distanceKm;
   final String? vehicle;
   final DateTime? interestedUtc;
+
+  /// How many ratings [rating] averages. Null from a backend before the
+  /// rider-rating contract.
+  final int? ratingCount;
+
+  /// KYC approved. Null when the server does not say — no tick is drawn,
+  /// which is not the same as "unverified".
+  final bool? verified;
+
+  bool get isNew => rating == null;
 }
 
 /// The rider the vendor chose.
@@ -211,12 +234,29 @@ DateTime? _date(Object? value) {
 /// The contract sends `Neighbor | Traveler | Pro`; the existing candidate
 /// list sent 1–3. Both are read, and worded the way the rest of the vendor
 /// app words them.
-String _tier(Object? value) {
+String riderTierLabel(Object? value) {
   final raw = value?.toString().trim().toLowerCase() ?? '';
   return switch (raw) {
     'neighbor' || 'neighbour' || '1' => 'Neighbour',
     'traveler' || 'traveller' || '2' => 'Traveller',
     'pro' || '3' => 'Pro',
     _ => 'Partner',
+  };
+}
+
+/// `Bike | Scooter | Car | Bicycle | OnFoot` as a vendor reads it. Accepts
+/// the bare string the interested list sends or the rider profile's
+/// `{ type, plateLast4 }` object; an unknown type is shown as sent, and
+/// nothing at all is null.
+String? riderVehicleLabel(Object? value) {
+  final raw = _stringOrNull(value is Map ? value['type'] : value);
+  if (raw == null) return null;
+  return switch (raw.toLowerCase().replaceAll(RegExp('[ _-]'), '')) {
+    'bike' || 'motorbike' || 'motorcycle' => 'Bike',
+    'scooter' => 'Scooter',
+    'car' => 'Car',
+    'bicycle' || 'cycle' => 'Bicycle',
+    'onfoot' || 'foot' || 'walking' => 'On foot',
+    _ => raw,
   };
 }

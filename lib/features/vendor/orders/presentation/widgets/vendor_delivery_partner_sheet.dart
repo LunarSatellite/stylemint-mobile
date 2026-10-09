@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/delivery_partner_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_rider_details_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -76,6 +77,8 @@ class VendorDeliveryPartnerSheet extends ConsumerStatefulWidget {
   );
   static Key chooseKey(String offerId) =>
       ValueKey<String>('vendor-partner-choose-$offerId');
+  static Key detailsKey(String offerId) =>
+      ValueKey<String>('vendor-partner-details-$offerId');
 
   @override
   ConsumerState<VendorDeliveryPartnerSheet> createState() =>
@@ -152,6 +155,18 @@ class _VendorDeliveryPartnerSheetState
     SmSnackbar.error(context, NetworkExceptions.getMessage(failure));
   }
 
+  /// The rider's details; "Choose this rider" there comes back here and runs
+  /// the same confirm-and-select as the row's own button.
+  Future<void> _openDetails(InterestedRider rider) async {
+    final chosen = await showVendorRiderDetailsSheet(
+      context,
+      subOrderId: widget.subOrderId,
+      rider: rider,
+    );
+    if (chosen == null || !mounted) return;
+    await _choose(chosen);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(deliveryPartnerNotifierProvider(widget.subOrderId));
@@ -218,6 +233,7 @@ class _VendorDeliveryPartnerSheetState
                   now: now,
                   choosingOfferId: choosingOfferId,
                   onChoose: _choose,
+                  onDetails: _openDetails,
                   onAskAgain: _notifier.findPartner,
                   onOwnCourier: () => Navigator.of(
                     context,
@@ -349,6 +365,7 @@ class _Live extends StatelessWidget {
     required this.now,
     required this.choosingOfferId,
     required this.onChoose,
+    required this.onDetails,
     required this.onAskAgain,
     required this.onOwnCourier,
     required this.onHandedOver,
@@ -358,6 +375,7 @@ class _Live extends StatelessWidget {
   final DateTime now;
   final String? choosingOfferId;
   final ValueChanged<InterestedRider> onChoose;
+  final ValueChanged<InterestedRider> onDetails;
   final VoidCallback onAskAgain;
   final VoidCallback onOwnCourier;
   final ValueChanged<AssignedRider> onHandedOver;
@@ -458,6 +476,7 @@ class _Live extends StatelessWidget {
                 choosing: choosingOfferId == rider.offerId,
                 enabled: choosingOfferId == null,
                 onChoose: () => onChoose(rider),
+                onDetails: () => onDetails(rider),
               ),
             ],
           ],
@@ -509,6 +528,8 @@ class _SearchHeader extends StatelessWidget {
   }
 }
 
+/// One interested rider: who they are, how they are rated, how far away —
+/// and the whole row opens their details.
 class _RiderCard extends StatelessWidget {
   const _RiderCard({
     required this.rider,
@@ -516,6 +537,7 @@ class _RiderCard extends StatelessWidget {
     required this.choosing,
     required this.enabled,
     required this.onChoose,
+    required this.onDetails,
   });
 
   final InterestedRider rider;
@@ -523,6 +545,18 @@ class _RiderCard extends StatelessWidget {
   final bool choosing;
   final bool enabled;
   final VoidCallback onChoose;
+  final VoidCallback onDetails;
+
+  /// "★ 4.8 (23) · 12 deliveries", or "New rider · …" under three ratings.
+  static String ratingLine(InterestedRider rider) {
+    final rating = rider.rating;
+    final count = rider.ratingCount;
+    final stars = rating == null
+        ? 'New rider'
+        : '★ ${rating.toStringAsFixed(1)}${count == null ? '' : ' ($count)'}';
+    final n = rider.completedDeliveries;
+    return '$stars · $n ${n == 1 ? 'delivery' : 'deliveries'}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -530,50 +564,63 @@ class _RiderCard extends StatelessWidget {
     final interestedAt = rider.interestedUtc;
     final details = <String>[
       '${rider.distanceKm.toStringAsFixed(1)} km away',
-      if (vehicle != null) vehicle,
+      ?vehicle,
       if (interestedAt != null) 'interested ${_ago(interestedAt, now)}',
     ];
     return _Panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              _Avatar(name: rider.displayName, url: rider.avatarUrl),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: DesignTokens.s8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+          InkWell(
+            key: VendorDeliveryPartnerSheet.detailsKey(rider.offerId),
+            onTap: onDetails,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
+            child: Semantics(
+              button: true,
+              hint: 'Shows ratings, reviews and vehicle',
+              child: Row(
+                children: [
+                  RiderAvatar(name: rider.displayName, url: rider.avatarUrl),
+                  const SizedBox(width: DesignTokens.s12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          rider.displayName,
-                          style: DesignTokens.mediumSemibold,
+                        Wrap(
+                          spacing: DesignTokens.s8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              rider.displayName,
+                              style: DesignTokens.mediumSemibold,
+                            ),
+                            if (rider.verified == true)
+                              const RiderVerifiedTick(),
+                            RiderTierBadge(rider.tier),
+                          ],
                         ),
-                        _TierBadge(rider.tier),
+                        Text(
+                          ratingLine(rider),
+                          style: DesignTokens.tiny.copyWith(
+                            color: DesignTokens.textLight,
+                          ),
+                        ),
+                        Text(
+                          details.join(' · '),
+                          style: DesignTokens.tiny.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
+                        ),
                       ],
                     ),
-                    Text(
-                      '${rider.rating > 0 ? '★ ${rider.rating.toStringAsFixed(1)}' : 'New rider'}'
-                      ' · ${rider.completedDeliveries} '
-                      '${rider.completedDeliveries == 1 ? 'delivery' : 'deliveries'}',
-                      style: DesignTokens.tiny.copyWith(
-                        color: DesignTokens.textLight,
-                      ),
-                    ),
-                    Text(
-                      details.join(' · '),
-                      style: DesignTokens.tiny.copyWith(
-                        color: DesignTokens.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: DesignTokens.textMuted,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
           const SizedBox(height: DesignTokens.s12),
           FilledButton(
@@ -615,7 +662,7 @@ class _Assigned extends StatelessWidget {
         children: [
           Row(
             children: [
-              _Avatar(name: rider.displayName, url: rider.avatarUrl),
+              RiderAvatar(name: rider.displayName, url: rider.avatarUrl),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
                 child: Column(
@@ -653,58 +700,6 @@ class _Assigned extends StatelessWidget {
             onPressed: () => onHandedOver(rider),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _TierBadge extends StatelessWidget {
-  const _TierBadge(this.tier);
-
-  final String tier;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(
-      horizontal: DesignTokens.s8,
-      vertical: 2,
-    ),
-    decoration: BoxDecoration(
-      color: DesignTokens.primaryGreenLight,
-      borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
-    ),
-    child: Text(
-      tier,
-      style: DesignTokens.tiny.copyWith(color: DesignTokens.primaryGreen),
-    ),
-  );
-}
-
-/// Initials over the photo, so a missing or failed avatar still names the
-/// rider rather than leaving a grey circle.
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.name, required this.url});
-
-  final String name;
-  final String? url;
-
-  @override
-  Widget build(BuildContext context) {
-    final initials = name
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .take(2)
-        .map((part) => part.substring(0, 1).toUpperCase())
-        .join();
-    final image = url;
-    return CircleAvatar(
-      radius: 22,
-      backgroundColor: DesignTokens.bgAppBodyLight,
-      foregroundImage: image == null ? null : NetworkImage(image),
-      onForegroundImageError: image == null ? null : (_, _) {},
-      child: Text(
-        initials.isEmpty ? '?' : initials,
-        style: DesignTokens.mediumSemibold,
       ),
     );
   }

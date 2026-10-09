@@ -1,3 +1,4 @@
+import 'package:stylemint_mobile_frontend/features/rider_ratings/domain/entities/rider_rating.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
 
@@ -312,6 +313,7 @@ class VendorOrder {
     this.items = const [],
     this.fulfillmentChannel = OrderFulfillmentChannel.delivery,
     this.collectedAt,
+    this.riderRating,
   });
 
   final String id;
@@ -359,6 +361,11 @@ class VendorOrder {
   /// Null on a delivery, and null on a collection nobody has handed over yet.
   final DateTime? collectedAt;
 
+  /// Whether the vendor can rate the StyleMint rider who picked this parcel
+  /// up, and what they gave (rider-rating contract). Null from a backend
+  /// without ratings, or on a parcel no StyleMint rider carried.
+  final RiderRatingEligibility? riderRating;
+
   bool get isCollection => fulfillmentChannel.isCollection;
 
   VendorOrder copyWith({
@@ -378,6 +385,7 @@ class VendorOrder {
     List<VendorOrderItem>? items,
     OrderFulfillmentChannel? fulfillmentChannel,
     DateTime? collectedAt,
+    RiderRatingEligibility? riderRating,
   }) {
     return VendorOrder(
       id: id ?? this.id,
@@ -396,6 +404,7 @@ class VendorOrder {
       items: items ?? this.items,
       fulfillmentChannel: fulfillmentChannel ?? this.fulfillmentChannel,
       collectedAt: collectedAt ?? this.collectedAt,
+      riderRating: riderRating ?? this.riderRating,
     );
   }
 
@@ -417,7 +426,8 @@ class VendorOrder {
       other.customerName == customerName &&
       other.shippingAddress == shippingAddress &&
       other.fulfillmentChannel == fulfillmentChannel &&
-      other.collectedAt == collectedAt;
+      other.collectedAt == collectedAt &&
+      other.riderRating == riderRating;
 
   @override
   int get hashCode => Object.hash(
@@ -437,6 +447,7 @@ class VendorOrder {
     shippingAddress,
     fulfillmentChannel,
     collectedAt,
+    riderRating,
   );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {

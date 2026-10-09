@@ -102,7 +102,12 @@ class _DeliveryConfirmScreenState extends ConsumerState<DeliveryConfirmScreen> {
     if (orderNumber == null) {
       router.go(RouteNames.orders);
     } else {
-      router.go('/orders/${Uri.encodeComponent(orderNumber)}');
+      // Opens on "How was your rider?" when the order offers it — the
+      // natural next thing after confirming, but never in the way.
+      router.go(
+        '/orders/${Uri.encodeComponent(orderNumber)}'
+        '?focus=${RouteNames.orderDetailFocusRiderRating}',
+      );
     }
   }
 

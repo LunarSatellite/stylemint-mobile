@@ -4,7 +4,9 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_balance_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_device_key_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_rating_card.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/rider_ratings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/referrals/presentation/screens/referrals_screen.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -38,7 +40,8 @@ class CourierProfileScreen extends ConsumerWidget {
           onRefresh: () async {
             ref
               ..invalidate(courierReliabilityProvider(profile.id))
-              ..invalidate(courierEarningsProvider);
+              ..invalidate(courierEarningsProvider)
+              ..invalidate(courierMyRatingProvider);
           },
           child: ListView(
             padding: const EdgeInsets.all(DesignTokens.s20),
@@ -80,6 +83,13 @@ class CourierProfileScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+
+              // The full rating summary, with every recent comment. Nothing
+              // at all from a backend without ratings.
+              const CourierRatingCard(
+                recentShown: 10,
+                margin: EdgeInsets.only(top: DesignTokens.s24),
+              ),
 
               const SizedBox(height: DesignTokens.s24),
               Text('Work setup', style: DesignTokens.h3),

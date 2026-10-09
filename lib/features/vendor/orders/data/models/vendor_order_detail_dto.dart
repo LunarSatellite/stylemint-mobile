@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
+import 'package:stylemint_mobile_frontend/features/rider_ratings/domain/entities/rider_rating.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
@@ -51,6 +52,12 @@ class VendorOrderDetailDto {
       items: lines.map(_lineToItem).toList(growable: false),
       fulfillmentChannel: channel,
       collectedAt: _parseDate(json['collectedUtc']),
+      // The contract adds `courierId`, `canRateRider` and `riderRating` to
+      // the sub-order detail; read at the top level, or from a `delivery`
+      // block should the server nest them the way the buyer's detail does.
+      riderRating:
+          RiderRatingEligibility.fromJson(json) ??
+          RiderRatingEligibility.fromJson(json['delivery']),
     );
   }
 

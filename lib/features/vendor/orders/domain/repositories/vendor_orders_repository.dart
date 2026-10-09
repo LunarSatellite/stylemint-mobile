@@ -4,6 +4,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/rider_profile_for_vendor.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
@@ -148,6 +149,14 @@ abstract interface class VendorOrdersRepository {
   Future<Either<NetworkExceptions, DeliveryRequest>> selectDeliveryPartner(
     String orderId,
     String offerId,
+  );
+
+  /// What the vendor may see about one rider on the current request, or null
+  /// when the server does not serve rider details yet. A rider who has left
+  /// the request is a `rider_profile.not_available` failure.
+  Future<Either<NetworkExceptions, RiderProfileForVendor?>> riderProfile(
+    String orderId,
+    String courierId,
   );
 
   /// Uploads one seal photo and returns its URL.

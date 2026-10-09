@@ -2,6 +2,7 @@ import 'package:dio/dio.dart'
     show DioException, FormData, MultipartFile, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/upload_filename.dart';
+import 'package:stylemint_mobile_frontend/features/rider_ratings/data/rider_rating_error_mapper.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_dto.dart';
 
@@ -423,6 +424,30 @@ class VendorOrdersRemoteDataSource {
       options: _idempotent(idempotencyKey),
     );
     return (response as Map).cast<String, dynamic>();
+  }
+
+  /// GET /v1/vendor/sub-orders/{id}/delivery-requests/current/riders/{courierId}
+  /// — what the vendor may see about one rider before choosing them.
+  ///
+  /// Two different 404s: `rider_profile.not_available` (that rider is not
+  /// on this request any more) is thrown with its code, while a 404 without
+  /// one — a backend that does not serve this route yet — is null, and the
+  /// sheet shows what the interested list already said.
+  Future<Map<String, dynamic>?> getRiderProfile(
+    String subOrderId,
+    String courierId,
+  ) async {
+    try {
+      final response = await apiClient.get(
+        '/v1/vendor/sub-orders/$subOrderId/delivery-requests/current/riders/'
+        '${Uri.encodeComponent(courierId)}',
+      );
+      return response is Map ? response.cast<String, dynamic>() : null;
+    } on DioException catch (e) {
+      final code = riderErrorCodeOf(e.response?.data);
+      if (e.response?.statusCode == 404 && code == null) return null;
+      throw mapRiderRatingDioException(e);
+    }
   }
 
   /// POST /v1/vendor/packages/seal-images — multipart upload, returns the CDN

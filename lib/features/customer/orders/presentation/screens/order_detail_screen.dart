@@ -30,6 +30,8 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_tracking_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/rider_ratings/domain/entities/rider_rating.dart';
+import 'package:stylemint_mobile_frontend/features/rider_ratings/presentation/widgets/rider_rating_card.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -46,6 +48,7 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
   const OrderDetailScreen({
     required this.orderId,
     this.focusDeliveryRecovery = false,
+    this.focusRiderRating = false,
     super.key,
   });
 
@@ -56,6 +59,10 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
   /// Delivery Guardian banner and its recovery offers into view, and say
   /// so when the delivery has since recovered and the banner is empty.
   final bool focusDeliveryRecovery;
+
+  /// Opened right after confirming a rider's delivery: bring "How was your
+  /// rider?" into view once the order says the rider can be rated.
+  final bool focusRiderRating;
 
   @override
   ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
@@ -167,6 +174,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               routeOrderId: widget.orderId,
               notifier: ref.read(provider.notifier),
               focusDeliveryRecovery: widget.focusDeliveryRecovery,
+              focusRiderRating: widget.focusRiderRating,
             ),
           ),
           loadFailure: (failure) => SmErrorView(
@@ -182,6 +190,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               actionPending: true,
               notifier: ref.read(provider.notifier),
               focusDeliveryRecovery: widget.focusDeliveryRecovery,
+              focusRiderRating: widget.focusRiderRating,
             ),
           ),
           actionFailure: (failure) => _loader(),
@@ -208,6 +217,7 @@ class _OrderDetailBody extends ConsumerStatefulWidget {
     required this.notifier,
     this.actionPending = false,
     this.focusDeliveryRecovery = false,
+    this.focusRiderRating = false,
   });
 
   final OrderDetail order;
@@ -217,6 +227,7 @@ class _OrderDetailBody extends ConsumerStatefulWidget {
   final OrderDetailNotifier notifier;
   final bool actionPending;
   final bool focusDeliveryRecovery;
+  final bool focusRiderRating;
 
   @override
   ConsumerState<_OrderDetailBody> createState() => _OrderDetailBodyState();
@@ -226,6 +237,29 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   bool _expanded = false;
   final GlobalKey _trackingSectionKey = GlobalKey();
   final GlobalKey _otherDetailsKey = GlobalKey();
+  final GlobalKey _riderRatingKey = GlobalKey();
+
+  /// Bring "How was your rider?" into view as soon as it is drawn: asked for
+  /// by the route, or by a confirmation made on this screen. Waits for the
+  /// card rather than giving up, since `canRateRider` arrives with the
+  /// re-read that follows the confirmation.
+  late bool _focusRiderRating = widget.focusRiderRating;
+
+  void _bringRiderRatingIntoView() {
+    _focusRiderRating = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _riderRatingKey.currentContext;
+      if (!mounted || target == null) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          target,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOut,
+          alignment: 0.05,
+        ),
+      );
+    });
+  }
 
   Future<void> _scrollToTracking() async {
     final trackingContext = _trackingSectionKey.currentContext;
@@ -323,6 +357,12 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
     // Carried by a StyleMint rider with QR proof of delivery: one
     // confirmation step (the rider's QR or code), no legacy receipt cards.
     final riderDelivery = order.delivery != null;
+    final delivery = order.delivery;
+    final rateRider = RiderRatingCard.isShownFor(
+      delivery?.riderRating,
+      delivery?.subOrderId,
+    );
+    if (rateRider && _focusRiderRating) _bringRiderRatingIntoView();
 
     final story = trackingNumber?.startsWith('SM-D-') == true
         ? ref.watch(deliveryStoryProvider(trackingNumber!))
@@ -354,6 +394,10 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
                         .refreshSilently(),
                   );
                 }
+                // Then ask about the rider — by bringing the card into
+                // view once the re-read says they can be rated, not with a
+                // modal in the way of the order.
+                if (mounted) setState(() => _focusRiderRating = true);
                 return refreshOrderDetail(
                   ref,
                   routeOrderId: widget.routeOrderId,
@@ -368,6 +412,25 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             expanded: _expanded,
             onToggle: _toggleOtherDetails,
           ),
+          // "How was your rider?" — only when the order says the buyer can
+          // rate the StyleMint rider who delivered it, or already did.
+          if (rateRider) ...[
+            const SizedBox(height: DesignTokens.s12),
+            KeyedSubtree(
+              key: _riderRatingKey,
+              child: RiderRatingCard(
+                role: RiderRaterRole.buyer,
+                subOrderId: delivery!.subOrderId!,
+                eligibility: delivery.riderRating,
+                riderName: delivery.riderName,
+                onSaved: () => refreshOrderDetail(
+                  ref,
+                  routeOrderId: widget.routeOrderId,
+                  order: order,
+                ),
+              ),
+            ),
+          ],
           // Confirm-receipt sits OUTSIDE the SM-D- block on purpose.
           // Everything inside that block is backed by a Delivery-module
           // package row, which only StyleMint's own parcels have, so an

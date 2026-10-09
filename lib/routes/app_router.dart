@@ -769,6 +769,9 @@ GoRouter appRouter(Ref ref) {
                 focusDeliveryRecovery:
                     state.uri.queryParameters['focus'] ==
                     RouteNames.orderDetailFocusRecovery,
+                focusRiderRating:
+                    state.uri.queryParameters['focus'] ==
+                    RouteNames.orderDetailFocusRiderRating,
               ),
         routes: [
           GoRoute(
