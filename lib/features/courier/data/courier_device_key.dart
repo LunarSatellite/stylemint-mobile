@@ -1,8 +1,9 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:pointycastle/export.dart';
 
 /// The courier's signing key: generated on this device, never leaves it.
 ///
@@ -26,13 +27,19 @@ class CourierDeviceKey {
   static const _keyIdSlot = 'courier.device_key.id';
   static String _privateSlot(String keyId) => 'courier.device_key.priv.$keyId';
 
-  static final _algorithm = Ecdsa.p256(Sha256());
+  /// P-256 through pointycastle, which implements the curve in pure Dart.
+  ///
+  /// Not package:cryptography: its `Ecdsa.p256` has no Dart implementation —
+  /// `newKeyPair` and `sign` throw `UnimplementedError` unless a native plugin
+  /// is registered — so on a phone every enrolment failed before reaching the
+  /// server ("That did not go through").
+  static final _domain = ECDomainParameters('secp256r1');
 
   /// SubjectPublicKeyInfo prefix for an uncompressed prime256v1 point.
   ///
   /// SPKI is a fixed ASN.1 wrapper — SEQUENCE { SEQUENCE { OID ecPublicKey,
   /// OID prime256v1 }, BIT STRING } — followed by 0x04 and the 64 bytes of
-  /// X then Y. package:cryptography exposes the curve point as x and y rather
+  /// X then Y. pointycastle exposes the curve point as x and y rather
   /// than an encoded key, so the wrapper is assembled here rather than parsed
   /// out of something. These bytes are a constant of the curve, not a choice.
   static const _p256SpkiPrefix = <int>[
@@ -60,22 +67,27 @@ class CourierDeviceKey {
   /// calls [markActive], so a failed registration cannot leave this device
   /// signing with a key the server has never heard of.
   Future<GeneratedDeviceKey> generate() async {
-    final pair = await _algorithm.newKeyPair();
-    final publicKey = await pair.extractPublicKey();
-    final seed = await pair.extract();
+    final generator = ECKeyGenerator()
+      ..init(
+        ParametersWithRandom(
+          ECKeyGeneratorParameters(_domain),
+          _secureRandom(),
+        ),
+      );
+    final pair = generator.generateKeyPair();
+    final publicKey = pair.publicKey as ECPublicKey;
+    final privateKey = pair.privateKey as ECPrivateKey;
 
     // The key id is ours to pick; the server treats it as an opaque handle and
     // looks the key up by it. A truncated hash of the public point is stable
     // and collision-free without needing a counter or a round trip.
     final spki = _encodeSpki(publicKey);
-    final digest = await Sha256().hash(spki);
-    final keyId = base64Url
-        .encode(digest.bytes.sublist(0, 16))
-        .replaceAll('=', '');
+    final digest = SHA256Digest().process(spki);
+    final keyId = base64Url.encode(digest.sublist(0, 16)).replaceAll('=', '');
 
     await _storage.write(
       key: _privateSlot(keyId),
-      value: base64.encode(seed.d),
+      value: base64.encode(_unsigned32(privateKey.d!)),
     );
 
     return GeneratedDeviceKey(
@@ -102,12 +114,18 @@ class CourierDeviceKey {
     final stored = await _storage.read(key: _privateSlot(keyId));
     if (stored == null) return null;
 
-    final pair = await _algorithm.newKeyPairFromSeed(base64.decode(stored));
-    final signature = await _algorithm.sign(
-      utf8.encode(attestation),
-      keyPair: pair,
-    );
-    return base64.encode(_toDer(signature.bytes));
+    final d = _readUnsigned(base64.decode(stored));
+    // Deterministic k (RFC 6979, HMAC-SHA256): no random source needed at
+    // signing time, and the same attestation always yields the same signature.
+    final signer = ECDSASigner(SHA256Digest(), HMac(SHA256Digest(), 64))
+      ..init(true, PrivateKeyParameter<ECPrivateKey>(ECPrivateKey(d, _domain)));
+    final signature =
+        signer.generateSignature(Uint8List.fromList(utf8.encode(attestation)))
+            as ECSignature;
+    final raw = BytesBuilder()
+      ..add(_unsigned32(signature.r))
+      ..add(_unsigned32(signature.s));
+    return base64.encode(_toDer(raw.toBytes()));
   }
 
   /// Forgets the local half of a key. Server-side revocation is a separate
@@ -119,31 +137,48 @@ class CourierDeviceKey {
     }
   }
 
-  static Uint8List _encodeSpki(EcPublicKey key) {
+  static Uint8List _encodeSpki(ECPublicKey key) {
     final out = BytesBuilder()
       ..add(_p256SpkiPrefix)
-      ..add(_pad32(key.x))
-      ..add(_pad32(key.y));
+      ..add(_unsigned32(key.Q!.x!.toBigInteger()!))
+      ..add(_unsigned32(key.Q!.y!.toBigInteger()!));
     return out.toBytes();
   }
 
-  /// x and y are big-endian and must each occupy exactly 32 bytes.
+  static SecureRandom _secureRandom() {
+    final source = Random.secure();
+    return FortunaRandom()..seed(
+      KeyParameter(
+        Uint8List.fromList(List<int>.generate(32, (_) => source.nextInt(256))),
+      ),
+    );
+  }
+
+  /// A non-negative integer as exactly 32 big-endian bytes — a P-256
+  /// coordinate, private scalar or signature half.
   ///
-  /// A coordinate with leading zero bytes comes back short, and concatenating
-  /// it unpadded shifts Y into X's space, producing a key that verifies
-  /// nothing. Roughly one key in 256 has a short X or Y, so skipping this is a
-  /// bug that presents as intermittent rather than broken.
-  static Uint8List _pad32(List<int> coordinate) {
-    if (coordinate.length == 32) return Uint8List.fromList(coordinate);
-    if (coordinate.length > 32) {
-      // Strip leading zeros rather than truncate meaningful bytes.
-      return Uint8List.fromList(
-        coordinate.sublist(coordinate.length - 32),
-      );
+  /// Fixed width matters: a value with leading zero bytes written short would
+  /// shift Y into X's space in the SPKI, producing a key that verifies
+  /// nothing. Roughly one key in 256 has a short X or Y, so getting this wrong
+  /// presents as intermittent rather than broken.
+  static Uint8List _unsigned32(BigInt value) {
+    final out = Uint8List(32);
+    var rest = value;
+    for (var i = 31; i >= 0; i--) {
+      out[i] = (rest & _byteMask).toInt();
+      rest = rest >> 8;
     }
-    final padded = Uint8List(32);
-    padded.setRange(32 - coordinate.length, 32, coordinate);
-    return padded;
+    return out;
+  }
+
+  static final _byteMask = BigInt.from(0xff);
+
+  static BigInt _readUnsigned(List<int> bytes) {
+    var value = BigInt.zero;
+    for (final byte in bytes) {
+      value = (value << 8) | BigInt.from(byte);
+    }
+    return value;
   }
 
   static String _toPem(Uint8List spki) {
@@ -158,15 +193,11 @@ class CourierDeviceKey {
         '-----END PUBLIC KEY-----';
   }
 
-  /// Normalises an ECDSA signature to DER, accepting either wire format.
+  /// Encodes a raw P1363 signature (r then s, 64 bytes for P-256) as DER.
   ///
-  /// package:cryptography returns P1363 (raw r then s, 64 bytes for P-256) on
-  /// some platforms and DER on others, because it delegates to WebCrypto where
-  /// that exists and to its own Dart implementation where it does not. The
-  /// backend verifies with `DSASignatureFormat.Rfc3279DerSequence` and accepts
-  /// nothing else, so rather than depend on which implementation a given build
-  /// resolved, detect and convert. A DER signature already starts with
-  /// SEQUENCE (0x30).
+  /// The backend verifies with `DSASignatureFormat.Rfc3279DerSequence` and
+  /// accepts nothing else. Input that is already DER (starts with SEQUENCE,
+  /// 0x30) passes through.
   static Uint8List _toDer(List<int> signature) {
     if (signature.isNotEmpty && signature[0] == 0x30) {
       return Uint8List.fromList(signature);

@@ -255,11 +255,19 @@ final courierKycDocumentsProvider = Provider<CourierKycDocuments>(
 
 /// One job, for the job screen. autoDispose so reopening the screen re-reads
 /// rather than showing a status the rider has since moved past.
+///
+/// No automatic retry: Riverpod's default retries a failing provider in the
+/// background and the screen stays on its loader the whole time, so a 404 or
+/// an offline phone looked like an endless spinner. A failure shows the error
+/// and a "Try again" button instead.
 final courierJobProvider = FutureProvider.autoDispose
-    .family<CourierJob, String>((ref, hopId) async {
-      final result = await ref.watch(courierRepositoryProvider).getJob(hopId);
-      return result.fold((failure) => throw failure, (job) => job);
-    });
+    .family<CourierJob, String>(
+      (ref, hopId) async {
+        final result = await ref.watch(courierRepositoryProvider).getJob(hopId);
+        return result.fold((failure) => throw failure, (job) => job);
+      },
+      retry: (_, _) => null,
+    );
 
 /// The rider's jobs — active ones and the last day's completed ones — for
 /// the dashboard's "Delivered today".

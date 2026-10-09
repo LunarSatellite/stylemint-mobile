@@ -58,6 +58,9 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   shared_preferences: ^2.3.5
   cryptography: ^2.7.0
+  # P-256 ECDSA for the courier's handover signing key; package:cryptography
+  # has no Dart implementation of that curve.
+  pointycastle: ^3.9.1
 
   # ── Device identity ───────────────────────────────────────────────────────
   # Stable per-device id that survives reinstall, as far as each OS permits:
