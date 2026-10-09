@@ -87,6 +87,7 @@ void main() {
       ProviderScope(
         overrides: [
           customerSearchRemoteDataSourceProvider.overrideWithValue(dataSource),
+          searchViewerSignedInProvider.overrideWithValue(true),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -178,6 +179,7 @@ void main() {
       ProviderScope(
         overrides: [
           customerSearchRemoteDataSourceProvider.overrideWithValue(dataSource),
+          searchViewerSignedInProvider.overrideWithValue(true),
         ],
         child: const MaterialApp(home: SearchResultsScreen(query: 'shirt')),
       ),

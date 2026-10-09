@@ -12,13 +12,14 @@ enum ProductSort {
 
   final String wire;
 
-  /// Unknown or missing values fall back to [newest], the server default.
-  static ProductSort parse(String? raw) {
+  /// The sort [raw] names, or null for a missing or unknown value — which
+  /// leaves the order to the server's default.
+  static ProductSort? tryParse(String? raw) {
     final value = raw?.trim().toLowerCase();
     for (final sort in values) {
       if (sort.wire == value) return sort;
     }
-    return newest;
+    return null;
   }
 }
 
@@ -28,7 +29,7 @@ enum ProductSort {
 @immutable
 class ProductListingQuery {
   const ProductListingQuery({
-    this.sort = ProductSort.newest,
+    this.sort,
     this.categoryId,
     this.categorySlug,
     this.vendorAccountId,
@@ -57,7 +58,7 @@ class ProductListingQuery {
     bool flag(String key) => text(key)?.toLowerCase() == 'true';
 
     return ProductListingQuery(
-      sort: ProductSort.parse(text(keySort)),
+      sort: ProductSort.tryParse(text(keySort)),
       categoryId: text(keyCategoryId),
       categorySlug: text(keyCategorySlug),
       vendorAccountId: text(keyVendorAccountId),
@@ -92,7 +93,10 @@ class ProductListingQuery {
   static const keyColor = 'color';
   static const keyOptionValue = 'optionValue';
 
-  final ProductSort sort;
+  /// The order the viewer chose, or null when they chose none. Null sends no
+  /// `sort`, so the server's default order applies (reel-backed products
+  /// first) rather than a forced `newest`.
+  final ProductSort? sort;
   final String? categoryId;
   final String? categorySlug;
   final String? vendorAccountId;
@@ -123,7 +127,22 @@ class ProductListingQuery {
       (color != null ? 1 : 0) +
       optionValueIds.length;
 
-  ProductListingQuery withSort(ProductSort value) => _copy(sort: value);
+  /// A null [value] goes back to the server's default order.
+  ProductListingQuery withSort(ProductSort? value) => ProductListingQuery(
+    sort: value,
+    categoryId: categoryId,
+    categorySlug: categorySlug,
+    vendorAccountId: vendorAccountId,
+    minPrice: minPrice,
+    maxPrice: maxPrice,
+    inStock: inStock,
+    onSale: onSale,
+    minRating: minRating,
+    search: search,
+    size: size,
+    color: color,
+    optionValueIds: optionValueIds,
+  );
 
   /// Replaces every filter-sheet value at once.
   ProductListingQuery withFilters({
@@ -189,7 +208,7 @@ class ProductListingQuery {
   /// and the `/products` app route's parameters — both string-only, so
   /// option-value ids are comma-separated here.
   Map<String, String> toQueryParameters() => {
-    keySort: sort.wire,
+    if (sort case final chosen?) keySort: chosen.wire,
     keyCategoryId: ?categoryId,
     keyCategorySlug: ?categorySlug,
     keyVendorAccountId: ?vendorAccountId,
@@ -210,22 +229,6 @@ class ProductListingQuery {
     ...toQueryParameters(),
     if (optionValueIds.isNotEmpty) keyOptionValue: optionValueIds,
   };
-
-  ProductListingQuery _copy({ProductSort? sort}) => ProductListingQuery(
-    sort: sort ?? this.sort,
-    categoryId: categoryId,
-    categorySlug: categorySlug,
-    vendorAccountId: vendorAccountId,
-    minPrice: minPrice,
-    maxPrice: maxPrice,
-    inStock: inStock,
-    onSale: onSale,
-    minRating: minRating,
-    search: search,
-    size: size,
-    color: color,
-    optionValueIds: optionValueIds,
-  );
 
   static String? _clean(String? value) {
     final text = value?.trim();

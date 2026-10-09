@@ -28,7 +28,7 @@ void main() {
       expect(ProductListingQuery.fromQueryParameters(params), query);
     });
 
-    test('ignores bad values and falls back to newest', () {
+    test('ignores bad values and leaves the sort to the server', () {
       final query = ProductListingQuery.fromQueryParameters(const {
         'sort': 'cheapest',
         'minPrice': '-4',

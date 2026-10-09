@@ -314,6 +314,9 @@ const _publicPaths = {
   // Browse-friendly paths — accessible without auth
   RouteNames.home,
   RouteNames.search,
+  // Search results open signed out (the guest search answers); follow and
+  // other account actions ask to sign in when used.
+  RouteNames.searchResults,
   RouteNames.reelsFeed,
   RouteNames.reelDetail,
   RouteNames.orders,

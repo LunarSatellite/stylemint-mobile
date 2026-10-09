@@ -122,6 +122,8 @@ void main() {
           'totalHits': 2,
         },
         aiBody: <String, dynamic>{
+          // AI really contributed, so it may reorder and explain.
+          'aiApplied': true,
           'queryUnderstanding': 'breathable natural-fibre shirt',
           'items': [
             {

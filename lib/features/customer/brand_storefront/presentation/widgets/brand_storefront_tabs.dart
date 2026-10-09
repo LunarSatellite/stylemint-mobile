@@ -43,7 +43,10 @@ enum BrandStorefrontTab {
 
 /// The brand's newest products (the New tab and the Home rail).
 ProductListingQuery brandNewestQuery(String vendorAccountId) =>
-    ProductListingQuery(vendorAccountId: vendorAccountId);
+    ProductListingQuery(
+      vendorAccountId: vendorAccountId,
+      sort: ProductSort.newest,
+    );
 
 /// The brand's best sellers (the Home rail).
 ProductListingQuery brandBestSellersQuery(String vendorAccountId) =>

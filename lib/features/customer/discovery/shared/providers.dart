@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_riverpod/misc.dart' show FutureProviderFamily;
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/customer_search_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/discovery_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/repositories/discovery_repository_impl.dart';
@@ -140,17 +141,26 @@ final relatedProductsProvider =
       ),
     );
 
+/// Whether someone is signed in, for search: it picks the personalised
+/// customer search over the public one. Tests override it.
+final searchViewerSignedInProvider = Provider<bool>(
+  (ref) => ref.watch(sessionControllerProvider).isAuthenticated,
+);
+
 final customerSearchRemoteDataSourceProvider =
     Provider<CustomerSearchRemoteDataSource>(
       (ref) => CustomerSearchRemoteDataSource(
         apiClient: ref.watch(apiClientProvider),
+        isSignedIn: () => ref.read(searchViewerSignedInProvider),
       ),
     );
 
 /// Real search results for the given query, keyed so each distinct query
-/// string gets its own cached fetch.
+/// string gets its own cached fetch. Signing in or out runs the search again
+/// on the endpoint that now applies.
 final customerSearchResultsProvider = FutureProvider.autoDispose
     .family<CustomerSearchResults, String>((ref, query) {
+      ref.watch(searchViewerSignedInProvider);
       return ref.watch(customerSearchRemoteDataSourceProvider).search(query);
     });
 

@@ -40,6 +40,11 @@ class ProductListingScreen extends ConsumerWidget {
     return query.onSale ? 'Deals' : 'Shop all';
   }
 
+  /// The line above the heading: a search says it is one, so the quoted
+  /// query below reads as what was searched rather than as a collection.
+  static String eyebrowFor(ProductListingQuery query) =>
+      query.search != null ? 'SEARCH RESULTS' : 'STYLEMINT EDIT';
+
   Future<void> _openFilters(
     BuildContext context,
     WidgetRef ref,
@@ -204,7 +209,7 @@ class ProductListingScreen extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
-                              'STYLEMINT EDIT',
+                              eyebrowFor(query),
                               style: DesignTokens.eyebrow.copyWith(
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 1.8,
@@ -382,10 +387,13 @@ class _FilterButton extends StatelessWidget {
 class _SortChips extends StatelessWidget {
   const _SortChips({required this.selected, required this.onSelected});
 
-  final ProductSort selected;
-  final ValueChanged<ProductSort> onSelected;
+  /// Null when the viewer has not chosen: the server orders the listing.
+  final ProductSort? selected;
+  final ValueChanged<ProductSort?> onSelected;
 
-  static const List<(ProductSort, String, String)> options = [
+  static const List<(ProductSort?, String, String)> options = [
+    // No `sort` on the wire: the server default (reel-backed first).
+    (null, 'Recommended', 'Recommended'),
     (ProductSort.newest, 'Newest', 'Newest'),
     (ProductSort.bestselling, 'Best selling', 'Best selling'),
     (ProductSort.rating, 'Top rated', 'Top rated'),

@@ -1,13 +1,28 @@
+import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/image_recognition_outcome.dart';
 
-/// GET /api/v1/customer/search?type=all — real backend search across
-/// products, brands, reels, and creators in a single round-trip.
+/// Real backend search across products, brands, reels and creators in a
+/// single round-trip: `GET /api/v1/customer/search` signed in (personalised),
+/// `GET /api/v1/public/search` signed out — the same response shape.
 class CustomerSearchRemoteDataSource {
-  CustomerSearchRemoteDataSource({required this.apiClient});
+  CustomerSearchRemoteDataSource({
+    required this.apiClient,
+    bool Function()? isSignedIn,
+  }) : _isSignedIn = isSignedIn ?? _assumeSignedIn;
 
   final ApiClient apiClient;
+
+  /// Asked on every text search, so a sign-in or sign-out mid-session picks
+  /// the right endpoint without rebuilding the data source.
+  final bool Function() _isSignedIn;
+
+  static bool _assumeSignedIn() => true;
+
+  static const customerSearchPath = '/api/v1/customer/search';
+  static const publicSearchPath = '/api/v1/public/search';
+  static const aiSearchPath = '/api/v1/public/search/ai';
 
   Future<bool> isVisualSearchAvailable() async {
     try {
@@ -58,6 +73,8 @@ class CustomerSearchRemoteDataSource {
       queryUnderstanding: products.isEmpty
           ? null
           : 'Products recognized from your photo',
+      // Vision read the photo: that is the AI the screen may credit.
+      aiApplied: products.isNotEmpty,
       imageRecognition: outcome,
       recognizedFeatures: _featureList(data?['recognizedFeatures']),
     );
@@ -102,20 +119,22 @@ class CustomerSearchRemoteDataSource {
       data?['imageRecognition'],
     );
     final recognisedFromImage = imageRecognition?.isRecognisedMatch ?? false;
+    final understanding =
+        _nonBlank(data?['queryUnderstanding']) ??
+        (imageRecognition != null && !recognisedFromImage
+            // Nothing was recognised, so no phrase may say it was.
+            ? null
+            : (imageDataUris.length > 1
+                  ? 'Products recognized across your video'
+                  : 'Products recognized from your photo'));
     return CustomerSearchResults(
       products: products,
       brands: const [],
       reels: const [],
       creators: const [],
       totalHits: products.length,
-      queryUnderstanding:
-          _nonBlank(data?['queryUnderstanding']) ??
-          (imageRecognition != null && !recognisedFromImage
-              // Nothing was recognised, so no phrase may say it was.
-              ? null
-              : (imageDataUris.length > 1
-                    ? 'Products recognized across your video'
-                    : 'Products recognized from your photo')),
+      queryUnderstanding: understanding,
+      aiApplied: understanding != null,
       imageRecognition: imageRecognition,
       recognizedFeatures: _featureList(data?['recognizedFeatures']),
     );
@@ -125,27 +144,49 @@ class CustomerSearchRemoteDataSource {
     List<String> imageDataUris, {
     int limit = 20,
   }) => searchMultimodal(imageDataUris, limit: limit);
+
+  /// The unified search: signed in it is the personalised customer search,
+  /// signed out the public one (same groups, same item shapes).
+  Future<dynamic> _unifiedSearch(String query, int limit) async {
+    final params = {'q': query, 'type': 'all', 'limit': limit};
+    if (!_isSignedIn()) {
+      return apiClient.authGet(publicSearchPath, queryParameters: params);
+    }
+    try {
+      return await apiClient.get(customerSearchPath, queryParameters: params);
+    } on DioException catch (e) {
+      // A session that expired and could not be refreshed: the guest search
+      // still answers, which beats an error page for a search box.
+      if (e.response?.statusCode != 401) rethrow;
+      return apiClient.authGet(publicSearchPath, queryParameters: params);
+    }
+  }
+
   Future<CustomerSearchResults> search(String query, {int limit = 20}) async {
     // Unified search remains the source of truth. AI contributes ordering and
     // explanations, but is optional so local-model outages never break search.
-    final unifiedFuture = apiClient.get(
-      '/api/v1/customer/search',
-      queryParameters: {'q': query, 'type': 'all', 'limit': limit},
-    );
+    final unifiedFuture = _unifiedSearch(query, limit);
     final aiFuture = apiClient
-        .authGet(
-          '/api/v1/public/search/ai',
-          queryParameters: {'q': query, 'limit': limit},
-        )
+        .authGet(aiSearchPath, queryParameters: {'q': query, 'limit': limit})
         .catchError((_) => null);
 
     final response = await unifiedFuture;
     final aiResponse = await aiFuture;
-    final data = response as Map<String, dynamic>;
+    // A body that is not the grouped object (an older or broken server)
+    // reads as no hits rather than a crash.
+    final data = response is Map<String, dynamic>
+        ? response
+        : const <String, dynamic>{};
     final aiData = aiResponse is Map<String, dynamic> ? aiResponse : null;
-    final aiItems = (aiData?['items'] as List<dynamic>? ?? const <dynamic>[])
-        .whereType<Map<String, dynamic>>()
-        .toList(growable: false);
+    // Only an answer that says AI really contributed may reorder the hits or
+    // explain them; a missing `aiApplied` (older server) counts as false, so
+    // a plain keyword fallback never wears AI wording.
+    final aiApplied = aiData?['aiApplied'] == true;
+    final aiItems = !aiApplied
+        ? const <Map<String, dynamic>>[]
+        : (aiData?['items'] as List<dynamic>? ?? const <dynamic>[])
+              .whereType<Map<String, dynamic>>()
+              .toList(growable: false);
     final aiRank = <String, int>{};
     final aiReasons = <String, String>{};
     for (var index = 0; index < aiItems.length; index++) {
@@ -191,7 +232,13 @@ class CustomerSearchRemoteDataSource {
         .whereType<Map<String, dynamic>>()
         .map(
           (b) => SearchResultBrand(
-            brandId: b['brandId'] as String? ?? '',
+            // The storefront route takes the vendor ACCOUNT id. Prefer the
+            // explicit field; `brandId` is that id too once the server
+            // follows the search contract.
+            brandId:
+                _nonBlank(b['vendorAccountId']) ??
+                _nonBlank(b['brandId']) ??
+                '',
             name: b['name'] as String? ?? '',
             logoUrl: b['logoUrl'] as String?,
             averageRating: (b['averageRating'] as num?)?.toDouble() ?? 0,
@@ -230,7 +277,14 @@ class CustomerSearchRemoteDataSource {
       reels: reels,
       creators: creators,
       totalHits: (data['totalHits'] as num?)?.toInt() ?? 0,
-      queryUnderstanding: _nonBlank(aiData?['queryUnderstanding']),
+      queryUnderstanding: aiApplied
+          ? _nonBlank(aiData?['queryUnderstanding'])
+          : null,
+      aiApplied: aiApplied,
+      productTotal: switch (data['productTotal']) {
+        final num total when total >= 0 => total.toInt(),
+        _ => null,
+      },
     );
   }
 }

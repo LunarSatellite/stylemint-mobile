@@ -19,6 +19,29 @@ void main() {
     expect(query.toQueryParameters(), params);
   });
 
+  test('no chosen sort sends none, so the server default applies', () {
+    for (final params in const [
+      {'q': 'red kurta'},
+      {'q': 'red kurta', 'sort': 'cheapest'},
+    ]) {
+      final query = ProductListingQuery.fromQueryParameters(params);
+      expect(query.sort, isNull);
+      expect(query.search, 'red kurta');
+      expect(query.toApiParameters().containsKey('sort'), isFalse);
+      expect(query.toQueryParameters(), {'q': 'red kurta'});
+    }
+    expect(const ProductListingQuery().toApiParameters(), isEmpty);
+  });
+
+  test('a chosen sort is sent, and withSort(null) clears it', () {
+    final query = ProductListingQuery.fromQueryParameters(const {
+      'q': 'kurta',
+    }).withSort(ProductSort.priceAsc);
+    expect(query.toApiParameters()['sort'], 'price_asc');
+    expect(query.withSort(null).toApiParameters().containsKey('sort'), isFalse);
+    expect(query.withSort(null).search, 'kurta');
+  });
+
   test('option values repeat on the wire', () {
     final query = ProductListingQuery.fromQueryParameters(const {
       'optionValue': 'aa01,bb01',

@@ -193,7 +193,8 @@ void main() {
 
     test('chips load their own feeds and keep them', () async {
       final catalog = FakeMallCatalogRepository(
-        onProducts: (call) => right(productPage(['x-${call.query.sort.wire}'])),
+        onProducts: (call) =>
+            right(productPage(['x-${call.query.sort?.wire}'])),
       );
       final notifier = build(catalog);
       await pumpEventQueue();
@@ -240,7 +241,8 @@ void main() {
 
     test('a late answer for a chip left behind is not shown', () async {
       final catalog = FakeMallCatalogRepository(
-        onProducts: (call) => right(productPage(['x-${call.query.sort.wire}'])),
+        onProducts: (call) =>
+            right(productPage(['x-${call.query.sort?.wire}'])),
       );
       final notifier = build(catalog);
       await pumpEventQueue();

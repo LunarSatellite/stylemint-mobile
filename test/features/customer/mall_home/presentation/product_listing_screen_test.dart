@@ -237,4 +237,50 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  group('opened from search', () {
+    testWidgets('reads q from the route and heads the page with it', (
+      tester,
+    ) async {
+      final repo = await _pump(
+        tester,
+        _three,
+        location: '/products?q=red%20kurta',
+      );
+
+      expect(repo.productCalls.single.query.search, 'red kurta');
+      expect(find.text('"red kurta"'), findsOneWidget);
+      expect(find.text('SEARCH RESULTS'), findsOneWidget);
+    });
+
+    testWidgets('sends no sort until the viewer picks one', (tester) async {
+      final repo = await _pump(
+        tester,
+        _three,
+        location: '/products?q=kurta',
+      );
+
+      final first = repo.productCalls.single.query;
+      expect(first.sort, isNull);
+      expect(first.toApiParameters().containsKey('sort'), isFalse);
+
+      await tester.ensureVisible(find.text('Top rated'));
+      await tester.pump();
+      await tester.tap(find.text('Top rated'));
+      await tester.pump();
+      expect(repo.productCalls.last.query.sort, ProductSort.rating);
+      expect(repo.productCalls.last.query.search, 'kurta');
+
+      // "Recommended" hands the order back to the server.
+      await tester.ensureVisible(find.text('Recommended'));
+      await tester.pump();
+      await tester.tap(find.text('Recommended'));
+      await tester.pump();
+      expect(repo.productCalls.last.query.sort, isNull);
+      expect(
+        repo.productCalls.last.query.toApiParameters().containsKey('sort'),
+        isFalse,
+      );
+    });
+  });
 }

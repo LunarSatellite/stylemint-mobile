@@ -7,6 +7,8 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/discover_creator_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/sponsored_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/product_listing_query.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
@@ -104,7 +106,10 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
                 style: DesignTokens.smallRegular,
               ),
             ),
-            if (results.queryUnderstanding case final understanding?)
+            // AI wording only when AI really shaped the results: a keyword
+            // fallback must not claim it "understood" anything.
+            if (results.queryUnderstanding case final understanding?
+                when results.aiApplied)
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   DesignTokens.s16,
@@ -155,7 +160,15 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _ProductsTab(products: results.products),
+                  _ProductsTab(
+                    products: results.products,
+                    showReasons: results.aiApplied,
+                    // A photo search has no text query to list.
+                    seeAllLocation: widget.initialResults == null
+                        ? searchSeeAllProductsLocation(widget.query)
+                        : null,
+                    productTotal: results.productTotal,
+                  ),
                   _CreatorsTab(creators: results.creators),
                   _ReelsTab(reels: results.reels),
                   _BrandsTab(brands: results.brands),
@@ -190,9 +203,35 @@ class _EmptyTab extends StatelessWidget {
 }
 
 // ─── PRODUCTS TAB ─────────────────────────────────────────────────────────────
+
+/// The full product listing for [query] — `/products?q=…`, which has sort,
+/// filters and paging. Null for a blank query.
+String? searchSeeAllProductsLocation(String query) {
+  final q = query.trim();
+  if (q.isEmpty) return null;
+  return MallRoutes.listing({ProductListingQuery.keySearch: q});
+}
+
+/// "See all N products", or without a number when the server sent no total.
+String searchSeeAllProductsLabel(int? total) {
+  if (total == null || total <= 0) return 'See all products';
+  return total == 1 ? 'See all 1 product' : 'See all $total products';
+}
+
 class _ProductsTab extends StatelessWidget {
-  const _ProductsTab({required this.products});
+  const _ProductsTab({
+    required this.products,
+    required this.showReasons,
+    required this.seeAllLocation,
+    required this.productTotal,
+  });
+
   final List<SearchResultProduct> products;
+
+  /// Per-product AI reasons are drawn only when AI shaped the results.
+  final bool showReasons;
+  final String? seeAllLocation;
+  final int? productTotal;
 
   @override
   Widget build(BuildContext context) {
@@ -203,18 +242,84 @@ class _ProductsTab extends StatelessWidget {
         body: 'Try a shorter phrase, or search for a brand instead.',
       );
     }
+    final seeAll = seeAllLocation;
+    final lead = seeAll == null ? 0 : 1;
     return ListView.separated(
       padding: const EdgeInsets.symmetric(
         horizontal: DesignTokens.s16,
         vertical: DesignTokens.s12,
       ),
-      itemCount: products.length,
-      separatorBuilder: (_, _i) => const Divider(
-        height: 1,
-        thickness: 1,
-        color: DesignTokens.borderDefault,
+      itemCount: products.length + lead,
+      separatorBuilder: (_, i) => i < lead
+          ? const SizedBox.shrink()
+          : const Divider(
+              height: 1,
+              thickness: 1,
+              color: DesignTokens.borderDefault,
+            ),
+      itemBuilder: (_, i) => i < lead
+          ? _SeeAllProducts(
+              label: searchSeeAllProductsLabel(productTotal),
+              location: seeAll!,
+            )
+          : _ProductResultTile(
+              product: products[i - lead],
+              showReason: showReasons,
+            ),
+    );
+  }
+}
+
+/// Opens the filterable listing for the query, above the hits.
+class _SeeAllProducts extends StatelessWidget {
+  const _SeeAllProducts({required this.label, required this.location});
+
+  final String label;
+  final String location;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '$label, with sort and filters',
+      excludeSemantics: true,
+      child: InkWell(
+        key: const ValueKey('search-see-all-products'),
+        borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+        onTap: () => context.push(location),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: DesignTokens.minTouchTarget,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.tune_rounded,
+                  size: 18,
+                  color: DesignTokens.primaryGreen,
+                ),
+                const SizedBox(width: DesignTokens.s8),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: DesignTokens.primaryGreen,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      itemBuilder: (_, i) => _ProductResultTile(product: products[i]),
     );
   }
 }
@@ -225,9 +330,10 @@ class _ProductsTab extends StatelessWidget {
 /// with no reviews used to render "0.0 Stars", which reads as the worst
 /// rating on the page rather than as no rating at all.
 class _ProductResultTile extends StatelessWidget {
-  const _ProductResultTile({required this.product});
+  const _ProductResultTile({required this.product, required this.showReason});
 
   final SearchResultProduct product;
+  final bool showReason;
 
   MallProductVm get _vm => MallProductVm(
     id: product.productId,
@@ -239,7 +345,7 @@ class _ProductResultTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disclosure = product.sponsoredDisclosure;
-    final reason = product.matchReason;
+    final reason = showReason ? product.matchReason : null;
     return KeyedSubtree(
       key: ValueKey('search-product-${product.productId}'),
       child: MallResultRow(

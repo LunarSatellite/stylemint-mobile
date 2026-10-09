@@ -224,7 +224,7 @@ class DiscoverFeedNotifier extends StateNotifier<DiscoverState> {
     ),
     DiscoverKindChip(kind: DiscoverFeedKind.newDrops) => ListingFeedSource(
       _catalog,
-      const ProductListingQuery(),
+      const ProductListingQuery(sort: ProductSort.newest),
       eyebrow: 'New drops',
       title: 'Just landed',
     ),

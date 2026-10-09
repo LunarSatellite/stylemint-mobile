@@ -51,6 +51,9 @@ class SearchResultBrand {
     required this.productCount,
   });
 
+  /// The vendor ACCOUNT id — what `/brands/{id}` and `GET v1/brands/{id}`
+  /// expect. Read from `vendorAccountId` when the server sends it, else from
+  /// `brandId` (which the search contract makes the account id too).
   final String brandId;
   final String name;
   final String? logoUrl;
@@ -97,6 +100,8 @@ class CustomerSearchResults {
     required this.creators,
     required this.totalHits,
     this.queryUnderstanding,
+    this.aiApplied = false,
+    this.productTotal,
     this.imageRecognition,
     this.recognizedFeatures = const [],
   });
@@ -115,6 +120,16 @@ class CustomerSearchResults {
   final List<SearchResultCreator> creators;
   final int totalHits;
   final String? queryUnderstanding;
+
+  /// Whether AI (an LLM reading of the query, semantic retrieval, or vision
+  /// for a photo) really shaped these results. Only then may the screen say
+  /// "Understood as", draw the sparkle or show per-product reasons. A
+  /// server that does not send `aiApplied` reads as false.
+  final bool aiApplied;
+
+  /// Every product matching the query (the server may cap it), for "See all
+  /// N products"; null when the server did not say.
+  final int? productTotal;
 
   /// What the image arm of the search achieved, or `null` when no image was
   /// part of the request. When this is anything other than
