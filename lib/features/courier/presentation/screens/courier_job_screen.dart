@@ -81,7 +81,13 @@ class CourierJobScreen extends ConsumerWidget {
             ),
         ],
       ),
+      // After "Picked up" (and on every live refresh) the job is re-read. A
+      // failed or slow re-read must not swap the map — markers, route and
+      // "Open in Google Maps" — for an error page or a loader: the last good
+      // job stays on screen. The error page is only for a first load.
       body: job.when(
+        skipLoadingOnReload: true,
+        skipError: true,
         loading: () => const Center(child: SmBrandLoader()),
         error: (error, _) => _LoadFailed(
           message: error is NetworkExceptions
@@ -96,6 +102,9 @@ class CourierJobScreen extends ConsumerWidget {
               children: [
                 Positioned.fill(
                   child: CourierJobMap(
+                    // Keyed by the hop, so the rider's dot, the planned
+                    // route and the camera survive the job being re-read.
+                    key: ValueKey<String>('courier-job-map-${job.hopId}'),
                     job: job,
                     topInset: MediaQuery.paddingOf(context).top + kToolbarHeight,
                     bottomInset: sheetRest,

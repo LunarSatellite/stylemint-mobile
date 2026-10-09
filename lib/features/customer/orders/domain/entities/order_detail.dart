@@ -116,11 +116,12 @@ class OrderDetail {
     bool? canCancel,
     bool? canReturn,
     String? submittedReturnId,
+    OrderDelivery? delivery,
   }) {
     return OrderDetail(
       receiverName: receiverName,
       receiverPhone: receiverPhone,
-      delivery: delivery,
+      delivery: delivery ?? this.delivery,
       submittedReturnId: submittedReturnId ?? this.submittedReturnId,
       id: id ?? this.id,
       orderNumber: orderNumber ?? this.orderNumber,

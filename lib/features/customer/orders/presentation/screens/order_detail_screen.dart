@@ -305,6 +305,9 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   Widget build(BuildContext context) {
     final order = widget.order;
     final trackingNumber = order.trackingNumber;
+    // Carried by a StyleMint rider with QR proof of delivery: one
+    // confirmation step (the rider's QR or code), no legacy receipt cards.
+    final riderDelivery = order.delivery != null;
 
     final story = trackingNumber?.startsWith('SM-D-') == true
         ? ref.watch(deliveryStoryProvider(trackingNumber!))
@@ -325,11 +328,15 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           if (DeliveryConfirmCard.isOfferedFor(order)) ...[
             DeliveryConfirmCard(
               order: order,
-              onConfirmed: () => refreshOrderDetail(
-                ref,
-                routeOrderId: widget.routeOrderId,
-                order: order,
-              ),
+              onConfirmed: () {
+                // Delivered on screen now; the re-read only catches up.
+                widget.notifier.markDeliveryConfirmed();
+                return refreshOrderDetail(
+                  ref,
+                  routeOrderId: widget.routeOrderId,
+                  order: order,
+                );
+              },
             ),
             const SizedBox(height: DesignTokens.s12),
           ],
@@ -344,8 +351,13 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           // order on any other carrier had no way for the receiver to
           // confirm it arrived. This one talks to Orders and works for
           // every sub-order.
-          if (ConfirmReceiptCard.isOfferedFor(order) &&
-              !DeliveryConfirmCard.isOfferedFor(order))
+          //
+          // Never on a StyleMint-rider parcel (it has a `delivery` block):
+          // there the rider's QR, or its 6-digit code, is the one and only
+          // confirmation — before the rider is at the door, while they are,
+          // and after. A label scan on top would be a second "confirm" for
+          // the same parcel.
+          if (ConfirmReceiptCard.isOfferedFor(order) && !riderDelivery)
             ConfirmReceiptCard(order: order),
           if (trackingNumber?.startsWith('SM-D-') == true) ...[
             const SizedBox(height: DesignTokens.s12),
@@ -364,7 +376,9 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             ),
             // Only once the parcel may have reached the buyer; the card
             // itself checks the package is out for delivery or delivered.
-            if (_parcelMayHaveArrived(order.status))
+            // Not for a rider QR delivery: confirming the rider's QR is the
+            // acceptance, and this would ask a second time.
+            if (_parcelMayHaveArrived(order.status) && !riderDelivery)
               DeliveryAcceptanceCard(
                 trackingNumber: trackingNumber,
                 items: order.items,
@@ -389,6 +403,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             // the fallback when that call fails.
             child: OrderTrackingSection(
               orderNumber: order.orderNumber,
+              riderDelivery: riderDelivery,
               supplement: story?.maybeWhen(
                 data: (chapters) => chapters.isEmpty
                     ? null
@@ -428,7 +443,12 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           // its own leading gap — when the parcel has no custody entries or
           // the endpoint is unavailable, which is why the spacing lives
           // inside the card rather than here.
-          if (trackingNumber?.startsWith('SM-D-') == true) ...[
+          //
+          // Not for a rider QR delivery: its proof is the buyer's own
+          // confirmation, and the legacy custody/condition cards read as
+          // more steps to complete for the same parcel.
+          if (trackingNumber?.startsWith('SM-D-') == true &&
+              !riderDelivery) ...[
             CustodyProofCard(trackingNumber: trackingNumber!),
             // What was recorded about the parcel's condition, under the
             // handover log it cites. Same self-effacing contract: no

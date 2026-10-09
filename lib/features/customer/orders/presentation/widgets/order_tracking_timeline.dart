@@ -100,9 +100,51 @@ class OrderTrackingTimeline extends StatelessWidget {
     required this.timeline,
     super.key,
     this.showVendor = false,
+    this.riderDelivery = false,
   });
 
   final SubOrderTimeline timeline;
+
+  /// The order is carried by a StyleMint rider with QR proof of delivery
+  /// (it has a `delivery` block). Its proof is the buyer's own confirmation,
+  /// so the status-history hash check must never warn them.
+  final bool riderDelivery;
+
+  /// Which delivery-proof badge to draw, or null for none.
+  ///
+  /// "Verified" shows whenever the server says so. "Needs review" only while
+  /// it can still change what the buyer does — the parcel is not yet in
+  /// their hands — and never for a StyleMint-rider parcel ([riderDelivery]
+  /// or an `SM-D-` package), whose proof is the buyer scanning the rider's
+  /// QR. A delivered, collected or otherwise closed sub-order has nothing
+  /// left to accept, so a warning there only alarms.
+  static DeliveryProofStatus? proofBadgeFor(
+    SubOrderTimeline timeline, {
+    bool riderDelivery = false,
+  }) {
+    switch (timeline.deliveryProofStatus) {
+      case DeliveryProofStatus.verified:
+        return DeliveryProofStatus.verified;
+      case DeliveryProofStatus.legacyUnsealed:
+        return null;
+      case DeliveryProofStatus.invalid:
+        final riderParcel =
+            riderDelivery ||
+            (timeline.trackingNumber?.trim().toUpperCase().startsWith(
+                  'SM-D-',
+                ) ??
+                false);
+        final closed =
+            timeline.isTerminal ||
+            const {
+              BuyerTimelineStep.delivered,
+              BuyerTimelineStep.collected,
+              BuyerTimelineStep.cancelled,
+              BuyerTimelineStep.returned,
+            }.contains(timeline.currentStep);
+        return riderParcel || closed ? null : DeliveryProofStatus.invalid;
+    }
+  }
 
   /// Shows "From {vendor} · N items" — used when an order has several
   /// sub-orders.
@@ -251,9 +293,9 @@ class OrderTrackingTimeline extends StatelessWidget {
               Text(carrierLine, style: DesignTokens.smallRegular),
             ],
             const SizedBox(height: DesignTokens.s20),
-            if (timeline.deliveryProofStatus !=
-                DeliveryProofStatus.legacyUnsealed) ...[
-              _DeliveryProofBadge(status: timeline.deliveryProofStatus),
+            if (proofBadgeFor(timeline, riderDelivery: riderDelivery)
+                case final badge?) ...[
+              _DeliveryProofBadge(status: badge),
               const SizedBox(height: DesignTokens.s20),
             ],
             TrackingStepList(steps: stepsFor(timeline)),
@@ -333,9 +375,16 @@ class _DeliveryProofBadge extends StatelessWidget {
 /// All sub-order timelines of one order. The vendor header appears only when
 /// the order is split across several sellers.
 class OrderTimelineSection extends StatelessWidget {
-  const OrderTimelineSection({required this.timeline, super.key});
+  const OrderTimelineSection({
+    required this.timeline,
+    super.key,
+    this.riderDelivery = false,
+  });
 
   final OrderTimeline timeline;
+
+  /// See [OrderTrackingTimeline.riderDelivery].
+  final bool riderDelivery;
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +395,11 @@ class OrderTimelineSection extends StatelessWidget {
       children: [
         for (var i = 0; i < subOrders.length; i++) ...[
           if (i > 0) const SizedBox(height: DesignTokens.s12),
-          OrderTrackingTimeline(timeline: subOrders[i], showVendor: several),
+          OrderTrackingTimeline(
+            timeline: subOrders[i],
+            showVendor: several,
+            riderDelivery: riderDelivery,
+          ),
         ],
       ],
     );

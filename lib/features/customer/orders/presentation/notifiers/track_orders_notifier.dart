@@ -174,12 +174,19 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
 
   final OrdersRepository _repository;
 
+  /// Set once the buyer confirmed the rider's delivery from this screen.
+  /// Until the server's order agrees, every read is shown as delivered, so
+  /// a re-read that lands before the backend caught up cannot put
+  /// "In transit" (and the confirm card) back on screen.
+  bool _buyerConfirmedDelivery = false;
+
   Future<void> loadOrder(String orderId) async {
     state = const OrderDetailState.loadInProgress();
     final either = await _repository.getOrderDetail(orderId);
+    if (!mounted) return;
     state = either.fold(
       OrderDetailState.loadFailure,
-      OrderDetailState.loadSuccess,
+      (order) => OrderDetailState.loadSuccess(_withConfirmation(order)),
     );
   }
 
@@ -192,14 +199,51 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
     if (!mounted) return;
     either.fold(
       (_) {},
-      (order) => state = OrderDetailState.loadSuccess(
-        current.submittedReturnId == null
-            ? order
-            : order.copyWith(
-                canReturn: false,
-                submittedReturnId: current.submittedReturnId,
-              ),
-      ),
+      (fresh) {
+        final order = _withConfirmation(fresh);
+        state = OrderDetailState.loadSuccess(
+          current.submittedReturnId == null
+              ? order
+              : order.copyWith(
+                  canReturn: false,
+                  submittedReturnId: current.submittedReturnId,
+                ),
+        );
+      },
+    );
+  }
+
+  /// The buyer just confirmed the rider's delivery: show it as delivered at
+  /// once, without waiting for the re-read.
+  void markDeliveryConfirmed() {
+    _buyerConfirmedDelivery = true;
+    final current = state.maybeWhen(loadSuccess: (o) => o, orElse: () => null);
+    if (current == null) return;
+    state = OrderDetailState.loadSuccess(_withConfirmation(current));
+  }
+
+  /// [order] with the buyer's confirmation applied, while the server has
+  /// not reported it yet. The whole order reads Delivered only when the
+  /// confirmed parcel is the whole order (one sub-order); otherwise only its
+  /// delivery block changes.
+  OrderDetail _withConfirmation(OrderDetail order) {
+    final delivery = order.delivery;
+    if (!_buyerConfirmedDelivery || delivery == null) return order;
+    if (delivery.isDelivered && !delivery.awaitingConfirmation) return order;
+    final subOrders = order.items
+        .map((i) => i.subOrderId)
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    final wholeOrder =
+        subOrders.length <= 1 ||
+        (delivery.subOrderId != null &&
+            subOrders.every((id) => id == delivery.subOrderId));
+    return order.copyWith(
+      delivery: delivery.asConfirmed(),
+      status: wholeOrder &&
+              order.status != OrderTrackStatus.cancelled
+          ? OrderTrackStatus.delivered
+          : null,
     );
   }
 

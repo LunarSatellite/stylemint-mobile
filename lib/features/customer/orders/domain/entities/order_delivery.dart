@@ -37,6 +37,16 @@ class OrderDelivery {
   }.contains(_normalised);
 
   bool get isDelivered => _normalised == 'delivered';
+
+  /// This delivery as it reads once the buyer has confirmed it: Delivered,
+  /// nothing left to confirm.
+  OrderDelivery asConfirmed() => OrderDelivery(
+    packageNumber: packageNumber,
+    status: 'Delivered',
+    awaitingConfirmation: false,
+    riderName: riderName,
+    subOrderId: subOrderId,
+  );
 }
 
 /// What `POST /v1/customer/deliveries/confirm` answered.

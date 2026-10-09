@@ -56,10 +56,13 @@ class DeliveryConfirmCard extends ConsumerStatefulWidget {
   static const showCodeKey = ValueKey<String>('delivery-confirm-show-code');
   static const title = 'Your parcel is at the door — confirm delivery';
 
-  /// While the rider is waiting at the door. Not once the order is closed —
-  /// a stale flag must not ask the buyer to confirm a delivered parcel.
+  /// While the rider is waiting at the door. Not once the order or the
+  /// delivery is closed — a stale flag (or a late `confirm_request` push
+  /// re-reading the order) must not ask the buyer to confirm a delivered
+  /// parcel.
   static bool isOfferedFor(OrderDetail order) =>
       order.delivery?.awaitingConfirmation == true &&
+      order.delivery?.isDelivered != true &&
       order.status != OrderTrackStatus.delivered &&
       order.status != OrderTrackStatus.cancelled;
 

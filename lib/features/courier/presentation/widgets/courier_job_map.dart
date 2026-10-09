@@ -46,6 +46,24 @@ class CourierJobMap extends ConsumerStatefulWidget {
   static const openExternalKey = ValueKey<String>('courier-job-open-external');
   static const routeSummaryKey = ValueKey<String>('courier-job-route-summary');
 
+  /// Google Maps directions for [job]: to the door, through the shop while
+  /// the parcel is still to be collected. Null when there is nowhere to go.
+  @visibleForTesting
+  static Uri? externalDirectionsUri(CourierJob job) {
+    final pickup = job.pickup.point;
+    final dropoff = job.dropoff.point;
+    final heading = job.status.headingToDropoff;
+    final finalStop = dropoff ?? (heading ? null : pickup);
+    if (finalStop == null) return null;
+    final via = !heading && pickup != null && dropoff != null ? pickup : null;
+    return Uri.https('www.google.com', '/maps/dir/', {
+      'api': '1',
+      'travelmode': 'driving',
+      'destination': '${finalStop.latitude},${finalStop.longitude}',
+      if (via != null) 'waypoints': '${via.latitude},${via.longitude}',
+    });
+  }
+
   @override
   ConsumerState<CourierJobMap> createState() => _CourierJobMapState();
 }
@@ -86,8 +104,14 @@ class _CourierJobMapState extends ConsumerState<CourierJobMap> {
   @override
   void didUpdateWidget(covariant CourierJobMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Picking up changes the leg the route should show.
-    if (oldWidget.job.status != widget.job.status) unawaited(_plan());
+    // Picking up changes the leg the route should show — and the camera
+    // should frame the new leg rather than stay where the old one left it.
+    if (oldWidget.job.status != widget.job.status) {
+      unawaited(_plan());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fit();
+      });
+    }
   }
 
   @override
@@ -138,16 +162,22 @@ class _CourierJobMapState extends ConsumerState<CourierJobMap> {
   }
 
   /// The stops still ahead: the shop only until the parcel is collected.
+  ///
+  /// After pick-up the leg is rider → door. Without a GPS fix that is one
+  /// point, which used to leave no line at all — the shop-to-door link the
+  /// rider had been following vanished the moment they tapped "Picked up".
+  /// So with no fix the line stays shop → door until the rider's dot lands.
   List<LatLng> get _stopsAhead {
     final job = widget.job;
     if (job.status.isFinished) return const [];
     final pickup = _point(job.pickup);
     final dropoff = _point(job.dropoff);
-    return [
+    final ahead = [
       ?_me,
       if (!job.status.headingToDropoff) ?pickup,
       ?dropoff,
     ];
+    return ahead.length >= 2 ? ahead : [?pickup, ?dropoff];
   }
 
   /// Everything the camera should frame.
@@ -199,26 +229,11 @@ class _CourierJobMapState extends ConsumerState<CourierJobMap> {
   /// through the pick-up while it is still ahead. The screen is complete
   /// without it.
   Future<void> _openExternal() async {
-    final job = widget.job;
-    final pickup = job.pickup.point;
-    final dropoff = job.dropoff.point;
-    final destination = job.status.headingToDropoff || pickup == null
-        ? dropoff
-        : pickup;
-    if (destination == null) return;
-    final waypoint = !job.status.headingToDropoff && pickup != null
-        ? dropoff
-        : null;
-    final uri = Uri.https('www.google.com', '/maps/dir/', {
-      'api': '1',
-      'travelmode': 'driving',
-      // Directions to the pick-up first, then on to the door.
-      if (waypoint != null) ...{
-        'destination': '${waypoint.latitude},${waypoint.longitude}',
-        'waypoints': '${destination.latitude},${destination.longitude}',
-      } else
-        'destination': '${destination.latitude},${destination.longitude}',
-    });
+    final uri = CourierJobMap.externalDirectionsUri(widget.job);
+    if (uri == null) {
+      SmSnackbar.error(context, 'No drop-off location for this delivery.');
+      return;
+    }
 
     var launched = false;
     try {

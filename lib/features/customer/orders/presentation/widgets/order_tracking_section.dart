@@ -41,9 +41,13 @@ class OrderTrackingSection extends ConsumerWidget {
     required this.fallback,
     super.key,
     this.supplement,
+    this.riderDelivery = false,
   });
 
   final String orderNumber;
+
+  /// See [OrderTrackingTimeline.riderDelivery].
+  final bool riderDelivery;
 
   /// Shown when the timeline call fails or returns no sub-orders.
   final Widget fallback;
@@ -64,7 +68,10 @@ class OrderTrackingSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            OrderTimelineSection(timeline: timeline),
+            OrderTimelineSection(
+              timeline: timeline,
+              riderDelivery: riderDelivery,
+            ),
             if (extra != null) ...[
               const SizedBox(height: DesignTokens.s16),
               extra,
