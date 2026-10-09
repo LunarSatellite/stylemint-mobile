@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pointycastle/export.dart';
 
@@ -196,12 +197,15 @@ class CourierDeviceKey {
   /// Encodes a raw P1363 signature (r then s, 64 bytes for P-256) as DER.
   ///
   /// The backend verifies with `DSASignatureFormat.Rfc3279DerSequence` and
-  /// accepts nothing else. Input that is already DER (starts with SEQUENCE,
-  /// 0x30) passes through.
+  /// accepts nothing else.
+  ///
+  /// The input is always raw — [sign] builds it from r and s — so there is no
+  /// "already DER" check: a raw signature whose r starts with 0x30 (about one
+  /// in 256) would look like a SEQUENCE and be sent unencoded.
+  @visibleForTesting
+  static Uint8List toDerForTest(List<int> signature) => _toDer(signature);
+
   static Uint8List _toDer(List<int> signature) {
-    if (signature.isNotEmpty && signature[0] == 0x30) {
-      return Uint8List.fromList(signature);
-    }
     if (signature.length != 64) {
       // Neither a P-256 raw pair nor DER. Passed through unchanged: the server
       // rejecting it is a clearer failure than this function inventing a

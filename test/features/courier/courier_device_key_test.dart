@@ -29,6 +29,9 @@ ECSignature _parseDer(Uint8List der) {
   return ECSignature(r, s);
 }
 
+BigInt _bigInt(List<int> bytes) =>
+    bytes.fold(BigInt.zero, (v, b) => (v << 8) | BigInt.from(b));
+
 ECPublicKey _publicKeyFromSpki(Uint8List spki) {
   final domain = ECDomainParameters('secp256r1');
   // Last 65 bytes: 0x04 || X || Y.
@@ -104,6 +107,27 @@ void main() {
         reason: 'key $n',
       );
     }
+  });
+
+  test('a raw signature whose r starts with 0x30 is still DER-encoded', () {
+    // r = 0x30 then 31 bytes of 0x11; s = 0x01 then 31 zero bytes.
+    final raw = Uint8List(64)
+      ..[0] = 0x30
+      ..fillRange(1, 32, 0x11)
+      ..[32] = 0x01;
+    final der = CourierDeviceKey.toDerForTest(raw);
+    final parsed = _parseDer(der);
+    expect(parsed.r, _bigInt(raw.sublist(0, 32)));
+    expect(parsed.s, _bigInt(raw.sublist(32)));
+  });
+
+  test('a high-bit r gets the 0x00 pad so it is not read as negative', () {
+    final raw = Uint8List(64)
+      ..fillRange(0, 32, 0xff)
+      ..fillRange(32, 64, 0x7f);
+    final der = CourierDeviceKey.toDerForTest(raw);
+    expect(der.sublist(2, 5), [0x02, 33, 0x00]);
+    expect(_parseDer(der).r, _bigInt(raw.sublist(0, 32)));
   });
 
   test('forgetting the active key stops signing', () async {
