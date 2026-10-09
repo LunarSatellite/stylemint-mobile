@@ -66,4 +66,29 @@ void main() {
       expect(pushDestinationUri({'route': 42}), isNull);
     });
   });
+
+  group('deepLinkLocation', () {
+    test('a custom-scheme link gets its host back in front of the path', () {
+      expect(
+        deepLinkLocation(Uri.parse('stylemint://orders/SM-1')),
+        '/orders/SM-1',
+      );
+    });
+
+    test('an https link is its path, with the query kept', () {
+      expect(
+        deepLinkLocation(
+          Uri.parse('https://stylemint.voyageritnepal.com/orders?tab=open'),
+        ),
+        '/orders?tab=open',
+      );
+    });
+
+    test('a StyleMint code opens the resolve screen', () {
+      expect(
+        deepLinkLocation(Uri.parse('stylemint://c/ABCD2345')),
+        startsWith('/c/'),
+      );
+    });
+  });
 }

@@ -28,4 +28,20 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
       return left(const NetworkExceptions.unexpectedError());
     }
   }
+
+  @override
+  Future<Either<NetworkExceptions, List<ActivityItem>>> getInbox({
+    int pageSize = 30,
+  }) async {
+    try {
+      final rows = await remoteDataSource.getInbox(pageSize: pageSize);
+      return right(rows.map((row) => row.toDomain()).toList(growable: false));
+    } on DioException catch (e) {
+      return left(mapDioExceptionToNetworkException(e));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } catch (_) {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
 }

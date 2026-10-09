@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:stylemint_mobile_frontend/core/device/notification_route.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
 
 /// Matches the backend `NotificationDispatchDto` from
@@ -28,7 +29,8 @@ class NotificationDispatchDto {
     return NotificationDispatchDto(
       id: (json['id'] ?? '').toString(),
       eventName: json['eventName'] as String?,
-      category: json['category'] as String?,
+      // `category` is an enum the server sends as a number.
+      category: json['category']?.toString(),
       templateKey: json['templateKey'] as String?,
       variablesJson: json['variablesJson'] as String?,
       queuedUtc: _parseDate(json['queuedUtc']),
@@ -44,19 +46,41 @@ class NotificationDispatchDto {
     title: _displayTitle(),
     occurredAt: queuedUtc,
     isRead: readUtc != null,
+    templateKey: templateKey,
+    variablesJson: variablesJson,
   );
+
+  /// The line for the commonest notifications, by type. The server renders
+  /// the real text from its template catalog, which the app does not ship.
+  static const Map<String, String> _knownTitles = {
+    'order.placed': 'Your order was placed',
+    'order.packed': 'Your order is packed and ready',
+    'order.shipped': 'Your order is on its way',
+    'order.delivered': 'Your order was delivered',
+    'order.cancelled': 'Your order was cancelled',
+    'order.refunded': 'Your refund is complete',
+    'delivery.confirm_request': 'Your parcel is at the door — confirm delivery',
+    'delivery.interest': 'A rider is ready to take your parcel',
+    'delivery.delivered': 'Delivered — the recipient confirmed',
+    'delivery.at_risk': 'Your delivery may be late',
+    'payout.paid': 'Your payout was sent',
+    'payout.failed': 'Your payout could not be sent',
+  };
 
   /// Display text is normally rendered server-/catalog-side from [templateKey]
   /// + [variablesJson]. We don't ship the template catalog, so this is a
-  /// best-effort fallback: pull a human string out of the variables, else
-  /// humanize the event name.
+  /// best-effort fallback: pull a human string out of the variables, then a
+  /// known line for the type, else humanize the template key or event name.
   String _displayTitle() {
     final vars = _decodeVars();
     for (final key in const ['title', 'message', 'body', 'text']) {
       final v = vars[key];
       if (v is String && v.trim().isNotEmpty) return v.trim();
     }
-    return _humanize(eventName ?? templateKey ?? 'Notification');
+    final type = notificationTypeFromTemplateKey(templateKey);
+    final known = type == null ? null : _knownTitles[type];
+    if (known != null) return known;
+    return _humanize(type ?? eventName ?? 'Notification');
   }
 
   Map<String, dynamic> _decodeVars() {

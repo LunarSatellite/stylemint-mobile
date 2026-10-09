@@ -30,3 +30,14 @@ final recentActivityProvider = FutureProvider.autoDispose<List<ActivityItem>>((
       .getRecentActivity();
   return either.fold((_) => const <ActivityItem>[], (items) => items);
 });
+
+/// The signed-in account's notification inbox, for the buyer's bell. Unlike
+/// [recentActivityProvider] a failure is an error, so the screen can say it
+/// could not load rather than claim there is nothing.
+final notificationInboxProvider =
+    FutureProvider.autoDispose<List<ActivityItem>>((ref) async {
+      final either = await ref
+          .watch(notificationsRepositoryProvider)
+          .getInbox();
+      return either.fold((failure) => throw failure, (items) => items);
+    });

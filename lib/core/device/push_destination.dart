@@ -14,7 +14,13 @@
 ///
 /// When the contract is confirmed, narrow [_keys] to what the server actually
 /// sends rather than leaving the guesses in place.
+///
+/// Since 2026-10-09 the server routes by `type` instead (see
+/// `notification_route.dart`, which tries these keys first).
 library;
+
+import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
+import 'package:stylemint_mobile_frontend/routes/deep_links.dart';
 
 const List<String> _keys = ['deepLink', 'deep_link', 'link', 'url', 'route'];
 
@@ -35,4 +41,29 @@ Uri? pushDestinationUri(Map<String, dynamic> data) {
     return uri;
   }
   return null;
+}
+
+/// The go_router location for a deep link — the conversion `_navigate` in
+/// main.dart applies to every link, kept here so a notification resolved
+/// in-app (the inbox) lands where the same link would from outside.
+///
+///  * StyleMint codes (`stylemint://c/{code}`, `https://<host>/c/{code}`)
+///    open the resolve screen; a tag's `via=nfc` is kept.
+///  * Brand and creator storefront links open the storefront in-app.
+///  * Anything else becomes its path: an https link's path as-is, a
+///    custom-scheme link's host rebuilt in front of it
+///    (`stylemint://auth/magic` -> `/auth/magic`). The query is kept.
+String deepLinkLocation(Uri uri) {
+  final styleMintCode = StyleMintCode.parse(uri.toString());
+  if (styleMintCode is StyleMintShortCode) return styleMintCode.route;
+  final storefront = styleMintStorefrontRoute(uri.toString());
+  if (storefront != null) return storefront;
+  final rawPath = uri.scheme == 'stylemint' && uri.host.isNotEmpty
+      ? '/${uri.host}${uri.path}'
+      : uri.path;
+  final path = rawPath.startsWith('/') ? rawPath : '/$rawPath';
+  final query = uri.queryParameters.entries
+      .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+      .join('&');
+  return query.isEmpty ? path : '$path?$query';
 }

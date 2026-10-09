@@ -311,6 +311,11 @@ class _MockEarningsRepository implements EarningsRepository {
 
 class _MockNotificationsRepository implements NotificationsRepository {
   @override
+  Future<Either<NetworkExceptions, List<ActivityItem>>> getInbox({
+    int pageSize = 30,
+  }) async => right(const <ActivityItem>[]);
+
+  @override
   Future<Either<NetworkExceptions, List<ActivityItem>>> getRecentActivity({
     int pageSize = 10,
   }) async => right([

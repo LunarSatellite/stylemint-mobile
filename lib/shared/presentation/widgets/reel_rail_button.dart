@@ -144,6 +144,7 @@ class ReelRailPressable extends StatefulWidget {
     required this.child,
     this.hint,
     this.onTap,
+    this.onLongPress,
     this.padding = EdgeInsets.zero,
     super.key,
   });
@@ -151,6 +152,9 @@ class ReelRailPressable extends StatefulWidget {
   final String label;
   final String? hint;
   final VoidCallback? onTap;
+
+  /// A secondary action, e.g. the product tile opening the product page.
+  final VoidCallback? onLongPress;
   final EdgeInsetsGeometry padding;
   final Widget child;
 
@@ -172,6 +176,7 @@ class _ReelRailPressableState extends State<ReelRailPressable> {
   Widget build(BuildContext context) {
     final reduceMotion = ReelRailStyle.reduceMotion(context);
     final onTap = widget.onTap;
+    final onLongPress = widget.onLongPress;
     Widget content = ConstrainedBox(
       constraints: const BoxConstraints(
         minWidth: ReelRailPressable.minTarget,
@@ -187,10 +192,11 @@ class _ReelRailPressableState extends State<ReelRailPressable> {
         ),
       ),
     );
-    if (onTap != null) {
+    if (onTap != null || onLongPress != null) {
       content = GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
+        onLongPress: onLongPress,
         onTapDown: (_) => _setPressed(true),
         onTapUp: (_) => _setPressed(false),
         onTapCancel: () => _setPressed(false),
@@ -203,6 +209,7 @@ class _ReelRailPressableState extends State<ReelRailPressable> {
       label: widget.label,
       hint: widget.hint,
       onTap: onTap,
+      onLongPress: onLongPress,
       excludeSemantics: true,
       child: content,
     );
@@ -574,6 +581,7 @@ class ReelRailProductTile extends StatefulWidget {
     this.inCart = false,
     this.cartCount,
     this.onTap,
+    this.onLongPress,
     this.padding = ReelRailStyle.itemPadding,
     super.key,
   });
@@ -617,6 +625,10 @@ class ReelRailProductTile extends StatefulWidget {
   /// first load stays quiet.
   final int? cartCount;
   final VoidCallback? onTap;
+
+  /// Secondary action; on the reel rail it opens the product page while
+  /// [onTap] adds to the cart.
+  final VoidCallback? onLongPress;
   final EdgeInsetsGeometry padding;
 
   static const double size = 48;
@@ -743,6 +755,7 @@ class _ReelRailProductTileState extends State<ReelRailProductTile>
     return ReelRailPressable(
       label: inCart ? '${widget.label}, in cart' : widget.label,
       onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
       padding: widget.padding,
       child: SizedBox(
         width: ReelRailStyle.width,

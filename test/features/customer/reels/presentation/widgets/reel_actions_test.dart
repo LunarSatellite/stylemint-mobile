@@ -15,7 +15,12 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/repositories/cart_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_option.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/reel_quick_buy.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_like_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/reel_share.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
@@ -47,6 +52,8 @@ class _MockAccountNotifier extends Mock implements AccountNotifier {}
 class _MockCartNotifier extends Mock implements CartNotifier {}
 
 class _MockFollowApi extends Mock implements FollowApi {}
+
+class _MockDiscoveryRepository extends Mock implements DiscoveryRepository {}
 
 /// Already signed in, so `ensureAuth` lets the action straight through.
 class _SignedInSession extends SessionController {
@@ -125,6 +132,88 @@ const _tote = TaggedProductEntity(
   quantity: 1,
 );
 
+/// [_tote] as the feed sends it, with its reel-tag id for attribution.
+const _taggedTote = TaggedProductEntity(
+  id: 'prod-1',
+  taggedProductId: 'tag-1',
+  name: 'Nomad Canvas Tote',
+  imageUrl: '',
+  price: Money(amount: 1800, currency: 'NPR'),
+  quantity: 1,
+);
+
+/// The tote's detail record. [withSizes] gives it a Size option with
+/// [sizes] variants (S, M — M the default), each with [stock] units;
+/// [legacySkus] gives it the old single SKU chip row instead.
+ProductDetail _detail({
+  bool inStock = true,
+  bool withSizes = false,
+  int sizes = 2,
+  int stock = 5,
+  bool legacySkus = false,
+}) {
+  const s = ProductOptionValue(id: 'val-s', value: 'S');
+  const m = ProductOptionValue(id: 'val-m', value: 'M');
+  return ProductDetail(
+    id: 'prod-1',
+    name: 'Nomad Canvas Tote',
+    description: '',
+    images: const [],
+    price: const Money(amount: 1800, currency: 'NPR'),
+    rating: 0,
+    reviewCount: 0,
+    vendorId: 'vendor-1',
+    vendorName: 'Nomad',
+    vendorAvatarUrl: '',
+    isInStock: inStock,
+    variants: legacySkus
+        ? const [
+            ProductVariant(
+              id: 'sku',
+              name: 'Option',
+              values: ['TOTE-S', 'TOTE-L'],
+              type: 'sku',
+              optionVariantIds: {'TOTE-S': 'v-ts', 'TOTE-L': 'v-tl'},
+            ),
+          ]
+        : const [],
+    specifications: const {},
+    shippingInfo: '',
+    isSaved: false,
+    isInCart: false,
+    defaultVariantId: 'v-default',
+    options: withSizes
+        ? [
+            ProductOption(
+              id: 'opt-size',
+              name: 'Size',
+              kind: ProductOptionKind.size,
+              values: sizes == 1 ? const [s] : const [s, m],
+            ),
+          ]
+        : const [],
+    optionVariants: withSizes
+        ? [
+            ProductVariantOption(
+              variantId: 'v-s',
+              optionValueIds: const {'val-s'},
+              priceAmount: 1800,
+              quantityOnHand: stock,
+              isDefault: sizes == 1,
+            ),
+            if (sizes > 1)
+              ProductVariantOption(
+                variantId: 'v-m',
+                optionValueIds: const {'val-m'},
+                priceAmount: 1800,
+                quantityOnHand: stock,
+                isDefault: true,
+              ),
+          ]
+        : const [],
+  );
+}
+
 Cart _cart(int quantity, {String productId = 'prod-9'}) => Cart(
   id: 'cart-1',
   items: [
@@ -186,11 +275,13 @@ void main() {
   late _MockCartRepository cartRepository;
   late _FakeFollowApi followApi;
   late _FakeReelsRepository reelsRepository;
+  late _MockDiscoveryRepository discoveryRepository;
 
   setUp(() {
     cartRepository = _MockCartRepository();
     followApi = _FakeFollowApi();
     reelsRepository = _FakeReelsRepository();
+    discoveryRepository = _MockDiscoveryRepository();
     when(
       () => cartRepository.getCart(),
     ).thenAnswer((_) async => right(_cart(0)));
@@ -235,6 +326,7 @@ void main() {
           cartRepositoryProvider.overrideWithValue(cartRepository),
           followApiProvider.overrideWithValue(followApi),
           reelsRepositoryProvider.overrideWithValue(reelsRepository),
+          discoveryRepositoryProvider.overrideWithValue(discoveryRepository),
           if (signedIn)
             sessionControllerProvider.overrideWith((ref) => _SignedInSession()),
         ],
@@ -328,15 +420,223 @@ void main() {
     expect(find.byKey(ReelRailAvatar.followingBadgeKey), findsOneWidget);
   });
 
-  testWidgets('tapping the product tile opens the product page', (
+  testWidgets('long-pressing the product tile opens the product page', (
     tester,
   ) async {
     await pumpRail(tester, _reel(products: const [_tote]));
 
-    await tester.tap(find.byType(ReelRailProductTile));
+    await tester.longPress(find.byType(ReelRailProductTile));
     await tester.pumpAndSettle();
 
     expect(find.text('Product page prod-1'), findsOneWidget);
+    verifyNever(() => discoveryRepository.getProductDetail(any()));
+  });
+
+  group('tapping the product tile buys it', () {
+    void stubDetail(ProductDetail detail) => when(
+      () => discoveryRepository.getProductDetail('prod-1'),
+    ).thenAnswer((_) async => right(detail));
+
+    void stubAdd(Either<NetworkExceptions, Cart> result) => when(
+      () => cartRepository.addToCart(
+        productId: any(named: 'productId'),
+        quantity: any(named: 'quantity'),
+        variantId: any(named: 'variantId'),
+        reelTagContextId: any(named: 'reelTagContextId'),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    ).thenAnswer((_) async => result);
+
+    String? addedVariant() =>
+        verify(
+              () => cartRepository.addToCart(
+                productId: 'prod-1',
+                quantity: 1,
+                variantId: captureAny(named: 'variantId'),
+                reelTagContextId: 'tag-1',
+                idempotencyKey: any(named: 'idempotencyKey'),
+              ),
+            ).captured.single
+            as String?;
+
+    testWidgets('a product with nothing to choose is added and the cart '
+        'opens', (tester) async {
+      stubDetail(_detail());
+      stubAdd(right(_cart(1, productId: 'prod-1')));
+      await pumpRail(
+        tester,
+        _reel(products: const [_taggedTote]),
+        signedIn: true,
+      );
+
+      await tester.tap(find.byType(ReelRailProductTile));
+      await tester.pumpAndSettle();
+
+      expect(addedVariant(), 'v-default');
+      expect(find.text('Cart'), findsOneWidget);
+      expect(find.text('Product page prod-1'), findsNothing);
+    });
+
+    testWidgets('a product with sizes asks for one first, then adds that '
+        'size and opens the cart', (tester) async {
+      stubDetail(_detail(withSizes: true));
+      stubAdd(right(_cart(1, productId: 'prod-1')));
+      await pumpRail(
+        tester,
+        _reel(products: const [_taggedTote]),
+        signedIn: true,
+      );
+
+      await tester.tap(find.byType(ReelRailProductTile));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReelVariantSheet), findsOneWidget);
+      verifyNever(
+        () => cartRepository.addToCart(
+          productId: any(named: 'productId'),
+          quantity: any(named: 'quantity'),
+          variantId: any(named: 'variantId'),
+          reelTagContextId: any(named: 'reelTagContextId'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      );
+
+      await tester.tap(find.bySemanticsLabel('Size S'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ReelVariantSheet.addKey));
+      await tester.pumpAndSettle();
+
+      expect(addedVariant(), 'v-s');
+      expect(find.text('Cart'), findsOneWidget);
+    });
+
+    testWidgets('dismissing the size sheet adds nothing', (tester) async {
+      stubDetail(_detail(withSizes: true));
+      await pumpRail(
+        tester,
+        _reel(products: const [_taggedTote]),
+        signedIn: true,
+      );
+
+      await tester.tap(find.byType(ReelRailProductTile));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReelVariantSheet), findsNothing);
+      expect(find.text('Cart'), findsNothing);
+      verifyNever(
+        () => cartRepository.addToCart(
+          productId: any(named: 'productId'),
+          quantity: any(named: 'quantity'),
+          variantId: any(named: 'variantId'),
+          reelTagContextId: any(named: 'reelTagContextId'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      );
+    });
+
+    testWidgets('an out-of-stock product says so and stays on the reel', (
+      tester,
+    ) async {
+      stubDetail(_detail(inStock: false));
+      await pumpRail(
+        tester,
+        _reel(products: const [_taggedTote]),
+        signedIn: true,
+      );
+
+      await tester.tap(find.byType(ReelRailProductTile));
+      await tester.pumpAndSettle();
+
+      expect(find.text(ReelQuickBuyStrings.outOfStock), findsOneWidget);
+      expect(find.text('Cart'), findsNothing);
+      verifyNever(
+        () => cartRepository.addToCart(
+          productId: any(named: 'productId'),
+          quantity: any(named: 'quantity'),
+          variantId: any(named: 'variantId'),
+          reelTagContextId: any(named: 'reelTagContextId'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a failed add shows the reason and does not open the cart', (
+      tester,
+    ) async {
+      stubDetail(_detail());
+      stubAdd(left(const NetworkExceptions.server('Only 0 left in stock')));
+      await pumpRail(
+        tester,
+        _reel(products: const [_taggedTote]),
+        signedIn: true,
+      );
+
+      await tester.tap(find.byType(ReelRailProductTile));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Only 0 left in stock'), findsOneWidget);
+      expect(find.text('Cart'), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a guest is asked to sign in and nothing is added', (
+      tester,
+    ) async {
+      await pumpRail(tester, _reel(products: const [_taggedTote]));
+
+      await tester.tap(find.byType(ReelRailProductTile));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => discoveryRepository.getProductDetail(any()));
+      expect(find.text('Cart'), findsNothing);
+    });
+  });
+
+  group('planReelQuickBuy', () {
+    test('adds the default variant of a product without options', () {
+      final plan = planReelQuickBuy(_detail());
+      expect(plan, isA<ReelQuickBuyAdd>());
+      expect((plan as ReelQuickBuyAdd).variantId, 'v-default');
+    });
+
+    test('asks for a size when several variants exist', () {
+      expect(
+        planReelQuickBuy(_detail(withSizes: true)),
+        isA<ReelQuickBuyChoose>(),
+      );
+    });
+
+    test('adds the only variant without asking', () {
+      final plan = planReelQuickBuy(_detail(withSizes: true, sizes: 1));
+      expect((plan as ReelQuickBuyAdd).variantId, 'v-s');
+    });
+
+    test('refuses when every variant is sold out', () {
+      final plan = planReelQuickBuy(_detail(withSizes: true, stock: 0));
+      expect(
+        (plan as ReelQuickBuyUnavailable).message,
+        ReelQuickBuyStrings.outOfStock,
+      );
+    });
+
+    test('asks on the legacy SKU row', () {
+      expect(
+        planReelQuickBuy(_detail(legacySkus: true)),
+        isA<ReelQuickBuyChoose>(),
+      );
+    });
+
+    test('refuses a product the store may not sell here', () {
+      expect(
+        planReelQuickBuy(_detail(), purchaseBlocked: true),
+        isA<ReelQuickBuyUnavailable>(),
+      );
+    });
   });
 
   testWidgets('tapping the avatar opens the creator profile', (tester) async {

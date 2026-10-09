@@ -2090,11 +2090,14 @@ GoRouter appRouter(Ref ref) {
         ],
       ),
 
-      // Customer — recent activity (notifications)
+      // Customer — recent activity: the account's notification inbox, whose
+      // rows open what each notification is about. (It read the creator's
+      // activity feed before, which a buyer cannot see.)
       GoRoute(
         path: RouteNames.customerRecentActivity,
-        builder: (ctx, state) =>
-            const notifications_activity.RecentActivityScreen(),
+        builder: (ctx, state) => const notifications_activity.RecentActivityScreen(
+          source: notifications_activity.RecentActivitySource.inbox,
+        ),
       ),
 
       // Clienteling — v1/clienteling/*

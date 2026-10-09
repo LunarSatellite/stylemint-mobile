@@ -14,10 +14,8 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/kyc/domain/kyc_push.dart';
 import 'package:stylemint_mobile_frontend/features/customer/kyc/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
-import 'package:stylemint_mobile_frontend/routes/deep_links.dart';
+import 'package:stylemint_mobile_frontend/core/device/notification_route.dart';
 import 'package:stylemint_mobile_frontend/theme/font_licenses.dart';
-import 'core/auth/jwt_roles.dart';
 import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
 import 'app.dart';
@@ -556,7 +554,16 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
       final pending = _pendingUri;
       if (!stillUnknown && pending != null) {
         _pendingUri = null;
-        _navigate(pending);
+        // After the frame, not inside this notification: the router hears
+        // the same session change and redirects splash to home, and a link
+        // replayed first could be overtaken by that redirect — a cold launch
+        // from an order notification would then land on home (the reels).
+        // Going after the redirect has settled makes the link the last word.
+        WidgetsBinding.instance
+          ..addPostFrameCallback((_) {
+            if (mounted) _navigate(pending);
+          })
+          ..scheduleFrame();
       }
     });
 
@@ -747,44 +754,56 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     );
   }
 
-  /// Pulls a destination out of a notification payload.
+  /// A tapped notification — from the tray with the app backgrounded, or the
+  /// one that cold-launched it.
   ///
-  /// The server's FCM data keys are not documented in this repo — the
-  /// notifications contract here covers the inbox API, not the push payload —
-  /// so this accepts the forms a backend plausibly sends and ignores anything
-  /// it does not recognise rather than guessing a route. A payload with no
-  /// destination still opens the app, which is the sensible default for a
-  /// notification that is only telling the user something.
+  /// Side effects first (live refresh, the delivery bus, the KYC re-read),
+  /// then the destination, from the one resolver the banner and the inbox
+  /// use too ([notificationLocation]): an explicit link if the payload has
+  /// one, else by `type` — an `order.*` push opens that order, a delivery
+  /// push the rider's job or the vendor's sub-order, `kyc.decided` the
+  /// verification screen. Until 2026-10-09 an order push carried no link and
+  /// was only routed by key guesses, so tapping "Packed and ready" just
+  /// opened the app on its home tab, the reels.
   void _handlePushMessage(RemoteMessage message) {
+    _publishSideEffects(message);
+    unawaited(
+      _openNotification(NotificationPayload.fromPushData(message.data)),
+    );
+  }
+
+  /// What every push does on arrival or tap, wherever it is going: open
+  /// screens re-read, delivery screens hear of it, a KYC decision refreshes
+  /// what depends on it.
+  void _publishSideEffects(RemoteMessage message) {
     _publishLiveSignal(message);
-    // A KYC decision carries a `type` and a status, no link: refresh what
-    // depends on it and open the verification screen, which re-reads it.
-    final kyc = KycDecidedPush.fromData(message.data);
-    if (kyc != null) {
+    if (KycDecidedPush.fromData(message.data) != null) {
       _refreshAfterKycDecision();
-      _handleUri(Uri.parse('stylemint:/${kyc.route}'));
-      return;
     }
-    // Delivery notifications carry a `type`, not a link — the contract pins
-    // that — so they are routed by type before the generic key guess runs.
     final delivery = DeliveryPushEvent.fromData(message.data);
-    if (delivery != null) {
-      ref.read(deliveryPushBusProvider).publish(delivery);
-      unawaited(
-        _deliveryRoute(delivery).then((route) {
-          // Through _handleUri rather than straight to the router, so a cold
-          // launch from the notification is deferred until the session is
-          // known.
-          if (route != null && mounted) {
-            _handleUri(Uri.parse('stylemint:/$route'));
-          }
-        }),
-      );
-      return;
-    }
-    final uri = pushDestinationUri(message.data);
-    if (uri == null) return;
-    _handleUri(uri);
+    if (delivery != null) ref.read(deliveryPushBusProvider).publish(delivery);
+  }
+
+  /// Opens where [payload] points, through [_handleUri] rather than straight
+  /// to the router, so a cold launch from a notification waits for the
+  /// session and is not overtaken by splash's redirect to home.
+  Future<void> _openNotification(NotificationPayload payload) async {
+    final location = await _notificationLocationFor(payload);
+    if (location == null || !mounted) return;
+    _handleUri(Uri.parse('stylemint:/$location'));
+  }
+
+  /// [notificationLocation] for whoever is looking: the side of the app on
+  /// screen, and the roles on the access token.
+  Future<String?> _notificationLocationFor(NotificationPayload payload) async {
+    final location = ref
+        .read(appRouterProvider)
+        .routerDelegate
+        .currentConfiguration
+        .uri
+        .path;
+    final viewer = await readNotificationViewer(ref, location: location);
+    return notificationLocation(payload, viewer: viewer);
   }
 
   /// A KYC review was decided: the buyer's EMI eligibility and the
@@ -795,9 +814,50 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
       ..invalidate(customerKycNotifierProvider);
   }
 
+  /// Hands an order/delivery push to [LiveRefreshBus]: the open buyer,
+  /// vendor and rider screens re-read silently. Anything else is ignored.
+  void _publishLiveSignal(RemoteMessage message) {
+    final signal = LiveSignal.fromPushData(message.data);
+    if (signal != null) ref.read(liveRefreshBusProvider).publish(signal);
+  }
+
+  /// A notification that arrived while the app is open.
+  ///
+  /// FCM draws nothing itself in the foreground on Android, so the open
+  /// screens refresh at once (delivery ones are time-critical — a request is
+  /// open for minutes, and a vendor is waiting on the rider) and anything
+  /// with a destination gets an in-app banner whose "View" goes where
+  /// tapping the notification would.
+  Future<void> _handleForegroundPush(RemoteMessage message) async {
+    _publishSideEffects(message);
+    final payload = NotificationPayload.fromPushData(message.data);
+    final route = await _notificationLocationFor(payload);
+    if (route == null || !mounted) return;
+
+    final delivery = DeliveryPushEvent.fromData(message.data);
+    final kyc = KycDecidedPush.fromData(message.data);
+    final text =
+        message.notification?.title ??
+        message.notification?.body ??
+        kyc?.message ??
+        switch (delivery?.type) {
+          DeliveryPushType.request => 'A vendor near you needs a rider',
+          DeliveryPushType.interest => 'A rider is ready to take your parcel',
+          DeliveryPushType.selected => "You've got the delivery",
+          DeliveryPushType.notSelected => 'Another rider was chosen',
+          DeliveryPushType.confirmRequest =>
+            'Your parcel is at the door — confirm delivery',
+          DeliveryPushType.delivered => 'Delivered — the recipient confirmed',
+          null => 'You have a new notification',
+        };
+    // A rider's job and offers replace the stack, as before; anything else
+    // opens on top of what is on screen.
+    _showPushBanner(text, route, replace: delivery != null);
+  }
+
   /// An in-app banner with a way to [route], for a push that arrived while
-  /// the app is open — FCM draws nothing itself in the foreground on Android.
-  void _showPushBanner(String text, String route) {
+  /// the app is open.
+  void _showPushBanner(String text, String route, {bool replace = false}) {
     final router = ref.read(appRouterProvider);
     final navigatorContext = router.routerDelegate.navigatorKey.currentContext;
     if (navigatorContext == null) return;
@@ -812,97 +872,8 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
           content: Text(text),
           action: SnackBarAction(
             label: 'View',
-            onPressed: () => router.push(route),
-          ),
-        ),
-      );
-  }
-
-  /// Where a tapped delivery notification goes.
-  ///
-  /// Only `delivery.delivered` needs thought: the vendor and the rider get it
-  /// with the same payload. Whichever side of the app is on screen decides;
-  /// failing that, an account with the vendor role is taken to the order.
-  Future<String?> _deliveryRoute(DeliveryPushEvent event) async {
-    if (event.type != DeliveryPushType.delivered) return event.route;
-    final location = ref
-        .read(appRouterProvider)
-        .routerDelegate
-        .currentConfiguration
-        .uri
-        .path;
-    if (location.startsWith(RouteNames.courier)) {
-      return event.routeFor(vendor: false);
-    }
-    if (location.startsWith('/vendor')) return event.routeFor(vendor: true);
-    final token = await ref.read(tokenStorageProvider).accessToken;
-    final roles = rolesFromJwt(token);
-    return event.routeFor(vendor: roles.contains('vendor'));
-  }
-
-  /// Hands an order/delivery push to [LiveRefreshBus]: the open buyer,
-  /// vendor and rider screens re-read silently. Anything else is ignored.
-  void _publishLiveSignal(RemoteMessage message) {
-    final signal = LiveSignal.fromPushData(message.data);
-    if (signal != null) ref.read(liveRefreshBusProvider).publish(signal);
-  }
-
-  /// A notification that arrived while the app is open.
-  ///
-  /// Delivery ones are time-critical — a request is open for minutes, and a
-  /// vendor is waiting on the rider — so the screens showing them refresh at
-  /// once via [DeliveryPushBus], and anything not on screen gets an in-app
-  /// banner with a way to it. FCM draws nothing itself in the foreground on
-  /// Android, so without this the rider would learn of it on the next poll.
-  Future<void> _handleForegroundPush(RemoteMessage message) async {
-    // Every order/delivery push — data-only or not, delivery.* or order.* —
-    // re-reads the order, job and offer screens on display at once.
-    _publishLiveSignal(message);
-    final kyc = KycDecidedPush.fromData(message.data);
-    if (kyc != null) {
-      _refreshAfterKycDecision();
-      _showPushBanner(
-        message.notification?.title ??
-            message.notification?.body ??
-            kyc.message,
-        kyc.route,
-      );
-      return;
-    }
-    final delivery = DeliveryPushEvent.fromData(message.data);
-    if (delivery == null) return;
-    ref.read(deliveryPushBusProvider).publish(delivery);
-
-    final route = await _deliveryRoute(delivery);
-    if (!mounted) return;
-    final router = ref.read(appRouterProvider);
-    final navigatorContext = router.routerDelegate.navigatorKey.currentContext;
-    if (route == null || navigatorContext == null) return;
-    final messenger = ScaffoldMessenger.maybeOf(navigatorContext);
-    if (messenger == null) return;
-
-    final text =
-        message.notification?.title ??
-        message.notification?.body ??
-        switch (delivery.type) {
-          DeliveryPushType.request => 'A vendor near you needs a rider',
-          DeliveryPushType.interest => 'A rider is ready to take your parcel',
-          DeliveryPushType.selected => "You've got the delivery",
-          DeliveryPushType.notSelected => 'Another rider was chosen',
-          DeliveryPushType.confirmRequest =>
-            'Your parcel is at the door — confirm delivery',
-          DeliveryPushType.delivered => 'Delivered — the recipient confirmed',
-        };
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 6),
-          content: Text(text),
-          action: SnackBarAction(
-            label: 'View',
-            onPressed: () => router.go(route),
+            onPressed: () =>
+                replace ? router.go(route) : unawaited(router.push(route)),
           ),
         ),
       );
@@ -954,42 +925,15 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
 
   void _navigate(Uri uri) {
     final router = ref.read(appRouterProvider);
-    // StyleMint codes — stylemint://c/{code} and
-    // https://<StyleMint host>/c/{code}, from printed QR codes, NFC tags and
-    // shared links — open the resolve screen. A tag's via=nfc is kept;
-    // anything else counts as a link.
-    final styleMintCode = StyleMintCode.parse(uri.toString());
-    if (styleMintCode is StyleMintShortCode) {
-      router.go(styleMintCode.route);
-      return;
-    }
-    // Shared brand and creator storefront links — the web pages
-    // (https://<StyleMint host>/brands/{id}, /creator-profile/{id}) and the
-    // stylemint:// forms their app-dock buttons use — open the storefront
-    // in-app. An id that is not a GUID lands on home instead of a storefront
-    // that can never load.
-    final storefront = styleMintStorefrontRoute(uri.toString());
-    if (storefront != null) {
-      router.go(storefront);
-      return;
-    }
-    // Convert the incoming deep link to a go_router path.
-    //  - https links: the host is the domain, so the route is just `uri.path`
-    //    (e.g. https://host/auth/magic -> /auth/magic).
-    //  - custom-scheme links: the first path segment lands in `uri.host`, so
-    //    rebuild it (e.g. stylemint://auth/magic -> /auth/magic, not /magic).
-    final rawPath = uri.scheme == 'stylemint' && uri.host.isNotEmpty
-        ? '/${uri.host}${uri.path}'
-        : uri.path;
-    final path = rawPath.startsWith('/') ? rawPath : '/$rawPath';
-    final query = uri.queryParametersAll.isEmpty
-        ? ''
-        : '?${uri.queryParameters.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
+    // StyleMint codes and storefront links open their screens; anything else
+    // becomes its path — see [deepLinkLocation], which the notification
+    // inbox shares so a link lands in the same place from either door.
+    final location = deepLinkLocation(uri);
     // ignore: avoid_print
     print(
-      '[OAUTH-DEBUG] _navigate: router.go(\'$path\') queryKeys=${uri.queryParameters.keys.toList()}',
+      '[OAUTH-DEBUG] _navigate: router.go(\'${Uri.parse(location).path}\') queryKeys=${uri.queryParameters.keys.toList()}',
     );
-    router.go('$path$query');
+    router.go(location);
   }
 
   @override

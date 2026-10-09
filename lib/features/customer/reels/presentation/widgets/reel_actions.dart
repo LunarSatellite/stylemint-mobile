@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entitie
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/reel_share.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_like_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_save_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/reel_quick_buy.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_share_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
@@ -33,7 +34,9 @@ const _RailCart _unknownCart = (count: null, inCart: false);
 /// Right-hand rail on a feed reel ("A · Studio", approved 2026-09-14), top to
 /// bottom: the creator (profile + follow), like, comments, save, share, and
 /// the first tagged product — or the cart when nothing is tagged. The last
-/// item reacts when something is added to the cart, from anywhere.
+/// item reacts when something is added to the cart, from anywhere. Tapping
+/// the product adds it to the cart and opens the cart (owner decision,
+/// 2026-10-09); a long press opens the product page.
 ///
 /// Nothing on the rail leaves StyleMint (owner decisions, 2026-09-14/15):
 /// like, comments and save are native StyleMint interactions, and share opens
@@ -59,6 +62,7 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
   // update this directly or the count never reflects it.
   late int _commentCount = widget.reel.commentCount;
   bool _followBusy = false;
+  bool _buying = false;
 
   /// The last settled view of the cart; see [_railCart].
   _RailCart _cart = _unknownCart;
@@ -218,8 +222,22 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
     );
   }
 
-  /// Same destination as tapping a product in the feed's tagged-products
-  /// strip (`TaggedProductsSection`): the product detail page.
+  /// Tapping the rail's product photo buys it: into the cart (after a
+  /// size/colour pick when the product has them), then the cart opens. One
+  /// at a time — a second tap while the first is loading does nothing.
+  Future<void> _quickBuy(TaggedProductEntity product) async {
+    if (_buying) return;
+    _buying = true;
+    try {
+      await reelQuickBuy(context, ref, product);
+    } finally {
+      _buying = false;
+    }
+  }
+
+  /// Long-pressing the rail's product photo — and tapping a product in the
+  /// feed's tagged-products strip (`TaggedProductsSection`) — opens the
+  /// product detail page.
   void _openProduct(TaggedProductEntity product) {
     unawaited(
       context.push(
@@ -382,7 +400,8 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
                       '${formatMoney(product.price, decimalDigits: 0)}',
                   inCart: cart.inCart,
                   cartCount: cart.count,
-                  onTap: () => _openProduct(product),
+                  onTap: () => _quickBuy(product),
+                  onLongPress: () => _openProduct(product),
                 )
               else
                 ReelRailCartDisc(itemCount: cart.count, onTap: _openCart),

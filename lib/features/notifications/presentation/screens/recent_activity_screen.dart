@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/core/device/notification_route.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -57,8 +61,47 @@ extension _ActivityCategoryX on ActivityItem {
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
+/// Where the rows come from.
+enum RecentActivitySource {
+  /// The creator's activity feed (`/v1/creator/activity`). Rows open nothing.
+  creatorActivity,
+
+  /// The account's notification inbox (`/v1/notifications/inbox`) — the
+  /// buyer's bell. A row opens what the notification is about, exactly as
+  /// tapping the push would (see `notification_route.dart`).
+  inbox,
+}
+
+/// Whether a resolved location may be opened from the inbox. The resolver
+/// already refuses backend URLs; this only rules out an empty string.
+bool _isOpenable(String? location) => location != null && location.isNotEmpty;
+
+/// The routing view of an inbox [item], or null for a feed row.
+NotificationPayload? _payloadOf(ActivityItem item) =>
+    item.templateKey == null && item.variablesJson == null
+    ? null
+    : NotificationPayload.fromInboxJson(
+        templateKey: item.templateKey,
+        variablesJson: item.variablesJson,
+      );
+
+/// Whether tapping [item] goes anywhere, judged without the viewer's roles
+/// (which only change where, never whether — except payouts, which always
+/// need a vendor or creator role and so always have one here).
+bool activityItemOpens(ActivityItem item) {
+  final payload = _payloadOf(item);
+  if (payload == null) return false;
+  if (payload.type?.startsWith('payout.') ?? false) return true;
+  return _isOpenable(notificationLocation(payload));
+}
+
 class RecentActivityScreen extends ConsumerStatefulWidget {
-  const RecentActivityScreen({super.key});
+  const RecentActivityScreen({
+    this.source = RecentActivitySource.creatorActivity,
+    super.key,
+  });
+
+  final RecentActivitySource source;
 
   @override
   ConsumerState<RecentActivityScreen> createState() =>
@@ -87,9 +130,30 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
     );
   }
 
+  /// Opens what an inbox row is about — the same destination as tapping its
+  /// push, for whichever side of the app the person is on.
+  Future<void> _open(ActivityItem item) async {
+    final payload = _payloadOf(item);
+    if (payload == null) return;
+    final router = GoRouter.of(context);
+    final viewer = await readNotificationViewer(
+      ref,
+      location: router.routerDelegate.currentConfiguration.uri.path,
+    );
+    if (!mounted) return;
+    final location = notificationLocation(payload, viewer: viewer);
+    if (_isOpenable(location)) unawaited(router.push(location!));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final activity = ref.watch(recentActivityProvider);
+    final inbox = widget.source == RecentActivitySource.inbox;
+    final activity = ref.watch(
+      inbox ? notificationInboxProvider : recentActivityProvider,
+    );
+    final onOpen = inbox
+        ? (ActivityItem item) => unawaited(_open(item))
+        : null;
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -240,6 +304,7 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
                   itemBuilder: (_, i) => _ActivityGroup(
                     label: grouped[i].label,
                     items: grouped[i].items,
+                    onOpen: onOpen,
                   ),
                 );
               },
@@ -369,10 +434,15 @@ class _FilterSheet extends StatelessWidget {
 // ── Activity group card ───────────────────────────────────────────────────────
 
 class _ActivityGroup extends StatelessWidget {
-  const _ActivityGroup({required this.label, required this.items});
+  const _ActivityGroup({
+    required this.label,
+    required this.items,
+    this.onOpen,
+  });
 
   final String label;
   final List<ActivityItem> items;
+  final ValueChanged<ActivityItem>? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -393,6 +463,9 @@ class _ActivityGroup extends StatelessWidget {
             _ActivityRow(
               item: items[i],
               showConnector: i < items.length - 1,
+              onOpen: onOpen != null && activityItemOpens(items[i])
+                  ? () => onOpen!(items[i])
+                  : null,
             ),
         ],
       ),
@@ -403,13 +476,34 @@ class _ActivityGroup extends StatelessWidget {
 // ── Activity row ──────────────────────────────────────────────────────────────
 
 class _ActivityRow extends StatelessWidget {
-  const _ActivityRow({required this.item, required this.showConnector});
+  const _ActivityRow({
+    required this.item,
+    required this.showConnector,
+    this.onOpen,
+  });
 
   final ActivityItem item;
   final bool showConnector;
 
+  /// Opens what the notification is about; null when it is about nothing.
+  final VoidCallback? onOpen;
+
   @override
   Widget build(BuildContext context) {
+    final open = onOpen;
+    final row = _content(context);
+    if (open == null) return row;
+    return Semantics(
+      button: true,
+      child: InkWell(
+        onTap: open,
+        borderRadius: BorderRadius.circular(DesignTokens.s8),
+        child: row,
+      ),
+    );
+  }
+
+  Widget _content(BuildContext context) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

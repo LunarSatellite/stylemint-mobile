@@ -8,4 +8,12 @@ abstract class NotificationsRepository {
   Future<Either<NetworkExceptions, List<ActivityItem>>> getRecentActivity({
     int pageSize,
   });
+
+  /// The signed-in account's in-app notifications, newest first — buyer,
+  /// vendor or rider alike. Each row keeps its template key and variables,
+  /// which decide where tapping it goes.
+  /// Source: `GET /v1/notifications/inbox`.
+  Future<Either<NetworkExceptions, List<ActivityItem>>> getInbox({
+    int pageSize,
+  });
 }
