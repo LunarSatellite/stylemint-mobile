@@ -83,6 +83,21 @@ Future<void> showVendorProductActions(
           ),
           const _ActionDivider(),
 
+          // EMI: let buyers pay this listing off monthly
+          // (v1/vendor/products/{id}/emi-terms).
+          _ActionRow(
+            icon: Icons.calendar_month_outlined,
+            title: 'Offer EMI',
+            onTap: () {
+              Navigator.pop(sheetCtx);
+              context.push(
+                RouteNames.vendorProductEmiPath(product.id),
+                extra: product,
+              );
+            },
+          ),
+          const _ActionDivider(),
+
           // In-store codes: a StyleMint QR / NFC shelf code for this product
           // in one of the vendor's stores.
           _ActionRow(

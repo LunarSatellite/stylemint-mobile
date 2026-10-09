@@ -27,6 +27,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/return_record_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/review_summary_block.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/emi_from_line.dart';
 import 'package:stylemint_mobile_frontend/features/customer/group_buy/presentation/widgets/group_buy_banner.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
@@ -132,6 +133,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             chooser: product.options.isEmpty ? null : chooser,
             quantity: _quantity,
             selectedVariants: _selectedVariants,
+            emiVariantId: _selectedSkuId(chosen) ?? chosen.defaultVariantId,
             descExpanded: _descExpanded,
             onQuantityChanged: (v) => setState(() => _quantity = v),
             onVariantSelected: (k, v) =>
@@ -149,6 +151,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// The SKU picked on the legacy chip row, when the product has one.
+  String? _selectedSkuId(ProductDetail product) {
+    for (final group in product.variants) {
+      if (group.type != 'sku' || group.values.isEmpty) continue;
+      final selectedValue = _selectedVariants[group.id] ?? group.values.first;
+      return group.optionVariantIds[selectedValue];
+    }
+    return null;
   }
 
   Future<void> _handleAddToCart(ProductDetail product) async {
@@ -250,9 +262,13 @@ class _ProductBody extends StatelessWidget {
     required this.onAddToCart,
     required this.onBuyNow,
     this.chooser,
+    this.emiVariantId,
   });
 
   final ProductDetail product;
+
+  /// The variant on screen, for the "EMI from" line under the price.
+  final String? emiVariantId;
 
   /// Null for a product with no options — the legacy SKU chips show instead.
   final ProductOptionChooser? chooser;
@@ -334,6 +350,15 @@ class _ProductBody extends StatelessWidget {
                     ProductBadgesRow(product: product),
                     const SizedBox(height: DesignTokens.s12),
                     _NamePriceRow(product: product),
+                    // Draws nothing unless the vendor offers EMI on this
+                    // variant — and nothing at all on a pre-EMI server.
+                    EmiFromLine(
+                      offer: product.emi,
+                      productId: product.id,
+                      productName: product.name,
+                      variantId: emiVariantId,
+                      padding: const EdgeInsets.only(top: DesignTokens.s4),
+                    ),
                     DeliveryEstimateLine(
                       delivery: product.delivery,
                       padding: const EdgeInsets.only(top: DesignTokens.s8),

@@ -9,6 +9,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart' hide State;
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/kyc/domain/kyc_push.dart';
+import 'package:stylemint_mobile_frontend/features/customer/kyc/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
 import 'package:stylemint_mobile_frontend/routes/deep_links.dart';
 import 'package:stylemint_mobile_frontend/theme/font_licenses.dart';
@@ -675,6 +678,14 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   /// destination still opens the app, which is the sensible default for a
   /// notification that is only telling the user something.
   void _handlePushMessage(RemoteMessage message) {
+    // A KYC decision carries a `type` and a status, no link: refresh what
+    // depends on it and open the verification screen, which re-reads it.
+    final kyc = KycDecidedPush.fromData(message.data);
+    if (kyc != null) {
+      _refreshAfterKycDecision();
+      _handleUri(Uri.parse('stylemint:/${kyc.route}'));
+      return;
+    }
     // Delivery notifications carry a `type`, not a link — the contract pins
     // that — so they are routed by type before the generic key guess runs.
     final delivery = DeliveryPushEvent.fromData(message.data);
@@ -696,6 +707,37 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     final uri = pushDestinationUri(message.data);
     if (uri == null) return;
     _handleUri(uri);
+  }
+
+  /// A KYC review was decided: the buyer's EMI eligibility and the
+  /// verification record are stale, wherever they are on screen.
+  void _refreshAfterKycDecision() {
+    ref
+      ..invalidate(emiEligibilityProvider)
+      ..invalidate(customerKycNotifierProvider);
+  }
+
+  /// An in-app banner with a way to [route], for a push that arrived while
+  /// the app is open — FCM draws nothing itself in the foreground on Android.
+  void _showPushBanner(String text, String route) {
+    final router = ref.read(appRouterProvider);
+    final navigatorContext = router.routerDelegate.navigatorKey.currentContext;
+    if (navigatorContext == null) return;
+    final messenger = ScaffoldMessenger.maybeOf(navigatorContext);
+    if (messenger == null) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 6),
+          content: Text(text),
+          action: SnackBarAction(
+            label: 'View',
+            onPressed: () => router.push(route),
+          ),
+        ),
+      );
   }
 
   /// Where a tapped delivery notification goes.
@@ -728,6 +770,17 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   /// banner with a way to it. FCM draws nothing itself in the foreground on
   /// Android, so without this the rider would learn of it on the next poll.
   Future<void> _handleForegroundPush(RemoteMessage message) async {
+    final kyc = KycDecidedPush.fromData(message.data);
+    if (kyc != null) {
+      _refreshAfterKycDecision();
+      _showPushBanner(
+        message.notification?.title ??
+            message.notification?.body ??
+            kyc.message,
+        kyc.route,
+      );
+      return;
+    }
     final delivery = DeliveryPushEvent.fromData(message.data);
     if (delivery == null) return;
     ref.read(deliveryPushBusProvider).publish(delivery);
@@ -736,8 +789,7 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     final route = await _deliveryRoute(delivery);
     if (!mounted) return;
     final router = ref.read(appRouterProvider);
-    final navigatorContext =
-        router.routerDelegate.navigatorKey.currentContext;
+    final navigatorContext = router.routerDelegate.navigatorKey.currentContext;
     if (route == null || navigatorContext == null) return;
     final messenger = ScaffoldMessenger.maybeOf(navigatorContext);
     if (messenger == null) return;

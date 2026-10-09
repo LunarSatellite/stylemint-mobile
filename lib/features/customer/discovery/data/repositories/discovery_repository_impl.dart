@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_return_record.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/data/models/emi_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
@@ -80,6 +81,8 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
             delivery: ProductDeliveryDto.fromJson(json),
             options: options.options,
             optionVariants: options.variants,
+            // Null when EMI is off or the server predates it.
+            emi: readProductEmiOffer(json),
             // Real options replace the synthetic "pick a SKU" chip row.
             variants: options.isEmpty ? null : const <ProductVariant>[],
           ),

@@ -131,6 +131,11 @@ abstract class RouteNames {
   static const shippingAddresses = '/shipping';
   static const shippingAddEdit = '/shipping/edit';
   static const shippingView = '/shipping/view';
+
+  /// Buyer identity verification (KYC Tier 2) for EMI: the status screen,
+  /// and the form it opens. Where a `kyc.decided` push lands.
+  static const customerKyc = '/verify-identity';
+  static const customerKycSubmit = '/verify-identity/submit';
   static const paymentMethods = '/payment-methods';
   static const paymentAddCard = '/payment/add-card';
   static const paymentEditCard = '/payment/edit-card';
@@ -188,6 +193,7 @@ abstract class RouteNames {
   static const socialConnect = '/creator/social-connect';
   static const reelStudio = '/creator/reel-studio';
   static const reelStudioCreateDraft = '/creator/reel-studio/create';
+
   /// Campaigns a vendor published and opened to creators, the one a creator is
   /// reading, and the creator's own applications. The detail path carries the
   /// brief id, not the root id: a creator applies to a specific version, and
@@ -197,6 +203,7 @@ abstract class RouteNames {
   static const creatorMyApplications = '/creator/campaigns/applications';
 
   static const partnerships = '/creator/partnerships';
+
   /// The delivery-partner role. One route: CourierGateScreen decides what to
   /// show from the courier's profile state, so callers never have to know
   /// whether this account has applied, is in review, or is live.
@@ -267,6 +274,16 @@ abstract class RouteNames {
   static const vendorEditProduct = '/vendor/products/:productId/edit';
   static const vendorProductAnalytics = '/vendor/products/analytics';
   static const vendorTopProducts = '/vendor/products/top';
+
+  /// "Offer EMI" for one listing (optional extra: VendorProduct, for its
+  /// name). The terms themselves are read by id.
+  static const vendorProductEmi = '/vendor/products/:productId/emi';
+
+  /// The vendor's EMI settings: exposure limit and the listings offering EMI.
+  static const vendorEmi = '/vendor/emi';
+
+  static String vendorProductEmiPath(String productId) => vendorProductEmi
+      .replaceFirst(':productId', Uri.encodeComponent(productId));
   // Per-product StyleMint shelf codes (extra: VendorProduct).
   static const vendorProductInStoreCodes =
       '/vendor/products/:productId/in-store-codes';
@@ -312,6 +329,7 @@ abstract class RouteNames {
   static const vendorStoreDetail = '/vendor/stores/:storeId';
   static const vendorStoreEdit = '/vendor/stores/:storeId/edit';
   static const vendorRecentActivity = '/vendor/activity';
+
   /// Campaign reels waiting on this vendor's answer.
   static const vendorReelApprovals = '/vendor/reel-approvals';
 

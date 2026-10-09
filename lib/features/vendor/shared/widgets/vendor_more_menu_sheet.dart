@@ -153,6 +153,14 @@ class _VendorMoreMenu extends StatelessWidget {
                 onTap: () => _go(context, RouteNames.vendorSponsoredProducts),
               ),
               const _MoreDivider(),
+              // EMI: the exposure limit and the listings offering instalments
+              // (v1/vendor/emi/settings, v1/vendor/emi/products).
+              _MoreItem(
+                icon: Icons.calendar_month_outlined,
+                title: 'EMI (instalments)',
+                onTap: () => _go(context, RouteNames.vendorEmi),
+              ),
+              const _MoreDivider(),
               // StyleMint Codes: the vendor's physical stores, with QR shelf
               // cards and NFC tags for their products (v1/vendor/stores).
               _MoreItem(

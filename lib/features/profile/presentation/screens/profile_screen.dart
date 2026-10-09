@@ -324,6 +324,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'Shipping Addresses',
               onTap: () => context.push(RouteNames.shippingAddresses),
             ),
+            // KYC Tier 2, which EMI (pay in instalments) needs.
+            ProfileMenuItem(
+              icon: Icons.verified_user_outlined,
+              label: 'Verify identity (for EMI)',
+              onTap: () => context.push(RouteNames.customerKyc),
+            ),
             ProfileMenuItem(
               icon: Icons.notifications_active_outlined,
               label: 'Push Notifications',

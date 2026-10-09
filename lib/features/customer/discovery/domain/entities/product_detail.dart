@@ -1,5 +1,6 @@
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_delivery.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_option.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/product_emi_offer.dart';
 import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
@@ -31,6 +32,7 @@ class ProductDetail {
     this.options = const <ProductOption>[],
     this.optionVariants = const <ProductVariantOption>[],
     this.productKind,
+    this.emi,
   });
 
   final String id;
@@ -78,6 +80,11 @@ class ProductDetail {
   /// Whether this product is known to be digital content.
   bool get isDigitalGood => isDigitalProductKind(productKind);
 
+  /// The vendor's EMI offer and which variants it covers. Null when EMI is
+  /// off, no variant qualifies, or the server predates EMI — the page then
+  /// shows nothing about instalments.
+  final ProductEmiOffer? emi;
+
   ProductDetail copyWith({
     String? id,
     String? name,
@@ -103,6 +110,7 @@ class ProductDetail {
     List<ProductOption>? options,
     List<ProductVariantOption>? optionVariants,
     int? productKind,
+    ProductEmiOffer? emi,
     bool clearCompareAtPrice = false,
     bool clearStockCount = false,
   }) {
@@ -133,6 +141,7 @@ class ProductDetail {
       options: options ?? this.options,
       optionVariants: optionVariants ?? this.optionVariants,
       productKind: productKind ?? this.productKind,
+      emi: emi ?? this.emi,
     );
   }
 }

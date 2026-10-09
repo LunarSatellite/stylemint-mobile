@@ -3,11 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/widgets/offer_emi_section.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class Step3PricingScreen extends ConsumerStatefulWidget {
-  const Step3PricingScreen({super.key});
+  const Step3PricingScreen({this.productId, super.key});
+
+  /// The listing being edited. When set, the "Offer EMI" section follows the
+  /// pricing fields; a new product has no id to hang terms on yet.
+  final String? productId;
 
   @override
   ConsumerState<Step3PricingScreen> createState() => _Step3PricingScreenState();
@@ -339,6 +344,13 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
 
                   // 3.15 Creators Earn
                   _CreatorsEarnRow(amount: _creatorsEarn),
+
+                  // Editing a live listing: its EMI terms, saved on their own
+                  // endpoint. Hidden while the backend does not serve them.
+                  if (widget.productId case final String productId) ...[
+                    const SizedBox(height: DesignTokens.s24),
+                    OfferEmiSection(productId: productId),
+                  ],
                 ],
               ),
             ),

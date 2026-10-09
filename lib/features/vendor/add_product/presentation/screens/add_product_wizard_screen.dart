@@ -301,7 +301,7 @@ class _AddProductWizardScreenState
                           ? [
                               const Step1BasicInfoScreen(),
                               const Step2ImagesScreen(),
-                              const Step3PricingScreen(),
+                              Step3PricingScreen(productId: widget.productId),
                               Step4ShippingScreen(
                                 isFinalStep: true,
                                 saving: _saving,

@@ -134,6 +134,8 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/enti
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/add_edit_address_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/shipping_addresses_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/view_address_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/kyc/presentation/screens/customer_kyc_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/kyc/presentation/screens/customer_kyc_submit_screen.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/presentation/screens/recent_activity_screen.dart'
     as notifications_activity;
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/follow_brands_screen.dart';
@@ -258,6 +260,8 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/edit_product_images_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/update_product_stock_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/vendor_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/screens/vendor_emi_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/screens/vendor_product_emi_screen.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker_binding.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker_scan.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_marker_bind_screen.dart';
@@ -1006,6 +1010,15 @@ GoRouter appRouter(Ref ref) {
               : null,
         ),
       ),
+      // Buyer identity verification (KYC Tier 2) for EMI.
+      GoRoute(
+        path: RouteNames.customerKyc,
+        builder: (ctx, state) => const CustomerKycScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.customerKycSubmit,
+        builder: (ctx, state) => const CustomerKycSubmitScreen(),
+      ),
       GoRoute(
         path: RouteNames.shippingView,
         builder: (ctx, state) => ViewAddressScreen(
@@ -1585,6 +1598,23 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => ProductAnalyticsScreen(
           product: state.extra as VendorProduct,
         ),
+      ),
+      // EMI: one listing's "Offer EMI" terms (extra: VendorProduct or its
+      // name), and the vendor's EMI settings.
+      GoRoute(
+        path: RouteNames.vendorProductEmi,
+        builder: (ctx, state) => VendorProductEmiScreen(
+          productId: state.pathParameters['productId']!,
+          productName: switch (state.extra) {
+            final VendorProduct product => product.name,
+            final String name => name,
+            _ => null,
+          },
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorEmi,
+        builder: (ctx, state) => const VendorEmiScreen(),
       ),
       GoRoute(
         path: RouteNames.vendorOrders,
