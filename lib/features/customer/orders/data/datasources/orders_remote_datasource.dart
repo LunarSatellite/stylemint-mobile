@@ -8,8 +8,10 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/d
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_care_plan_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_delivery_json.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_invoice_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_delivery.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/tracked_order_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/warranty_claim_dto.dart';
@@ -59,12 +61,18 @@ class OrdersRemoteDataSource {
     return (response as Map<String, dynamic>)['orderNumber'] as String;
   }
 
-  /// GET `/v1/orders/{orderNumber}` — full order detail.
-  Future<OrderDetailDto> getOrderDetail(String orderId) async {
+  /// GET `/v1/orders/{orderNumber}` — full order detail, plus the optional
+  /// `delivery` block (delivery-complete contract), which is read by hand
+  /// from the same body rather than through the generated DTO.
+  Future<({OrderDetailDto dto, OrderDelivery? delivery})> getOrderDetail(
+    String orderId,
+  ) async {
     final response = await apiClient.get('/v1/orders/$orderId');
-    // Order lines prefer the variant's `optionLabel` over the SKU snapshot.
-    return OrderDetailDto.fromJson(
-      withOptionLabels(response as Map<String, dynamic>),
+    final json = response as Map<String, dynamic>;
+    return (
+      // Order lines prefer the variant's `optionLabel` over the SKU snapshot.
+      dto: OrderDetailDto.fromJson(withOptionLabels(json)),
+      delivery: OrderDeliveryJson.fromOrder(json),
     );
   }
 

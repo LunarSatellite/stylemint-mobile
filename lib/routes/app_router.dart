@@ -75,6 +75,9 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/sc
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/screens/social_connect_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_gate_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_job_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/delivery_confirm_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_by_id_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_offers_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/screens/assistant_conversation_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/screens/assistant_conversations_screen.dart';
@@ -750,12 +753,16 @@ GoRouter appRouter(Ref ref) {
       // Order Detail
       GoRoute(
         path: RouteNames.orderDetail,
-        builder: (ctx, state) => OrderDetailScreen(
-          orderId: state.pathParameters['orderId']!,
-          focusDeliveryRecovery:
-              state.uri.queryParameters['focus'] ==
-              RouteNames.orderDetailFocusRecovery,
-        ),
+        // A delivery notification names the order by id; the order screen
+        // reads by number, so an id is resolved first.
+        builder: (ctx, state) => isOrderId(state.pathParameters['orderId']!)
+            ? OrderByIdScreen(orderId: state.pathParameters['orderId']!)
+            : OrderDetailScreen(
+                orderId: state.pathParameters['orderId']!,
+                focusDeliveryRecovery:
+                    state.uri.queryParameters['focus'] ==
+                    RouteNames.orderDetailFocusRecovery,
+              ),
         routes: [
           GoRoute(
             path: _subPath(RouteNames.orderDetail, RouteNames.orderCancel),
@@ -790,6 +797,20 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.deliveryRecovery,
         builder: (ctx, state) => DeliveryRecoveryScreen(
           trackingNumber: state.pathParameters['trackingNumber']!,
+        ),
+      ),
+
+      // The rider's proof-of-delivery QR (https://<StyleMint host>/dc/{token}),
+      // from the Scan tab, the order's "Scan rider's QR", or an app link.
+      // Confirms on open. Not public: only the order's buyer can confirm, so
+      // a signed-out scan goes to sign-in first.
+      GoRoute(
+        path: RouteNames.deliveryConfirm,
+        builder: (ctx, state) => DeliveryConfirmScreen(
+          token: state.pathParameters['token'] ?? '',
+          // The exact scanned link when the scanner passed it; rebuilt
+          // from the token otherwise.
+          qrPayload: state.extra is String ? state.extra! as String : null,
         ),
       ),
 
@@ -1294,6 +1315,14 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: _subPath(RouteNames.courier, RouteNames.courierOffers),
             builder: (ctx, state) => const CourierOffersScreen(),
+          ),
+          // A job on the in-app map — the `delivery.selected` notification
+          // lands here, with the dashboard beneath it.
+          GoRoute(
+            path: _subPath(RouteNames.courier, RouteNames.courierJob),
+            builder: (ctx, state) => CourierJobScreen(
+              hopId: state.pathParameters['hopId'] ?? '',
+            ),
           ),
         ],
       ),

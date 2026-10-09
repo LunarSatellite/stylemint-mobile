@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/condition_assurance_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/custody_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/delivery_confirmation_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/delivery_recovery_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/handover_delegation_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
@@ -15,7 +16,10 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/c
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/custody_chain.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_recovery_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/delivery_confirmation_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/delivery_confirmation_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/delivery_confirm_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_event_history.dart';
@@ -222,6 +226,34 @@ final ordersRepositoryProvider = Provider<OrdersRepository>(
     networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
   ),
 );
+
+/// The recipient's side of proof of delivery:
+/// `POST /v1/customer/deliveries/confirm`.
+final deliveryConfirmationRepositoryProvider =
+    Provider<DeliveryConfirmationRepository>(
+      (ref) => DeliveryConfirmationRepositoryImpl(
+        remoteDataSource: DeliveryConfirmationRemoteDataSource(
+          apiClient: ref.watch(apiClientProvider),
+        ),
+        networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+      ),
+    );
+
+/// "Confirm delivery", keyed by where it was started — the order number on
+/// the order screen, the QR token on the scanned-link screen — so two
+/// screens never share one confirmation's progress. autoDispose: the
+/// outcome only matters while its screen is open.
+final StateNotifierProviderFamily<
+  DeliveryConfirmNotifier,
+  DeliveryConfirmState,
+  String
+>
+deliveryConfirmNotifierProvider = StateNotifierProvider.autoDispose
+    .family<DeliveryConfirmNotifier, DeliveryConfirmState, String>(
+      (ref, _) => DeliveryConfirmNotifier(
+        ref.watch(deliveryConfirmationRepositoryProvider),
+      ),
+    );
 
 /// Voyager "Carbon impact of delivery" — the customer's cumulative CO2
 /// saved by community delivery. Best-effort: null (no card) on any failure

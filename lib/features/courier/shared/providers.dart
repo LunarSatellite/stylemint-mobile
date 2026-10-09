@@ -13,7 +13,11 @@ import 'package:stylemint_mobile_frontend/features/courier/data/courier_device_k
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_location_reporter.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/courier/data/osrm_route_planner.dart';
+import 'package:stylemint_mobile_frontend/features/courier/data/rider_locator.dart';
+import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_job.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/notifiers/courier_job_notifiers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/repositories/courier_repository.dart';
@@ -246,3 +250,72 @@ final courierKycDocumentsProvider = Provider<CourierKycDocuments>(
     ref.watch(creatorDocumentsRemoteDataSourceProvider),
   ),
 );
+
+// ── Jobs: the in-app job map and QR proof of delivery ─────────────────────
+
+/// One job, for the job screen. autoDispose so reopening the screen re-reads
+/// rather than showing a status the rider has since moved past.
+final courierJobProvider = FutureProvider.autoDispose
+    .family<CourierJob, String>((ref, hopId) async {
+      final result = await ref.watch(courierRepositoryProvider).getJob(hopId);
+      return result.fold((failure) => throw failure, (job) => job);
+    });
+
+/// The rider's jobs — active ones and the last day's completed ones — for
+/// the dashboard's "Delivered today".
+///
+/// A failure is an empty list rather than an error: the list is a record,
+/// not something the rider acts on, and an error here would only start
+/// Riverpod's automatic retry against an endpoint that is not answering.
+final courierJobsProvider = FutureProvider.autoDispose<List<CourierJob>>((
+  ref,
+) async {
+  final result = await ref.watch(courierRepositoryProvider).listJobs();
+  return result.fold((_) => const <CourierJob>[], (jobs) => jobs);
+});
+
+final courierJobActionsNotifierProvider =
+    StateNotifierProvider.autoDispose<CourierJobActionsNotifier, bool>(
+      (ref) => CourierJobActionsNotifier(ref.watch(courierRepositoryProvider)),
+    );
+
+/// How often the QR screen asks whether the recipient has scanned. Overridden
+/// in tests.
+final deliveryProofPollIntervalProvider = Provider<Duration>(
+  (ref) => const Duration(seconds: 3),
+);
+
+/// One hop's proof of delivery. Keyed by the hop and the proof the screen was
+/// opened with ("Complete ride" already returned one), so opening it does not
+/// read the same proof twice.
+final deliveryProofNotifierProvider = StateNotifierProvider.autoDispose
+    .family<
+      DeliveryProofNotifier,
+      DeliveryProofState,
+      ({String hopId, DeliveryProof? initial})
+    >(
+      (ref, args) => DeliveryProofNotifier(
+        ref.watch(courierRepositoryProvider),
+        args.hopId,
+        initial: args.initial,
+        pollInterval: ref.watch(deliveryProofPollIntervalProvider),
+      ),
+    );
+
+/// Road routes for the job map. Overridden in tests so they never touch the
+/// network; the map falls back to straight lines on a null.
+final courierRoutePlannerProvider = Provider<CourierRoutePlanner>(
+  (ref) => OsrmRoutePlanner(),
+);
+
+/// The rider's live position on the job map. Overridden in tests.
+final riderLocatorProvider = Provider<RiderLocator>(
+  (ref) => DeviceRiderLocator(
+    capture: ref.watch(locationCaptureServiceProvider),
+    positions: ref.watch(courierPositionSourceProvider),
+  ),
+);
+
+/// Whether the job map loads OpenStreetMap tiles. Off in widget tests, where
+/// there is no network to load them from.
+final courierMapTilesEnabledProvider = Provider<bool>((ref) => true);

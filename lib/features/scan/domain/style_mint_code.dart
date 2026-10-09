@@ -2,6 +2,7 @@ import 'package:stylemint_mobile_frontend/core/navigation/in_app_link.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/code_links.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/style_mint_code_format.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/delivery_confirm_link.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/domain/unit_marker_format.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
@@ -65,6 +66,11 @@ sealed class StyleMintCode {
       // NFC tags carry `?via=nfc`; nothing else in a link is trusted.
       final fromTag = uri.queryParameters['via']?.trim().toLowerCase() == 'nfc';
       return StyleMintShortCode(code, via: fromTag ? CodeScanVia.nfc : null);
+    }
+    // A rider's proof-of-delivery QR: opens "Confirm delivery". Its token is
+    // checked for shape only — the server decides whether it is good.
+    if (DeliveryConfirmLink.token(value) case final token?) {
+      return StyleMintLinkCode(RouteNames.deliveryConfirmPath(token));
     }
     if (parts.length != 2) return null;
     final root = _linkRoots[parts.first];

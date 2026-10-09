@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_delivery.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
@@ -152,8 +153,19 @@ abstract class OrderDetailDto with _$OrderDetailDto {
   factory OrderDetailDto.fromJson(Map<String, dynamic> json) =>
       _$OrderDetailDtoFromJson(json);
 
-  OrderDetail toDomain() {
-    final overallStatus = _statusFromState(state);
+  /// [delivery] is the hand-read `delivery` block (see `OrderDeliveryJson`),
+  /// passed in because it is not one of this DTO's generated fields.
+  OrderDetail toDomain({OrderDelivery? delivery}) {
+    // A parcel the buyer has just confirmed is Delivered on its sub-order
+    // before the order itself is closed. With every sub-order delivered the
+    // order reads as delivered, rather than "in transit" until the order
+    // catches up.
+    final allDelivered =
+        subOrders.isNotEmpty &&
+        subOrders.every((s) => s.state == _subOrderDelivered);
+    final overallStatus = allDelivered && (state == 2 || state == 3)
+        ? OrderTrackStatus.delivered
+        : _statusFromState(state);
     // Checkout only offers collection when every line comes from one seller,
     // so a collection order is the whole order — but read it as "every
     // sub-order says so" rather than "the first one does", which keeps a
@@ -210,8 +222,12 @@ abstract class OrderDetailDto with _$OrderDetailDto {
       trackingNumber: trackingNumber,
       canCancel: overallStatus == OrderTrackStatus.preparingForShipping,
       canReturn: overallStatus == OrderTrackStatus.delivered,
+      delivery: delivery,
     );
   }
+
+  /// `SubOrderState.Delivered`.
+  static const _subOrderDelivered = 7;
 
   static OrderTrackStatus _statusFromState(int state) {
     switch (state) {

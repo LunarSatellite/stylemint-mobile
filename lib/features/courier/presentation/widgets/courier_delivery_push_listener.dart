@@ -63,8 +63,17 @@ class _CourierDeliveryPushListenerState
       case DeliveryPushType.request:
       case DeliveryPushType.notSelected:
         ref.invalidate(courierOffersProvider);
+      case DeliveryPushType.delivered:
+        // The recipient confirmed: the job leaves the map and the earnings
+        // move.
+        ref
+          ..invalidate(courierHopsProvider)
+          ..invalidate(courierJobsProvider)
+          ..invalidate(courierEarningsProvider);
       case DeliveryPushType.interest:
-        // A vendor's notification; nothing on the rider's side changes.
+      case DeliveryPushType.confirmRequest:
+        // A vendor's or a buyer's notification; nothing on the rider's side
+        // changes.
         break;
     }
   }

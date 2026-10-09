@@ -107,6 +107,18 @@
                 <data android:pathPrefix="/brands/"/>
                 <data android:pathPrefix="/creator-profile/"/>
             </intent-filter>
+            <!-- A rider's proof-of-delivery QR
+                 (https://stylemint.voyageritnepal.com/dc/{token}) scanned with
+                 the phone's own camera opens "Confirm delivery" in-app
+                 (main.dart routes it to /dc/:token). Same assetlinks.json. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"/>
+                <data android:host="stylemint.voyageritnepal.com"/>
+                <data android:pathPrefix="/dc/"/>
+            </intent-filter>
         </activity>
         <!-- No Maps SDK key: the drag-to-correct pin on the add-address
              screen renders OpenStreetMap raster tiles through flutter_map,

@@ -7,10 +7,28 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// Focused parcel-label scanner used by verified receive. It returns the raw
 /// QR/barcode value to the order screen; the backend remains the authority
 /// that decides whether it matches the package tracking number.
+///
+/// Also the camera for "Confirm delivery", where the code is the rider's
+/// proof-of-delivery QR on their phone rather than a label — hence [title],
+/// [prompt] and [squareFrame].
 class ParcelCodeScanScreen extends StatefulWidget {
-  const ParcelCodeScanScreen({required this.expectedTrackingNumber, super.key});
+  const ParcelCodeScanScreen({
+    required this.expectedTrackingNumber,
+    this.title = 'Scan parcel label',
+    this.prompt,
+    this.squareFrame = false,
+    super.key,
+  });
 
   final String expectedTrackingNumber;
+  final String title;
+
+  /// The line under the viewfinder; a parcel-label instruction when null.
+  final String? prompt;
+
+  /// A square viewfinder for a QR on a screen, instead of the wide one that
+  /// suits a barcode label.
+  final bool squareFrame;
 
   @override
   State<ParcelCodeScanScreen> createState() => _ParcelCodeScanScreenState();
@@ -51,7 +69,7 @@ class _ParcelCodeScanScreenState extends State<ParcelCodeScanScreen> {
     appBar: AppBar(
       backgroundColor: Colors.black,
       foregroundColor: Colors.white,
-      title: const Text('Scan parcel label'),
+      title: Text(widget.title),
     ),
     body: Stack(
       fit: StackFit.expand,
@@ -59,8 +77,8 @@ class _ParcelCodeScanScreenState extends State<ParcelCodeScanScreen> {
         MobileScanner(controller: _controller, onDetect: _onDetect),
         Center(
           child: Container(
-            width: 270,
-            height: 180,
+            width: widget.squareFrame ? 250 : 270,
+            height: widget.squareFrame ? 250 : 180,
             decoration: BoxDecoration(
               border: Border.all(color: DesignTokens.primaryGreen, width: 3),
               borderRadius: BorderRadius.circular(24),
@@ -81,7 +99,9 @@ class _ParcelCodeScanScreenState extends State<ParcelCodeScanScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Scan the QR or barcode on parcel ${widget.expectedTrackingNumber}.',
+                  widget.prompt ??
+                      'Scan the QR or barcode on parcel '
+                          '${widget.expectedTrackingNumber}.',
                   textAlign: TextAlign.center,
                   style: DesignTokens.mediumSemibold.copyWith(
                     color: Colors.white,

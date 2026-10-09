@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_delivery.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -52,7 +53,13 @@ class OrderDetail {
     required this.canCancel,
     required this.canReturn,
     this.submittedReturnId,
+    this.delivery,
   });
+
+  /// The StyleMint-rider delivery behind this order, when there is one. Its
+  /// [OrderDelivery.awaitingConfirmation] puts "Your parcel is at the door —
+  /// confirm delivery" at the top of the order screen.
+  final OrderDelivery? delivery;
 
   /// Set once a return is submitted from this screen: the new return's id,
   /// or an empty string when the backend response didn't carry one.
@@ -113,6 +120,7 @@ class OrderDetail {
     return OrderDetail(
       receiverName: receiverName,
       receiverPhone: receiverPhone,
+      delivery: delivery,
       submittedReturnId: submittedReturnId ?? this.submittedReturnId,
       id: id ?? this.id,
       orderNumber: orderNumber ?? this.orderNumber,

@@ -4,7 +4,9 @@ import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
+import 'package:stylemint_mobile_frontend/features/courier/data/courier_job_mapper.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_job.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/repositories/courier_repository.dart';
@@ -325,6 +327,52 @@ class CourierRepositoryImpl implements CourierRepository {
     );
     return unit;
   });
+
+  // ── Jobs ───────────────────────────────────────────────────────────────
+
+  @override
+  Future<Either<NetworkExceptions, List<CourierJob>>> listJobs() =>
+      _guard(() async {
+        final rows = await remoteDataSource.listJobs();
+        return rows.map(CourierJobMapper.job).toList(growable: false);
+      });
+
+  @override
+  Future<Either<NetworkExceptions, CourierJob>> getJob(String hopId) =>
+      _guard(
+        () async => CourierJobMapper.job(await remoteDataSource.getJob(hopId)),
+      );
+
+  @override
+  Future<Either<NetworkExceptions, CourierJob>> markJobPickedUp(
+    String hopId,
+  ) => _guard(
+    () async => CourierJobMapper.job(
+      await remoteDataSource.markJobPickedUp(
+        hopId: hopId,
+        idempotencyKey: _uuid.v4(),
+      ),
+    ),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryProof>> completeJob(
+    String hopId,
+  ) => _guard(
+    () async => CourierJobMapper.proof(
+      await remoteDataSource.completeJob(
+        hopId: hopId,
+        idempotencyKey: _uuid.v4(),
+      ),
+    ),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryProof>> getProof(String hopId) =>
+      _guard(
+        () async =>
+            CourierJobMapper.proof(await remoteDataSource.getProof(hopId)),
+      );
 
   // ── Plumbing ───────────────────────────────────────────────────────────
 

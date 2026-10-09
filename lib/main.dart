@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
 import 'package:stylemint_mobile_frontend/routes/deep_links.dart';
 import 'package:stylemint_mobile_frontend/theme/font_licenses.dart';
+import 'core/auth/jwt_roles.dart';
 import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
 import 'app.dart';
@@ -21,6 +22,7 @@ import 'core/device/device_push_registration.dart';
 import 'core/device/push_notification_service.dart';
 import 'core/storage/token_storage.dart';
 import 'features/messaging/shared/providers.dart';
+import 'features/vendor/orders/presentation/notifiers/vendor_delivery_refresh.dart';
 import 'features/creator/social_connect/shared/providers.dart';
 import 'features/customer/cart/domain/entities/basket_scenarios.dart';
 import 'features/customer/cart/domain/entities/cart.dart';
@@ -678,15 +680,44 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     final delivery = DeliveryPushEvent.fromData(message.data);
     if (delivery != null) {
       ref.read(deliveryPushBusProvider).publish(delivery);
-      final route = delivery.route;
-      // Through _handleUri rather than straight to the router, so a cold
-      // launch from the notification is deferred until the session is known.
-      if (route != null) _handleUri(Uri.parse('stylemint:/$route'));
+      refreshVendorOrdersOnDelivered(ref, delivery);
+      unawaited(
+        _deliveryRoute(delivery).then((route) {
+          // Through _handleUri rather than straight to the router, so a cold
+          // launch from the notification is deferred until the session is
+          // known.
+          if (route != null && mounted) {
+            _handleUri(Uri.parse('stylemint:/$route'));
+          }
+        }),
+      );
       return;
     }
     final uri = pushDestinationUri(message.data);
     if (uri == null) return;
     _handleUri(uri);
+  }
+
+  /// Where a tapped delivery notification goes.
+  ///
+  /// Only `delivery.delivered` needs thought: the vendor and the rider get it
+  /// with the same payload. Whichever side of the app is on screen decides;
+  /// failing that, an account with the vendor role is taken to the order.
+  Future<String?> _deliveryRoute(DeliveryPushEvent event) async {
+    if (event.type != DeliveryPushType.delivered) return event.route;
+    final location = ref
+        .read(appRouterProvider)
+        .routerDelegate
+        .currentConfiguration
+        .uri
+        .path;
+    if (location.startsWith(RouteNames.courier)) {
+      return event.routeFor(vendor: false);
+    }
+    if (location.startsWith('/vendor')) return event.routeFor(vendor: true);
+    final token = await ref.read(tokenStorageProvider).accessToken;
+    final roles = rolesFromJwt(token);
+    return event.routeFor(vendor: roles.contains('vendor'));
   }
 
   /// A notification that arrived while the app is open.
@@ -696,12 +727,14 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   /// once via [DeliveryPushBus], and anything not on screen gets an in-app
   /// banner with a way to it. FCM draws nothing itself in the foreground on
   /// Android, so without this the rider would learn of it on the next poll.
-  void _handleForegroundPush(RemoteMessage message) {
+  Future<void> _handleForegroundPush(RemoteMessage message) async {
     final delivery = DeliveryPushEvent.fromData(message.data);
     if (delivery == null) return;
     ref.read(deliveryPushBusProvider).publish(delivery);
+    refreshVendorOrdersOnDelivered(ref, delivery);
 
-    final route = delivery.route;
+    final route = await _deliveryRoute(delivery);
+    if (!mounted) return;
     final router = ref.read(appRouterProvider);
     final navigatorContext =
         router.routerDelegate.navigatorKey.currentContext;
@@ -717,6 +750,9 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
           DeliveryPushType.interest => 'A rider is ready to take your parcel',
           DeliveryPushType.selected => "You've got the delivery",
           DeliveryPushType.notSelected => 'Another rider was chosen',
+          DeliveryPushType.confirmRequest =>
+            'Your parcel is at the door — confirm delivery',
+          DeliveryPushType.delivered => 'Delivered — the recipient confirmed',
         };
     messenger
       ..hideCurrentSnackBar()

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/notifiers/courier_actions_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_job_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_action_feedback.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_offer_card.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
@@ -62,6 +63,9 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen>
   final Set<String> _faded = {};
 
   static const _notSelectedLingerSeconds = 4;
+
+  /// A lookup for "Open the map" is in flight; a second tap waits for it.
+  bool _openingJob = false;
 
   @override
   void initState() {
@@ -147,6 +151,8 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen>
       case DeliveryPushType.notSelected:
         _refresh();
       case DeliveryPushType.interest:
+      case DeliveryPushType.confirmRequest:
+      case DeliveryPushType.delivered:
         break;
     }
   }
@@ -197,6 +203,41 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen>
       return;
     }
     GoRouter.maybeOf(context)?.go(RouteNames.courier);
+  }
+
+  /// "Open the map" on a chosen offer: straight to that job on the in-app
+  /// map. An offer carries the package, not the hop, so the hop is looked up
+  /// among the rider's jobs; until the job row exists (it is written a moment
+  /// after the selection) this falls back to the dashboard, whose map draws
+  /// the same job.
+  Future<void> _openJob(HopOffer offer) async {
+    if (_openingJob) return;
+    _openingJob = true;
+    final result = await ref.read(courierRepositoryProvider).listJobs();
+    _openingJob = false;
+    if (!mounted) return;
+    final job = result
+        .getOrElse((_) => const [])
+        .where((j) => j.packageId == offer.packageId && !j.status.isFinished)
+        .firstOrNull;
+    if (job == null) {
+      _openMap();
+      return;
+    }
+    ref.invalidate(courierHopsProvider);
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      // In place of this screen, so back goes to the dashboard.
+      unawaited(
+        navigator.pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (_) => CourierJobScreen(hopId: job.hopId),
+          ),
+        ),
+      );
+      return;
+    }
+    GoRouter.maybeOf(context)?.go(RouteNames.courierJobPath(job.hopId));
   }
 
   Future<void> _accept(HopOffer offer) async {
@@ -367,7 +408,7 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen>
                     onAccept: () => _accept(offer),
                     onDecline: () => _decline(offer),
                     onWithdraw: () => _withdraw(offer),
-                    onOpenMap: _openMap,
+                    onOpenMap: () => _openJob(offer),
                   );
                   final age = _notSelectedAge[offer.id];
                   if (age == null ||

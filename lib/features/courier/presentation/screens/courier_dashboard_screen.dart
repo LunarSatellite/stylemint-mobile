@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_job.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_device_key_screen.dart';
-import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_hop_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_job_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_offers_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_delivery_push_listener.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_hop_map.dart';
@@ -83,6 +86,13 @@ class CourierDashboardScreen extends ConsumerWidget {
                   hop: activeHop,
                   fill: true,
                   bottomInset: sheetRestHeight,
+                  onOpenJob: activeHop == null
+                      ? null
+                      : () => openCourierJob(
+                          context,
+                          activeHop,
+                          courierProfileId: profile.id,
+                        ),
                 ),
               ),
 
@@ -128,6 +138,7 @@ class CourierDashboardScreen extends ConsumerWidget {
                   onRefresh: () async {
                     ref
                       ..invalidate(courierHopsProvider)
+                      ..invalidate(courierJobsProvider)
                       ..invalidate(courierOffersProvider)
                       ..invalidate(courierCanSignProvider(profile.id))
                       ..invalidate(courierEscrowBalanceProvider(profile.id))
@@ -267,13 +278,13 @@ class _DetailSheet extends StatelessWidget {
                               ),
                               style: DesignTokens.mediumSemibold,
                             ),
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => CourierHopScreen(
-                                  hop: hop,
-                                  courierProfileId: profile.id,
-                                ),
-                              ),
+                            // The job screen: map, parcel details and the
+                            // next step. The signed-handover screen this used
+                            // to open is in its menu.
+                            onTap: () => openCourierJob(
+                              context,
+                              hop,
+                              courierProfileId: profile.id,
                             ),
                           ),
                         ),
@@ -282,11 +293,90 @@ class _DetailSheet extends StatelessWidget {
                 );
               },
             ),
+            const _DeliveredToday(),
           ],
         ),
       ),
     );
   }
+}
+
+/// The last day's finished runs, from `GET /v1/courier/jobs`: proof that a
+/// confirmation landed, and a way back to a job's details (package, payout)
+/// after it left the map. Renders nothing until there is one — or when the
+/// list cannot be read, since it is a record, not something to act on.
+class _DeliveredToday extends ConsumerWidget {
+  const _DeliveredToday();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final delivered =
+        ref
+            .watch(courierJobsProvider)
+            .maybeWhen(data: (jobs) => jobs, orElse: () => const <CourierJob>[])
+            .where((job) => job.status == CourierJobStatus.delivered)
+            .toList(growable: false);
+    if (delivered.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: DesignTokens.s16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Delivered today', style: DesignTokens.h3),
+          const SizedBox(height: DesignTokens.s8),
+          for (final job in delivered)
+            Card(
+              color: DesignTokens.bgAppBody,
+              margin: const EdgeInsets.only(bottom: DesignTokens.s8),
+              child: ListTile(
+                leading: const Icon(
+                  Icons.check_circle_rounded,
+                  color: DesignTokens.primaryGreen,
+                ),
+                title: Text(
+                  job.packageNumber.isEmpty ? 'Parcel' : job.packageNumber,
+                  style: DesignTokens.mediumSemibold,
+                ),
+                subtitle: Text(
+                  job.dropoff.label ?? job.dropoff.addressLine ?? 'Delivered',
+                  style: DesignTokens.tiny,
+                ),
+                trailing: job.payout == null
+                    ? null
+                    : Text(
+                        formatMoney(job.payout!),
+                        style: DesignTokens.mediumSemibold,
+                      ),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => CourierJobScreen(hopId: job.hopId),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pushes the job screen for [hop] over the dashboard, so back returns here.
+void openCourierJob(
+  BuildContext context,
+  DeliveryHop hop, {
+  required String courierProfileId,
+}) {
+  unawaited(
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CourierJobScreen(
+          hopId: hop.id,
+          hop: hop,
+          courierProfileId: courierProfileId,
+        ),
+      ),
+    ),
+  );
 }
 
 class _TierCard extends ConsumerWidget {

@@ -78,11 +78,60 @@ void main() {
       expect(routeOf({'type': 'delivery.interest'}), RouteNames.vendorOrders);
     });
 
-    test('being chosen opens the rider map (the dashboard)', () {
+    test('being chosen opens that job on the in-app map', () {
       expect(
         routeOf({'type': 'delivery.selected', 'hopId': 'h'}),
+        RouteNames.courierJobPath('h'),
+      );
+      expect(
+        RouteNames.courierJobPath('h').startsWith('${RouteNames.courier}/'),
+        isTrue,
+        reason: 'so the job has the dashboard to pop to',
+      );
+    });
+
+    test('being chosen without a hop id opens the dashboard map', () {
+      expect(
+        routeOf({'type': 'delivery.selected', 'packageId': 'p'}),
         RouteNames.courier,
       );
+    });
+
+    test("a confirm request opens the buyer's order", () {
+      final event = DeliveryPushEvent.fromData({
+        'type': 'delivery.confirm_request',
+        'orderId': '3f2b6c1e-0000-4000-8000-000000000001',
+        'subOrderId': 'sub-1',
+      });
+      expect(event?.type, DeliveryPushType.confirmRequest);
+      expect(event?.orderId, '3f2b6c1e-0000-4000-8000-000000000001');
+      expect(event?.route, '/orders/3f2b6c1e-0000-4000-8000-000000000001');
+
+      // An order number, when a server sends one, is used as is.
+      expect(
+        routeOf({
+          'type': 'delivery.confirm_request',
+          'orderId': 'id',
+          'orderNumber': 'NK2026-00015',
+        }),
+        '/orders/NK2026-00015',
+      );
+      expect(
+        routeOf({'type': 'delivery.confirm_request'}),
+        RouteNames.orders,
+      );
+    });
+
+    test('delivered opens the sub-order for a vendor, the map for a rider', () {
+      final event = DeliveryPushEvent.fromData({
+        'type': 'delivery.delivered',
+        'subOrderId': 'sub-42',
+        'hopId': 'hop-1',
+      })!;
+      expect(event.type, DeliveryPushType.delivered);
+      expect(event.hopId, 'hop-1');
+      expect(event.routeFor(vendor: true), '/vendor/orders/sub-42');
+      expect(event.routeFor(vendor: false), RouteNames.courier);
     });
 
     test('not being chosen opens the offers screen', () {

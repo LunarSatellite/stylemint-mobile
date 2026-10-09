@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_job.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 
@@ -177,6 +178,22 @@ abstract class CourierRepository {
     String? notes,
     required bool isFinalDelivery,
   });
+
+  // ── Jobs (in-app map + QR proof of delivery) ───────────────────────────
+
+  /// Active jobs and those completed in the last 24 hours.
+  Future<Either<NetworkExceptions, List<CourierJob>>> listJobs();
+
+  Future<Either<NetworkExceptions, CourierJob>> getJob(String hopId);
+
+  /// The rider has the parcel. Mints its own Idempotency-Key per call — one
+  /// call is one tap.
+  Future<Either<NetworkExceptions, CourierJob>> markJobPickedUp(String hopId);
+
+  /// "Complete ride": starts (or renews) proof of delivery.
+  Future<Either<NetworkExceptions, DeliveryProof>> completeJob(String hopId);
+
+  Future<Either<NetworkExceptions, DeliveryProof>> getProof(String hopId);
 
   /// [failHop] ends the courier's leg. A weather delay is worth recording
   /// without ending anything; a broken seal moves the package to Returning

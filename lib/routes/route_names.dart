@@ -205,6 +205,23 @@ abstract class RouteNames {
   /// The rider's offers. Nested under [courier] so a notification that opens
   /// it still has the dashboard beneath it to go back to.
   static const courierOffers = '/courier/offers';
+
+  /// One job on the in-app map, with the parcel's details and the next
+  /// action. Nested under [courier] for the same reason as [courierOffers].
+  static const courierJob = '/courier/jobs/:hopId';
+
+  /// [courierJob] for [hopId].
+  static String courierJobPath(String hopId) =>
+      '/courier/jobs/${Uri.encodeComponent(hopId)}';
+
+  /// The recipient's side of proof of delivery: the rider's QR is the link
+  /// `https://<StyleMint host>/dc/{token}`, opened here from the scanner or
+  /// as an app link. Signed in only — only the order's buyer can confirm.
+  static const deliveryConfirm = '/dc/:token';
+
+  /// [deliveryConfirm] for [token].
+  static String deliveryConfirmPath(String token) =>
+      '/dc/${Uri.encodeComponent(token)}';
   static const brandDetail = '/creator/partnerships/:partnershipId';
   static const partnershipApply = '/creator/partnerships/:partnershipId/apply';
   static const activePartnerships = '/creator/partnerships/active';

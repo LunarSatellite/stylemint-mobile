@@ -21,7 +21,15 @@ enum DeliveryPushType {
   selected('delivery.selected'),
 
   /// To riders who were interested and not chosen. Carries `offerId`.
-  notSelected('delivery.not_selected');
+  notSelected('delivery.not_selected'),
+
+  /// To the buyer, when the rider taps "Complete ride" at the door. Carries
+  /// `orderId` and `subOrderId`; opens the order with "Confirm delivery".
+  confirmRequest('delivery.confirm_request'),
+
+  /// To the vendor and the rider once the recipient confirmed. Carries
+  /// `subOrderId` and `hopId`.
+  delivered('delivery.delivered');
 
   const DeliveryPushType(this.wire);
 
@@ -47,6 +55,8 @@ class DeliveryPushEvent {
     this.subOrderId,
     this.packageId,
     this.hopId,
+    this.orderId,
+    this.orderNumber,
   });
 
   final DeliveryPushType type;
@@ -54,6 +64,12 @@ class DeliveryPushEvent {
   final String? subOrderId;
   final String? packageId;
   final String? hopId;
+  final String? orderId;
+
+  /// Not in the contract, but preferred when a server sends it: the buyer's
+  /// order screen is addressed by order number, and the id has to be looked
+  /// up first.
+  final String? orderNumber;
 
   /// Null when [data] is not a delivery notification.
   static DeliveryPushEvent? fromData(Map<String, dynamic> data) {
@@ -65,6 +81,8 @@ class DeliveryPushEvent {
       subOrderId: _id(data['subOrderId']),
       packageId: _id(data['packageId']),
       hopId: _id(data['hopId']),
+      orderId: _id(data['orderId']),
+      orderNumber: _id(data['orderNumber']),
     );
   }
 
@@ -73,21 +91,44 @@ class DeliveryPushEvent {
     return raw == null || raw.isEmpty ? null : raw;
   }
 
-  /// Where tapping this notification goes, as a go_router location.
+  /// Where tapping this notification goes, as a go_router location, for a
+  /// rider or a buyer. See [routeFor] for the one type whose landing depends
+  /// on who received it.
+  String? get route => routeFor(vendor: false);
+
+  /// Where tapping this notification goes.
   ///
-  /// Null only for an interest push with no sub-order id: there is no order to
-  /// open, and the vendor's orders list is a better landing than a guess.
-  String? get route => switch (type) {
+  /// [vendor] only matters for `delivery.delivered`, which the vendor and
+  /// the rider both receive with the same payload: the vendor opens the
+  /// sub-order (now Delivered), the rider their dashboard.
+  String? routeFor({required bool vendor}) => switch (type) {
     DeliveryPushType.request => RouteNames.courierOffers,
     DeliveryPushType.notSelected => RouteNames.courierOffers,
-    // The dashboard IS the map: the gate lands a live courier on it, and the
-    // map draws the first unfinished hop — the one this push assigned.
-    DeliveryPushType.selected => RouteNames.courier,
-    DeliveryPushType.interest => switch (subOrderId) {
-      final id? => '/vendor/orders/${Uri.encodeComponent(id)}'
-          '?${RouteNames.partnerSheetQuery}=1',
-      null => RouteNames.vendorOrders,
+    // Straight to the job on the in-app map. Without a hop id, the
+    // dashboard — whose map draws the first unfinished hop, this one.
+    DeliveryPushType.selected => switch (hopId) {
+      final id? => RouteNames.courierJobPath(id),
+      null => RouteNames.courier,
     },
+    DeliveryPushType.interest => _vendorOrder(partnerSheet: true),
+    // The order, whose "Confirm delivery" card is the point of this push.
+    // The order number when sent; the id otherwise, which the order screen
+    // resolves.
+    DeliveryPushType.confirmRequest => switch (orderNumber ?? orderId) {
+      final id? => '/orders/${Uri.encodeComponent(id)}',
+      null => RouteNames.orders,
+    },
+    DeliveryPushType.delivered =>
+      vendor ? _vendorOrder(partnerSheet: false) : RouteNames.courier,
+  };
+
+  /// The vendor's sub-order, or their orders list without an id — a better
+  /// landing than a guess.
+  String _vendorOrder({required bool partnerSheet}) => switch (subOrderId) {
+    final id? =>
+      '/vendor/orders/${Uri.encodeComponent(id)}'
+          '${partnerSheet ? '?${RouteNames.partnerSheetQuery}=1' : ''}',
+    null => RouteNames.vendorOrders,
   };
 }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +19,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/custody_proof_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/confirm_receipt_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_acceptance_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_confirm_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_recovery_offers_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/handover_delegation_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_care_card.dart';
@@ -59,6 +61,8 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
+  StreamSubscription<DeliveryPushEvent>? _deliveryPushes;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +71,42 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           .read(orderDetailNotifierProvider(widget.orderId).notifier)
           .loadOrder(widget.orderId);
     });
+    _deliveryPushes = ref
+        .read(deliveryPushBusProvider)
+        .events
+        .listen(_onDeliveryPush);
+  }
+
+  @override
+  void dispose() {
+    unawaited(_deliveryPushes?.cancel());
+    super.dispose();
+  }
+
+  /// The rider tapped "Complete ride" (the confirm card should appear) or
+  /// the parcel was confirmed elsewhere (it should read Delivered): reload
+  /// in place when the push is about the order on screen, rather than wait
+  /// for a pull-to-refresh.
+  void _onDeliveryPush(DeliveryPushEvent event) {
+    if (event.type != DeliveryPushType.confirmRequest &&
+        event.type != DeliveryPushType.delivered) {
+      return;
+    }
+    final order = ref
+        .read(orderDetailNotifierProvider(widget.orderId))
+        .maybeWhen(loadSuccess: (o) => o, orElse: () => null);
+    if (order == null) return;
+    final subOrderId = event.subOrderId;
+    final ours =
+        event.orderId == order.id ||
+        event.orderNumber == order.orderNumber ||
+        (subOrderId != null &&
+            (order.delivery?.subOrderId == subOrderId ||
+                order.items.any((i) => i.subOrderId == subOrderId)));
+    if (!ours) return;
+    unawaited(
+      refreshOrderDetail(ref, routeOrderId: widget.orderId, order: order),
+    );
   }
 
   @override
@@ -110,6 +150,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             order,
             _OrderDetailBody(
               order: order,
+              routeOrderId: widget.orderId,
               notifier: ref.read(provider.notifier),
               focusDeliveryRecovery: widget.focusDeliveryRecovery,
             ),
@@ -123,6 +164,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             order,
             _OrderDetailBody(
               order: order,
+              routeOrderId: widget.orderId,
               actionPending: true,
               notifier: ref.read(provider.notifier),
               focusDeliveryRecovery: widget.focusDeliveryRecovery,
@@ -147,12 +189,16 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 class _OrderDetailBody extends ConsumerStatefulWidget {
   const _OrderDetailBody({
     required this.order,
+    required this.routeOrderId,
     required this.notifier,
     this.actionPending = false,
     this.focusDeliveryRecovery = false,
   });
 
   final OrderDetail order;
+
+  /// What [orderDetailNotifierProvider] is keyed by, for a reload.
+  final String routeOrderId;
   final OrderDetailNotifier notifier;
   final bool actionPending;
   final bool focusDeliveryRecovery;
@@ -272,6 +318,21 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // A rider is standing at the door showing a QR: the one thing on
+          // this screen that cannot wait, so it goes first. It stands in for
+          // the scan-the-label card below, which would be a second, different
+          // "confirm" for the same parcel.
+          if (DeliveryConfirmCard.isOfferedFor(order)) ...[
+            DeliveryConfirmCard(
+              order: order,
+              onConfirmed: () => refreshOrderDetail(
+                ref,
+                routeOrderId: widget.routeOrderId,
+                order: order,
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s12),
+          ],
           _TrackSummaryCard(
             order: order,
             expanded: _expanded,
@@ -283,7 +344,8 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           // order on any other carrier had no way for the receiver to
           // confirm it arrived. This one talks to Orders and works for
           // every sub-order.
-          if (ConfirmReceiptCard.isOfferedFor(order))
+          if (ConfirmReceiptCard.isOfferedFor(order) &&
+              !DeliveryConfirmCard.isOfferedFor(order))
             ConfirmReceiptCard(order: order),
           if (trackingNumber?.startsWith('SM-D-') == true) ...[
             const SizedBox(height: DesignTokens.s12),

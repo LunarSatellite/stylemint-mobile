@@ -9,7 +9,6 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/data/servic
 import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 const _osmTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const _osmUserAgent = 'app.stylemint.stylemint_mobile_frontend';
@@ -32,11 +31,20 @@ class CourierHopMap extends ConsumerStatefulWidget {
     this.hop,
     this.fill = false,
     this.bottomInset = 0,
+    this.onOpenJob,
     super.key,
   });
 
   /// The active hop, or null when the rider has no parcel.
   final DeliveryHop? hop;
+
+  /// Opens the job screen — the in-app map with the route, the parcel and
+  /// the next action. This used to be "Navigate", a `geo:` hand-off to an
+  /// external maps app, which did nothing on phones with no app registered
+  /// for it. Null hides the button.
+  final VoidCallback? onOpenJob;
+
+  static const openJobKey = ValueKey<String>('courier-hop-map-open-job');
 
   /// Fill the parent instead of occupying a fixed [height] with cards below
   /// it. Use inside a [Stack] that gives the map the whole screen.
@@ -157,7 +165,7 @@ class _CourierHopMapState extends ConsumerState<CourierHopMap> {
                   child: _JobBar(
                     hop: hop,
                     headingToDropoff: _headingToDropoff,
-                    onNavigate: target == null ? null : () => _navigate(target),
+                    onOpenJob: widget.onOpenJob,
                   ),
                 ),
               ),
@@ -187,7 +195,7 @@ class _CourierHopMapState extends ConsumerState<CourierHopMap> {
           _JobBar(
             hop: hop,
             headingToDropoff: _headingToDropoff,
-            onNavigate: target == null ? null : () => _navigate(target),
+            onOpenJob: widget.onOpenJob,
           ),
         ] else ...[
           const SizedBox(height: DesignTokens.s8),
@@ -258,7 +266,7 @@ class _CourierHopMapState extends ConsumerState<CourierHopMap> {
           panBuffer: 0,
           keepBuffer: 1,
           tileDisplay: const TileDisplay.instantaneous(),
-          // Offline or a 4xx must leave the pins and the Navigate button
+          // Offline or a 4xx must leave the pins and the Open job button
           // working over the plain background, not paint an error box.
           errorTileCallback: (_, _, _) {},
         ),
@@ -331,33 +339,6 @@ class _CourierHopMapState extends ConsumerState<CourierHopMap> {
       await service.openAppSettings();
     }
   }
-
-  /// Hands the point to the phone's maps app.
-  ///
-  /// A `geo:` URI is the Android convention and iOS resolves it through Apple
-  /// Maps. Where neither is installed the launch fails, so this reports
-  /// rather than throws — the rider still has the map above.
-  Future<void> _navigate(LatLng to) async {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    final uri = Uri.parse(
-      'geo:${to.latitude},${to.longitude}'
-      '?q=${to.latitude},${to.longitude}',
-    );
-
-    var launched = false;
-    try {
-      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      launched = false;
-    }
-    if (!launched) {
-      messenger?.showSnackBar(
-        const SnackBar(
-          content: Text('No maps app on this phone to open directions in.'),
-        ),
-      );
-    }
-  }
 }
 
 /// The rider's own position. Deliberately a different shape from the job
@@ -385,12 +366,12 @@ class _JobBar extends StatelessWidget {
   const _JobBar({
     required this.hop,
     required this.headingToDropoff,
-    required this.onNavigate,
+    required this.onOpenJob,
   });
 
   final DeliveryHop hop;
   final bool headingToDropoff;
-  final VoidCallback? onNavigate;
+  final VoidCallback? onOpenJob;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -421,11 +402,14 @@ class _JobBar extends StatelessWidget {
           ],
         ),
       ),
-      TextButton.icon(
-        onPressed: onNavigate,
-        icon: const Icon(Icons.navigation_rounded, size: 18),
-        label: const Text('Navigate'),
-      ),
+      // Opens the job on StyleMint's own map, not an external app.
+      if (onOpenJob != null)
+        TextButton.icon(
+          key: CourierHopMap.openJobKey,
+          onPressed: onOpenJob,
+          icon: const Icon(Icons.map_rounded, size: 18),
+          label: const Text('Open job'),
+        ),
     ],
   );
 }

@@ -66,8 +66,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.getOrderDetail(orderId);
-        return right(dto.toDomain());
+        final detail = await remoteDataSource.getOrderDetail(orderId);
+        return right(detail.dto.toDomain(delivery: detail.delivery));
       } catch (e) {
         if (e is DioException) {
           return left(mapDioExceptionToNetworkException(e));

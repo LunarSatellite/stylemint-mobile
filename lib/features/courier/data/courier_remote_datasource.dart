@@ -520,6 +520,59 @@ class CourierRemoteDataSource {
     return ((response as Map)['url'] as String?) ?? '';
   }
 
+  // ── Jobs (delivery-complete contract) ──────────────────────────────────
+
+  /// GET `/v1/courier/jobs` — active jobs plus those completed in the last
+  /// 24 h. Where a hop id is found for a package the rider was just chosen
+  /// for, since an offer carries the package id but not the hop id.
+  Future<List<Map<String, dynamic>>> listJobs() async {
+    final response = await apiClient.get('/v1/courier/jobs');
+    return _mapList(response);
+  }
+
+  /// GET `/v1/courier/jobs/{hopId}` — the job screen's one read.
+  Future<Map<String, dynamic>> getJob(String hopId) async {
+    final response = await apiClient.get(
+      '/v1/courier/jobs/${Uri.encodeComponent(hopId)}',
+    );
+    return (response as Map).cast<String, dynamic>();
+  }
+
+  /// POST `/v1/courier/jobs/{hopId}/picked-up` — the rider has the parcel.
+  /// A no-op server-side when the vendor already recorded the handover.
+  Future<Map<String, dynamic>> markJobPickedUp({
+    required String hopId,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.authPost(
+      '/v1/courier/jobs/${Uri.encodeComponent(hopId)}/picked-up',
+      options: _idempotent(idempotencyKey),
+    );
+    return (response as Map).cast<String, dynamic>();
+  }
+
+  /// POST `/v1/courier/jobs/{hopId}/complete` — starts proof of delivery and
+  /// returns the QR. Calling again returns the same live proof, or a fresh
+  /// one once the old one expired, which is what "New code" relies on.
+  Future<Map<String, dynamic>> completeJob({
+    required String hopId,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.authPost(
+      '/v1/courier/jobs/${Uri.encodeComponent(hopId)}/complete',
+      options: _idempotent(idempotencyKey),
+    );
+    return (response as Map).cast<String, dynamic>();
+  }
+
+  /// GET `/v1/courier/jobs/{hopId}/proof` — polled while the QR is on screen.
+  Future<Map<String, dynamic>> getProof(String hopId) async {
+    final response = await apiClient.get(
+      '/v1/courier/jobs/${Uri.encodeComponent(hopId)}/proof',
+    );
+    return (response as Map).cast<String, dynamic>();
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────
 
   /// Matches the orders datasource: the interceptor reads requiresToken, and
