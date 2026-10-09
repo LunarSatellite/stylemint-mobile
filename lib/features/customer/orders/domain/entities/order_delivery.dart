@@ -1,3 +1,5 @@
+import 'package:stylemint_mobile_frontend/features/rider_ratings/domain/entities/rider_rating.dart';
+
 /// The StyleMint-rider delivery behind a buyer's order, as the order detail
 /// reports it (`delivery` on the order / sub-order DTO).
 ///
@@ -11,6 +13,7 @@ class OrderDelivery {
     required this.awaitingConfirmation,
     this.riderName,
     this.subOrderId,
+    this.riderRating,
   });
 
   /// `SM-D-00000013` — prefilled in the "Enter code" form.
@@ -24,6 +27,10 @@ class OrderDelivery {
 
   /// The sub-order this delivery belongs to, when it came from one.
   final String? subOrderId;
+
+  /// Whether the buyer can rate the rider, and what they gave (rider-rating
+  /// contract). Null from a backend without ratings, which hides the card.
+  final RiderRatingEligibility? riderRating;
 
   String get _normalised => status.toLowerCase().replaceAll(RegExp('[ _-]'), '');
 
@@ -46,6 +53,7 @@ class OrderDelivery {
     awaitingConfirmation: false,
     riderName: riderName,
     subOrderId: subOrderId,
+    riderRating: riderRating,
   );
 }
 

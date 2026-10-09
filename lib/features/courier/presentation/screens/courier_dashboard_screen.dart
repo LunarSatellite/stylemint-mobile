@@ -13,9 +13,11 @@ import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_delivery_push_listener.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_hop_map.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_location_beacon.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_rating_card.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_shift_slider.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_signing_enrolment.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/rider_ratings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -154,7 +156,8 @@ class CourierDashboardScreen extends ConsumerWidget {
                       ..invalidate(courierOffersProvider)
                       ..invalidate(courierCanSignProvider(profile.id))
                       ..invalidate(courierEscrowBalanceProvider(profile.id))
-                      ..invalidate(courierReliabilityProvider(profile.id));
+                      ..invalidate(courierReliabilityProvider(profile.id))
+                      ..invalidate(courierMyRatingProvider);
                   },
                 ),
               ),
@@ -236,6 +239,12 @@ class _DetailSheet extends StatelessWidget {
 
             _TierCard(profile: profile),
             const SizedBox(height: DesignTokens.s16),
+
+            // What buyers and sellers said. Draws nothing — gap included —
+            // until there is a summary, or from a backend without ratings.
+            const CourierRatingCard(
+              margin: EdgeInsets.only(bottom: DesignTokens.s16),
+            ),
 
             _OffersEntry(
               onTap: () => Navigator.of(context).push(

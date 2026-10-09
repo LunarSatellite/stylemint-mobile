@@ -112,6 +112,11 @@ abstract class RouteNames {
   /// recovery offers on open instead of starting at the top of the order.
   static const orderDetailFocusRecovery = 'delivery-recovery';
 
+  /// `?focus=rate-rider` on [orderDetail]: bring "How was your rider?" into
+  /// view — set when the buyer opens the order right after confirming a
+  /// rider's delivery.
+  static const orderDetailFocusRiderRating = 'rate-rider';
+
   /// The buyer's returns and one return. Registered before [orderDetail] so
   /// `returns` is never read as an order number.
   static const myReturns = '/orders/returns';
