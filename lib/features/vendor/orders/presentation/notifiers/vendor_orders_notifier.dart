@@ -73,6 +73,28 @@ class VendorOrdersNotifier extends StateNotifier<OrdersState> {
     );
   }
 
+  /// A live update (push, live event, poll): re-reads the first page under
+  /// the current filter without a loader; a failed re-read keeps the list.
+  /// Before anything has loaded it is an ordinary load.
+  Future<void> refreshSilently() async {
+    final loaded = state.maybeWhen(
+      loadSuccess: (_, _, _, _) => true,
+      orElse: () => false,
+    );
+    if (!loaded) return loadOrders(status: _activeFilter);
+    final filter = _activeFilter;
+    final either = await _repository.getOrders(limit: 20, status: filter);
+    if (!mounted || filter != _activeFilter) return;
+    either.fold((_) {}, (paged) {
+      state = OrdersState.loadSuccess(
+        paged.items,
+        nextCursor: paged.nextCursor,
+        hasMore: paged.hasMore,
+        activeFilter: filter,
+      );
+    });
+  }
+
   Future<void> loadMoreOrders() async {
     state.maybeWhen(
       loadSuccess: (orders, nextCursor, hasMore, activeFilter) async {
@@ -166,6 +188,26 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
       (failure) => OrderDetailState.loadFailure(failure),
       OrderDetailState.loadSuccess,
     );
+  }
+
+  /// A live update: re-reads [orderId] while it is on screen and idle,
+  /// without a loader. Skipped during a seller action (its own result is on
+  /// the way) and when another order is showing; a failed re-read keeps
+  /// what is shown.
+  Future<void> refreshSilently(String orderId) async {
+    final showing = state.maybeWhen(
+      loadSuccess: (order) => order.id,
+      orElse: () => null,
+    );
+    if (showing != orderId) return;
+    final either = await _repository.getOrderDetail(orderId);
+    if (!mounted) return;
+    final still = state.maybeWhen(
+      loadSuccess: (order) => order.id,
+      orElse: () => null,
+    );
+    if (still != orderId) return;
+    either.fold((_) {}, (order) => state = OrderDetailState.loadSuccess(order));
   }
 
   Future<void> updateStatus(VendorOrderStatus newStatus) async {

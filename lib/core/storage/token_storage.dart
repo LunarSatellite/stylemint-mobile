@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -7,6 +9,13 @@ class TokenStorage {
   TokenStorage(this._storage);
 
   final FlutterSecureStorage _storage;
+
+  final StreamController<void> _sessionSaved =
+      StreamController<void>.broadcast();
+
+  /// Fires after every [saveSession]: a sign-in, and every token refresh.
+  /// The live updates connection listens, to reconnect with the new token.
+  Stream<void> get sessionSaved => _sessionSaved.stream;
 
   static const _kAccessToken = 'auth.accessToken';
   static const _kRefreshToken = 'auth.refreshToken';
@@ -33,6 +42,7 @@ class TokenStorage {
       _write(_kAccountId, accountId),
       _write(_kSessionId, sessionId),
     ]);
+    _sessionSaved.add(null);
   }
 
   /// Reads never throw — a secure-storage failure (e.g. Android keystore

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart' show RemoteMessage;
 import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
+import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
+import 'package:stylemint_mobile_frontend/core/live/live_updates_client.dart';
 import 'package:stylemint_mobile_frontend/core/device/push_destination.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -508,6 +510,14 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   StreamSubscription<Uri>? _linkSubscription;
   StreamSubscription<RemoteMessage>? _pushTapSubscription;
   StreamSubscription<RemoteMessage>? _pushForegroundSubscription;
+  StreamSubscription<LiveSignal>? _liveSignalSubscription;
+  StreamSubscription<void>? _tokenSavedSubscription;
+  AppLifecycleListener? _lifecycle;
+  bool _signedIn = false;
+
+  /// Vendor refreshes from a burst of live signals, coalesced (~300 ms).
+  Timer? _vendorRefreshDebounce;
+  LiveSignal? _pendingVendorSignal;
 
   /// A deep link that arrived while the session was still bootstrapping
   /// (`AuthSessionState.unknown`). The router's redirect bounces every
@@ -522,6 +532,21 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     _appLinks = AppLinks();
     _listenDeepLinks();
     _listenPushTaps();
+    // Vendor order views are app-wide providers, refreshed here for every
+    // live signal (push, live event, reconnect) about a vendor's orders.
+    _liveSignalSubscription = ref
+        .read(liveRefreshBusProvider)
+        .signals
+        .listen(_onLiveSignalForVendor);
+    // Live order/delivery updates (SignalR) only while signed in and in the
+    // foreground; a new access token reconnects with it.
+    _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
+    _tokenSavedSubscription = ref
+        .read(tokenStorageProvider)
+        .sessionSaved
+        .listen(
+          (_) => unawaited(ref.read(liveUpdatesClientProvider).tokenChanged()),
+        );
     // Replay any deferred deep link as soon as the session leaves `unknown`.
     ref.listenManual<AuthSessionState>(sessionControllerProvider, (_, next) {
       final stillUnknown = next.maybeWhen(
@@ -565,7 +590,50 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     _linkSubscription?.cancel();
     _pushTapSubscription?.cancel();
     _pushForegroundSubscription?.cancel();
+    _liveSignalSubscription?.cancel();
+    _tokenSavedSubscription?.cancel();
+    _lifecycle?.dispose();
+    _vendorRefreshDebounce?.cancel();
     super.dispose();
+  }
+
+  /// Vendor order views are app-wide providers, refreshed for every live
+  /// signal about a vendor's orders. A burst (several events for one
+  /// handover) is one re-read; signals about different sub-orders in one
+  /// burst re-read whichever one is open.
+  void _onLiveSignalForVendor(LiveSignal signal) {
+    if (!signal.concerns(const {LiveScope.vendorOrders})) return;
+    final pending = _pendingVendorSignal;
+    _pendingVendorSignal =
+        pending == null || pending.subOrderId == signal.subOrderId
+        ? signal
+        : const LiveSignal(
+            type: 'order.updated',
+            scopes: [LiveScope.vendorOrders],
+          );
+    _vendorRefreshDebounce?.cancel();
+    _vendorRefreshDebounce = Timer(const Duration(milliseconds: 300), () {
+      final next = _pendingVendorSignal;
+      _pendingVendorSignal = null;
+      if (next != null && mounted) refreshVendorOrdersLive(ref, next);
+    });
+  }
+
+  /// The live channel follows the app: connected in the foreground while
+  /// signed in, dropped in the background (pushes cover that), reconnected
+  /// on return — which also re-reads whatever is open.
+  void _onLifecycle(AppLifecycleState state) {
+    final live = ref.read(liveUpdatesClientProvider);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        if (_signedIn) unawaited(live.connect());
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        unawaited(live.disconnect());
+      case AppLifecycleState.inactive:
+        break;
+    }
   }
 
   /// Registers this device's push token for the signed-in account, and stops
@@ -596,6 +664,16 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
       authenticated: (_) => true,
       orElse: () => false,
     );
+    _signedIn = isAuthed;
+    final live = ref.read(liveUpdatesClientProvider);
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    final foreground =
+        lifecycle == null || lifecycle == AppLifecycleState.resumed;
+    if (isAuthed && foreground) {
+      unawaited(live.connect());
+    } else {
+      unawaited(live.disconnect());
+    }
     if (!isAuthed) {
       await realtime.stop();
       return;
@@ -678,6 +756,7 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   /// destination still opens the app, which is the sensible default for a
   /// notification that is only telling the user something.
   void _handlePushMessage(RemoteMessage message) {
+    _publishLiveSignal(message);
     // A KYC decision carries a `type` and a status, no link: refresh what
     // depends on it and open the verification screen, which re-reads it.
     final kyc = KycDecidedPush.fromData(message.data);
@@ -691,7 +770,6 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     final delivery = DeliveryPushEvent.fromData(message.data);
     if (delivery != null) {
       ref.read(deliveryPushBusProvider).publish(delivery);
-      refreshVendorOrdersOnDelivered(ref, delivery);
       unawaited(
         _deliveryRoute(delivery).then((route) {
           // Through _handleUri rather than straight to the router, so a cold
@@ -762,6 +840,13 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     return event.routeFor(vendor: roles.contains('vendor'));
   }
 
+  /// Hands an order/delivery push to [LiveRefreshBus]: the open buyer,
+  /// vendor and rider screens re-read silently. Anything else is ignored.
+  void _publishLiveSignal(RemoteMessage message) {
+    final signal = LiveSignal.fromPushData(message.data);
+    if (signal != null) ref.read(liveRefreshBusProvider).publish(signal);
+  }
+
   /// A notification that arrived while the app is open.
   ///
   /// Delivery ones are time-critical — a request is open for minutes, and a
@@ -770,6 +855,9 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   /// banner with a way to it. FCM draws nothing itself in the foreground on
   /// Android, so without this the rider would learn of it on the next poll.
   Future<void> _handleForegroundPush(RemoteMessage message) async {
+    // Every order/delivery push — data-only or not, delivery.* or order.* —
+    // re-reads the order, job and offer screens on display at once.
+    _publishLiveSignal(message);
     final kyc = KycDecidedPush.fromData(message.data);
     if (kyc != null) {
       _refreshAfterKycDecision();
@@ -784,7 +872,6 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     final delivery = DeliveryPushEvent.fromData(message.data);
     if (delivery == null) return;
     ref.read(deliveryPushBusProvider).publish(delivery);
-    refreshVendorOrdersOnDelivered(ref, delivery);
 
     final route = await _deliveryRoute(delivery);
     if (!mounted) return;

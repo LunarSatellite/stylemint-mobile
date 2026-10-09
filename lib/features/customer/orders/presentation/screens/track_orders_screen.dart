@@ -9,7 +9,9 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/buy_it_again_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -169,7 +171,13 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
           ),
         ],
       ),
-      body: SafeArea(
+      // Live: a push or live event about any of the buyer's orders re-reads
+      // the list in place, so a delivered order stops reading "In transit".
+      body: LiveRefresh(
+        scopes: const {LiveScope.buyerOrders},
+        onRefresh: () =>
+            ref.read(trackOrdersNotifierProvider.notifier).refreshSilently(),
+        child: SafeArea(
         child: orderState.when(
           initial: () => const _Loader(),
           loadInProgress: () => const _Loader(),
@@ -244,6 +252,7 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
             );
           },
         ),
+      ),
       ),
     );
   }

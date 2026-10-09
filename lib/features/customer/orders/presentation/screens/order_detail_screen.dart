@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
+import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -58,11 +59,24 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
+
+  /// How often an open order is re-read while it is still moving: every
+  /// 5 s while the rider waits at the door for the buyer's confirmation,
+  /// 10 s otherwise, and not at all once it is delivered or cancelled.
+  static Duration? pollIntervalFor(OrderDetail? order) {
+    if (order == null) return null;
+    if (order.status == OrderTrackStatus.delivered ||
+        order.status == OrderTrackStatus.cancelled) {
+      return null;
+    }
+    if (DeliveryConfirmCard.isOfferedFor(order)) {
+      return const Duration(seconds: 5);
+    }
+    return const Duration(seconds: 10);
+  }
 }
 
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
-  StreamSubscription<DeliveryPushEvent>? _deliveryPushes;
-
   @override
   void initState() {
     super.initState();
@@ -71,48 +85,41 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           .read(orderDetailNotifierProvider(widget.orderId).notifier)
           .loadOrder(widget.orderId);
     });
-    _deliveryPushes = ref
-        .read(deliveryPushBusProvider)
-        .events
-        .listen(_onDeliveryPush);
   }
 
-  @override
-  void dispose() {
-    unawaited(_deliveryPushes?.cancel());
-    super.dispose();
-  }
+  OrderDetail? get _shownOrder => ref
+      .read(orderDetailNotifierProvider(widget.orderId))
+      .maybeWhen(loadSuccess: (o) => o, orElse: () => null);
 
-  /// The rider tapped "Complete ride" (the confirm card should appear) or
-  /// the parcel was confirmed elsewhere (it should read Delivered): reload
-  /// in place when the push is about the order on screen, rather than wait
-  /// for a pull-to-refresh.
-  void _onDeliveryPush(DeliveryPushEvent event) {
-    if (event.type != DeliveryPushType.confirmRequest &&
-        event.type != DeliveryPushType.delivered) {
-      return;
-    }
-    final order = ref
-        .read(orderDetailNotifierProvider(widget.orderId))
-        .maybeWhen(loadSuccess: (o) => o, orElse: () => null);
-    if (order == null) return;
-    final subOrderId = event.subOrderId;
-    final ours =
-        event.orderId == order.id ||
-        event.orderNumber == order.orderNumber ||
-        (subOrderId != null &&
-            (order.delivery?.subOrderId == subOrderId ||
-                order.items.any((i) => i.subOrderId == subOrderId)));
-    if (!ours) return;
-    unawaited(
-      refreshOrderDetail(ref, routeOrderId: widget.orderId, order: order),
+  /// A live signal (push, SignalR event, reconnect) is about this order when
+  /// it names it, one of its sub-orders, or nothing at all.
+  bool _isAboutThisOrder(LiveSignal signal) {
+    final order = _shownOrder;
+    if (order == null) return false;
+    return signal.mayConcernOrder(
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      subOrderIds: [
+        ?order.delivery?.subOrderId,
+        for (final item in order.items)
+          if (item.subOrderId.isNotEmpty) item.subOrderId,
+      ],
     );
+  }
+
+  /// Silent: only while an order is on screen and no action is running, so
+  /// a poll never swaps the page for a loader or races a cancel/return.
+  Future<void> _liveRefresh() async {
+    final order = _shownOrder;
+    if (order == null) return;
+    await refreshOrderDetail(ref, routeOrderId: widget.orderId, order: order);
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = orderDetailNotifierProvider(widget.orderId);
     final state = ref.watch(provider);
+    final shown = state.maybeWhen(loadSuccess: (o) => o, orElse: () => null);
 
     ref.listen<OrderDetailState>(provider, (previous, next) {
       next.maybeWhen(
@@ -143,7 +150,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       // system gesture/nav bar was clipping the last action row and the
       // "Cancel Order" button.
       body: SafeArea(
-        child: state.when(
+        // Updates by itself: on a push or live event about this order, and
+        // by polling while it is still on its way.
+        child: LiveRefresh(
+          scopes: const {LiveScope.buyerOrders},
+          interval: OrderDetailScreen.pollIntervalFor(shown),
+          accepts: _isAboutThisOrder,
+          onRefresh: _liveRefresh,
+          child: state.when(
           initial: () => _loader(),
           loadInProgress: () => _loader(),
           loadSuccess: (order) => _refreshable(
@@ -171,6 +185,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             ),
           ),
           actionFailure: (failure) => _loader(),
+          ),
         ),
       ),
     );
@@ -331,6 +346,14 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
               onConfirmed: () {
                 // Delivered on screen now; the re-read only catches up.
                 widget.notifier.markDeliveryConfirmed();
+                // And in My Orders, when that list is alive underneath.
+                if (ref.exists(trackOrdersNotifierProvider)) {
+                  unawaited(
+                    ref
+                        .read(trackOrdersNotifierProvider.notifier)
+                        .refreshSilently(),
+                  );
+                }
                 return refreshOrderDetail(
                   ref,
                   routeOrderId: widget.routeOrderId,

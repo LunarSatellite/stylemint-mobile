@@ -43,6 +43,23 @@ class TrackOrdersNotifier extends StateNotifier<TrackOrdersState> {
       TrackOrdersState.loadSuccess,
     );
   }
+
+  /// A live update: re-reads the first page without a loader, and keeps the
+  /// list on screen when the re-read fails. Before anything has loaded it is
+  /// an ordinary load.
+  Future<void> refreshSilently({int limit = 20}) async {
+    final loaded = state.maybeWhen(
+      loadSuccess: (_) => true,
+      orElse: () => false,
+    );
+    if (!loaded) return fetchOrders(limit: limit);
+    final either = await _repository.getTrackedOrders(limit: limit);
+    if (!mounted) return;
+    either.fold(
+      (_) {},
+      (orders) => state = TrackOrdersState.loadSuccess(orders),
+    );
+  }
 }
 
 sealed class ReplenishmentPreferenceState {

@@ -16,6 +16,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/wi
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_step_sheets.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -37,6 +38,14 @@ class VendorOrderDetailScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<VendorOrderDetailScreen> createState() =>
       _VendorOrderDetailScreenState();
+
+  /// Every 10 s while the parcel is shipped or handed to a rider (on its
+  /// way to the buyer, who may confirm at any moment); not otherwise — the
+  /// vendor's own steps re-read on their own.
+  static Duration? pollIntervalFor(VendorOrder? order) =>
+      order != null && order.status.isInTransit
+      ? const Duration(seconds: 10)
+      : null;
 }
 
 class _VendorOrderDetailScreenState
@@ -260,7 +269,24 @@ class _VendorOrderDetailScreenState
       );
     });
 
-    return Scaffold(
+    final shown = state.maybeWhen(
+      loadSuccess: (order) => order,
+      orElse: () => null,
+    );
+    // Updates by itself while the parcel is with the carrier or rider:
+    // live signals re-read it app-wide (refreshVendorOrdersLive), and this
+    // polls as the backstop until it is delivered.
+    return LiveRefresh(
+      scopes: const {},
+      interval: VendorOrderDetailScreen.pollIntervalFor(shown),
+      onRefresh: () async {
+        final id = shown?.id;
+        if (id == null) return;
+        await ref
+            .read(vendorOrderDetailNotifierProvider.notifier)
+            .refreshSilently(id);
+      },
+      child: Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
@@ -296,6 +322,7 @@ class _VendorOrderDetailScreenState
         loadSuccess: (order) => _buildBody(order, actionInProgress: false),
         actionInProgress: (order) => _buildBody(order, actionInProgress: true),
         actionFailure: (order, _) => _buildBody(order, actionInProgress: false),
+      ),
       ),
     );
   }

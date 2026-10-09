@@ -17,6 +17,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/provider
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_menu_button.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -142,7 +143,15 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
         .toList(growable: false);
     final canBulkAccept = toShip.any((o) => o.canAccept);
 
-    return RootBackGuard(
+    // Updates by itself while the Orders tab is in view: a live signal
+    // re-reads the list app-wide (see refreshVendorOrdersLive), and this
+    // polls every 15 s as the backstop.
+    return LiveRefresh(
+      scopes: const {},
+      interval: const Duration(seconds: 15),
+      onRefresh: () =>
+          ref.read(vendorOrdersNotifierProvider.notifier).refreshSilently(),
+      child: RootBackGuard(
       fallback: RouteNames.vendorHome,
       child: Scaffold(
         backgroundColor: DesignTokens.bgAppFoundation,
@@ -323,6 +332,7 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
                   if (i == 3) context.push(RouteNames.vendorProfile);
                 },
               ),
+      ),
       ),
     );
   }

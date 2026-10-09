@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
+import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/notifiers/courier_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_job_screen.dart';
@@ -45,6 +46,7 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen>
   Timer? _ticker;
   Timer? _poll;
   StreamSubscription<DeliveryPushEvent>? _pushSubscription;
+  StreamSubscription<LiveSignal>? _liveSubscription;
   bool _foreground = true;
 
   /// The last interest state seen per offer, to tell a fresh "Selected" — the
@@ -89,6 +91,14 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen>
         .read(deliveryPushBusProvider)
         .events
         .listen(_onPush);
+    // The live channel: a changed offer list (`delivery.offer`), or a
+    // reconnect after which anything may have changed. Pushes keep coming
+    // through [_onPush].
+    _liveSubscription = ref.read(liveRefreshBusProvider).signals.listen((s) {
+      if (s.type == 'delivery.offer' || s.type == LiveSignal.reconnectedType) {
+        _refresh();
+      }
+    });
   }
 
   @override
@@ -97,6 +107,7 @@ class _CourierOffersScreenState extends ConsumerState<CourierOffersScreen>
     _ticker?.cancel();
     _poll?.cancel();
     unawaited(_pushSubscription?.cancel());
+    unawaited(_liveSubscription?.cancel());
     super.dispose();
   }
 

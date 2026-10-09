@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_job.dart';
@@ -12,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_job_map.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -49,13 +51,32 @@ class CourierJobScreen extends ConsumerWidget {
   /// package number, the status and the action, with the map above.
   static const double _sheetRest = 0.42;
 
+  /// Polled every 10 s until delivered or cancelled — the recipient's
+  /// confirmation, or a vendor's handover, can land at any moment.
+  static Duration? pollIntervalFor(CourierJob? job) =>
+      job == null || job.status.isFinished
+      ? null
+      : const Duration(seconds: 10);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final job = ref.watch(courierJobProvider(hopId));
     final hop = this.hop;
     final profileId = courierProfileId;
 
-    return Scaffold(
+    // Updates by itself until the job is finished: a push or live event
+    // about this hop re-reads it, and it is polled every 10 s as the
+    // backstop. The re-read is silent (the map and sheet stay).
+    final current = job.value;
+    return LiveRefresh(
+      scopes: const {LiveScope.courierJobs},
+      interval: CourierJobScreen.pollIntervalFor(current),
+      accepts: (signal) => signal.hopId == null || signal.hopId == hopId,
+      onRefresh: () async {
+        ref.invalidate(courierJobProvider(hopId));
+        await ref.read(courierJobProvider(hopId).future);
+      },
+      child: Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -121,6 +142,7 @@ class CourierJobScreen extends ConsumerWidget {
             );
           },
         ),
+      ),
       ),
     );
   }

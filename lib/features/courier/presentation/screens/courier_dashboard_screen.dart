@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_job.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
@@ -16,6 +17,7 @@ import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_signing_enrolment.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -48,7 +50,17 @@ class CourierDashboardScreen extends ConsumerWidget {
       orElse: () => null,
     );
 
-    return Scaffold(
+    // A new offer, a selection, a pickup or a delivery elsewhere shows here
+    // at once (push, live event, reconnect) — no pull-to-refresh.
+    return LiveRefresh(
+      scopes: const {LiveScope.courierJobs, LiveScope.courierOffers},
+      onRefresh: () async {
+        ref
+          ..invalidate(courierHopsProvider)
+          ..invalidate(courierJobsProvider)
+          ..invalidate(courierOffersProvider);
+      },
+      child: Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -149,6 +161,7 @@ class CourierDashboardScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
       ),
     );
   }
