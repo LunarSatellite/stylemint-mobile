@@ -568,7 +568,11 @@ void main() {
       tester,
     ) async {
       stubDetail(_detail());
-      stubAdd(left(const NetworkExceptions.server('Only 0 left in stock')));
+      // The message is arbitrary — the test is that the server's reason
+      // reaches the shopper — so it deliberately avoids "only N left" /
+      // "left in stock". The honest-signals guard scans test/ as well as lib/,
+      // and a test asserting that copy is a test asserting a shopper sees it.
+      stubAdd(left(const NetworkExceptions.server('That size just sold out')));
       await pumpRail(
         tester,
         _reel(products: const [_taggedTote]),
@@ -578,7 +582,7 @@ void main() {
       await tester.tap(find.byType(ReelRailProductTile));
       await tester.pumpAndSettle();
 
-      expect(find.text('Only 0 left in stock'), findsOneWidget);
+      expect(find.text('That size just sold out'), findsOneWidget);
       expect(find.text('Cart'), findsNothing);
       await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
