@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/data/services/place_search_service.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/address_pin_picker_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -93,9 +94,13 @@ class _OsmPinMapState extends State<_OsmPinMap> {
   void didUpdateWidget(covariant _OsmPinMap oldWidget) {
     super.didUpdateWidget(oldWidget);
     // The owning form is the source of truth: if it re-geocodes, follow it.
-    if (oldWidget.latitude != widget.latitude ||
-        oldWidget.longitude != widget.longitude) {
-      _pin = LatLng(widget.latitude, widget.longitude);
+    // A point the pin already sits on — the owner echoing back the drag or
+    // tap that just happened here — is not a move, so the camera stays put.
+    final next = LatLng(widget.latitude, widget.longitude);
+    if ((oldWidget.latitude != widget.latitude ||
+            oldWidget.longitude != widget.longitude) &&
+        next != _pin) {
+      _pin = next;
       // Move the camera too. Without this a place chosen from search moved
       // the pin to somewhere off-screen while the map stayed where it was,
       // so the map appeared not to react at all.
@@ -235,7 +240,7 @@ class _OsmPinMapState extends State<_OsmPinMap> {
         // behind a tap. RichAttributionWidget only shows an "i" button until
         // it is opened, so its TextSourceAttribution is placed directly —
         // same shipped widget, same "© OpenStreetMap contributors" string,
-        // always on screen. Laid out to fit a 180px-tall map: inset clear of
+        // always on screen. Laid out to fit the inline preview: inset clear of
         // the 8px corner round, small type, and free to wrap rather than
         // overflow at a large text scale.
         Align(
@@ -271,11 +276,13 @@ void _openOsmCopyright() {
   launchUrl(_osmCopyrightUri, mode: LaunchMode.externalApplication).ignore();
 }
 
-/// A small, fixed-height map for putting the pin on the right building,
-/// with a place search above it.
+/// The address form's map: a place search, then a preview of the pin that
+/// opens the full-screen [AddressPinPickerScreen] when tapped.
 ///
-/// Still not a full map UI: search for somewhere, drag the marker or tap a
-/// spot, and the point moves. Nothing else.
+/// The preview itself takes no gestures — a 220px box is too small to put a
+/// pin on a building with a thumb, and a tap that both moved the pin and
+/// opened a screen would be two answers to one question. Search still moves
+/// the pin straight from here.
 ///
 /// [pinPlaced] false means the map is showing a default view and the pin does
 /// not yet stand for anything — the caption says so, and the pin is drawn
@@ -294,6 +301,28 @@ class AddressPinMap extends ConsumerWidget {
   final void Function(double latitude, double longitude) onPinMoved;
   final bool pinPlaced;
 
+  /// Height of the inline preview.
+  static const double previewHeight = 220;
+
+  Future<void> _openPicker(BuildContext context) async {
+    final picked = await AddressPinPickerScreen.open(
+      context,
+      latitude: latitude,
+      longitude: longitude,
+      pinPlaced: pinPlaced,
+    );
+    // Back without confirming keeps the old pin. So does confirming the very
+    // point the form already had: re-sending it would relabel a GPS fix as a
+    // hand-placed pin and drop its accuracy for no move at all.
+    if (picked == null) return;
+    if (pinPlaced &&
+        picked.latitude == latitude &&
+        picked.longitude == longitude) {
+      return;
+    }
+    onPinMoved(picked.latitude, picked.longitude);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final builder = ref.watch(pinMapBuilderProvider);
@@ -308,8 +337,10 @@ class AddressPinMap extends ConsumerWidget {
         const SizedBox(height: DesignTokens.s12),
         Text(
           pinPlaced
-              ? 'Not quite right? Drag the pin onto your building.'
-              : 'Search above, or drag the pin onto your building to set it.',
+              ? 'Not quite right? Tap the map to move the pin onto your '
+                    'building.'
+              : 'Search above, or tap the map to put the pin on your '
+                    'building.',
           style: DesignTokens.smallRegular.copyWith(
             color: DesignTokens.textMuted,
           ),
@@ -319,15 +350,119 @@ class AddressPinMap extends ConsumerWidget {
           borderRadius: BorderRadius.circular(DesignTokens.s8),
           child: SizedBox(
             key: const Key('address_pin_map'),
-            height: 180,
+            height: previewHeight,
             width: double.infinity,
-            child: Opacity(
-              opacity: pinPlaced ? 1 : 0.75,
-              child: builder(context, latitude, longitude, onPinMoved),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                IgnorePointer(
+                  child: Opacity(
+                    opacity: pinPlaced ? 1 : 0.75,
+                    child: builder(context, latitude, longitude, onPinMoved),
+                  ),
+                ),
+                Semantics(
+                  button: true,
+                  label: 'Open the map full screen to adjust the pin',
+                  excludeSemantics: true,
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                      key: const Key('address_pin_map_open'),
+                      onTap: () => _openPicker(context),
+                    ),
+                  ),
+                ),
+                // Top-left, clear of the OSM credit in the bottom-right.
+                const Positioned(
+                  left: DesignTokens.s8,
+                  top: DesignTokens.s8,
+                  right: DesignTokens.s48,
+                  child: IgnorePointer(
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: _TapToAdjustChip(),
+                    ),
+                  ),
+                ),
+                const Positioned(
+                  right: DesignTokens.s8,
+                  top: DesignTokens.s8,
+                  child: IgnorePointer(child: _ExpandBadge()),
+                ),
+              ],
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// "Tap to adjust pin": says out loud that the preview is a button.
+class _TapToAdjustChip extends StatelessWidget {
+  const _TapToAdjustChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(DesignTokens.s16),
+        border: Border.all(color: DesignTokens.borderDefault),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s12,
+          vertical: DesignTokens.s6,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.touch_app_outlined,
+              size: 16,
+              color: DesignTokens.primaryGreen,
+            ),
+            const SizedBox(width: DesignTokens.s6),
+            Flexible(
+              child: Text(
+                'Tap to adjust pin',
+                key: const Key('address_pin_map_hint'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The expand glyph in the corner, the usual "this opens bigger" mark.
+class _ExpandBadge extends StatelessWidget {
+  const _ExpandBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody.withValues(alpha: 0.9),
+        shape: BoxShape.circle,
+        border: Border.all(color: DesignTokens.borderDefault),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(DesignTokens.s6),
+        child: Icon(
+          Icons.open_in_full,
+          size: 18,
+          color: DesignTokens.textWhite,
+        ),
+      ),
     );
   }
 }
@@ -464,11 +599,14 @@ class _AddressPlaceSearchFieldState
         ],
         if (_results.isNotEmpty) ...[
           const SizedBox(height: DesignTokens.s8),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: DesignTokens.surfaceRaised,
+          // A Material, not a coloured DecoratedBox: ListTile paints its ink
+          // on the nearest Material, which a coloured box would cover.
+          Material(
+            color: DesignTokens.surfaceRaised,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(DesignTokens.s8),
-              border: Border.all(color: DesignTokens.borderDefault),
+              side: const BorderSide(color: DesignTokens.borderDefault),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

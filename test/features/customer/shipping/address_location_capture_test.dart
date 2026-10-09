@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/data/services/location_capture_service.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/data/services/place_search_service.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/entities/shipping_address.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/repositories/shipping_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/add_edit_address_screen.dart';
@@ -15,6 +16,8 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/presentatio
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/view_address_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/widgets/address_pin_map.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/providers.dart';
+
+import '../../orders_test_harness.dart';
 
 // ── Fakes ────────────────────────────────────────────────────────────────────
 
@@ -109,6 +112,16 @@ class _FakeShippingRepository implements ShippingRepository {
       right(unit);
 }
 
+/// Place search with a fixed answer and no network.
+class _FakePlaceSearch implements PlaceSearchService {
+  _FakePlaceSearch(this.results);
+
+  final List<PlaceResult> results;
+
+  @override
+  Future<List<PlaceResult>> search(String query) async => results;
+}
+
 /// Stand-in for the OpenStreetMap surface: a button that reports a dragged
 /// pin, so the drag path is testable without fetching a single tile.
 Widget _fakeMap(
@@ -131,11 +144,16 @@ Future<void> _pumpAddEdit(
   required _FakeLocationService location,
   required _FakeShippingRepository repository,
   ShippingAddress? address,
-  // Tall enough that the lazy ListView builds every field.
-  Size surface = const Size(400, 2600),
+  // Tall enough that the lazy ListView builds every field. Null leaves the
+  // view as the test set it (a phone, via setPhoneView).
+  Size? surface = const Size(400, 2600),
+  PlaceSearchService? placeSearch,
+  TransitionBuilder? appBuilder,
 }) async {
-  await tester.binding.setSurfaceSize(surface);
-  addTearDown(() => tester.binding.setSurfaceSize(null));
+  if (surface != null) {
+    await tester.binding.setSurfaceSize(surface);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+  }
 
   final router = GoRouter(
     initialLocation: '/add',
@@ -159,8 +177,10 @@ Future<void> _pumpAddEdit(
         locationCaptureServiceProvider.overrideWithValue(location),
         shippingRepositoryProvider.overrideWithValue(repository),
         pinMapBuilderProvider.overrideWithValue(_fakeMap),
+        if (placeSearch != null)
+          placeSearchServiceProvider.overrideWithValue(placeSearch),
       ],
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(routerConfig: router, builder: appBuilder),
     ),
   );
   await tester.pumpAndSettle();
@@ -174,7 +194,10 @@ bool _sheetIsOpen() =>
 /// a way back in, so this never has to re-capture a location.
 Future<void> _openDetails(WidgetTester tester) async {
   if (_sheetIsOpen()) return;
-  await tester.ensureVisible(find.byKey(const Key('open_details_button')));
+  await tester.ensureVisible(
+    find.byKey(const Key('open_details_button'), skipOffstage: false),
+  );
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('open_details_button')));
   await tester.pumpAndSettle();
 }
@@ -211,6 +234,28 @@ Future<void> _tapSave(WidgetTester tester) async {
       : find.byKey(const Key('address_save_button'));
   await tester.ensureVisible(target);
   await tester.tap(target);
+  await tester.pumpAndSettle();
+}
+
+/// Taps the inline map preview, which opens the full-screen pin picker.
+Future<void> _openPicker(WidgetTester tester) async {
+  // skipOffstage: false — on a short phone the map can sit below the lazy
+  // list's visible area, where the default finder does not look.
+  await tester.ensureVisible(
+    find.byKey(const Key('address_pin_map'), skipOffstage: false),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('address_pin_map_open')));
+  await tester.pumpAndSettle();
+}
+
+/// Opens the full-screen picker, moves the pin there, and confirms it — the
+/// only way the form's pin is moved by hand now.
+Future<void> _movePinInPicker(WidgetTester tester) async {
+  await _openPicker(tester);
+  await tester.tap(find.byKey(const Key('fake_pin_drag')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('address_pin_picker_confirm')));
   await tester.pumpAndSettle();
 }
 
@@ -776,9 +821,7 @@ void main() {
 
       // The map lives on the screen behind the sheet, so step back to it.
       await _dismissDetails(tester);
-      await tester.ensureVisible(find.byKey(const Key('fake_pin_drag')));
-      await tester.tap(find.byKey(const Key('fake_pin_drag')));
-      await tester.pumpAndSettle();
+      await _movePinInPicker(tester);
 
       await _fillReceiver(tester);
       await _tapSave(tester);
@@ -840,7 +883,7 @@ void main() {
     testWidgets('the real pin still drags with no tiles loaded', (
       tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(400, 400));
+      await tester.binding.setSurfaceSize(const Size(400, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       double? movedLat;
@@ -863,14 +906,26 @@ void main() {
       );
       await tester.pump();
 
-      // Drag the marker south-east across the map.
+      // The inline preview takes no drags of its own: it opens the picker.
+      await tester.tap(find.byKey(const Key('address_pin_map_open')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byKey(const Key('address_pin_picker')), findsOneWidget);
+
+      // Drag the marker south-east across the full-screen map.
       await tester.drag(
         find.byKey(const Key('address_pin_marker')),
         const Offset(30, 30),
       );
       await tester.pump();
+      // Nothing reaches the form until the move is confirmed.
+      expect(movedLat, isNull);
 
-      // One callback, at the end of the gesture — not one per frame.
+      await tester.tap(find.byKey(const Key('address_pin_picker_confirm')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      // One callback, on confirm — not one per frame of the drag.
       expect(movedLat, isNotNull);
       expect(movedLng, isNotNull);
       // Dragging right/down moves east and south.
@@ -1053,9 +1108,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await _dismissDetails(tester);
-      await tester.ensureVisible(find.byKey(const Key('fake_pin_drag')));
-      await tester.tap(find.byKey(const Key('fake_pin_drag')));
-      await tester.pumpAndSettle();
+      await _movePinInPicker(tester);
       await _fillReceiver(tester);
       await _tapSave(tester);
 
@@ -1175,9 +1228,7 @@ void main() {
       await tester.pumpAndSettle();
       await _dismissDetails(tester);
 
-      await tester.ensureVisible(find.byKey(const Key('fake_pin_drag')));
-      await tester.tap(find.byKey(const Key('fake_pin_drag')));
-      await tester.pumpAndSettle();
+      await _movePinInPicker(tester);
 
       expect(find.byKey(const Key('address_details_sheet')), findsOneWidget);
       expect(find.text('The pin you placed'), findsOneWidget);
@@ -1787,5 +1838,372 @@ void main() {
     await tester.ensureVisible(find.byKey(const Key('location_note_field')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  // ── The full-screen pin picker ─────────────────────────────────────────────
+
+  group('full-screen pin picker', () {
+    _FakeLocationService gpsAt() => _FakeLocationService(
+      const LocationCaptured(
+        latitude: 27.7172,
+        longitude: 85.324,
+        accuracyMetres: 8,
+      ),
+    );
+
+    /// Captures a GPS point and steps back from the details sheet to the
+    /// form, where the map preview is.
+    Future<void> captureGps(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      await _dismissDetails(tester);
+    }
+
+    bool pickerIsOpen() =>
+        find.byKey(const Key('address_pin_picker')).evaluate().isNotEmpty;
+
+    /// The point the form itself holds, read off its captured-point card.
+    Future<void> expectFormPoint(WidgetTester tester, String coords) async {
+      await tester.ensureVisible(
+        find.byKey(const Key('captured_point_card'), skipOffstage: false),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('captured_point_card')),
+          matching: find.text(coords),
+        ),
+        findsOneWidget,
+      );
+    }
+
+    testWidgets('the inline map says it can be tapped, and is taller', (
+      tester,
+    ) async {
+      setPhoneView(tester);
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: _FakeShippingRepository(),
+        surface: null,
+      );
+
+      expect(find.byKey(const Key('address_pin_map_hint')), findsOneWidget);
+      expect(find.text('Tap to adjust pin'), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_full), findsOneWidget);
+      expect(
+        tester.getSize(find.byKey(const Key('address_pin_map'))).height,
+        AddressPinMap.previewHeight,
+      );
+      expect(AddressPinMap.previewHeight, greaterThan(180));
+    });
+
+    testWidgets('tapping the inline map opens a full-screen route', (
+      tester,
+    ) async {
+      setPhoneView(tester);
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: _FakeShippingRepository(),
+        surface: null,
+      );
+      await captureGps(tester);
+
+      await _openPicker(tester);
+
+      expect(pickerIsOpen(), isTrue);
+      // A pushed page, not a dialog: the form is no longer on screen.
+      expect(find.byKey(const Key('address_save_button')), findsNothing);
+      // The map takes most of a 390 x 844 phone.
+      final mapSize = tester.getSize(
+        find.byKey(const Key('address_pin_picker_map')),
+      );
+      expect(mapSize.width, 390);
+      expect(mapSize.height, greaterThan(400));
+      // It opens on the form's pin.
+      expect(find.text('27.71720, 85.32400'), findsOneWidget);
+      expect(
+        find.byKey(const Key('address_pin_picker_confirm')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('address_pin_picker_back')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('confirm returns the new position and updates the form', (
+      tester,
+    ) async {
+      setPhoneView(tester);
+      final repository = _FakeShippingRepository();
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: repository,
+        surface: null,
+      );
+      await captureGps(tester);
+
+      await _openPicker(tester);
+      await tester.tap(find.byKey(const Key('fake_pin_drag')));
+      await tester.pumpAndSettle();
+      // The bottom panel follows the pin before anything is confirmed.
+      expect(find.text('27.68000, 85.31000'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('address_pin_picker_confirm')));
+      await tester.pumpAndSettle();
+
+      expect(pickerIsOpen(), isFalse);
+      // A confirmed pin is a placed pin: the details sheet comes up for it.
+      expect(find.text('The pin you placed'), findsOneWidget);
+
+      // The form, and so the inline preview, now hold the new point: the
+      // picker reopens on it.
+      await _dismissDetails(tester);
+      await expectFormPoint(tester, '27.68000, 85.31000');
+      await _openPicker(tester);
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const Key('address_pin_picker_coordinates')),
+            )
+            .data,
+        '27.68000, 85.31000',
+      );
+      await tester.tap(find.byKey(const Key('address_pin_picker_back')));
+      await tester.pumpAndSettle();
+
+      await _fillReceiver(tester);
+      await _tapSave(tester);
+      expect(repository.lastWritten!.latitude, 27.68);
+      expect(repository.lastWritten!.longitude, 85.31);
+      expect(
+        repository.lastWritten!.locationCapturedFrom,
+        LocationSource.manualPin,
+      );
+    });
+
+    testWidgets('the back arrow keeps the old pin', (tester) async {
+      setPhoneView(tester);
+      final repository = _FakeShippingRepository();
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: repository,
+        surface: null,
+      );
+      await captureGps(tester);
+
+      await _openPicker(tester);
+      await tester.tap(find.byKey(const Key('fake_pin_drag')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('address_pin_picker_back')));
+      await tester.pumpAndSettle();
+
+      expect(pickerIsOpen(), isFalse);
+      // Nothing moved, so nothing new to ask about.
+      expect(_sheetIsOpen(), isFalse);
+      await expectFormPoint(tester, '27.71720, 85.32400');
+      expect(find.text('27.68000, 85.31000'), findsNothing);
+
+      await _fillReceiver(tester);
+      await _tapSave(tester);
+      expect(repository.lastWritten!.latitude, 27.7172);
+      expect(repository.lastWritten!.longitude, 85.324);
+      expect(
+        repository.lastWritten!.locationCapturedFrom,
+        LocationSource.deviceGps,
+      );
+    });
+
+    testWidgets('the system back gesture keeps the old pin too', (
+      tester,
+    ) async {
+      setPhoneView(tester);
+      final repository = _FakeShippingRepository();
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: repository,
+        surface: null,
+      );
+      await captureGps(tester);
+
+      await _openPicker(tester);
+      await tester.tap(find.byKey(const Key('fake_pin_drag')));
+      await tester.pumpAndSettle();
+      // Android's back button / gesture.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(pickerIsOpen(), isFalse);
+      expect(find.byKey(const Key('address_save_button')), findsOneWidget);
+      await expectFormPoint(tester, '27.71720, 85.32400');
+      expect(find.text('27.68000, 85.31000'), findsNothing);
+    });
+
+    testWidgets('confirming an unmoved GPS pin leaves it a GPS pin', (
+      tester,
+    ) async {
+      setPhoneView(tester);
+      final repository = _FakeShippingRepository();
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: repository,
+        surface: null,
+      );
+      await captureGps(tester);
+
+      await _openPicker(tester);
+      await tester.tap(find.byKey(const Key('address_pin_picker_confirm')));
+      await tester.pumpAndSettle();
+
+      expect(pickerIsOpen(), isFalse);
+      await _fillReceiver(tester);
+      await _tapSave(tester);
+      expect(
+        repository.lastWritten!.locationCapturedFrom,
+        LocationSource.deviceGps,
+      );
+      expect(repository.lastWritten!.locationAccuracyMetres, 8);
+    });
+
+    testWidgets('with no pin yet, Confirm waits for the pin to move', (
+      tester,
+    ) async {
+      setPhoneView(tester);
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: _FakeShippingRepository(),
+        surface: null,
+      );
+
+      await _openPicker(tester);
+      ElevatedButton confirm() => tester.widget<ElevatedButton>(
+        find.byKey(const Key('address_pin_picker_confirm')),
+      );
+      expect(confirm().onPressed, isNull);
+
+      await tester.tap(find.byKey(const Key('fake_pin_drag')));
+      await tester.pumpAndSettle();
+      expect(confirm().onPressed, isNotNull);
+
+      await tester.tap(find.byKey(const Key('address_pin_picker_confirm')));
+      await tester.pumpAndSettle();
+      expect(pickerIsOpen(), isFalse);
+      expect(find.text('The pin you placed'), findsOneWidget);
+    });
+
+    testWidgets('a place picked from search moves the pin and is named', (
+      tester,
+    ) async {
+      setPhoneView(tester);
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: _FakeShippingRepository(),
+        surface: null,
+        placeSearch: _FakePlaceSearch(const [
+          PlaceResult(
+            label: 'Thamel Chowk',
+            detail: 'Kathmandu, Nepal',
+            latitude: 27.7154,
+            longitude: 85.3123,
+          ),
+        ]),
+      );
+      await captureGps(tester);
+      await _openPicker(tester);
+
+      final search = find.descendant(
+        of: find.byKey(const Key('address_pin_picker')),
+        matching: find.byKey(const Key('address_place_search')),
+      );
+      await tester.enterText(search, 'Thamel');
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Thamel Chowk'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('address_pin_picker_place')),
+        findsOneWidget,
+      );
+      expect(find.text('Thamel Chowk, Kathmandu, Nepal'), findsOneWidget);
+      expect(find.text('27.71540, 85.31230'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('address_pin_picker_confirm')));
+      await tester.pumpAndSettle();
+      expect(pickerIsOpen(), isFalse);
+      await _dismissDetails(tester);
+      await expectFormPoint(tester, '27.71540, 85.31230');
+    });
+
+    testWidgets('no overflow at 320dp, 1.3x text, a notch and search results', (
+      tester,
+    ) async {
+      setPhoneView(tester, width: 320);
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: _FakeShippingRepository(),
+        surface: null,
+        placeSearch: _FakePlaceSearch([
+          for (var i = 0; i < 8; i++)
+            PlaceResult(
+              label: 'A rather long place name number $i on a busy road',
+              detail: 'Kathmandu Metropolitan City, Bagmati, Nepal',
+              latitude: 27.71 + i / 1000,
+              longitude: 85.32,
+            ),
+        ]),
+        appBuilder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(1.3),
+            padding: const EdgeInsets.only(top: 44, bottom: 34),
+            viewPadding: const EdgeInsets.only(top: 44, bottom: 34),
+          ),
+          child: child!,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      await captureGps(tester);
+      expect(tester.takeException(), isNull);
+
+      await _openPicker(tester);
+      expect(pickerIsOpen(), isTrue);
+      expect(tester.takeException(), isNull);
+
+      // The Confirm button clears the home indicator.
+      final confirmRect = tester.getRect(
+        find.byKey(const Key('address_pin_picker_confirm')),
+      );
+      expect(confirmRect.bottom, lessThanOrEqualTo(640 - 34));
+      expect(confirmRect.right, lessThanOrEqualTo(320));
+
+      // A long result list stays above the map instead of crushing it.
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const Key('address_pin_picker')),
+          matching: find.byKey(const Key('address_place_search')),
+        ),
+        'place',
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byKey(const Key('address_pin_picker_map'))).height,
+        greaterThan(80),
+      );
+
+      await tester.tap(
+        find.text('A rather long place name number 0 on a busy road'),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
   });
 }
