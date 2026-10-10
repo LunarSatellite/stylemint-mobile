@@ -18,8 +18,8 @@ enum EmiCta {
   /// KYC sent and waiting: "Verification in review".
   inReview,
 
-  /// Verified. Phase 1 has no EMI checkout, so the button says it is coming.
-  comingSoon,
+  /// Verified: the buyer may ask for a plan.
+  eligible,
 }
 
 /// `GET /v1/customer/emi/eligibility`.
@@ -47,7 +47,7 @@ class EmiEligibility {
   /// buyer whose documents are with a reviewer is never sent to upload them
   /// again.
   EmiCta get cta {
-    if (eligible) return EmiCta.comingSoon;
+    if (eligible) return EmiCta.eligible;
     if (reasons.contains(EmiIneligibleReason.kycInReview)) {
       return EmiCta.inReview;
     }

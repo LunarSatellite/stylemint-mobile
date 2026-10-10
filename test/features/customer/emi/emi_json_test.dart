@@ -175,7 +175,7 @@ void main() {
       });
       expect(e.kycStatus, KycStatus.approved);
       expect(e.band, isNull);
-      expect(e.cta, EmiCta.comingSoon);
+      expect(e.cta, EmiCta.eligible);
     });
 
     test('each reason picks its button', () {
