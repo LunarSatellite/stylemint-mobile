@@ -41,8 +41,10 @@ void main() {
 
     test('enums read from names as well as numbers', () {
       expect(PlanKind.fromWire('PayLater'), PlanKind.payLater);
-      expect(AgreementStatus.fromWire('pending_approval'),
-          AgreementStatus.pendingApproval);
+      expect(
+        AgreementStatus.fromWire('pending_approval'),
+        AgreementStatus.pendingApproval,
+      );
       expect(PlanGuarantor.fromWire(2), PlanGuarantor.platform);
       expect(RiskBand.fromWire('2'), RiskBand.b);
     });
@@ -132,19 +134,43 @@ void main() {
   group('messages', () {
     test('every reason the risk engine gives has a sentence', () {
       const codes = [
-        'kyc_required', 'identity_unavailable', 'band_too_low',
-        'buyer_limit_exceeded', 'vendor_exposure_exceeded',
-        'reserve_insufficient', 'prior_default', 'velocity_exceeded',
-        'too_many_active_agreements', 'cooling_off', 'duplicate_identity',
-        'kind_disabled', 'guarantor_disabled', 'amount_below_minimum',
-        'amount_above_maximum', 'manual_review_required',
-        'interest_requires_partner', 'guarantor_not_allowed_for_kind',
+        'kyc_required',
+        'identity_unavailable',
+        'band_too_low',
+        'buyer_limit_exceeded',
+        'vendor_exposure_exceeded',
+        'reserve_insufficient',
+        'prior_default',
+        'velocity_exceeded',
+        'too_many_active_agreements',
+        'cooling_off',
+        'duplicate_identity',
+        'kind_disabled',
+        'guarantor_disabled',
+        'amount_below_minimum',
+        'amount_above_maximum',
+        'manual_review_required',
+        'interest_requires_partner',
+        'guarantor_not_allowed_for_kind',
       ];
       for (final code in codes) {
         final sentence = reasonForBuyer(code);
         expect(sentence, endsWith('.'), reason: code);
         expect(sentence.contains('_'), isFalse, reason: code);
       }
+    });
+
+    test('a reviewer\'s reasons read as sentences, naming no one', () {
+      for (final code in [
+        'insufficient_history',
+        'platform_review_declined',
+        'identity_concern',
+      ]) {
+        final sentence = reasonForBuyer(code);
+        expect(sentence, endsWith('.'), reason: code);
+        expect(sentence.contains('_'), isFalse, reason: code);
+      }
+      expect(reasonForBuyer('insufficient_history'), isNot(contains('seller')));
     });
 
     test('a seller\'s own reason is shown as words', () {

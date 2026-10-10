@@ -78,9 +78,14 @@ String reasonForBuyer(String code) => switch (code) {
   'amount_below_minimum' => 'This item costs less than this plan allows.',
   'amount_above_maximum' => 'This item costs more than this plan allows.',
   'manual_review_required' => 'The seller reviews each request personally.',
-  // A seller's own reasons for declining.
+  // Reasons a seller or a StyleMint reviewer gives for declining. Said
+  // without naming who declined: the same code comes from either.
   'insufficient_history' =>
-    'The seller needs more history with you before offering a plan.',
+    'More purchase history is needed before a plan can be offered.',
+  'platform_review_declined' =>
+    'StyleMint reviewed this request and could not approve it.',
+  'identity_concern' =>
+    'We need to check some of your details. Contact support to continue.',
   'out_of_stock' => 'The seller no longer has this item.',
   'pricing_error' => 'The seller found a mistake in the price.',
   'not_offered_now' => 'The seller is not offering plans right now.',
