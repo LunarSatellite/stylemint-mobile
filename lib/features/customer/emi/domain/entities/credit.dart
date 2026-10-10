@@ -357,6 +357,7 @@ class CreditAgreement {
     required this.closedAt,
     required this.needsActivationPayment,
     required this.instalments,
+    this.orderId,
   });
 
   final String id;
@@ -392,6 +393,15 @@ class CreditAgreement {
   final bool needsActivationPayment;
   final List<PlanInstalment> instalments;
 
+  /// The order checkout created for this plan. A plan starts with the order
+  /// that delivers its item: approved with no order, it goes to checkout;
+  /// approved with one, it is waiting for its first payment.
+  final String? orderId;
+
+  /// Approved, and not yet checked out — the next step is checkout.
+  bool get needsCheckout =>
+      status == AgreementStatus.approved && (orderId?.isEmpty ?? true);
+
   /// The first instalment not yet settled.
   PlanInstalment? get nextDue {
     for (final i in instalments) {
@@ -410,7 +420,7 @@ class CreditAgreement {
 
   /// The payment the buyer should be offered first, if any.
   PaymentPurpose? get primaryPayment => switch (status) {
-    AgreementStatus.approved when needsActivationPayment =>
+    AgreementStatus.approved when needsActivationPayment && !needsCheckout =>
       PaymentPurpose.activation,
     AgreementStatus.active when nextDue != null => PaymentPurpose.instalment,
     _ => null,
@@ -462,6 +472,37 @@ class PlanPaymentStart {
   final Money amount;
 
   /// The provider's page; null when the provider needs no hand-off.
+  final String? redirectUrl;
+}
+
+/// A checkout for one item on an approved plan: the plan's item at the plan's
+/// price. The cart is not involved.
+class PlanCheckout {
+  const PlanCheckout({
+    required this.sessionId,
+    required this.title,
+    required this.price,
+    this.option,
+    this.thumbnailUrl,
+  });
+
+  final String sessionId;
+  final String title;
+  final String? option;
+  final String? thumbnailUrl;
+
+  /// What the order is for — the price the buyer agreed to.
+  final Money price;
+}
+
+/// A placed plan checkout. The order exists; the plan pays for it.
+class PlanCheckoutPlaced {
+  const PlanCheckoutPlaced({required this.orderNumber, this.redirectUrl});
+
+  final String orderNumber;
+
+  /// Where to make the plan's first payment; null when nothing was due up
+  /// front and the plan started at once.
   final String? redirectUrl;
 }
 

@@ -5,6 +5,8 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/providers.dart'
+    show checkoutRemoteDataSourceProvider;
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/data/datasources/credit_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/data/datasources/emi_remote_datasource.dart';
@@ -66,6 +68,7 @@ final creditRepositoryProvider = Provider<CreditRepository>(
   (ref) => CreditRepositoryImpl(
     remote: ref.watch(creditRemoteDataSourceProvider),
     networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+    checkout: ref.watch(checkoutRemoteDataSourceProvider),
   ),
 );
 

@@ -77,6 +77,7 @@ import 'package:stylemint_mobile_frontend/features/creator/support/presentation/
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_gate_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_job_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plan_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_checkout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plans_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/delivery_confirm_screen.dart';
@@ -1047,6 +1048,15 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.paymentPlanDetail,
         builder: (ctx, state) => PaymentPlanDetailScreen(
+          agreementId: state.pathParameters['agreementId']!,
+          args: state.extra is PlanDetailArgs
+              ? state.extra! as PlanDetailArgs
+              : const PlanDetailArgs(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.paymentPlanCheckout,
+        builder: (ctx, state) => PlanCheckoutScreen(
           agreementId: state.pathParameters['agreementId']!,
           args: state.extra is PlanDetailArgs
               ? state.extra! as PlanDetailArgs

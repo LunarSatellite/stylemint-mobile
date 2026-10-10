@@ -164,6 +164,7 @@ CreditAgreement readCreditAgreement(Map<String, dynamic> json) {
     closedAt: readDate(json['closedUtc']),
     needsActivationPayment: readBool(json['needsActivationPayment']),
     instalments: List.unmodifiable(instalments),
+    orderId: readOptionalString(json['orderId']),
   );
 }
 
@@ -214,6 +215,32 @@ PlanPaymentStart readPlanPaymentStart(Map<String, dynamic> json) {
     agreementId: readString(json['agreementId']),
     amount: _money(json['amount'], currency),
     redirectUrl: readOptionalString(payment['redirectUrl']),
+  );
+}
+
+/// A payment-plan checkout session (`POST /v1/checkout/sessions/payment-plan`):
+/// its id and its one item. Refused without either — there is nothing to
+/// check out.
+PlanCheckout readPlanCheckout(Map<String, dynamic> json) {
+  final sessionId = readOptionalString(json['id']);
+  final items = json['items'] is List ? json['items'] as List : const <Object?>[];
+  final item = items.isEmpty || items.first is! Map
+      ? null
+      : Map<String, dynamic>.from(items.first as Map);
+  if (sessionId == null || item == null) {
+    throw const FormatException(
+      'A plan checkout carries a session and its item.',
+    );
+  }
+  return PlanCheckout(
+    sessionId: sessionId,
+    title: readOptionalString(item['productTitleSnapshot']) ?? '',
+    option: readOptionalString(item['variantLabelSnapshot']),
+    thumbnailUrl: readOptionalString(item['thumbnailUrlSnapshot']),
+    price: _money(
+      item['unitPriceAmount'],
+      readOptionalString(item['unitPriceCurrency']) ?? 'NPR',
+    ),
   );
 }
 

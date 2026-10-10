@@ -1,4 +1,6 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart'
+    show ShippingAddress;
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_failure.dart';
 
@@ -33,6 +35,21 @@ abstract class CreditRepository {
   Future<Either<EmiFailure, PlanPaymentStart>> startPayment({
     required String agreementId,
     required PaymentPurpose purpose,
+    required PlanPaymentRail rail,
+    required String idempotencyKey,
+  });
+
+  /// Checks out an approved plan: its one item at its price, the cart untouched.
+  Future<Either<EmiFailure, PlanCheckout>> startCheckout(String agreementId);
+
+  /// The buyer's delivery addresses, for a plan checkout.
+  Future<Either<EmiFailure, List<ShippingAddress>>> deliveryAddresses();
+
+  /// Places a plan checkout: the order the plan pays for, and the plan's first
+  /// payment to make.
+  Future<Either<EmiFailure, PlanCheckoutPlaced>> placeCheckout({
+    required String sessionId,
+    required String addressId,
     required PlanPaymentRail rail,
     required String idempotencyKey,
   });

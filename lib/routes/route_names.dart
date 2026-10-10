@@ -151,6 +151,14 @@ abstract class RouteNames {
   static const paymentPlanDetail = '/payment-plans/:agreementId';
   static String paymentPlanDetailPath(String agreementId) => paymentPlanDetail
       .replaceFirst(':agreementId', Uri.encodeComponent(agreementId));
+
+  /// Checking out an approved plan: its one item, an address, Place.
+  static const paymentPlanCheckout = '/payment-plans/:agreementId/checkout';
+  static String paymentPlanCheckoutPath(String agreementId) =>
+      paymentPlanCheckout.replaceFirst(
+        ':agreementId',
+        Uri.encodeComponent(agreementId),
+      );
   static const paymentMethods = '/payment-methods';
   static const paymentAddCard = '/payment/add-card';
   static const paymentEditCard = '/payment/edit-card';

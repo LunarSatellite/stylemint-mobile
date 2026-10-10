@@ -77,6 +77,52 @@ void main() {
     });
   });
 
+  group('plan checkout', () {
+    // A CheckoutSessionDto as the server serialises a payment-plan session.
+    final session = <String, dynamic>{
+      'id': '5d0c8f7e-2a41-4b39-9f6e-0c1d2e3f4a5b',
+      'accountId': '1f67201b-7d81-4a60-93c2-b8869639dadb',
+      'creditAgreementId': 'f90a6410-3076-4791-84cf-fa5c77f25a4c',
+      'status': 1,
+      'items': [
+        {
+          'lineId': 'a1b2c3d4-0000-4000-8000-000000000001',
+          'productId': '11645bf9-cfca-4df2-88fa-7ebaec17d369',
+          'productVariantId': 'f0a10cdf-15d7-4402-8774-9ac69f7aa421',
+          'quantity': 1,
+          'unitPriceAmount': 60000,
+          'unitPriceCurrency': 'NPR',
+          'lineSubtotalAmount': 60000,
+          'productTitleSnapshot': 'Pashmina overcoat',
+          'variantLabelSnapshot': 'M · Charcoal',
+          'thumbnailUrlSnapshot': 'https://cdn.example.test/p.jpg',
+        },
+      ],
+    };
+
+    test('reads the session and its one item at the plan price', () {
+      final c = readPlanCheckout(session);
+
+      expect(c.sessionId, '5d0c8f7e-2a41-4b39-9f6e-0c1d2e3f4a5b');
+      expect(c.title, 'Pashmina overcoat');
+      expect(c.option, 'M · Charcoal');
+      expect(c.thumbnailUrl, 'https://cdn.example.test/p.jpg');
+      expect(c.price.amount, 60000);
+      expect(c.price.currency, 'NPR');
+    });
+
+    test('a session without an item is refused, not shown empty', () {
+      expect(
+        () => readPlanCheckout({...session, 'items': <Object?>[]}),
+        throwsFormatException,
+      );
+      expect(
+        () => readPlanCheckout({...session, 'id': null}),
+        throwsFormatException,
+      );
+    });
+  });
+
   group('agreement', () {
     test('reads an approved plan awaiting its down payment', () {
       final a = readCreditAgreement(agreementWire());
@@ -89,6 +135,26 @@ void main() {
       expect(a.instalments, hasLength(3));
       expect(a.instalments.first.dueDate, isNull);
     });
+
+    test(
+      'an approved plan with no order goes to checkout, not to a payment',
+      () {
+        final a = readCreditAgreement(agreementWire(checkedOut: false));
+
+        expect(a.orderId, isNull);
+        expect(a.needsCheckout, isTrue);
+        expect(
+          a.primaryPayment,
+          isNull,
+          reason:
+              'the first payment starts the plan, and it starts with its order',
+        );
+
+        final checkedOut = readCreditAgreement(agreementWire());
+        expect(checkedOut.orderId, planOrderId);
+        expect(checkedOut.needsCheckout, isFalse);
+      },
+    );
 
     test('reads an active plan with an overdue payment', () {
       final a = readCreditAgreement(activeAgreementWire());

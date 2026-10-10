@@ -31,6 +31,15 @@ String creditFailureMessage(EmiFailure failure) {
       return 'This plan has changed. Refresh to see where it stands.';
     case 'credit_agreement.not_active':
       return 'This plan is not active, so nothing can be paid on it.';
+    case 'credit_agreement.order_required':
+      return 'Check this plan out first, so there is an order to deliver '
+          'your item.';
+    case 'credit_agreement.order_attached':
+      return 'This plan already has an order waiting for its first payment. '
+          'Pay it from the plan.';
+    case 'checkout.payment_plans_unavailable':
+      return 'Payment plans are not available right now. '
+          'Please try again later.';
     case 'credit_payment.nothing_due':
       return 'Nothing is due on this plan right now.';
     case 'credit_payment.unavailable':

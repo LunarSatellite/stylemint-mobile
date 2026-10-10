@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/credit_messages.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -72,14 +74,30 @@ class _PaymentPlanDetailScreenState
     _refresh();
   }
 
+  /// An approved plan starts with the order that delivers its item, so its
+  /// next step is checkout. Placing there starts the first payment, or the
+  /// plan itself when nothing is due up front.
+  Future<void> _checkOut(CreditAgreement agreement, String? productName) async {
+    final placed = await context.push<PlanCheckoutPlaced>(
+      RouteNames.paymentPlanCheckoutPath(agreement.id),
+      extra: PlanDetailArgs(productName: productName),
+    );
+    if (!mounted || placed == null) return;
+    setState(() => _paymentStarted = placed.redirectUrl != null);
+    _refresh();
+  }
+
   Future<void> _cancel(CreditAgreement agreement) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
         title: const Text('Cancel this plan?'),
-        content: const Text(
-          'Nothing has been paid, so nothing is owed. You can apply again '
-          'later.',
+        content: Text(
+          agreement.orderId == null
+              ? 'Nothing has been paid, so nothing is owed. You can apply '
+                    'again later.'
+              : 'Nothing has been paid, so nothing is owed. The order waiting '
+                    'for this plan is cancelled too.',
         ),
         actions: [
           TextButton(
@@ -182,6 +200,12 @@ class _PaymentPlanDetailScreenState
           ),
         ],
         const SizedBox(height: DesignTokens.s16),
+        if (a.needsCheckout)
+          _ActionButton(
+            key: const Key('plan-checkout'),
+            label: 'Continue to checkout',
+            onPressed: () => unawaited(_checkOut(a, name)),
+          ),
         if (primary != null)
           _ActionButton(
             key: const Key('plan-pay-primary'),
@@ -301,10 +325,17 @@ class _Headline extends StatelessWidget {
         Icons.verified_rounded,
         DesignTokens.primaryGreen,
         justApplied ? 'You are approved' : 'Approved',
-        a.approvalExpiresAt == null
-            ? 'Pay the first amount to start the plan.'
-            : 'Pay the first amount by ${planInstant(a.approvalExpiresAt!)} '
-                  'to start the plan.',
+        a.needsCheckout
+            ? (a.approvalExpiresAt == null
+                  ? 'Check out to choose where it goes and start the plan.'
+                  : 'Check out by ${planInstant(a.approvalExpiresAt!)} to '
+                        'choose where it goes and start the plan.')
+            : (a.approvalExpiresAt == null
+                  ? 'Your order is placed. Pay the first amount to start the '
+                        'plan.'
+                  : 'Your order is placed. Pay the first amount by '
+                        '${planInstant(a.approvalExpiresAt!)} to start the '
+                        'plan.'),
       ),
       AgreementStatus.active => (
         a.hasOverdue ? Icons.error_rounded : Icons.event_repeat_rounded,

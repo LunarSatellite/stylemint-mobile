@@ -348,24 +348,82 @@ class CheckoutRemoteDataSource {
     }
   }
 
-  // Multi-step checkout session flow:
-  //   1. Ensure a session exists (create one if _sessionId is null)
-  //   2. PATCH address onto the session
-  //   3. PATCH payment method onto the session
-  //   4. POST place — returns the order number (e.g. "NK2026-00001").
-  //      Every downstream order route (detail/invoice/cancel — see
-  //      OrdersRemoteDataSource, track_orders_screen.dart) is keyed by this
-  //      human-readable order number, not the internal orderId GUID that
-  //      also comes back on this response — returning the GUID here caused
-  //      the post-purchase "View Order" button to 404 while the exact same
-  //      order loaded fine from the Track Order list moments later.
   Future<PlaceOrderResult> placeOrder({
     required String? addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   }) async {
     final sessionId = _sessionId ?? await _createSession();
+    await _prepareSession(
+      sessionId,
+      addressId: addressId,
+      paymentMethod: paymentMethod,
+    );
+    try {
+      final result = await _place(sessionId, idempotencyKey);
+      _sessionId = null; // clear after successful placement
+      return result;
+    } catch (_) {
+      // A place that got as far as the server has moved the session out of
+      // Draft (to Placing, or to Failed once the saga unwinds), and the
+      // backend refuses to place anything that isn't a Draft. Holding on to
+      // the id meant every retry re-posted the same dead session and came
+      // back "Cannot transition CheckoutSession from ... to Placing" — which
+      // reached the customer as the bare "Order failed: _Validation" and
+      // could not be escaped without restarting the app. Drop it so the next
+      // attempt opens a fresh session against the live cart.
+      _sessionId = null;
+      rethrow;
+    }
+  }
 
+  // POST /v1/checkout/sessions/payment-plan — a checkout for one item on an
+  // approved payment plan, at the plan's price. The live cart is not read or
+  // changed, and the session is NOT kept in [_sessionId]: that one belongs to
+  // the cart checkout, and a plan session must never be placed as the cart's
+  // (nor a failed plan retry fall back to a fresh cart session).
+  Future<Map<String, dynamic>> startPaymentPlanSession(
+    String agreementId,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/checkout/sessions/payment-plan',
+      data: {'agreementId': agreementId},
+      options: Options(headers: {'requiresToken': true}),
+    );
+    return withOptionLabels(response as Map<String, dynamic>);
+  }
+
+  /// Places a payment-plan session started by [startPaymentPlanSession]. The
+  /// redirect it returns is the plan's first payment, not the order total.
+  Future<PlaceOrderResult> placePaymentPlanSession({
+    required String sessionId,
+    required String addressId,
+    required PaymentMethodType paymentMethod,
+    required String idempotencyKey,
+  }) async {
+    await _prepareSession(
+      sessionId,
+      addressId: addressId,
+      paymentMethod: paymentMethod,
+    );
+    return _place(sessionId, idempotencyKey);
+  }
+
+  // Multi-step checkout session flow, shared by the cart and payment plans:
+  //   1. POST address onto the session        (_prepareSession)
+  //   2. POST payment method onto the session (_prepareSession)
+  //   3. POST place — returns the order number (e.g. "NK2026-00001"). (_place)
+  //      Every downstream order route (detail/invoice/cancel — see
+  //      OrdersRemoteDataSource, track_orders_screen.dart) is keyed by this
+  //      human-readable order number, not the internal orderId GUID that
+  //      also comes back on this response — returning the GUID here caused
+  //      the post-purchase "View Order" button to 404 while the exact same
+  //      order loaded fine from the Track Order list moments later.
+  Future<void> _prepareSession(
+    String sessionId, {
+    required String? addressId,
+    required PaymentMethodType paymentMethod,
+  }) async {
     if (addressId != null && addressId.isNotEmpty) {
       await apiClient.post(
         '/v1/checkout/sessions/$sessionId/address',
@@ -381,32 +439,19 @@ class CheckoutRemoteDataSource {
       data: {'paymentMethod': _paymentMethodCode(paymentMethod)},
       options: Options(headers: {'requiresToken': true}),
     );
+  }
 
-    Object? response;
-    try {
-      response = await apiClient.post(
-        '/v1/checkout/sessions/$sessionId/place',
-        options: Options(
-          headers: {
-            'requiresToken': true,
-            'Idempotency-Key': idempotencyKey,
-          },
-        ),
-      );
-    } catch (_) {
-      // A place that got as far as the server has moved the session out of
-      // Draft (to Placing, or to Failed once the saga unwinds), and the
-      // backend refuses to place anything that isn't a Draft. Holding on to
-      // the id meant every retry re-posted the same dead session and came
-      // back "Cannot transition CheckoutSession from ... to Placing" — which
-      // reached the customer as the bare "Order failed: _Validation" and
-      // could not be escaped without restarting the app. Drop it so the next
-      // attempt opens a fresh session against the live cart.
-      _sessionId = null;
-      rethrow;
-    }
+  Future<PlaceOrderResult> _place(
+    String sessionId,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/checkout/sessions/$sessionId/place',
+      options: Options(
+        headers: {'requiresToken': true, 'Idempotency-Key': idempotencyKey},
+      ),
+    );
 
-    _sessionId = null; // clear after successful placement
     final data = response as Map<String, dynamic>;
     // Cash on Delivery has nothing further for the customer to do — the
     // order is paid-on-fulfillment. PayPal/eSewa/Card come back with

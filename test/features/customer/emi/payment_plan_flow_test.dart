@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/product_emi_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/repositories/emi_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plan_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_checkout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/emi_calculator_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/emi_from_line.dart';
@@ -71,7 +72,10 @@ Future<GoRouter> _pumpApp(
   final router = GoRouter(
     initialLocation: initialLocation,
     routes: [
-      GoRoute(path: '/', builder: (_, _) => Scaffold(body: home)),
+      GoRoute(
+        path: '/',
+        builder: (_, _) => Scaffold(body: home),
+      ),
       GoRoute(
         path: RouteNames.paymentPlanReview,
         builder: (_, state) =>
@@ -87,8 +91,21 @@ Future<GoRouter> _pumpApp(
         ),
       ),
       GoRoute(
+        path: RouteNames.paymentPlanCheckout,
+        builder: (_, state) => PlanCheckoutScreen(
+          agreementId: state.pathParameters['agreementId']!,
+          args: state.extra is PlanDetailArgs
+              ? state.extra! as PlanDetailArgs
+              : const PlanDetailArgs(),
+        ),
+      ),
+      GoRoute(
         path: RouteNames.customerKyc,
         builder: (_, _) => const Scaffold(body: Text('KYC screen')),
+      ),
+      GoRoute(
+        path: RouteNames.shippingAddEdit,
+        builder: (_, _) => const Scaffold(body: Text('Address form')),
       ),
     ],
   );
@@ -109,8 +126,9 @@ Future<GoRouter> _pumpApp(
         ),
         if (planOptionsFail)
           planOptionsProvider.overrideWith(
-            (ref, variantId) async =>
-                throw const EmiLoadException(EmiFailure(EmiFailureKind.notFound)),
+            (ref, variantId) async => throw const EmiLoadException(
+              EmiFailure(EmiFailureKind.notFound),
+            ),
           ),
       ],
       child: MaterialApp.router(routerConfig: router),
@@ -169,7 +187,11 @@ List<PlanOption> get _menu => readPlanOptions(planOptionsWire).options;
 void main() {
   group('the plan sheet', () {
     testWidgets('offers every plan the seller has, as chips', (tester) async {
-      await _pumpApp(tester, repo: FakeCreditRepository(), home: _opener(_menu));
+      await _pumpApp(
+        tester,
+        repo: FakeCreditRepository(),
+        home: _opener(_menu),
+      );
       await tester.tap(find.text('open'));
       await _settle(tester);
 
@@ -415,6 +437,169 @@ void main() {
       expect(find.textContaining('enough history'), findsOneWidget);
       expect(find.textContaining('wait a few days'), findsOneWidget);
       expect(find.byKey(const Key('plan-pay-primary')), findsNothing);
+    });
+  });
+
+  group('checking out a plan', () {
+    final launched = <Uri>[];
+    setUp(launched.clear);
+
+    Future<FakeCreditRepository> openApproved(
+      WidgetTester tester, {
+      FakeCreditRepository? repo,
+    }) async {
+      final fake =
+          repo ??
+          FakeCreditRepository(agreement: agreementWire(checkedOut: false));
+      await _pumpApp(
+        tester,
+        repo: fake,
+        initialLocation: RouteNames.paymentPlanDetailPath('plan-1'),
+        launched: launched,
+      );
+      await _settle(tester);
+      return fake;
+    }
+
+    testWidgets('an approved plan goes to checkout before any payment', (
+      tester,
+    ) async {
+      await openApproved(tester);
+
+      expect(find.byKey(const Key('plan-checkout')), findsOneWidget);
+      expect(
+        find.byKey(const Key('plan-pay-primary')),
+        findsNothing,
+        reason:
+            'the first payment starts the plan, and a plan starts with the '
+            'order that delivers it',
+      );
+      expect(find.textContaining('Check out by'), findsOneWidget);
+    });
+
+    testWidgets(
+      'placing pays the first amount, not the price, and comes back',
+      (tester) async {
+        final repo = await openApproved(tester);
+
+        await _tapVisible(tester, find.byKey(const Key('plan-checkout')));
+        expect(find.text('Pashmina overcoat'), findsWidgets);
+        expect(find.text('M · Charcoal'), findsOneWidget);
+        final due = find.byKey(const Key('plan-checkout-due-today'));
+        expect(
+          find.descendant(of: due, matching: find.textContaining('12,000')),
+          findsOneWidget,
+        );
+        expect(find.text('Cash on Delivery'), findsNothing);
+        expect(find.textContaining('Place order and pay'), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('plan-checkout-rail-card')));
+        await tester.pump();
+        await _tapVisible(tester, find.byKey(const Key('plan-checkout-place')));
+
+        final placed = repo.placements.single;
+        expect(placed.sessionId, 'session-1');
+        expect(placed.addressId, 'addr-home', reason: 'the default address');
+        expect(placed.rail, PlanPaymentRail.card);
+        expect(
+          launched.single.toString(),
+          'https://pay.example.test/first-payment',
+        );
+        expect(find.byKey(const Key('plan-payment-started')), findsOneWidget);
+        expect(
+          find.byKey(const Key('plan-checkout')),
+          findsNothing,
+          reason: 'the plan has its order now',
+        );
+      },
+    );
+
+    testWidgets('with nothing due up front it places without a payment page', (
+      tester,
+    ) async {
+      final repo = FakeCreditRepository(
+        agreement: agreementWire(
+          checkedOut: false,
+          downPayment: 0,
+          needsActivationPayment: false,
+        ),
+      )..placedRedirect = null;
+      await openApproved(tester, repo: repo);
+
+      await _tapVisible(tester, find.byKey(const Key('plan-checkout')));
+      final due = find.byKey(const Key('plan-checkout-due-today'));
+      expect(
+        find.descendant(of: due, matching: find.text('Nothing')),
+        findsOneWidget,
+      );
+      expect(find.text('Place order'), findsOneWidget);
+
+      await _tapVisible(tester, find.byKey(const Key('plan-checkout-place')));
+
+      expect(repo.placements, hasLength(1));
+      expect(launched, isEmpty);
+    });
+
+    testWidgets('without an address there is nothing to place', (tester) async {
+      final repo = FakeCreditRepository(
+        agreement: agreementWire(checkedOut: false),
+      )..addresses = const [];
+      await openApproved(tester, repo: repo);
+
+      await _tapVisible(tester, find.byKey(const Key('plan-checkout')));
+
+      expect(
+        find.byKey(const Key('plan-checkout-add-address')),
+        findsOneWidget,
+      );
+      final place = tester.widget<FilledButton>(
+        find.byKey(const Key('plan-checkout-place')),
+      );
+      expect(place.onPressed, isNull);
+    });
+
+    testWidgets('a refused place says why and starts afresh on the retry', (
+      tester,
+    ) async {
+      final repo =
+          FakeCreditRepository(agreement: agreementWire(checkedOut: false))
+            ..placeFailure = const EmiFailure(
+              EmiFailureKind.server,
+              code: 'credit_payment.unavailable',
+            );
+      await openApproved(tester, repo: repo);
+      await _tapVisible(tester, find.byKey(const Key('plan-checkout')));
+
+      await _tapVisible(tester, find.byKey(const Key('plan-checkout-place')));
+      expect(find.byKey(const Key('plan-checkout-error')), findsOneWidget);
+      expect(find.textContaining('Nothing has been charged'), findsOneWidget);
+
+      repo.placeFailure = null;
+      await _tapVisible(tester, find.byKey(const Key('plan-checkout-place')));
+
+      expect(
+        repo.checkoutsStarted,
+        2,
+        reason: 'the server ended the first session when it refused it',
+      );
+      expect(repo.placements.last.sessionId, 'session-2');
+      expect(repo.placements.last.key, isNot(repo.placements.first.key));
+    });
+
+    testWidgets('a plan already waiting on its order is sent back to pay', (
+      tester,
+    ) async {
+      final repo =
+          FakeCreditRepository(agreement: agreementWire(checkedOut: false))
+            ..checkoutFailure = const EmiFailure(
+              EmiFailureKind.rejected,
+              code: 'credit_agreement.order_attached',
+            );
+      await openApproved(tester, repo: repo);
+
+      await _tapVisible(tester, find.byKey(const Key('plan-checkout')));
+
+      expect(find.textContaining('Pay it from the plan'), findsOneWidget);
     });
   });
 

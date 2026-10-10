@@ -1,8 +1,11 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart'
+    show ShippingAddress;
 import 'package:stylemint_mobile_frontend/features/customer/emi/data/models/credit_json.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_failure.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/repositories/credit_repository.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// Payloads exactly as the backend serialised them, copied from the output
 /// of `CreditWireContractTests` in lead360 (only the quote token is
@@ -98,7 +101,12 @@ Map<String, dynamic> _instalment(int n, {int state = 1, String? dueDate}) => {
   'paidUtc': state == 3 ? '2026-04-02T05:00:00+00:00' : null,
 };
 
+/// The order checkout created for a plan, in the fixtures.
+const planOrderId = '7a1e3f52-9a0b-4c55-8d1e-2b6f0c9e4d11';
+
 /// An approved EMI awaiting its down payment — the serialiser's own output.
+/// Checked out unless [checkedOut] says otherwise: an approved plan with no
+/// order goes to checkout first.
 Map<String, dynamic> agreementWire({
   String id = 'f90a6410-3076-4791-84cf-fa5c77f25a4c',
   int state = 2,
@@ -108,6 +116,8 @@ Map<String, dynamic> agreementWire({
   double outstanding = 48000,
   double? payoff,
   int guarantor = 1,
+  bool checkedOut = true,
+  double downPayment = 12000,
 }) => {
   'id': id,
   'buyerAccountId': '1f67201b-7d81-4a60-93c2-b8869639dadb',
@@ -120,7 +130,7 @@ Map<String, dynamic> agreementWire({
   'stateReasons': reasons,
   'currency': 'NPR',
   'price': 60000,
-  'downPayment': 12000,
+  'downPayment': downPayment,
   'financed': 48000,
   'tenureMonths': 3,
   'interestMethod': 0,
@@ -138,6 +148,7 @@ Map<String, dynamic> agreementWire({
   'goodsReleasedUtc': null,
   'closedUtc': null,
   'needsActivationPayment': needsActivationPayment,
+  'orderId': checkedOut ? planOrderId : null,
   'instalments':
       instalments ?? [_instalment(1), _instalment(2), _instalment(3)],
 };
@@ -233,6 +244,26 @@ class FakeCreditRepository implements CreditRepository {
   final payments =
       <({PaymentPurpose purpose, PlanPaymentRail rail, String key})>[];
   final reviews = <({bool approve, List<String> reasons})>[];
+
+  /// Plan checkout: set a failure to make that step fail.
+  EmiFailure? checkoutFailure;
+  EmiFailure? placeFailure;
+  List<ShippingAddress> addresses = const [
+    ShippingAddress(
+      id: 'addr-home',
+      label: 'Home',
+      countryCode: 'NP',
+      isDefault: true,
+      line1: 'Lazimpat 2',
+      city: 'Kathmandu',
+    ),
+  ];
+  String? placedRedirect = 'https://pay.example.test/first-payment';
+  int checkoutsStarted = 0;
+  final placements =
+      <
+        ({String sessionId, String addressId, PlanPaymentRail rail, String key})
+      >[];
   final programs = <VendorCreditProgram>[];
   int cancels = 0;
 
@@ -304,6 +335,51 @@ class FakeCreditRepository implements CreditRepository {
     return failure != null
         ? left(failure)
         : right(readPlanPaymentStart(paymentStartWire));
+  }
+
+  @override
+  Future<Either<EmiFailure, PlanCheckout>> startCheckout(
+    String agreementId,
+  ) async {
+    checkoutsStarted++;
+    final failure = checkoutFailure;
+    if (failure != null) return left(failure);
+    return right(
+      PlanCheckout(
+        sessionId: 'session-$checkoutsStarted',
+        title: 'Pashmina overcoat',
+        option: 'M · Charcoal',
+        price: const Money(amount: 60000, currency: 'NPR'),
+      ),
+    );
+  }
+
+  @override
+  Future<Either<EmiFailure, List<ShippingAddress>>> deliveryAddresses() async =>
+      right(addresses);
+
+  @override
+  Future<Either<EmiFailure, PlanCheckoutPlaced>> placeCheckout({
+    required String sessionId,
+    required String addressId,
+    required PlanPaymentRail rail,
+    required String idempotencyKey,
+  }) async {
+    placements.add((
+      sessionId: sessionId,
+      addressId: addressId,
+      rail: rail,
+      key: idempotencyKey,
+    ));
+    final failure = placeFailure;
+    if (failure != null) return left(failure);
+    agreement = {...agreement, 'orderId': planOrderId};
+    return right(
+      PlanCheckoutPlaced(
+        orderNumber: 'NK2026-00042',
+        redirectUrl: placedRedirect,
+      ),
+    );
   }
 
   @override
