@@ -23,6 +23,8 @@ class _MockOrdersRepository extends Mock implements OrdersRepository {}
 
 OrderDetail _order({
   OrderTrackStatus status = OrderTrackStatus.inTransit,
+  Money tax = const Money(amount: 0, currency: 'NPR'),
+  bool taxIncluded = true,
 }) => OrderDetail(
   id: 'order-id',
   orderNumber: 'NK2026-00015',
@@ -32,7 +34,8 @@ OrderDetail _order({
   items: const [],
   subtotal: const Money(amount: 1000, currency: 'NPR'),
   shipping: const Money(amount: 100, currency: 'NPR'),
-  tax: const Money(amount: 0, currency: 'NPR'),
+  tax: tax,
+  taxIncluded: taxIncluded,
   total: const Money(amount: 1100, currency: 'NPR'),
   shippingAddress: 'Kathmandu, Nepal',
   paymentMethod: 'eSewa',
@@ -110,7 +113,56 @@ _MockOrdersRepository _repositoryFor(OrderDetail order) {
   return repository;
 }
 
+/// Opens the order summary sheet, where the bill is.
+Future<void> _openBill(WidgetTester tester, OrderDetail order) async {
+  await tester.pumpWidget(_screen(_repositoryFor(order)));
+  await tester.pumpAndSettle();
+  await tester.scrollUntilVisible(
+    find.text('View other details'),
+    250,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.tap(find.text('View other details'));
+  await tester.pumpAndSettle();
+  await tester.scrollUntilVisible(
+    find.text('Order Summary'),
+    250,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.tap(find.text('Order Summary'));
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  // Prices include VAT, so the bill's VAT line is inside what was paid. On an
+  // older order charged VAT on top it is a line the total adds, and the bill
+  // must not tell that buyer the VAT was included.
+  testWidgets('the bill says the VAT is included when it is', (tester) async {
+    await _openBill(
+      tester,
+      _order(tax: const Money(amount: 126.55, currency: 'NPR')),
+    );
+    expect(find.text('Includes VAT'), findsOneWidget);
+    expect(find.text('VAT'), findsNothing);
+  });
+
+  testWidgets(
+    'the bill shows VAT as a line of its own on an order charged it on top',
+    (
+      tester,
+    ) async {
+      await _openBill(
+        tester,
+        _order(
+          tax: const Money(amount: 130, currency: 'NPR'),
+          taxIncluded: false,
+        ),
+      );
+      expect(find.text('VAT'), findsOneWidget);
+      expect(find.text('Includes VAT'), findsNothing);
+    },
+  );
+
   testWidgets('delivery shortcut scrolls to the real StyleMint timeline', (
     tester,
   ) async {

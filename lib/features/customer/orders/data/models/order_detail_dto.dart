@@ -144,6 +144,11 @@ abstract class OrderDetailDto with _$OrderDetailDto {
     @Default('NPR') String shippingTotalCurrency,
     @Default(0) double taxTotalAmount,
     @Default('NPR') String taxTotalCurrency,
+    // Whether the tax total is inside the prices (every order since prices
+    // included VAT) or was charged on top (older orders). Absent, from a
+    // backend that predates the flag, it reads as included — what every
+    // screen said before.
+    @Default(true) bool taxIncluded,
     @Default(0) double grandTotalAmount,
     @Default('NPR') String grandTotalCurrency,
   }) = _OrderDetailDto;
@@ -208,6 +213,7 @@ abstract class OrderDetailDto with _$OrderDetailDto {
         currency: shippingTotalCurrency,
       ),
       tax: Money(amount: taxTotalAmount, currency: taxTotalCurrency),
+      taxIncluded: taxIncluded,
       total: Money(amount: grandTotalAmount, currency: grandTotalCurrency),
       // A collection order's shipTo is an empty snapshot, because there is
       // no address. toDisplayString() bottoms out at "Location saved",
