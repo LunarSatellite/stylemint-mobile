@@ -168,9 +168,13 @@ class _NotificationPrefsScreenState
                     _ToggleItem(
                       icon: Icons.receipt_long_outlined,
                       title: 'Order Updates',
+                      // Payment-plan reminders and the default notice ride
+                      // this toggle (OrderUpdates), and only they also go by
+                      // SMS: off on both push and email stops the texts too.
                       subtitle:
                           'Order placed, cancelled and refunded, including '
-                          'return refunds',
+                          'return refunds, and payment plan reminders, which '
+                          'also come by SMS',
                       value: _prefs.orderStatusChanges,
                       onChanged: (v) =>
                           _apply(_prefs.copyWith(orderStatusChanges: v)),
