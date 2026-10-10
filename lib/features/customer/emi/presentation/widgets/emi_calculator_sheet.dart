@@ -5,25 +5,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/domain/credit_messages.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/emi_messages.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_eligibility.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_failure.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_quote.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/product_emi_offer.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Opens the EMI calculator for one variant.
+/// Opens the payment-plan sheet for one variant: phase 1's EMI calculator,
+/// plus pay later and pay-now-buy-later when [planOptions] offers them.
 Future<void> showEmiCalculatorSheet(
   BuildContext context, {
   required String productId,
   required String productName,
   required String variantId,
   required Money price,
-  required ProductEmiOffer offer,
+  ProductEmiOffer? offer,
+  List<PlanOption> planOptions = const <PlanOption>[],
+  PlanKind? initialKind,
 }) => showModalBottomSheet<void>(
   context: context,
   isScrollControlled: true,
@@ -38,6 +44,8 @@ Future<void> showEmiCalculatorSheet(
     variantId: variantId,
     price: price,
     offer: offer,
+    planOptions: planOptions,
+    initialKind: initialKind,
   ),
 );
 
@@ -57,15 +65,23 @@ String _money(Money money) => formatMoney(
 /// the sheet shows — the server is the authority, the local figures are only
 /// there so the slider never waits on a round trip.
 ///
-/// Phase 1 creates no order. The button at the bottom gets a buyer verified;
-/// a verified buyer is told EMI checkout is coming.
+/// Pay later and pay-now-buy-later, when the seller offers them, sit beside
+/// EMI as further kinds of plan ([planOptions], from `/v1/credit/offers`).
+/// Their figures are the same arithmetic on the device; the server prices
+/// them for real when the buyer continues.
+///
+/// The button at the bottom gets a buyer signed in and verified, then asks
+/// the server for a signed quote and opens its review. Nothing is agreed in
+/// this sheet.
 class EmiCalculatorSheet extends ConsumerStatefulWidget {
   const EmiCalculatorSheet({
     required this.productId,
     required this.productName,
     required this.variantId,
     required this.price,
-    required this.offer,
+    this.offer,
+    this.planOptions = const <PlanOption>[],
+    this.initialKind,
     this.quoteDebounce = const Duration(milliseconds: 400),
     super.key,
   });
@@ -74,7 +90,14 @@ class EmiCalculatorSheet extends ConsumerStatefulWidget {
   final String productName;
   final String variantId;
   final Money price;
-  final ProductEmiOffer offer;
+
+  /// Phase 1's EMI terms from the product payload, when it carried them.
+  final ProductEmiOffer? offer;
+
+  /// Every plan the Credit module offers on this variant. May be empty (an
+  /// older server); EMI then runs on [offer] alone.
+  final List<PlanOption> planOptions;
+  final PlanKind? initialKind;
 
   /// How long the selection must sit still before the server is asked.
   final Duration quoteDebounce;
@@ -83,9 +106,36 @@ class EmiCalculatorSheet extends ConsumerStatefulWidget {
   ConsumerState<EmiCalculatorSheet> createState() => _EmiCalculatorSheetState();
 }
 
+/// One kind's choices: the down-payment range and the tenures.
+class _KindTerms {
+  const _KindTerms({
+    required this.kind,
+    required this.minPercent,
+    required this.maxPercent,
+    required this.tenures,
+    required this.requiresVerification,
+    this.option,
+  });
+
+  final PlanKind kind;
+  final int minPercent;
+  final int maxPercent;
+  final List<int> tenures;
+  final bool requiresVerification;
+  final PlanOption? option;
+
+  bool get fixed => minPercent >= maxPercent;
+  int get longestTenure => tenures.isEmpty ? 0 : tenures.last;
+}
+
 class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
-  late int _percent = widget.offer.sliderMinPercent;
-  late int _tenure = widget.offer.longestTenure;
+  late final List<_KindTerms> _kinds = _buildKinds();
+  late _KindTerms _terms = _kinds.firstWhere(
+    (k) => k.kind == widget.initialKind,
+    orElse: () => _kinds.first,
+  );
+  late int _percent = _terms.minPercent;
+  late int _tenure = _terms.longestTenure;
 
   EmiQuote? _quote;
   EmiFailure? _quoteFailure;
@@ -95,10 +145,61 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
   /// Bumped per request so a slow answer for an old selection is dropped.
   int _request = 0;
 
+  /// Asking the server for a signed quote, after Continue.
+  bool _continuing = false;
+  EmiFailure? _continueFailure;
+
+  bool get _isEmi => _terms.kind == PlanKind.instalment;
+
+  /// EMI from phase 1's terms when the product carried them, else from the
+  /// Credit module's option; then pay later and prepay from their options.
+  List<_KindTerms> _buildKinds() {
+    final kinds = <_KindTerms>[];
+    final offer = widget.offer;
+    final emiOption = _option(PlanKind.instalment);
+    if (offer != null) {
+      kinds.add(
+        _KindTerms(
+          kind: PlanKind.instalment,
+          minPercent: offer.sliderMinPercent,
+          maxPercent: emiMaxDownPaymentPercent,
+          tenures: offer.tenures,
+          requiresVerification: true,
+          option: emiOption,
+        ),
+      );
+    } else if (emiOption != null) {
+      kinds.add(_fromOption(emiOption));
+    }
+    for (final kind in [PlanKind.payLater, PlanKind.prepay]) {
+      final option = _option(kind);
+      if (option != null) kinds.add(_fromOption(option));
+    }
+    return kinds;
+  }
+
+  PlanOption? _option(PlanKind kind) {
+    for (final o in widget.planOptions) {
+      if (o.kind == kind) return o;
+    }
+    return null;
+  }
+
+  static _KindTerms _fromOption(PlanOption o) => _KindTerms(
+    kind: o.kind,
+    minPercent: o.minDownPaymentPercent,
+    maxPercent: o.downPaymentFixed
+        ? o.minDownPaymentPercent
+        : o.maxDownPaymentPercent,
+    tenures: o.tenures,
+    requiresVerification: o.requiresVerifiedIdentity,
+    option: o,
+  );
+
   @override
   void initState() {
     super.initState();
-    _scheduleQuote();
+    if (_isEmi) _scheduleQuote();
   }
 
   @override
@@ -109,6 +210,7 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
 
   void _scheduleQuote() {
     _debounce?.cancel();
+    if (!_isEmi) return;
     _debounce = Timer(widget.quoteDebounce, () => unawaited(_fetchQuote()));
   }
 
@@ -144,21 +246,92 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
     setState(() {
       _percent = percent ?? _percent;
       _tenure = tenure ?? _tenure;
+      _continueFailure = null;
     });
     _scheduleQuote();
+  }
+
+  void _selectKind(_KindTerms terms) {
+    if (identical(terms, _terms)) return;
+    _debounce?.cancel();
+    setState(() {
+      _terms = terms;
+      _percent = terms.minPercent;
+      _tenure = terms.longestTenure;
+      _quote = null;
+      _quoteFailure = null;
+      _confirming = false;
+      _continueFailure = null;
+      _request++;
+    });
+    _scheduleQuote();
+  }
+
+  /// Asks the server to price the selection and sign it, then hands over to
+  /// the review. The router is captured before the sheet closes, since its
+  /// context goes with it.
+  Future<void> _continue() async {
+    final router = GoRouter.of(context);
+    final navigator = Navigator.of(context);
+    setState(() {
+      _continuing = true;
+      _continueFailure = null;
+    });
+    final result = await ref
+        .read(creditRepositoryProvider)
+        .createQuote(
+          variantId: widget.variantId,
+          kind: _terms.kind,
+          downPaymentPercent: _terms.fixed ? null : _percent,
+          tenureMonths: _tenure,
+        );
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
+        _continuing = false;
+        _continueFailure = failure;
+      }),
+      (quote) {
+        navigator.pop();
+        unawaited(
+          router.push(
+            RouteNames.paymentPlanReview,
+            extra: PlanReviewArgs(
+              quote: quote,
+              productName: widget.productName,
+              productId: widget.productId,
+              variantId: widget.variantId,
+            ),
+          ),
+        );
+      },
+    );
   }
 
   /// `emi_quote.not_available`: the vendor switched EMI off, or this variant
   /// no longer qualifies. The plan is no longer on offer, so it is not shown.
   bool get _notAvailable {
     final failure = _quoteFailure;
-    if (failure == null) return false;
+    if (failure == null || !_isEmi) return false;
     return failure.code == 'emi_quote.not_available' || failure.isNotFound;
   }
 
+  /// What is paid before the months begin, as the first schedule row.
+  String get _upFrontLabel => switch (_terms.kind) {
+    PlanKind.instalment => 'Down payment, to start',
+    PlanKind.payLater => 'First payment, to start',
+    PlanKind.prepay => 'Deposit, to start',
+  };
+
+  String get _percentLabel => switch (_terms.kind) {
+    PlanKind.prepay => 'Deposit',
+    PlanKind.payLater => 'First payment',
+    PlanKind.instalment => 'Down payment',
+  };
+
   @override
   Widget build(BuildContext context) {
-    final offer = widget.offer;
+    final terms = _terms;
     final local = EmiPlan.compute(
       price: widget.price,
       downPaymentPercent: _percent,
@@ -166,6 +339,7 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
     );
     final quote = _quote;
     final confirmed =
+        _isEmi &&
         quote != null &&
         quote.matches(
           variantId: widget.variantId,
@@ -183,8 +357,11 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
         ? [for (final i in quote.schedule) i.amount]
         : local.schedule;
 
-    final minPercent = offer.sliderMinPercent;
-    final steps = (emiMaxDownPaymentPercent - minPercent) ~/ emiDownPaymentStep;
+    final steps = terms.fixed
+        ? 0
+        : (terms.maxPercent - terms.minPercent) ~/ emiDownPaymentStep;
+    final sliderMax = terms.minPercent + steps * emiDownPaymentStep;
+    final guarantor = terms.option?.guarantor;
 
     return SafeArea(
       top: false,
@@ -210,7 +387,12 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
               ),
             ),
             const SizedBox(height: DesignTokens.s16),
-            Text('Pay in monthly instalments', style: DesignTokens.h3),
+            Text(
+              _kinds.length > 1
+                  ? 'Pay over time'
+                  : 'Pay in monthly instalments',
+              style: DesignTokens.h3,
+            ),
             const SizedBox(height: DesignTokens.s4),
             Text(
               '${widget.productName} · ${_money(widget.price)}',
@@ -220,6 +402,30 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
+            if (_kinds.length > 1) ...[
+              const SizedBox(height: DesignTokens.s16),
+              Wrap(
+                spacing: DesignTokens.s8,
+                runSpacing: DesignTokens.s8,
+                children: [
+                  for (final k in _kinds)
+                    ChoiceChip(
+                      key: Key('plan-kind-${k.kind.name}'),
+                      label: Text(k.kind.label),
+                      selected: identical(k, terms),
+                      selectedColor: DesignTokens.chipsSelectedFill,
+                      onSelected: (_) => _selectKind(k),
+                    ),
+                ],
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              Text(
+                terms.kind.explainer,
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ],
             const SizedBox(height: DesignTokens.s20),
             if (_notAvailable)
               _Notice(
@@ -231,7 +437,7 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Down payment',
+                      _percentLabel,
                       style: DesignTokens.mediumSemibold,
                     ),
                   ),
@@ -247,13 +453,13 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
                 Slider(
                   key: const Key('emi-down-payment-slider'),
                   value: _percent.toDouble(),
-                  min: minPercent.toDouble(),
-                  max: emiMaxDownPaymentPercent.toDouble(),
+                  min: terms.minPercent.toDouble(),
+                  max: sliderMax.toDouble(),
                   divisions: steps,
                   label: '$_percent%',
                   activeColor: DesignTokens.primaryGreen,
                   semanticFormatterCallback: (value) =>
-                      '${value.round()} percent down payment',
+                      '${value.round()} percent ${_percentLabel.toLowerCase()}',
                   onChanged: (value) {
                     final next = value.round();
                     if (next != _percent) _select(percent: next);
@@ -262,8 +468,11 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
               else
                 const SizedBox(height: DesignTokens.s8),
               Text(
-                'Between $minPercent% and $emiMaxDownPaymentPercent% of the '
-                'price, paid when the order is delivered.',
+                terms.fixed
+                    ? 'Set by the seller at ${terms.minPercent}% of the '
+                          'price, paid to start the plan.'
+                    : 'Between ${terms.minPercent}% and $sliderMax% of the '
+                          'price, paid to start the plan.',
                 style: DesignTokens.tiny.copyWith(
                   color: DesignTokens.textMuted,
                 ),
@@ -275,7 +484,7 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
                 spacing: DesignTokens.s8,
                 runSpacing: DesignTokens.s8,
                 children: [
-                  for (final months in offer.tenures)
+                  for (final months in terms.tenures)
                     ChoiceChip(
                       key: Key('emi-tenure-$months'),
                       label: Text('$months months'),
@@ -288,6 +497,7 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
               const SizedBox(height: DesignTokens.s20),
               _Summary(
                 downPayment: downPayment,
+                downPaymentLabel: _percentLabel,
                 monthly: monthly,
                 last: last,
                 total: total,
@@ -297,23 +507,50 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
               _QuoteStatus(
                 confirming: _confirming,
                 confirmed: confirmed,
-                failure: _quoteFailure,
+                failure: _isEmi ? _quoteFailure : null,
               ),
               const SizedBox(height: DesignTokens.s16),
               Text('Payment schedule', style: DesignTokens.mediumSemibold),
               const SizedBox(height: DesignTokens.s8),
-              _ScheduleRow(label: 'At delivery', amount: downPayment),
+              _ScheduleRow(label: _upFrontLabel, amount: downPayment),
               for (var i = 0; i < schedule.length; i++)
                 _ScheduleRow(
                   label: 'Month ${i + 1}',
                   amount: schedule[i],
                 ),
+              if (terms.kind == PlanKind.prepay)
+                Padding(
+                  padding: const EdgeInsets.only(top: DesignTokens.s8),
+                  child: Text(
+                    'Your item is delivered after the last payment.',
+                    style: DesignTokens.tiny.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                ),
               const SizedBox(height: DesignTokens.s20),
-              const EmiCtaButton(),
+              EmiCtaButton(
+                requiresVerification: terms.requiresVerification,
+                busy: _continuing,
+                onContinue: _continue,
+              ),
+              if (_continueFailure != null) ...[
+                const SizedBox(height: DesignTokens.s8),
+                Text(
+                  creditFailureMessage(_continueFailure!),
+                  key: const Key('plan-continue-error'),
+                  style: DesignTokens.tiny.copyWith(
+                    color: DesignTokens.colorError,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
               const SizedBox(height: DesignTokens.s12),
               Text(
-                '0% interest: you pay the product price and nothing more. '
-                'Each EMI order is approved by the seller and StyleMint.',
+                [
+                  '0% interest: you pay the product price and nothing more.',
+                  ?guarantor?.statement,
+                ].join(' '),
                 style: DesignTokens.tiny.copyWith(
                   color: DesignTokens.textMuted,
                 ),
@@ -330,6 +567,7 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
 class _Summary extends StatelessWidget {
   const _Summary({
     required this.downPayment,
+    required this.downPaymentLabel,
     required this.monthly,
     required this.last,
     required this.total,
@@ -337,6 +575,7 @@ class _Summary extends StatelessWidget {
   });
 
   final Money downPayment;
+  final String downPaymentLabel;
   final Money monthly;
   final Money last;
   final Money total;
@@ -353,7 +592,7 @@ class _Summary extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _SummaryRow(label: 'Down payment', value: _money(downPayment)),
+          _SummaryRow(label: downPaymentLabel, value: _money(downPayment)),
           _SummaryRow(
             key: const Key('emi-monthly'),
             label: 'Monthly',
@@ -500,20 +739,34 @@ class _Notice extends StatelessWidget {
   );
 }
 
-/// The calculator's button, decided by `GET /v1/customer/emi/eligibility`:
+/// The sheet's button. In order:
 ///
 /// * signed out → sign in;
-/// * `kyc_required` / `kyc_rejected` → "Get verified for EMI" (the KYC flow);
-/// * `kyc_in_review` → "Verification in review" (the status screen);
-/// * eligible → a disabled "EMI checkout is coming soon" — phase 1 creates no
-///   EMI order.
+/// * for a plan that needs a verified identity, decided by
+///   `GET /v1/customer/emi/eligibility`: `kyc_required` / `kyc_rejected` →
+///   "Get verified" (the KYC flow), `kyc_in_review` → "Verification in
+///   review" (the status screen);
+/// * otherwise → "Continue", which asks the server for a signed quote.
+///
+/// Verification is checked here, before applying, so a buyer is sent to get
+/// verified rather than declined for not being.
 class EmiCtaButton extends ConsumerWidget {
-  const EmiCtaButton({super.key});
+  const EmiCtaButton({
+    required this.onContinue,
+    this.requiresVerification = true,
+    this.busy = false,
+    super.key,
+  });
 
-  static const signInLabel = 'Sign in to use EMI';
-  static const getVerifiedLabel = 'Get verified for EMI';
+  final VoidCallback onContinue;
+  final bool requiresVerification;
+  final bool busy;
+
+  static const signInLabel = 'Sign in to use payment plans';
+  static const getVerifiedLabel = 'Get verified for payment plans';
   static const inReviewLabel = 'Verification in review';
-  static const comingSoonLabel = 'EMI checkout is coming soon';
+  static const continueLabel = 'Continue';
+  static const busyLabel = 'Preparing your plan…';
 
   /// Leaves the sheet for the verification screens. The router is captured
   /// before the sheet closes, since its context goes with it.
@@ -522,6 +775,12 @@ class EmiCtaButton extends ConsumerWidget {
     Navigator.of(context).pop();
     unawaited(router.push(RouteNames.customerKyc));
   }
+
+  Widget _continue() => _CtaButton(
+    key: const Key('plan-continue'),
+    label: busy ? busyLabel : continueLabel,
+    onPressed: busy ? null : onContinue,
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -541,10 +800,12 @@ class EmiCtaButton extends ConsumerWidget {
       );
     }
 
+    if (!requiresVerification) return _continue();
+
     final eligibility = ref.watch(emiEligibilityProvider);
     return eligibility.when(
       loading: () => const _CtaButton(
-        label: 'Checking your EMI eligibility…',
+        label: 'Checking your eligibility…',
         onPressed: null,
       ),
       error: (error, _) => _CtaButton(
@@ -562,10 +823,7 @@ class EmiCtaButton extends ConsumerWidget {
           outlined: true,
           onPressed: () => _openKyc(context),
         ),
-        EmiCta.comingSoon => const _CtaButton(
-          label: comingSoonLabel,
-          onPressed: null,
-        ),
+        EmiCta.eligible => _continue(),
       },
     );
   }
@@ -576,6 +834,7 @@ class _CtaButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.outlined = false,
+    super.key,
   });
 
   final String label;

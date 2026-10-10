@@ -141,6 +141,16 @@ abstract class RouteNames {
   /// and the form it opens. Where a `kyc.decided` push lands.
   static const customerKyc = '/verify-identity';
   static const customerKycSubmit = '/verify-identity/submit';
+
+  /// Payment plans (EMI, pay later, pay now buy later): the buyer's list, the
+  /// review of a signed quote, and one plan. [paymentPlanReview] is
+  /// registered before [paymentPlanDetail] so `review` is never read as an
+  /// agreement id.
+  static const paymentPlans = '/payment-plans';
+  static const paymentPlanReview = '/payment-plans/review';
+  static const paymentPlanDetail = '/payment-plans/:agreementId';
+  static String paymentPlanDetailPath(String agreementId) => paymentPlanDetail
+      .replaceFirst(':agreementId', Uri.encodeComponent(agreementId));
   static const paymentMethods = '/payment-methods';
   static const paymentAddCard = '/payment/add-card';
   static const paymentEditCard = '/payment/edit-card';
@@ -286,6 +296,16 @@ abstract class RouteNames {
 
   /// The vendor's EMI settings: exposure limit and the listings offering EMI.
   static const vendorEmi = '/vendor/emi';
+
+  /// The vendor's payment plans: the requests waiting for a decision, and one
+  /// plan to approve or decline.
+  static const vendorPaymentPlans = '/vendor/payment-plans';
+  static const vendorPaymentPlanDetail = '/vendor/payment-plans/:agreementId';
+  static String vendorPaymentPlanDetailPath(String agreementId) =>
+      vendorPaymentPlanDetail.replaceFirst(
+        ':agreementId',
+        Uri.encodeComponent(agreementId),
+      );
 
   static String vendorProductEmiPath(String productId) => vendorProductEmi
       .replaceFirst(':productId', Uri.encodeComponent(productId));

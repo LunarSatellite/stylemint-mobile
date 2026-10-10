@@ -8,6 +8,8 @@ import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/
 import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/domain/entities/vendor_emi.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/domain/vendor_emi_messages.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/widgets/vendor_credit_program_card.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/widgets/vendor_plan_requests_card.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
@@ -36,7 +38,7 @@ class VendorEmiScreen extends ConsumerWidget {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('EMI (instalments)'),
+        title: const Text('EMI and payment plans'),
       ),
       body: SafeArea(
         child: unavailable
@@ -45,7 +47,9 @@ class VendorEmiScreen extends ConsumerWidget {
                 onRefresh: () async {
                   ref
                     ..invalidate(vendorEmiSettingsProvider)
-                    ..invalidate(vendorEmiProductsProvider);
+                    ..invalidate(vendorEmiProductsProvider)
+                    ..invalidate(vendorPaymentPlansProvider)
+                    ..invalidate(vendorCreditProgramProvider);
                   await ref.read(vendorEmiSettingsProvider.future);
                 },
                 child: ListView(
@@ -53,13 +57,16 @@ class VendorEmiScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Let buyers pay for your products over 3 to 12 months. '
-                      'You fund the instalments; StyleMint verifies buyers, '
-                      'collects each payment and handles recovery. Every EMI '
-                      'order needs your approval.',
+                      'You fund the instalments and carry what goes unpaid; '
+                      'StyleMint verifies and scores each buyer and collects '
+                      'every payment online. Products set to review requests '
+                      'send them to you to decide.',
                       style: DesignTokens.smallRegular.copyWith(
                         color: DesignTokens.textMuted,
                       ),
                     ),
+                    const SizedBox(height: DesignTokens.s16),
+                    const VendorPlanRequestsCard(),
                     const SizedBox(height: DesignTokens.s16),
                     settings.when(
                       loading: () => const LinearProgressIndicator(),
@@ -74,6 +81,13 @@ class VendorEmiScreen extends ConsumerWidget {
                     Text('Products offering EMI', style: DesignTokens.h3),
                     const SizedBox(height: DesignTokens.s8),
                     const _EmiProducts(),
+                    const SizedBox(height: DesignTokens.s24),
+                    Text(
+                      'Pay later and pay now, buy later',
+                      style: DesignTokens.h3,
+                    ),
+                    const SizedBox(height: DesignTokens.s8),
+                    const VendorCreditProgramCard(),
                   ],
                 ),
               ),

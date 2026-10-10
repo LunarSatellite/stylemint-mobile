@@ -76,6 +76,9 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/presen
 import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_gate_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_job_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plan_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plans_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/delivery_confirm_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_by_id_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_offers_screen.dart';
@@ -146,6 +149,8 @@ import 'package:stylemint_mobile_frontend/features/onboarding/presentation/scree
 import 'package:stylemint_mobile_frontend/features/payouts/domain/payout_destination_enums.dart';
 import 'package:stylemint_mobile_frontend/features/payouts/presentation/screens/payment_methods_screen.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/screens/vendor_payment_plan_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/screens/vendor_payment_plans_screen.dart';
 import 'package:stylemint_mobile_frontend/features/wallet/presentation/screens/wallet_screen.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/following_screen.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/profile_screen.dart';
@@ -1025,6 +1030,29 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.customerKycSubmit,
         builder: (ctx, state) => const CustomerKycSubmitScreen(),
       ),
+      // Payment plans. Review before detail: `review` is not an id.
+      GoRoute(
+        path: RouteNames.paymentPlans,
+        builder: (ctx, state) => const PaymentPlansScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.paymentPlanReview,
+        // Only reachable with a fresh quote; without one (a restored deep
+        // link) there is nothing to review, so go to the list.
+        redirect: (ctx, state) =>
+            state.extra is PlanReviewArgs ? null : RouteNames.paymentPlans,
+        builder: (ctx, state) =>
+            PlanReviewScreen(args: state.extra! as PlanReviewArgs),
+      ),
+      GoRoute(
+        path: RouteNames.paymentPlanDetail,
+        builder: (ctx, state) => PaymentPlanDetailScreen(
+          agreementId: state.pathParameters['agreementId']!,
+          args: state.extra is PlanDetailArgs
+              ? state.extra! as PlanDetailArgs
+              : const PlanDetailArgs(),
+        ),
+      ),
       GoRoute(
         path: RouteNames.shippingView,
         builder: (ctx, state) => ViewAddressScreen(
@@ -1621,6 +1649,16 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorEmi,
         builder: (ctx, state) => const VendorEmiScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorPaymentPlans,
+        builder: (ctx, state) => const VendorPaymentPlansScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorPaymentPlanDetail,
+        builder: (ctx, state) => VendorPaymentPlanDetailScreen(
+          agreementId: state.pathParameters['agreementId']!,
+        ),
       ),
       GoRoute(
         path: RouteNames.vendorOrders,
