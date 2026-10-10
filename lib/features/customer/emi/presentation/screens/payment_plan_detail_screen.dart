@@ -260,6 +260,12 @@ class _PaymentPlanDetailScreenState
                 const Divider(color: DesignTokens.borderDefault, height: 24),
               ],
               PlanRow(label: 'Price', value: planMoney(a.price)),
+              if ((a.priceReduced?.amount ?? 0) > 0)
+                PlanRow(
+                  key: const Key('plan-price-reduced'),
+                  label: 'Refunded',
+                  value: '− ${planMoney(a.priceReduced!)}',
+                ),
               PlanRow(
                 label: a.kind == PlanKind.prepay ? 'Deposit' : 'Down payment',
                 value: planMoney(a.downPayment),

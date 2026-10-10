@@ -121,6 +121,7 @@ PlanInstalment _instalment(Map<String, dynamic> json, String currency) =>
       outstanding: _money(json['outstanding'], currency),
       status: InstalmentStatus.fromWire(json['state']),
       paidAt: readDate(json['paidUtc']),
+      credited: _optionalMoney(json['credited'], currency),
     );
 
 CreditAgreement readCreditAgreement(Map<String, dynamic> json) {
@@ -165,6 +166,7 @@ CreditAgreement readCreditAgreement(Map<String, dynamic> json) {
     needsActivationPayment: readBool(json['needsActivationPayment']),
     instalments: List.unmodifiable(instalments),
     orderId: readOptionalString(json['orderId']),
+    priceReduced: _optionalMoney(json['priceReduced'], currency),
   );
 }
 

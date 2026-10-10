@@ -423,6 +423,35 @@ void main() {
       expect(find.textContaining('Nothing has been charged'), findsOneWidget);
     });
 
+    testWidgets('a partial refund shows off the price and on the schedule', (
+      tester,
+    ) async {
+      final wire = activeAgreementWire(overdue: false);
+      final instalments = (wire['instalments'] as List)
+          .cast<Map<String, dynamic>>();
+      await openPlan(tester, {
+        ...wire,
+        'priceReduced': 16000,
+        'instalments': [
+          ...instalments.take(2),
+          {
+            ...instalments[2],
+            'state': 5,
+            'outstanding': 0,
+            'credited': 16000,
+          },
+        ],
+      });
+
+      final reduced = find.byKey(const Key('plan-price-reduced'));
+      await tester.scrollUntilVisible(reduced, 200);
+      expect(
+        find.descendant(of: reduced, matching: find.textContaining('16,000')),
+        findsOneWidget,
+      );
+      expect(find.text('Covered by a refund'), findsOneWidget);
+    });
+
     testWidgets('a reversed plan says it is refunded, and why', (tester) async {
       await openPlan(
         tester,

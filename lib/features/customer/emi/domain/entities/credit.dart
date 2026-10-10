@@ -321,6 +321,7 @@ class PlanInstalment {
     required this.outstanding,
     required this.status,
     required this.paidAt,
+    this.credited,
   });
 
   final int number;
@@ -333,6 +334,12 @@ class PlanInstalment {
   final Money outstanding;
   final InstalmentStatus status;
   final DateTime? paidAt;
+
+  /// What a partial refund took off this payment: no longer owed. Null or zero
+  /// when nothing was.
+  final Money? credited;
+
+  bool get wasCredited => (credited?.amount ?? 0) > 0;
 }
 
 class CreditAgreement {
@@ -366,6 +373,7 @@ class CreditAgreement {
     required this.needsActivationPayment,
     required this.instalments,
     this.orderId,
+    this.priceReduced,
   });
 
   final String id;
@@ -400,6 +408,11 @@ class CreditAgreement {
   final DateTime? closedAt;
   final bool needsActivationPayment;
   final List<PlanInstalment> instalments;
+
+  /// How much partial refunds have taken off the price while the buyer kept
+  /// the item — first off what was still owed, the rest paid back. Null or
+  /// zero when none.
+  final Money? priceReduced;
 
   /// The order checkout created for this plan. A plan starts with the order
   /// that delivers its item: approved with no order, it goes to checkout;

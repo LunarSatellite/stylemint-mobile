@@ -151,7 +151,7 @@ class PlanInstalmentTile extends StatelessWidget {
       InstalmentStatus.waived => (
         Icons.check_circle_outline_rounded,
         DesignTokens.textMuted,
-        'Waived',
+        i.wasCredited ? 'Covered by a refund' : 'Waived',
       ),
       InstalmentStatus.overdue => (
         Icons.error_rounded,
@@ -197,7 +197,14 @@ class PlanInstalmentTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                planMoney(i.status.isSettled ? i.scheduled : i.outstanding),
+                planMoney(switch (i.status) {
+                  // What was actually paid — less than scheduled when a refund
+                  // covered part of it.
+                  InstalmentStatus.paid when i.paid.amount > 0 => i.paid,
+                  InstalmentStatus.waived when i.wasCredited => i.credited!,
+                  _ when i.status.isSettled => i.scheduled,
+                  _ => i.outstanding,
+                }),
                 style: DesignTokens.smallRegular,
               ),
               if (i.lateFeeDue.amount > 0)

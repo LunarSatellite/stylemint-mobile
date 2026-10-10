@@ -173,6 +173,25 @@ void main() {
       expect(a.canCancel, isFalse);
     });
 
+    test('reads what a partial refund took off the price and the schedule', () {
+      final wire = activeAgreementWire(overdue: false);
+      final instalments = (wire['instalments'] as List)
+          .cast<Map<String, dynamic>>();
+      final a = readCreditAgreement({
+        ...wire,
+        'priceReduced': 5000,
+        'instalments': [
+          ...instalments.take(2),
+          {...instalments[2], 'outstanding': 11000, 'credited': 5000},
+        ],
+      });
+
+      expect(a.priceReduced!.amount, 5000);
+      expect(a.instalments.last.wasCredited, isTrue);
+      expect(a.instalments.last.credited!.amount, 5000);
+      expect(a.instalments.first.wasCredited, isFalse);
+    });
+
     test('reads an active plan with an overdue payment', () {
       final a = readCreditAgreement(activeAgreementWire());
 
