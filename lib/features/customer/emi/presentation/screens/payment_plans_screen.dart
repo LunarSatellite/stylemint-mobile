@@ -101,7 +101,12 @@ class _PlanTile extends ConsumerWidget {
     final subtitle = switch (a.status) {
       AgreementStatus.active when next?.dueDate != null =>
         'Next ${planMoney(next!.outstanding)} on ${planDate(next.dueDate!)}',
+      AgreementStatus.approved when a.needsCheckout => 'Check out to start',
       AgreementStatus.approved => 'Pay ${planMoney(a.downPayment)} to start',
+      AgreementStatus.reversed =>
+        a.reversedForReturn
+            ? 'Refunded — item returned'
+            : 'Refunded — order cancelled',
       AgreementStatus.declined when a.reasons.isNotEmpty => reasonForBuyer(
         a.reasons.first,
       ),

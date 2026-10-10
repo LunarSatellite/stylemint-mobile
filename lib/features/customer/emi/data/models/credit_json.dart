@@ -223,7 +223,9 @@ PlanPaymentStart readPlanPaymentStart(Map<String, dynamic> json) {
 /// check out.
 PlanCheckout readPlanCheckout(Map<String, dynamic> json) {
   final sessionId = readOptionalString(json['id']);
-  final items = json['items'] is List ? json['items'] as List : const <Object?>[];
+  final items = json['items'] is List
+      ? json['items'] as List
+      : const <Object?>[];
   final item = items.isEmpty || items.first is! Map
       ? null
       : Map<String, dynamic>.from(items.first as Map);

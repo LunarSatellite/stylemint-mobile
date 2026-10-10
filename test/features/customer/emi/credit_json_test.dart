@@ -156,6 +156,23 @@ void main() {
       },
     );
 
+    test('reads a plan reversed because its order was cancelled', () {
+      final a = readCreditAgreement(
+        agreementWire(
+          state: 9,
+          reasons: const ['order_cancelled'],
+          needsActivationPayment: false,
+        ),
+      );
+
+      expect(a.status, AgreementStatus.reversed);
+      expect(a.status.isClosed, isTrue);
+      expect(a.status.label, 'Refunded');
+      expect(a.reversedForReturn, isFalse);
+      expect(a.primaryPayment, isNull);
+      expect(a.canCancel, isFalse);
+    });
+
     test('reads an active plan with an overdue payment', () {
       final a = readCreditAgreement(activeAgreementWire());
 

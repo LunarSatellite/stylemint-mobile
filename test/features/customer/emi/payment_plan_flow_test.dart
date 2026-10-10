@@ -423,6 +423,23 @@ void main() {
       expect(find.textContaining('Nothing has been charged'), findsOneWidget);
     });
 
+    testWidgets('a reversed plan says it is refunded, and why', (tester) async {
+      await openPlan(
+        tester,
+        agreementWire(
+          state: 9,
+          reasons: const ['order_returned'],
+          needsActivationPayment: false,
+        ),
+      );
+
+      expect(find.text('Refunded'), findsWidgets);
+      expect(find.textContaining('You returned the item'), findsOneWidget);
+      expect(find.textContaining('being refunded'), findsOneWidget);
+      expect(find.byKey(const Key('plan-pay-primary')), findsNothing);
+      expect(find.byKey(const Key('plan-cancel')), findsNothing);
+    });
+
     testWidgets('a declined plan says why, in words', (tester) async {
       await openPlan(
         tester,

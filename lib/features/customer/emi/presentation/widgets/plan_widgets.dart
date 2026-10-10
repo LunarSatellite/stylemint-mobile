@@ -100,7 +100,8 @@ Color planStatusColour(AgreementStatus status) => switch (status) {
   AgreementStatus.defaulted ||
   AgreementStatus.declined => DesignTokens.colorError,
   AgreementStatus.cancelled ||
-  AgreementStatus.expired => DesignTokens.textMuted,
+  AgreementStatus.expired ||
+  AgreementStatus.reversed => DesignTokens.textMuted,
 };
 
 class PlanStatusChip extends StatelessWidget {

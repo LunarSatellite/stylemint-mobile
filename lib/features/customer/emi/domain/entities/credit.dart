@@ -91,7 +91,12 @@ enum AgreementStatus {
   defaulted(5),
   declined(6),
   cancelled(7),
-  expired(8);
+  expired(8),
+
+  /// The plan had started and its order was cancelled before it shipped, or the
+  /// item was returned: everything paid on it is refunded, and nothing more is
+  /// owed.
+  reversed(9);
 
   const AgreementStatus(this.wire);
   final int wire;
@@ -106,6 +111,7 @@ enum AgreementStatus {
         'declined': declined,
         'cancelled': cancelled,
         'expired': expired,
+        'reversed': reversed,
       });
 
   String get label => switch (this) {
@@ -117,6 +123,7 @@ enum AgreementStatus {
     declined => 'Not approved',
     cancelled => 'Cancelled',
     expired => 'Expired',
+    reversed => 'Refunded',
   };
 
   /// Finished one way or another: nothing more can be paid or decided.
@@ -125,7 +132,8 @@ enum AgreementStatus {
       this == defaulted ||
       this == declined ||
       this == cancelled ||
-      this == expired;
+      this == expired ||
+      this == reversed;
 }
 
 enum InstalmentStatus {
@@ -397,6 +405,11 @@ class CreditAgreement {
   /// that delivers its item: approved with no order, it goes to checkout;
   /// approved with one, it is waiting for its first payment.
   final String? orderId;
+
+  /// Reversed because the item came back, rather than because the order was
+  /// cancelled before it shipped.
+  bool get reversedForReturn =>
+      status == AgreementStatus.reversed && reasons.contains('order_returned');
 
   /// Approved, and not yet checked out — the next step is checkout.
   bool get needsCheckout =>

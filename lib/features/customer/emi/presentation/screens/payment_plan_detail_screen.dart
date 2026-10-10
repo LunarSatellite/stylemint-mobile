@@ -381,6 +381,15 @@ class _Headline extends StatelessWidget {
         'Expired',
         'The first payment was not made in time. You can apply again.',
       ),
+      AgreementStatus.reversed => (
+        Icons.undo_rounded,
+        DesignTokens.primaryGreen,
+        'Refunded',
+        '${a.reversedForReturn ? 'You returned the item' : 'Your order was cancelled'}, '
+            'so this plan is closed and nothing more is owed. Everything you '
+            'paid on it is being refunded to the way you paid — usually within '
+            '5–7 days.',
+      ),
     };
     final referredFor = a.status == AgreementStatus.pendingApproval
         ? a.reasons.where((r) => r != 'manual_review_required').toList()
