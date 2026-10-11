@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/social/group_cart/domain/entities/group_cart.dart';
 import 'package:stylemint_mobile_frontend/features/social/group_cart/presentation/notifiers/group_cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/group_cart/presentation/widgets/group_cart_item_tile.dart';
+import 'package:stylemint_mobile_frontend/features/social/group_cart/presentation/widgets/group_cart_add_item_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/social/group_cart/presentation/widgets/group_cart_invite_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/social/group_cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -25,6 +26,12 @@ class GroupCartDetailScreen extends ConsumerWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         title: const Text('Group Cart', style: DesignTokens.sectionInnerTitle),
         actions: [
+          IconButton(
+            key: const Key('group-cart-add-item-action'),
+            tooltip: 'Add an item',
+            onPressed: () => _showAddItem(context),
+            icon: const Icon(Icons.add_shopping_cart_outlined),
+          ),
           IconButton(
             tooltip: 'Invite a friend',
             onPressed: () => _showInviteFriends(context),
@@ -134,10 +141,23 @@ class GroupCartDetailScreen extends ConsumerWidget {
         const Divider(color: DesignTokens.borderDefault, height: 1),
         Expanded(
           child: cart.items.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No items yet. Add something!',
-                    style: DesignTokens.mediumRegular,
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'No items yet.',
+                        style: DesignTokens.mediumRegular,
+                      ),
+                      const SizedBox(height: DesignTokens.s12),
+                      ElevatedButton.icon(
+                        key: const Key('group-cart-empty-add-item'),
+                        onPressed: () => _showAddItem(context),
+                        icon: const Icon(Icons.add_shopping_cart_outlined),
+                        label: const Text('Add from your cart'),
+                        style: DesignTokens.primaryButtonStyle(),
+                      ),
+                    ],
                   ),
                 )
               : ListView.builder(
@@ -218,6 +238,19 @@ class GroupCartDetailScreen extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _showAddItem(BuildContext context) async {
+    final addedName = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: DesignTokens.bgAppBody,
+      builder: (_) => GroupCartAddItemSheet(cartId: cartId),
+    );
+    if (addedName == null || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$addedName added to the group cart.')),
     );
   }
 

@@ -67,7 +67,15 @@ class GroupCartRemoteDataSource {
     return token;
   }
 
-  /// TODO(swagger): No cart-share items endpoint — cart lines managed via /v1/cart/lines.
+  /// `POST /v1/cart-shares/{id}/items` → `CartShareItemDto`. Body is
+  /// `AddCartShareItemVm { productId, productVariantId?, quantity }`; the
+  /// server resolves the caller from the token. Its validator requires a
+  /// product id and a quantity of 1–99, so anything outside that is a 400
+  /// rather than a clamp.
+  ///
+  /// (This used to carry a "no cart-share items endpoint" note from when the
+  /// lines had to go through `/v1/cart/lines`. The endpoint exists now and the
+  /// call below matches its contract.)
   Future<GroupCartItemDto> addToGroupCart(
     String cartId,
     String productId,
@@ -82,7 +90,8 @@ class GroupCartRemoteDataSource {
     return GroupCartItemDto.fromJson(response as Map<String, dynamic>);
   }
 
-  /// TODO(swagger): No cart-share item removal endpoint.
+  /// `DELETE /v1/cart-shares/{id}/items/{itemId}` → 204. Also exists now; the
+  /// removal note this used to carry was written before it did.
   Future<void> removeFromGroupCart(
     String cartId,
     String itemId,
