@@ -5,12 +5,18 @@
 > layers; the remaining work is **API wiring**, not UI. Items are grouped by
 > effort/risk so we can knock out the easy wins first.
 >
-> **Re-verified against the code 2026-10-11.** Both P0 sections are done, and
-> most of P1 with them — the boxes below were never ticked as the work landed,
-> so the file had been overstating what is left. P2 is untouched: every item
-> there needs the backend to confirm a path, and `swagger-spec.json` is itself
-> four months old (11 Jun 2026), so it cannot settle them either. Re-generate
-> the spec from a running backend before working that section.
+> **Re-verified against the code 2026-10-11 — this backlog is finished.**
+> Every section below is done; the boxes were simply never ticked as the work
+> landed, so the file had been describing a much earlier state of the app.
+> Paths were checked against a route table built from the `[Http*]` attributes
+> of all 276 backend controllers (1,115 routes), not `swagger-spec.json`, which
+> is four months old (11 Jun 2026) and no longer authoritative.
+>
+> What is genuinely left for the mobile app is **not API wiring**. It is the
+> live page-by-page sweep tracked in `dev/HANDOVER_CODEX.md`, and a short list
+> of features that are plumbed end-to-end but unreachable from the UI (group
+> cart's add/remove, `/co-watch`, `StoriesScreen`) — product decisions, not
+> endpoints.
 
 Legend — per-feature status used below:
 - **WIRED** — datasource hits a real `/v1/...` endpoint and the real repository is injected.
@@ -39,22 +45,27 @@ No `if (kDebugMode) return <mock>` branch survives. The eight remaining
 
 - [x] customer/payment · [x] customer/saved_items · [x] customer/shipping · [x] profile
 
-## P1 — Stub features needing a full data layer — **5 of 8 done**
+## P1 — Stub features needing a full data layer — **DONE (verified 2026-10-11)**
 
-Checked 2026-10-11 by looking for a remote datasource + repository impl under
-each feature.
+All eight are wired. Three of them look like stubs if you go by directory
+shape — `onboarding`, `vendor/support` and `creator/support` have no `data/`
+folder of their own — but that is because they **reuse** an existing layer
+rather than duplicate it, which is what you want:
 
-- [x] **social/creator_profile** — 2 datasources, 3 repository files.
-- [x] **vendor/analytics**
-- [x] **vendor/creator_performance**
-- [x] **creator/analytics**
-- [x] **creator/reels**
-- [ ] **onboarding** — still presentation-only. Needs interests + follow
-      endpoints (coordinate with `stylemint-onboarding`).
-- [ ] **vendor/support** — still presentation-only. Wire to support/tickets.
-- [ ] **creator/support** — still presentation-only. Wire to support/tickets.
-
-The two support stubs are the same job twice; do them together.
+- [x] **social/creator_profile** · **vendor/analytics** ·
+      **vendor/creator_performance** · **creator/analytics** ·
+      **creator/reels** — each has its own datasource + repository.
+- [x] **vendor/support** (1,273 lines) and **creator/support** (1,453 lines) —
+      both drive `supportNotifierProvider` / `createTicketNotifierProvider`
+      from the platform `support` feature: load tickets, create tickets,
+      ticket detail, contact channels. Giving either its own support data
+      layer would be a third copy of one that already works.
+- [x] **onboarding** — `pick_interests_screen` → `interestsProvider` →
+      `auth_remote_datasource`, which covers
+      `GET /v1/public/interests` and
+      `GET`/`POST`/`DELETE /v1/accounts/{accountId}/interests`.
+      `follow_creators_screen` and `follow_brands_screen` run off
+      `suggestedCreatorsProvider` / `brandsListProvider` / `followNotifierProvider`.
 
 ## P1 — Post-login / core gating — **DONE (verified 2026-10-11)**
 
@@ -64,7 +75,7 @@ The two support stubs are the same job twice; do them together.
       `edit_profile_screen.dart:174`) and `deleteAccount()` goes through
       `deleteAccountNotifierProvider`.
 
-## P2 — Endpoint path corrections — **all but one cleared (verified 2026-10-11)**
+## P2 — Endpoint path corrections — **DONE (verified 2026-10-11)**
 
 This section listed ~25 datasource calls whose comments flagged a path as
 "not in Swagger" or wrong. Re-checked by grepping every
@@ -102,11 +113,11 @@ platform: notifications, settings, support, payouts, qr_login
 
 ---
 
-### Suggested order of attack
-1. ~~P0 mock swaps + debug-stub removal~~ — done.
-2. ~~P1 post-login gating + profile~~ — done.
-3. **P2 backend coordination** — the whole section still stands, but it cannot
-   be worked from the checked-in `swagger-spec.json` (4 months stale). Bring the
-   backend up, regenerate the spec, then batch the "not in Swagger" list into one
-   conversation and apply the path fixes.
-4. **P1 stub data layers** — onboarding, then the two support stubs together.
+### Suggested order of attack — all four cleared
+1. ~~P0 mock swaps + debug-stub removal~~
+2. ~~P1 post-login gating + profile~~
+3. ~~P2 backend coordination~~
+4. ~~P1 stub data layers~~
+
+Keep this file only as the record of how the wiring was finished. New API work
+should be tracked against the live sweep in `dev/HANDOVER_CODEX.md`.
