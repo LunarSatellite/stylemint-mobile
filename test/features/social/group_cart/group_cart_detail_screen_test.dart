@@ -94,7 +94,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('No items yet. Add something!'), findsOneWidget);
+      expect(find.text('No items yet.'), findsOneWidget);
+      expect(
+        find.byKey(const Key('group-cart-empty-add-item')),
+        findsOneWidget,
+      );
       expect(find.text('Close Group Cart'), findsOneWidget);
       final bottomSafeArea = tester.widget<SafeArea>(
         find.byKey(const Key('group-cart-bottom-safe-area')),

@@ -177,12 +177,6 @@ const Map<String, String> _exemptions = {
   'lib/features/support/shared/help_center_data.dart':
       'Help article text about custom-made products and 2FA setup.',
 
-  // ── Fixture / mock data standing in for server content ──────────────────
-  'lib/features/profile/shared/profile_mock_data.dart':
-      "A creator's own self-written bio, standing in for server content.",
-  'lib/features/customer/reels/shared/reels_mock_data.dart':
-      'A creator\'s own reel caption ("my top 3 picks for dry skin"), in the '
-      "creator's voice — not the app telling the reader anything.",
 };
 
 /// [_claimPhrases] compiled with word boundaries, in the same order.
