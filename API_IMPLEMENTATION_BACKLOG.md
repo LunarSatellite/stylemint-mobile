@@ -64,47 +64,35 @@ The two support stubs are the same job twice; do them together.
       `edit_profile_screen.dart:174`) and `deleteAccount()` goes through
       `deleteAccountNotifierProvider`.
 
-## P2 — Endpoint path corrections / backend coordination
+## P2 — Endpoint path corrections — **all but one cleared (verified 2026-10-11)**
 
-These call paths that the datasource comments flag as **not in Swagger** or
-the wrong path. Each needs backend confirmation, then a one-line path fix.
-Grouped by domain.
+This section listed ~25 datasource calls whose comments flagged a path as
+"not in Swagger" or wrong. Re-checked by grepping every
+`*_remote_datasource.dart` for those markers and reading the surviving ones:
+**the list is stale**. Its line numbers no longer match the files, and almost
+every call has since been corrected — what is left are comments that *explain
+a resolved decision* rather than flag an open question (no dedicated
+review-summary endpoint, locale lives on the account rather than a language
+endpoint, SocialFeed has no media endpoint of its own, there is no
+`PUT /status` on vendor products, and so on). Those read as open items only if
+you grep for the word "no".
 
-### Customer
-- [ ] discovery — related-products path uncertain. `discovery_remote_datasource.dart:42`
-- [ ] discovery — toggle-save path uncertain. `discovery_remote_datasource.dart:70`
-- [ ] reviews — no review-summary endpoint; currently re-uses reviews list. `reviews_remote_datasource.dart:26`
+Checked against the controller source rather than `swagger-spec.json` — a
+route table built from the `[Http*]` attributes across 276 controllers
+(1,115 routes), which is current in a way the June spec is not.
 
-### Creator
-- [ ] apply — identity doc upload `/v1/creator/documents` not in Swagger. `creator_remote_datasource.dart:69`
-- [ ] earnings — payout-methods GET/POST should be `/v1/accounts/{accountId}/payout-methods*`. `earnings_remote_datasource.dart:72,106`
-- [ ] partnerships — `getActivePartnerships()` needs status filter / dedicated endpoint. `partnerships_remote_datasource.dart:48`
-- [ ] reel_import — `search-products` + `import-history` paths not in Swagger. `reel_import_remote_datasource.dart:46,64`
-- [ ] reel_studio — `deleteDraft` path mismatch (`reel-studio/drafts` vs `recipes/draft`). `reel_studio_remote_datasource.dart:89`
+- [x] **social/group_cart** — the two `TODO(swagger)` markers were the last
+      genuinely open ones, and they are out of date:
+      `POST /v1/cart-shares/{id}/items` and
+      `DELETE /v1/cart-shares/{id}/items/{itemId}` both exist
+      (`CartSharesController`), and the datasource already calls them with the
+      right body. Comments replaced with the verified contract.
 
-### Vendor
-- [ ] add_product — image upload `POST /v1/vendor/products/images` not in Swagger. `add_product_remote_datasource.dart:66`
-- [ ] apply — KYC upload/list should use `/v1/accounts/{accountId}/verification-documents*`. `vendor_remote_datasource.dart:49,71`
-- [ ] brand_studio — templates/analytics/insights endpoints all need correct paths (templates under admin scope). `brand_studio_remote_datasource.dart:9,23,33`
-- [ ] earnings — ledger + payout-methods endpoints need correct paths. `vendor_earnings_remote_datasource.dart:17,32,41`
-- [ ] matchmaking — compatibility-score missing; invite should be `POST /v1/vendor/matches/{id}/invite`. `matchmaking_remote_datasource.dart:23,31`
-- [ ] orders — return endpoint not in Swagger. `vendor_orders_remote_datasource.dart:57`
-- [ ] partnerships — 6 calls need remap to `/v1/vendor/briefs` + `/v1/vendor/partnerships/*`. `vendor_partnerships_remote_datasource.dart:10,19,35,52,72,89`
-- [ ] products — product-detail / status / delete should use list-filter, `/stock` or `/archive`. `vendor_products_remote_datasource.dart:26,32,49`
-
-### Social
-- [ ] co_watch — GET `{id}`, leave→`/end`, reactions endpoints missing. `co_watch_remote_datasource.dart:18,49,60,74`
-- [ ] drop_party — invite + scan/QR endpoints missing. `drop_party_remote_datasource.dart:60,73`
-- [ ] feed — share-post endpoint missing. `feed_remote_datasource.dart:92`
-- [ ] group_cart — item add/remove should use `/v1/cart/lines`; checkout vs `/close`. `group_cart_remote_datasource.dart:47,62,74`
-- [ ] stories — delete path conflict (DELETE `/v1/stories/{id}` vs post archive). `stories_remote_datasource.dart:57`
-- [ ] tips — tip history + balance missing; consider `/v1/earnings/*`. `tips_remote_datasource.dart:30,42`
-
-### Platform
-- [ ] settings — language endpoint not in Swagger (currently kept as-is). `settings_remote_datasource.dart:25,32`
-- [ ] support — categories endpoint may be `/v1/help/categories`. `support_remote_datasource.dart:36`
-
----
+**Still worth doing, but it is a UI gap, not an API one:** nothing in
+`group_cart/presentation/` calls `GroupCartNotifier.addItem` or `removeItem`.
+The feature is plumbed from notifier to endpoint and unreachable from the app
+— the same "orphaned route" category as `/co-watch` and `StoriesScreen` in
+`dev/HANDOVER_CODEX.md`. Needs a product decision, not a path fix.
 
 ## Already WIRED (no API work — verify only)
 
