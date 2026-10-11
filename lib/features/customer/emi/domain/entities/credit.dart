@@ -287,7 +287,16 @@ class CreditQuote {
     required this.aprPercent,
     required this.goodsBeforePaidInFull,
     required this.schedule,
+    this.lateFee,
+    this.lateFeeGraceDays = 0,
   });
+
+  /// The flat fee charged once on an instalment more than [lateFeeGraceDays]
+  /// days late, as the signed quote states it. Null or zero: no late fee.
+  final Money? lateFee;
+  final int lateFeeGraceDays;
+
+  bool get chargesLateFee => (lateFee?.amount ?? 0) > 0;
 
   final String token;
   final DateTime expiresAt;

@@ -239,6 +239,9 @@ class FakeCreditRepository implements CreditRepository {
   /// one handed out has already lapsed.
   bool expiredQuote;
 
+  /// Fields laid over [quoteWire] on every quote, e.g. a late fee.
+  Map<String, dynamic> quoteExtra = {};
+
   final quotes = <({PlanKind kind, int? down, int tenure})>[];
   final applications = <({String token, String key})>[];
   final payments =
@@ -290,7 +293,11 @@ class FakeCreditRepository implements CreditRepository {
         ? DateTime.now().toUtc().subtract(const Duration(minutes: 1))
         : DateTime.now().toUtc().add(const Duration(minutes: 15));
     return right(
-      readCreditQuote({...quoteWire, 'expiresUtc': expires.toIso8601String()}),
+      readCreditQuote({
+        ...quoteWire,
+        ...quoteExtra,
+        'expiresUtc': expires.toIso8601String(),
+      }),
     );
   }
 

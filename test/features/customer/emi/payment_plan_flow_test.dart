@@ -281,6 +281,35 @@ void main() {
       return r;
     }
 
+    testWidgets('the review says there is no late fee when there is none', (
+      tester,
+    ) async {
+      await openReview(tester);
+      final row = find.byKey(const Key('review-late-fee'));
+      await _reveal(tester, row);
+      expect(
+        find.descendant(of: row, matching: find.text('None')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the review discloses the late fee before the buyer agrees', (
+      tester,
+    ) async {
+      final repo = FakeCreditRepository()
+        ..quoteExtra = {'lateFeeAmount': 250, 'lateFeeGraceDays': 5};
+      await openReview(tester, repo: repo);
+      final row = find.byKey(const Key('review-late-fee'));
+      await _reveal(tester, row);
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.textContaining('if more than 5 days late'),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('Apply waits for the buyer to agree, then sends the token', (
       tester,
     ) async {

@@ -161,6 +161,17 @@ class _PlanReviewScreenState extends ConsumerState<PlanReviewScreen> {
                     label: 'APR',
                     value: '${q.aprPercent.toStringAsFixed(2)}%',
                   ),
+                  // Disclosed before accepting, as the signed quote states it.
+                  // Prepay extends no credit and never carries one.
+                  if (q.kind != PlanKind.prepay)
+                    PlanRow(
+                      key: const Key('review-late-fee'),
+                      label: 'Late fee',
+                      value: q.chargesLateFee
+                          ? '${planMoney(q.lateFee!)} if more than '
+                                '${q.lateFeeGraceDays} days late'
+                          : 'None',
+                    ),
                 ],
               ),
             ),

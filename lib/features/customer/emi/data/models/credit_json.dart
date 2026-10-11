@@ -108,6 +108,8 @@ CreditQuote readCreditQuote(Map<String, dynamic> json) {
     aprPercent: readOptionalDouble(json['aprPercent']) ?? 0,
     goodsBeforePaidInFull: readBool(json['goodsReleasedBeforePaidInFull']),
     schedule: List.unmodifiable(_schedule(json['schedule'], currency)),
+    lateFee: _optionalMoney(json['lateFeeAmount'], currency),
+    lateFeeGraceDays: readInt(json['lateFeeGraceDays']),
   );
 }
 

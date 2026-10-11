@@ -65,6 +65,18 @@ void main() {
       expect(q.isExpiredAt(DateTime.utc(2026, 3, 2, 6, 15)), isTrue);
     });
 
+    test('reads the late fee the quote discloses, and none when absent', () {
+      final q = readCreditQuote({
+        ...quoteWire,
+        'lateFeeAmount': 250,
+        'lateFeeGraceDays': 5,
+      });
+      expect(q.chargesLateFee, isTrue);
+      expect(q.lateFee!.amount, 250);
+      expect(q.lateFeeGraceDays, 5);
+      expect(readCreditQuote(quoteWire).chargesLateFee, isFalse);
+    });
+
     test('a quote without a token or a kind is refused, not shown', () {
       expect(
         () => readCreditQuote({...quoteWire, 'quoteToken': ''}),
