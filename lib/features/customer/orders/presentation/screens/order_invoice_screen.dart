@@ -273,7 +273,9 @@ class _AuthoritativeInvoice extends StatelessWidget {
                 if (invoice.tax.amount > 0) ...[
                   const SizedBox(height: 8),
                   _TotalRow(
-                    label: 'Includes VAT',
+                    // On an older order the VAT was charged on top and is a
+                    // line the grand total adds; otherwise it is inside it.
+                    label: invoice.taxIncluded ? 'Includes VAT' : 'VAT',
                     value: formatMoney(invoice.tax),
                   ),
                 ],
@@ -355,7 +357,8 @@ void _shareOrderInvoice(OrderInvoice invoice) {
     'Payment: ${invoice.paymentMethod} (${invoice.paymentStatus})',
     'Subtotal: ${formatMoney(invoice.subtotal)}',
     'Shipping: ${formatMoney(invoice.shipping)}',
-    if (invoice.tax.amount > 0) 'Includes VAT: ${formatMoney(invoice.tax)}',
+    if (invoice.tax.amount > 0)
+      '${invoice.taxIncluded ? 'Includes VAT' : 'VAT'}: ${formatMoney(invoice.tax)}',
     'Grand total: ${formatMoney(invoice.total)}',
   ];
   unawaited(SharePlus.instance.share(ShareParams(text: lines.join('\n'))));

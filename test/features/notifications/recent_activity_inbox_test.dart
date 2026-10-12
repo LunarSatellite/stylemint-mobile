@@ -119,6 +119,20 @@ void main() {
     expect(activityItemOpens(item), isTrue);
   });
 
+  test('a payment-plan row has a real title and opens the plan', () {
+    const agreementId = 'b7c1d2e3-f405-4617-8829-3a4b5c6d7e8f';
+    final item = _row('n5', 'plan.reminder.overdue.inapp', {
+      'data.deepLink': '/payment-plans/$agreementId',
+      'amount': '8000.00',
+    });
+    expect(item.title, 'A payment plan instalment is overdue');
+    expect(activityItemOpens(item), isTrue);
+    expect(
+      _row('n6', 'plan.defaulted.inapp', {'daysPastDue': '90'}).title,
+      'Your payment plan was closed',
+    );
+  });
+
   test('a creator activity row (no template) opens nothing', () {
     const item = ActivityItem(
       id: 'a1',

@@ -226,9 +226,7 @@ void main() {
     expect(find.text(EmiCtaButton.inReviewLabel), findsOneWidget);
   });
 
-  testWidgets('an eligible buyer sees a disabled "coming soon" button', (
-    tester,
-  ) async {
+  testWidgets('an eligible buyer can continue to a quote', (tester) async {
     await _pump(
       tester,
       signedIn: true,
@@ -236,12 +234,12 @@ void main() {
     );
     await _settleQuote(tester);
 
-    final label = find.text(EmiCtaButton.comingSoonLabel);
+    final label = find.text(EmiCtaButton.continueLabel);
     expect(label, findsOneWidget);
     final button = tester.widget<FilledButton>(
       find.ancestor(of: label, matching: find.byType(FilledButton)),
     );
-    expect(button.onPressed, isNull);
+    expect(button.onPressed, isNotNull);
   });
 
   testWidgets('emi_quote.not_available replaces the plan with a notice', (

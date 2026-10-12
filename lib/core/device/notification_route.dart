@@ -12,7 +12,8 @@
 /// Resolution order:
 ///  1. an explicit link (`deepLink`, `deep_link`, `link`, `url`, `route`);
 ///  2. by type — KYC decision, delivery notifications (their own contract,
-///     see `delivery_push.dart`), buyer orders, payouts, catalog alerts;
+///     see `delivery_push.dart`), buyer orders, payment plans, payouts,
+///     catalog alerts;
 ///  3. an untyped payload that still names an order opens that order;
 ///  4. otherwise null: the notification only tells the user something.
 library;
@@ -202,6 +203,11 @@ String? notificationLocation(
     // Every `order.*` template goes to the buyer.
     if (type.startsWith('order.')) return buyerOrderLocation(payload);
 
+    // Payment-plan reminders and the default notice. The server sends the
+    // plan's screen as `deepLink` (handled above); this is for a payload
+    // that carries only the plan's id, or nothing at all.
+    if (type.startsWith('plan.')) return paymentPlanLocation(payload);
+
     if (type.startsWith('payout.')) {
       if (viewer.onVendorSide) return RouteNames.vendorEarnings;
       if (viewer.onCreatorSide) return RouteNames.earnings;
@@ -251,6 +257,15 @@ String buyerOrderLocation(NotificationPayload payload) {
     return '/orders/${Uri.encodeComponent(subOrderId)}';
   }
   return RouteNames.orders;
+}
+
+/// The plan a payment-plan notification is about, by its `agreementId`;
+/// with no usable id, the buyer's list of plans.
+String paymentPlanLocation(NotificationPayload payload) {
+  final agreementId = payload.id('agreementId');
+  return agreementId != null && _isGuid(agreementId)
+      ? RouteNames.paymentPlanDetailPath(agreementId)
+      : RouteNames.paymentPlans;
 }
 
 /// The viewer for a notification tapped while the router shows [location]:

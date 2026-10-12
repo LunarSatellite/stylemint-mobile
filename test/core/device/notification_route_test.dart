@@ -229,6 +229,51 @@ void main() {
     });
   });
 
+  group('payment-plan notifications open the plan', () {
+    const agreementId = 'b7c1d2e3-f405-4617-8829-3a4b5c6d7e8f';
+    const types = [
+      'plan.reminder.upcoming',
+      'plan.reminder.due',
+      'plan.reminder.overdue',
+      'plan.defaulted',
+    ];
+
+    for (final type in types) {
+      test('$type by the deepLink the server sends', () {
+        expect(
+          _push({'type': type, 'deepLink': '/payment-plans/$agreementId'}),
+          '/payment-plans/$agreementId',
+        );
+      });
+
+      test('$type by its agreement id alone', () {
+        expect(
+          _push({'type': type, 'agreementId': agreementId}),
+          RouteNames.paymentPlanDetailPath(agreementId),
+        );
+      });
+    }
+
+    test('with no usable id, the list of plans', () {
+      expect(_push({'type': 'plan.reminder.due'}), RouteNames.paymentPlans);
+      expect(
+        _push({'type': 'plan.reminder.due', 'agreementId': 'not-an-id'}),
+        RouteNames.paymentPlans,
+      );
+    });
+
+    test('an inbox row resolves like its push', () {
+      expect(
+        _inbox('plan.reminder.overdue.inapp', {
+          'data.deepLink': '/payment-plans/$agreementId',
+          'data.agreementId': agreementId,
+          'amount': '8000.00',
+        }),
+        '/payment-plans/$agreementId',
+      );
+    });
+  });
+
   test('kyc.decided opens the verification screen', () {
     expect(
       _push({'type': 'kyc.decided', 'status': 'Approved'}),

@@ -42,6 +42,7 @@ class OrderDetail {
     required this.subtotal,
     required this.shipping,
     required this.tax,
+    this.taxIncluded = true,
     required this.total,
     required this.shippingAddress,
     this.fulfillmentChannel = OrderFulfillmentChannel.delivery,
@@ -74,6 +75,12 @@ class OrderDetail {
   final Money subtotal;
   final Money shipping;
   final Money tax;
+
+  /// [tax] is the VAT inside the prices — true of every order since catalogue
+  /// prices included VAT — so it is part of [total], not added to it. False on
+  /// an older order that was charged VAT on top: there it is one of the lines
+  /// [total] adds up.
+  final bool taxIncluded;
   final Money total;
 
   /// The ship-to line. **Empty on a collection order**, because checkout
@@ -107,6 +114,7 @@ class OrderDetail {
     Money? subtotal,
     Money? shipping,
     Money? tax,
+    bool? taxIncluded,
     Money? total,
     String? shippingAddress,
     OrderFulfillmentChannel? fulfillmentChannel,
@@ -132,6 +140,7 @@ class OrderDetail {
       subtotal: subtotal ?? this.subtotal,
       shipping: shipping ?? this.shipping,
       tax: tax ?? this.tax,
+      taxIncluded: taxIncluded ?? this.taxIncluded,
       total: total ?? this.total,
       shippingAddress: shippingAddress ?? this.shippingAddress,
       fulfillmentChannel: fulfillmentChannel ?? this.fulfillmentChannel,
@@ -176,6 +185,7 @@ class OrderInvoice {
     required this.subtotal,
     required this.shipping,
     required this.tax,
+    this.taxIncluded = true,
     required this.total,
     required this.items,
   });
@@ -191,6 +201,9 @@ class OrderInvoice {
   final Money subtotal;
   final Money shipping;
   final Money tax;
+
+  /// See [OrderDetail.taxIncluded].
+  final bool taxIncluded;
   final Money total;
   final List<OrderInvoiceLine> items;
 
@@ -216,6 +229,7 @@ class OrderInvoice {
     subtotal: subtotal,
     shipping: shipping,
     tax: tax,
+    taxIncluded: taxIncluded,
     total: total,
     shippingAddress: shippingAddress,
     receiverName: receiverName,

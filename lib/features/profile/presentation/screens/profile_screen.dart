@@ -324,10 +324,17 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'Shipping Addresses',
               onTap: () => context.push(RouteNames.shippingAddresses),
             ),
-            // KYC Tier 2, which EMI (pay in instalments) needs.
+            // EMI, pay later and pay-now-buy-later: what is owed, what is
+            // next, and paying it.
+            ProfileMenuItem(
+              icon: Icons.event_repeat_rounded,
+              label: 'Payment plans',
+              onTap: () => context.push(RouteNames.paymentPlans),
+            ),
+            // KYC Tier 2, which payment plans that lend need.
             ProfileMenuItem(
               icon: Icons.verified_user_outlined,
-              label: 'Verify identity (for EMI)',
+              label: 'Verify identity (for payment plans)',
               onTap: () => context.push(RouteNames.customerKyc),
             ),
             ProfileMenuItem(

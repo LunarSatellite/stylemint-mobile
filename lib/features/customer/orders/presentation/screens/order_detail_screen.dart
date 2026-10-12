@@ -165,35 +165,35 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           accepts: _isAboutThisOrder,
           onRefresh: _liveRefresh,
           child: state.when(
-          initial: () => _loader(),
-          loadInProgress: () => _loader(),
-          loadSuccess: (order) => _refreshable(
-            order,
-            _OrderDetailBody(
-              order: order,
-              routeOrderId: widget.orderId,
-              notifier: ref.read(provider.notifier),
-              focusDeliveryRecovery: widget.focusDeliveryRecovery,
-              focusRiderRating: widget.focusRiderRating,
+            initial: () => _loader(),
+            loadInProgress: () => _loader(),
+            loadSuccess: (order) => _refreshable(
+              order,
+              _OrderDetailBody(
+                order: order,
+                routeOrderId: widget.orderId,
+                notifier: ref.read(provider.notifier),
+                focusDeliveryRecovery: widget.focusDeliveryRecovery,
+                focusRiderRating: widget.focusRiderRating,
+              ),
             ),
-          ),
-          loadFailure: (failure) => SmErrorView(
-            message: 'Failed to load order details.',
-            onRetry: () =>
-                ref.read(provider.notifier).loadOrder(widget.orderId),
-          ),
-          actionInProgress: (order) => _refreshable(
-            order,
-            _OrderDetailBody(
-              order: order,
-              routeOrderId: widget.orderId,
-              actionPending: true,
-              notifier: ref.read(provider.notifier),
-              focusDeliveryRecovery: widget.focusDeliveryRecovery,
-              focusRiderRating: widget.focusRiderRating,
+            loadFailure: (failure) => SmErrorView(
+              message: 'Failed to load order details.',
+              onRetry: () =>
+                  ref.read(provider.notifier).loadOrder(widget.orderId),
             ),
-          ),
-          actionFailure: (failure) => _loader(),
+            actionInProgress: (order) => _refreshable(
+              order,
+              _OrderDetailBody(
+                order: order,
+                routeOrderId: widget.orderId,
+                actionPending: true,
+                notifier: ref.read(provider.notifier),
+                focusDeliveryRecovery: widget.focusDeliveryRecovery,
+                focusRiderRating: widget.focusRiderRating,
+              ),
+            ),
+            actionFailure: (failure) => _loader(),
           ),
         ),
       ),
@@ -2459,9 +2459,11 @@ class _OrderSummarySheet extends StatelessWidget {
                         // was paid, it read as a charge on top and the column
                         // did not add up — which is exactly how "tax is added
                         // later" was reported. Cart and checkout already say
-                        // this; these two screens were missed.
+                        // this; these two screens were missed. An older
+                        // order charged VAT on top is the exception: there it
+                        // is a line the total adds, and says so.
                         MallAmount(
-                          label: 'Includes VAT',
+                          label: order.taxIncluded ? 'Includes VAT' : 'VAT',
                           value: formatMoney(order.tax),
                         ),
                         MallAmount(

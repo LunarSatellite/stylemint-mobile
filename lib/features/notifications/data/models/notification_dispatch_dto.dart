@@ -63,6 +63,10 @@ class NotificationDispatchDto {
     'delivery.interest': 'A rider is ready to take your parcel',
     'delivery.delivered': 'Delivered — the recipient confirmed',
     'delivery.at_risk': 'Your delivery may be late',
+    'plan.reminder.upcoming': 'A payment plan instalment is due soon',
+    'plan.reminder.due': 'A payment plan instalment is due today',
+    'plan.reminder.overdue': 'A payment plan instalment is overdue',
+    'plan.defaulted': 'Your payment plan was closed',
     'payout.paid': 'Your payout was sent',
     'payout.failed': 'Your payout could not be sent',
   };
