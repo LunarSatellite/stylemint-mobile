@@ -3,6 +3,13 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/index.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/role_profile_dto.dart';
 
+/// Error codes of the 403 `set-password` returns when the registration token
+/// is missing, expired or already used. The verification has to be redone.
+const registrationProofErrorCodes = {
+  'registration.proof_required',
+  'registration.token_invalid',
+};
+
 /// Domain repository interface for authentication.
 /// Implementations persist the session tokens on every successful auth result.
 abstract interface class AuthRepository {
@@ -212,22 +219,29 @@ abstract interface class AuthRepository {
     required String countryDialCode,
   });
 
-  Future<Either<NetworkExceptions, Unit>> verifyRegistrationEmail(
+  /// Right holds the one-time registration token, or null when the backend
+  /// predates it (204, no body).
+  Future<Either<NetworkExceptions, String?>> verifyRegistrationEmail(
     String accountId,
     String email,
     String code,
   );
 
-  Future<Either<NetworkExceptions, Unit>> verifyRegistrationPhone(
+  /// Same contract as [verifyRegistrationEmail].
+  Future<Either<NetworkExceptions, String?>> verifyRegistrationPhone(
     String accountId,
     String phoneE164,
     String code,
   );
 
+  /// [registrationToken] is sent as `X-Registration-Token` when present. A
+  /// 403 for a missing/spent token comes back as `.validation(code:)` with one
+  /// of [registrationProofErrorCodes].
   Future<Either<NetworkExceptions, Unit>> setRegistrationPassword(
     String accountId,
-    String password,
-  );
+    String password, {
+    String? registrationToken,
+  });
 
   Future<Either<NetworkExceptions, RegistrationCompletionDto>>
   acceptRegistrationTerms(

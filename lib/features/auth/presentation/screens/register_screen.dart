@@ -210,6 +210,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
   }
 
+  /// Back to [step] with the verification steps no longer marked done.
+  void _restartVerificationAt(int step) {
+    _emailOtpFieldKey.currentState?.clearCode();
+    _phoneOtpFieldKey.currentState?.clearCode();
+    setState(() {
+      _completedSteps.removeWhere((s) => s >= step);
+      _currentStep = step;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(registrationNotifierProvider);
@@ -262,7 +272,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           );
           _phoneOtpFieldKey.currentState?.clearCode();
         },
+        // set-password refused the verification proof (expired / spent) and
+        // new codes are on their way: verify the email again.
+        verificationExpired: (_) {
+          SmSnackbar.error(
+            context,
+            "Your verification expired — we've sent a new code",
+          );
+          _restartVerificationAt(1);
+        },
         step4NetworkExceptions: (failure) {
+          // Same refusal, but no new codes could be sent: start over from the
+          // first step (Continue resumes the unfinished registration).
+          if (RegistrationNotifier.isVerificationExpired(failure)) {
+            SmSnackbar.error(
+              context,
+              'Your verification expired. Tap Continue to get a new code.',
+            );
+            _restartVerificationAt(0);
+            return;
+          }
           SmSnackbar.error(
             context,
             _failureMessage(failure, 'Failed to set password'),

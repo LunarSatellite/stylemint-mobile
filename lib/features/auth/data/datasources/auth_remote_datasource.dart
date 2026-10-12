@@ -581,39 +581,72 @@ class AuthRemoteDataSource {
     );
   }
 
-  /// POST `/v1/registration/{accountId}/verify-email` → 204
-  Future<void> verifyRegistrationEmail(
+  /// POST `/v1/registration/{accountId}/verify-email`.
+  ///
+  /// Returns the one-time registration token that proves the verification
+  /// (200 `{registrationToken, expiresUtc}`), or null when the backend
+  /// predates it and answers 204 with no body.
+  Future<String?> verifyRegistrationEmail(
     String accountId,
     String email,
     String code,
   ) async {
-    await apiClient.authPost(
+    final response = await apiClient.authPost(
       '/v1/registration/$accountId/verify-email',
       data: {'email': email, 'code': code},
     );
+    return registrationTokenFrom(response);
   }
 
-  /// POST `/v1/registration/{accountId}/verify-phone` → 204
-  Future<void> verifyRegistrationPhone(
+  /// POST `/v1/registration/{accountId}/verify-phone`. Same response contract
+  /// as [verifyRegistrationEmail].
+  Future<String?> verifyRegistrationPhone(
     String accountId,
     String phoneE164,
     String code,
   ) async {
-    await apiClient.authPost(
+    final response = await apiClient.authPost(
       '/v1/registration/$accountId/verify-phone',
       data: {'phoneE164': phoneE164, 'code': code},
     );
+    return registrationTokenFrom(response);
   }
 
   /// POST `/v1/registration/{accountId}/set-password` → 204
+  ///
+  /// Only the account's verifier may set its first password: the
+  /// [registrationToken] from the last successful verify call goes in the
+  /// `X-Registration-Token` header. A missing or spent token is answered with
+  /// 403 `registration.proof_required` / `registration.token_invalid`. With no
+  /// token (a backend that predates it) the call is sent exactly as before.
   Future<void> setRegistrationPassword(
     String accountId,
-    String password,
-  ) async {
+    String password, {
+    String? registrationToken,
+  }) async {
     await apiClient.authPost(
       '/v1/registration/$accountId/set-password',
       data: {'password': password},
+      options: Options(
+        headers: {
+          'requiresToken': false,
+          registrationTokenHeader: ?registrationToken,
+        },
+      ),
     );
+  }
+
+  /// Header carrying the verify step's proof to `set-password`.
+  static const registrationTokenHeader = 'X-Registration-Token';
+
+  /// The `registrationToken` of a verify response, or null for the old 204
+  /// (empty body) or anything that is not a non-blank string.
+  static String? registrationTokenFrom(dynamic body) {
+    if (body is Map && body['registrationToken'] is String) {
+      final token = (body['registrationToken'] as String).trim();
+      return token.isEmpty ? null : token;
+    }
+    return null;
   }
 
   /// POST `/v1/registration/{accountId}/accept-terms`

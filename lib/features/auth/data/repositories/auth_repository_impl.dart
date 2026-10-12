@@ -588,19 +588,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> verifyRegistrationEmail(
+  Future<Either<NetworkExceptions, String?>> verifyRegistrationEmail(
     String accountId,
     String email,
     String code,
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.verifyRegistrationEmail(
+        final token = await remoteDataSource.verifyRegistrationEmail(
           accountId,
           email,
           code,
         );
-        return right(unit);
+        return right(token);
       } catch (e) {
         if (e is DioException) {
           return left(mapDioExceptionToNetworkException(e));
@@ -616,19 +616,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> verifyRegistrationPhone(
+  Future<Either<NetworkExceptions, String?>> verifyRegistrationPhone(
     String accountId,
     String phoneE164,
     String code,
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.verifyRegistrationPhone(
+        final token = await remoteDataSource.verifyRegistrationPhone(
           accountId,
           phoneE164,
           code,
         );
-        return right(unit);
+        return right(token);
       } catch (e) {
         if (e is DioException) {
           return left(mapDioExceptionToNetworkException(e));
@@ -646,17 +646,25 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<NetworkExceptions, Unit>> setRegistrationPassword(
     String accountId,
-    String password,
-  ) async {
+    String password, {
+    String? registrationToken,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.setRegistrationPassword(
           accountId,
           password,
+          registrationToken: registrationToken,
         );
         return right(unit);
       } catch (e) {
         if (e is DioException) {
+          // The global mapper turns every 403 into a bare `.auth()`; keep the
+          // registration-proof codes so the flow can restart verification.
+          final proofCode = _registrationProofCode(e);
+          if (proofCode != null) {
+            return left(NetworkExceptions.validation(code: proofCode));
+          }
           return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
@@ -2091,4 +2099,12 @@ class AuthRepositoryImpl implements AuthRepository {
       return left(const NetworkExceptions.noInternetConnection());
     }
   }
+}
+
+/// The error code of a 403 that rejected the registration proof, else null.
+String? _registrationProofCode(DioException e) {
+  if (e.response?.statusCode != 403) return null;
+  final body = e.response?.data;
+  final code = body is Map ? (body['errorCode'] ?? body['code']) : null;
+  return registrationProofErrorCodes.contains(code) ? code as String : null;
 }
