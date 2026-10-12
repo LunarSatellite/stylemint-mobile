@@ -16,6 +16,9 @@ class ProfileSummary {
   final String avatarUrl;
   final int savedItemsCount;
   final int followingCount;
+
+  /// Orders still under way (placed, paid or being fulfilled) — not every
+  /// order ever placed.
   final int ordersCount;
   final String language; // e.g. "English"
   final bool pushEnabled;

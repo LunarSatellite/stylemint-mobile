@@ -175,12 +175,13 @@ class ProfileRemoteDataSource {
             .then((r) => (r as Map<String, dynamic>)['following'] as int? ?? 0)
             .catchError((_) => 0),
       ),
+      // Ongoing orders only, not every order ever placed: the list's
+      // totalCount counts delivered and cancelled ones too, and the endpoint
+      // has no state filter. Ongoing orders are the newest ones, so the
+      // newest page is enough.
       apiClient
-          .get('/v1/orders', queryParameters: {'pageSize': 1})
-          .then(
-            (r) => ((r as Map<String, dynamic>)['totalCount'] as int? ?? 0)
-                .clamp(0, 1 << 31),
-          )
+          .get('/v1/orders', queryParameters: {'pageSize': 100})
+          .then(ongoingOrderCount)
           .catchError((_) => 0),
     ]);
     return (
@@ -189,4 +190,27 @@ class ProfileRemoteDataSource {
       ordersCount: results[2],
     );
   }
+}
+
+/// How many orders in a `GET /v1/orders` page are still under way: Placed,
+/// Paid or Fulfilling. Completed and Cancelled ones are done.
+///
+/// Accepts the backend's numeric OrderState (1 Placed, 2 Paid, 3 Fulfilling,
+/// 4 Completed, 5 Cancelled) and, defensively, its name.
+int ongoingOrderCount(Object? response) {
+  final items = response is Map<String, dynamic> ? response['items'] : null;
+  if (items is! List) return 0;
+  return items.where((item) {
+    if (item is! Map) return false;
+    final state = item['state'];
+    if (state is int) return state >= 1 && state <= 3;
+    if (state is String) {
+      return const {
+        'placed',
+        'paid',
+        'fulfilling',
+      }.contains(state.toLowerCase());
+    }
+    return false;
+  }).length;
 }
