@@ -52,7 +52,11 @@ class EvidenceAnswerNotifier extends StateNotifier<EvidenceAnswerState> {
   /// Monotonic token so a slow first answer cannot overwrite a fast second.
   int _generation = 0;
 
-  Future<bool> ask(String query, {DateTime? asOfUtc}) async {
+  Future<bool> ask(
+    String query, {
+    DateTime? asOfUtc,
+    String? productId,
+  }) async {
     final generation = ++_generation;
     state = state.copyWith(
       asking: true,
@@ -60,7 +64,11 @@ class EvidenceAnswerNotifier extends StateNotifier<EvidenceAnswerState> {
       clearError: true,
       clearAnswer: true,
     );
-    final result = await _repository.answer(query: query, asOfUtc: asOfUtc);
+    final result = await _repository.answer(
+      query: query,
+      asOfUtc: asOfUtc,
+      productId: productId,
+    );
     if (!mounted || generation != _generation) return false;
     return result.fold(
       (failure) {

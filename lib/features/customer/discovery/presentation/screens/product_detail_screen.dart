@@ -421,6 +421,7 @@ class _ProductBody extends StatelessWidget {
                       familyKey: product.id,
                       seedQuery: product.name,
                       currentProductId: product.id,
+                      quickQuestions: EvidenceAnswerPanel.productQuestions,
                     ),
                     const SizedBox(height: DesignTokens.s12),
                     _ReviewsSection(

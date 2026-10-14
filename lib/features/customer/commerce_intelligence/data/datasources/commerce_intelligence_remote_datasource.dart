@@ -18,7 +18,10 @@ class CommerceIntelligenceRemoteDataSource {
   /// Server clamp is 1..50; sending the same default the controller uses.
   static const int defaultEvidenceLimit = 20;
 
-  /// POST `/answer` — body `{query, asOfUtc, evidenceLimit}`.
+  /// POST `/answer` — body `{query, asOfUtc, evidenceLimit, productId}`.
+  ///
+  /// [productId] scopes the answer to one product (the product page sends
+  /// it); omitted, the backend answers across the catalogue as before.
   ///
   /// The server rejects a blank query (`validation.required`), a query over
   /// 500 characters (`validation.too_long`) and an `asOfUtc` more than five
@@ -30,6 +33,7 @@ class CommerceIntelligenceRemoteDataSource {
     required String query,
     DateTime? asOfUtc,
     int evidenceLimit = defaultEvidenceLimit,
+    String? productId,
   }) async {
     final response = await apiClient.post(
       '$base/answer',
@@ -37,6 +41,7 @@ class CommerceIntelligenceRemoteDataSource {
         'query': query,
         'evidenceLimit': evidenceLimit,
         if (asOfUtc != null) 'asOfUtc': asOfUtc.toUtc().toIso8601String(),
+        if (productId != null && productId.isNotEmpty) 'productId': productId,
       },
     );
     return response is Map<String, dynamic> ? response : <String, dynamic>{};

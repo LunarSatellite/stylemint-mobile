@@ -92,14 +92,17 @@ class FakeCommerceIntelligenceRepository
 
   final List<String> queries = <String>[];
   final List<DateTime?> asOfArguments = <DateTime?>[];
+  final List<String?> productIds = <String?>[];
 
   @override
   Future<Either<NetworkExceptions, EvidenceAnswer>> answer({
     required String query,
     DateTime? asOfUtc,
     int evidenceLimit = 20,
+    String? productId,
   }) async {
     queries.add(query);
+    productIds.add(productId);
     asOfArguments.add(asOfUtc);
     final error = failure;
     if (error != null) return left(error);

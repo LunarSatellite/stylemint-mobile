@@ -19,7 +19,12 @@ class TemporalFact {
     required this.source,
     required this.sourceReference,
     required this.confidence,
+    this.kindLabel,
   });
+
+  /// Shopper-facing name for [kind] when the backend knows one (e.g. the
+  /// passport's own "Made in"). Null means "none sent" — never synthesised.
+  final String? kindLabel;
 
   /// Opaque server id. Used to join a forecast to the facts it rests on,
   /// never drawn.
@@ -113,7 +118,30 @@ class EvidenceAnswer {
     required this.consequences,
     required this.limitations,
     required this.evidenceDigestSha256,
+    this.answerMode = summaryMode,
+    this.citedFactIds = const <String>[],
   });
+
+  /// [answer] was composed deterministically from the fact statements.
+  static const String summaryMode = 'summary';
+
+  /// [answer] was written by a model from the facts and passed the backend's
+  /// grounding check (every sentence cites a fact, no new numbers).
+  static const String groundedAiMode = 'grounded-ai';
+
+  /// How [answer] was written. Older backends send nothing → [summaryMode].
+  final String answerMode;
+
+  /// Ids of the facts the answer sentence rests on, for highlighting.
+  final List<String> citedFactIds;
+
+  bool get isGroundedAi => answerMode == groundedAiMode;
+
+  /// Cited facts actually present in [evidence]; an id the backend cited but
+  /// did not send is dropped rather than drawn.
+  List<TemporalFact> get citedFacts => factsById(citedFactIds);
+
+  bool isCited(TemporalFact fact) => citedFactIds.contains(fact.factId);
 
   /// Contract version. A version this build does not know still renders —
   /// unknown fields are ignored and missing ones fall back.

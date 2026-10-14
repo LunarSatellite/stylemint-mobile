@@ -37,7 +37,24 @@ class EvidenceAnswerPanel extends ConsumerStatefulWidget {
     this.currentProductId,
     this.now,
     this.autoAsk = false,
+    this.quickQuestions = const <String>[],
   });
+
+  /// Questions offered as one-tap chips. Tapping one fills the field and
+  /// asks it. Empty → no chips.
+  final List<String> quickQuestions;
+
+  /// The chips a product page offers: each is about the product on screen
+  /// and is one the backend can answer from the passport — or say plainly
+  /// that the seller has not recorded. "When should I reorder?" is left out
+  /// on purpose: most products are not reordered, and the page cannot tell
+  /// which are.
+  static const List<String> productQuestions = <String>[
+    'Is the seller verified?',
+    'What is it made of?',
+    'Where is it made?',
+    'How do I care for it?',
+  ];
 
   /// Scopes the answer state to this surface.
   final String familyKey;
@@ -46,7 +63,8 @@ class EvidenceAnswerPanel extends ConsumerStatefulWidget {
   final String seedQuery;
 
   /// Product whose page this panel sits on, so a fact about it does not
-  /// offer a link back to where the reader already is.
+  /// offer a link back to where the reader already is. Also sent with the
+  /// question, so the answer is about this product.
   final String? currentProductId;
 
   /// Injectable clock. Tests pass a fixed instant; production passes null.
@@ -58,6 +76,9 @@ class EvidenceAnswerPanel extends ConsumerStatefulWidget {
   static const Key askKey = Key('evidence-ask');
   static const Key fieldKey = Key('evidence-question');
   static const Key listKey = Key('evidence-facts');
+  static const Key chipsKey = Key('evidence-quick-questions');
+  static const Key answerKey = Key('evidence-answer-sentence');
+  static Key citedKey(String factId) => Key('evidence-cited-$factId');
 
   @override
   ConsumerState<EvidenceAnswerPanel> createState() =>
@@ -88,7 +109,14 @@ class _EvidenceAnswerPanelState extends ConsumerState<EvidenceAnswerPanel> {
   Future<void> _ask() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    await ref.read(evidenceAnswerProvider(widget.familyKey).notifier).ask(text);
+    await ref
+        .read(evidenceAnswerProvider(widget.familyKey).notifier)
+        .ask(text, productId: widget.currentProductId);
+  }
+
+  Future<void> _askQuick(String question) async {
+    _controller.text = question;
+    await _ask();
   }
 
   @override
@@ -110,6 +138,23 @@ class _EvidenceAnswerPanelState extends ConsumerState<EvidenceAnswerPanel> {
           asking: state.asking,
           onAsk: _ask,
         ),
+        if (widget.quickQuestions.isNotEmpty) ...[
+          const SizedBox(height: DesignTokens.s8),
+          Wrap(
+            key: EvidenceAnswerPanel.chipsKey,
+            spacing: DesignTokens.s8,
+            runSpacing: DesignTokens.s8,
+            children: [
+              for (final question in widget.quickQuestions)
+                ActionChip(
+                  label: Text(question),
+                  onPressed: state.asking
+                      ? null
+                      : () => unawaited(_askQuick(question)),
+                ),
+            ],
+          ),
+        ],
         const SizedBox(height: DesignTokens.s12),
         _Result(
           state: state,
@@ -308,6 +353,7 @@ class _Answered extends StatelessWidget {
                 child: _FactCard(
                   fact: fact,
                   currentProductId: currentProductId,
+                  cited: answer.isCited(fact),
                 ),
               ),
           ],
@@ -316,7 +362,7 @@ class _Answered extends StatelessWidget {
         // what is above, not a standalone claim.
         if (answer.answer.isNotEmpty) ...[
           const SizedBox(height: DesignTokens.s8),
-          _Summary(text: answer.answer),
+          _Summary(answer: answer),
         ],
         if (answer.consequences.isNotEmpty) ...[
           const SizedBox(height: DesignTokens.s16),
@@ -378,10 +424,25 @@ class _AsOfLine extends StatelessWidget {
 }
 
 class _FactCard extends StatelessWidget {
-  const _FactCard({required this.fact, required this.currentProductId});
+  const _FactCard({
+    required this.fact,
+    required this.currentProductId,
+    this.cited = false,
+  });
 
   final TemporalFact fact;
   final String? currentProductId;
+
+  /// The answer sentence rests on this record; drawn with an accent border
+  /// and a "Used in the answer" tag. The backend said so — nothing here
+  /// decides it.
+  final bool cited;
+
+  /// The backend's label when it sent one, else the token made readable.
+  static String labelFor(TemporalFact fact) {
+    final label = fact.kindLabel;
+    return label != null && label.isNotEmpty ? label : humanKind(fact.kind);
+  }
 
   /// Presentation of the backend's own token, not a new fact: `-` and `:`
   /// become spaces so `vendor-verification` reads as words. No token is
@@ -400,7 +461,7 @@ class _FactCard extends StatelessWidget {
     );
     final observed = EvidenceTime.observed(fact.observedUtc);
     final confidence = fact.confidence;
-    final kind = humanKind(fact.kind);
+    final kind = labelFor(fact);
     final productId = fact.productId;
     final linkable =
         productId != null &&
@@ -408,9 +469,13 @@ class _FactCard extends StatelessWidget {
         productId != currentProductId;
 
     return DecoratedBox(
+      key: cited ? EvidenceAnswerPanel.citedKey(fact.factId) : null,
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBody,
-        border: Border.all(color: DesignTokens.borderDefault),
+        border: Border.all(
+          color: cited ? DesignTokens.primaryGreen : DesignTokens.borderDefault,
+          width: cited ? 2 : 1,
+        ),
         borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
       ),
       child: Padding(
@@ -418,6 +483,14 @@ class _FactCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (cited) ...[
+              const MallStatusPill(
+                label: 'Used in the answer',
+                tone: MallStatusTone.success,
+                dense: true,
+              ),
+              const SizedBox(height: DesignTokens.s8),
+            ],
             if (kind.isNotEmpty) ...[
               MallEyebrow(kind),
               const SizedBox(height: DesignTokens.s8),
@@ -581,14 +654,23 @@ class _ConsequenceCard extends StatelessWidget {
 }
 
 class _Summary extends StatelessWidget {
-  const _Summary({required this.text});
+  const _Summary({required this.answer});
 
-  final String text;
+  final EvidenceAnswer answer;
 
   static const Key rootKey = Key('evidence-summary');
 
   @override
   Widget build(BuildContext context) {
+    final text = answer.answer;
+    final cited = answer.citedFacts;
+    // Says how the sentence was written. A model-written one is labelled as
+    // such; it reached the device only after the backend checked that every
+    // sentence cites a record above.
+    final eyebrow = answer.isGroundedAi
+        ? 'In short, written by AI from the records above'
+        : 'In short, from the records above';
+    final citedNames = cited.map(_FactCard.labelFor).where((n) => n.isNotEmpty);
     return Semantics(
       key: rootKey,
       label: 'Summary of the records above: $text',
@@ -596,9 +678,20 @@ class _Summary extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const MallEyebrow('In short, from the records above'),
+          MallEyebrow(eyebrow),
           const SizedBox(height: DesignTokens.s8),
-          Text(text, style: DesignTokens.smallRegular),
+          Text(
+            text,
+            key: EvidenceAnswerPanel.answerKey,
+            style: DesignTokens.mediumSemibold,
+          ),
+          if (citedNames.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.s8),
+            _MetaLine(
+              icon: Icons.fact_check_outlined,
+              text: 'Based on: ${citedNames.toSet().join(', ')}',
+            ),
+          ],
         ],
       ),
     );

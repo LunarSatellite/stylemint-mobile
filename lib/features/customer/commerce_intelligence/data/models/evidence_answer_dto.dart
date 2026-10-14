@@ -52,6 +52,10 @@ TemporalFact temporalFactFromJson(Map<String, dynamic> json) => TemporalFact(
   // `valueJson` is the machine payload behind `statement`; it is parsed by
   // nothing here and drawn by nothing here.
   confidence: _doubleOrNull(json['confidence']),
+  kindLabel: switch (json['kindLabel']) {
+    final String label when label.trim().isNotEmpty => label.trim(),
+    _ => null,
+  },
 );
 
 EvidenceConsequence consequenceFromJson(Map<String, dynamic> json) =>
@@ -81,4 +85,8 @@ EvidenceAnswer evidenceAnswerFromJson(Map<String, dynamic> json) =>
           .toList(growable: false),
       limitations: _strings(json['limitations']),
       evidenceDigestSha256: _str(json['evidenceDigestSha256']),
+      answerMode: _str(json['answerMode']).isEmpty
+          ? EvidenceAnswer.summaryMode
+          : _str(json['answerMode']),
+      citedFactIds: _strings(json['citedFactIds']),
     );

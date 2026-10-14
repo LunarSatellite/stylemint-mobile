@@ -11,5 +11,6 @@ abstract class CommerceIntelligenceRepository {
     required String query,
     DateTime? asOfUtc,
     int evidenceLimit,
+    String? productId,
   });
 }

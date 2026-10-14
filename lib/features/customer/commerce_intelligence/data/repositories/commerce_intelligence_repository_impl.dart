@@ -23,6 +23,7 @@ class CommerceIntelligenceRepositoryImpl
     DateTime? asOfUtc,
     int evidenceLimit =
         CommerceIntelligenceRemoteDataSource.defaultEvidenceLimit,
+    String? productId,
   }) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) {
@@ -48,6 +49,7 @@ class CommerceIntelligenceRepositoryImpl
             query: trimmed,
             asOfUtc: asOfUtc,
             evidenceLimit: evidenceLimit,
+            productId: productId,
           ),
         ),
       );
