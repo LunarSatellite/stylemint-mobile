@@ -79,6 +79,10 @@ import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plan_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_checkout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plans_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/try_on/presentation/screens/my_try_on_plan_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/try_on/presentation/screens/try_on_paywall_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/try_on/presentation/screens/try_on_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/try_on_setup/presentation/screens/vendor_try_on_setup_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/delivery_confirm_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_by_id_screen.dart';
@@ -1031,6 +1035,20 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.customerKycSubmit,
         builder: (ctx, state) => const CustomerKycSubmitScreen(),
       ),
+      // Virtual try-on (premium AR).
+      GoRoute(
+        path: RouteNames.tryOnPaywall,
+        builder: (ctx, state) => const TryOnPaywallScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.myTryOnPlan,
+        builder: (ctx, state) => const MyTryOnPlanScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.tryOn,
+        builder: (ctx, state) =>
+            TryOnScreen(productId: state.pathParameters['productId']!),
+      ),
       // Payment plans. Review before detail: `review` is not an id.
       GoRoute(
         path: RouteNames.paymentPlans,
@@ -1617,6 +1635,13 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.vendorEditProductImages,
         builder: (ctx, state) => EditProductImagesScreen(
           productId: state.extra as String,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorProductTryOn,
+        builder: (ctx, state) => VendorTryOnSetupScreen(
+          productId: state.pathParameters['productId']!,
+          categoryName: state.extra is String ? state.extra! as String : null,
         ),
       ),
       GoRoute(

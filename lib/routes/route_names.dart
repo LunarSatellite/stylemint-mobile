@@ -153,6 +153,15 @@ abstract class RouteNames {
       .replaceFirst(':agreementId', Uri.encodeComponent(agreementId));
 
   /// Checking out an approved plan: its one item, an address, Place.
+  /// Virtual try-on (premium AR): the paywall, the buyer's plan, and the
+  /// try-on screen for one product. `plans` and `my-plan` are literal
+  /// segments, so the product route lives under `/try-on/product/`.
+  static const tryOnPaywall = '/try-on/plans';
+  static const myTryOnPlan = '/try-on/my-plan';
+  static const tryOn = '/try-on/product/:productId';
+  static String tryOnPath(String productId) =>
+      tryOn.replaceFirst(':productId', Uri.encodeComponent(productId));
+
   static const paymentPlanCheckout = '/payment-plans/:agreementId/checkout';
   static String paymentPlanCheckoutPath(String agreementId) =>
       paymentPlanCheckout.replaceFirst(
@@ -295,6 +304,10 @@ abstract class RouteNames {
   // legacy edit-details route now that the form handles both Create
   // and Edit modes.
   static const vendorEditProduct = '/vendor/products/:productId/edit';
+  /// Try-on & sizes for one product: size chart + overlay image.
+  static const vendorProductTryOn = '/vendor/products/:productId/try-on';
+  static String vendorProductTryOnPath(String productId) => vendorProductTryOn
+      .replaceFirst(':productId', Uri.encodeComponent(productId));
   static const vendorProductAnalytics = '/vendor/products/analytics';
   static const vendorTopProducts = '/vendor/products/top';
 
