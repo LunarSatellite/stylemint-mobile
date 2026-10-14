@@ -21,6 +21,7 @@ abstract class CartItemDto with _$CartItemDto {
     @Default('NPR') String unitPriceCurrency,
     @JsonKey(name: 'creatorHandleSnapshot') String? creatorHandle,
     @JsonKey(name: 'commissionRateSnapshot') num? commissionRate,
+    String? productVariantId,
   }) = _CartItemDto;
 
   const CartItemDto._();
@@ -44,6 +45,7 @@ abstract class CartItemDto with _$CartItemDto {
     isInStock: true,
     creatorHandle: creatorHandle,
     commissionRate: commissionRate?.toDouble(),
+    variantId: productVariantId,
   );
 }
 
