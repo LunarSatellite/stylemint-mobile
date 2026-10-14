@@ -5,6 +5,11 @@
          required, so phones without it can still install the app. -->
     <uses-permission android:name="android.permission.NFC"/>
     <uses-feature android:name="android.hardware.nfc" android:required="false"/>
+    <!-- Camera: QR scanning, KYC photos, and the virtual try-on selfie
+         preview. Not required, so camera-less devices can still install. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.front" android:required="false"/>
     <!-- Shipping addresses are saved as a map point, not a typed street
          address: the customer taps "Use my current location" and we store the
          coordinates plus their own directions. Foreground use only — nothing

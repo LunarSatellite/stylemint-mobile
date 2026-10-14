@@ -331,6 +331,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'Payment plans',
               onTap: () => context.push(RouteNames.paymentPlans),
             ),
+            // Premium virtual try-on: where access comes from and until when.
+            ProfileMenuItem(
+              icon: Icons.view_in_ar_rounded,
+              label: 'My try-on plan',
+              onTap: () => context.push(RouteNames.myTryOnPlan),
+            ),
             // KYC Tier 2, which payment plans that lend need.
             ProfileMenuItem(
               icon: Icons.verified_user_outlined,

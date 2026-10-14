@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/try_on_setup/domain/entities/vendor_try_on.dart'
+    show isSizedApparel;
+import 'package:stylemint_mobile_frontend/features/vendor/try_on_setup/presentation/widgets/try_on_wizard_card.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -88,6 +91,13 @@ class Step5ReviewScreen extends ConsumerWidget {
     final shipping = review.shippingInfo;
     final basic = review.basicInfo;
     final images = review.imagesInfo;
+    final categoryName = basic.categories.isEmpty
+        ? null
+        : basic.categories.first;
+    final apparel = isSizedApparel(
+      categoryName: categoryName,
+      productName: basic.productName,
+    );
 
     // Pre-compute display strings
     final compareAtStr = pricing.compareAtPrice != null
@@ -292,6 +302,16 @@ class Step5ReviewScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: DesignTokens.s16),
+                TryOnWizardCard(
+                  productId: notifier.draftId,
+                  apparel: apparel,
+                  categoryName: categoryName,
+                  ensureProductId: () async {
+                    final saved = await notifier.saveDraft();
+                    return saved ?? false ? notifier.draftId : null;
+                  },
+                ),
+                const SizedBox(height: DesignTokens.s16),
               ],
             ),
           ),
@@ -319,9 +339,17 @@ class Step5ReviewScreen extends ConsumerWidget {
               child: ElevatedButton(
                 onPressed: isPublishing
                     ? null
-                    : () => ref
-                          .read(addProductNotifierProvider.notifier)
-                          .publish(),
+                    : () async {
+                        // Apparel needs a size chart; a missing try-on
+                        // image only asks for confirmation.
+                        final go = await tryOnPublishGate(
+                          context,
+                          ref,
+                          productId: notifier.draftId,
+                          apparel: apparel,
+                        );
+                        if (go) await notifier.publish();
+                      },
                 style: DesignTokens.primaryButtonStyle(),
                 child: isPublishing
                     ? const SizedBox(

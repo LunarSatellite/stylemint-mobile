@@ -36,6 +36,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/reel_review_thumbnail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/review_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/try_on/presentation/widgets/try_on_entry_button.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
@@ -387,6 +388,12 @@ class _ProductBody extends StatelessWidget {
                       ),
                       const SizedBox(height: DesignTokens.s16),
                     ],
+                    // Premium AR try-on. Draws nothing unless the service is
+                    // on and this product is set up for it.
+                    TryOnEntryButton(
+                      productId: product.id,
+                      padding: const EdgeInsets.only(bottom: DesignTokens.s16),
+                    ),
                     _SoldByRow(
                       vendorName: product.vendorName,
                       vendorAvatarUrl: product.vendorAvatarUrl,

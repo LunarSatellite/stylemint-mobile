@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentati
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/step5_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/widgets/wizard_step_indicator.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -251,6 +252,28 @@ class _AddProductWizardScreenState
             // through the wizard PATCHes (which advance the server's
             // WizardStepReached so Publish will be accepted), and it leaves
             // the product a draft either way. Publish is on the Review step.
+            // Size chart + try-on image for a product that already exists.
+            if (_isLiveEdit)
+              IconButton(
+                key: const Key('wizard-try-on-action'),
+                tooltip: 'Try-on & sizes',
+                icon: const Icon(
+                  Icons.view_in_ar_rounded,
+                  color: DesignTokens.primaryGreen,
+                ),
+                onPressed: () => context.push(
+                  RouteNames.vendorProductTryOnPath(widget.productId!),
+                  extra: ref
+                      .read(addProductNotifierProvider)
+                      .maybeWhen(
+                        loadSuccess: (fs) =>
+                            (fs.step1?.categories.isEmpty ?? true)
+                            ? null
+                            : fs.step1!.categories.first,
+                        orElse: () => null,
+                      ),
+                ),
+              ),
             if (_isLiveEdit)
               _SaveChangesAction(
                 saving: _saving,
