@@ -52,7 +52,7 @@
 	<key>NFCReaderUsageDescription</key>
 	<string>StyleMint uses NFC to write your shelf-code link to an NFC tag and check it.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Style Mint uses the camera to scan the QR code shown on the web login page.</string>
+	<string>Style Mint uses the camera to scan QR codes (such as the one on the web login page), to take photos you attach, and to show clothes on you with virtual try-on. Try-on runs on your phone; the camera feed is not uploaded.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>StyleMint uses Face ID to unlock your passkey so you can sign in without typing a password.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -64,7 +64,7 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>StyleMint saves an image to your photo library only when you tap Save — for example a StyleMint code you want to keep or share.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>StyleMint opens your photo library so you can attach a photo — a KYC document, a return's condition evidence, a profile picture, or a screenshot to search with.</string>
+	<string>StyleMint opens your photo library so you can attach a photo — a KYC document, a return's condition evidence, a profile picture, a screenshot to search with, or a full-body photo to try clothes on with virtual try-on.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>StyleMint converts speech to text only when you tap the microphone in Discover search.</string>
 	<key>UIApplicationSceneManifest</key>

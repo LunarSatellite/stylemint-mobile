@@ -76,8 +76,11 @@ dependencies:
 
   # ── Media + camera ───────────────────────────────────────────────────────
   camera: ^0.12.0+1
+  # Virtual try-on: on-device body landmarks for the garment overlay.
+  google_mlkit_pose_detection: ^0.14.0
   image_picker: ^1.1.2
   share_plus: ^11.0.0
+  path_provider: ^2.1.5
   # Pinned exactly: beta.6 ships a broken Kotlin FileUtils reference that
   # fails :file_picker:compileDebugKotlin. beta.4 is the known-good build.
   file_picker: 11.0.2
