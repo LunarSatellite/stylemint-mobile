@@ -62,6 +62,11 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   bool _isDirty = false;
   bool get isDirty => _isDirty;
 
+  /// The server id of the product being built, once a draft exists. The
+  /// "Try-on & sizes" step needs it: size charts and try-on images hang off
+  /// a product id.
+  String? get draftId => _draftId;
+
   void _markDirty() {
     if (!_isDirty) _isDirty = true;
   }
