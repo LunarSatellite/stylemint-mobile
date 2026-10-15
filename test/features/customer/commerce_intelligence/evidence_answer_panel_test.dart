@@ -91,8 +91,8 @@ void main() {
 
       expect(find.text('Atelier Nord is verified'), findsOneWidget);
       expect(find.text('Woven in Biella, Italy'), findsOneWidget);
-      expect(find.text('What this rests on'), findsOneWidget);
-      expect(find.text('2 records, each shown in full.'), findsOneWidget);
+      expect(find.text('Why we say this'), findsOneWidget);
+      expect(find.text('From 2 records.'), findsOneWidget);
       // No disclosure widget stands between the reader and the evidence.
       expect(find.byType(ExpansionTile), findsNothing);
     });
@@ -121,7 +121,7 @@ void main() {
       expect(find.text('CARBON LEDGER TIER 2'), findsOneWidget);
     });
 
-    testWidgets('the prose summary is placed after the records', (
+    testWidgets('the answer sentence is placed before the records', (
       tester,
     ) async {
       await _pump(
@@ -136,7 +136,7 @@ void main() {
       final summaryY = tester
           .getTopLeft(find.text('This seller is verified.'))
           .dy;
-      expect(summaryY, greaterThan(factY));
+      expect(summaryY, lessThan(factY));
     });
 
     testWidgets('renders the backend limitations verbatim', (tester) async {
@@ -168,7 +168,7 @@ void main() {
       expect(find.text('Waiting may create a gap.'), findsOneWidget);
       expect(find.text('Rests on'), findsOneWidget);
       expect(find.text('Runs out in about 5 days'), findsNWidgets(2));
-      expect(find.text('Probability the backend gave: 62%'), findsOneWidget);
+      expect(find.text('Likelihood: 62%'), findsOneWidget);
       expect(find.text('within 5 days'), findsOneWidget);
     });
 
@@ -276,14 +276,14 @@ void main() {
         find.text('I could not find evidence that was valid as of …'),
         findsNothing,
       );
-      expect(find.text('No evidence answers this yet'), findsOneWidget);
+      expect(find.text("We don't have that information yet"), findsOneWidget);
       // The backend's own account of why is still shown.
       expect(
         find.text('No time-valid commerce evidence matched this question.'),
         findsOneWidget,
       );
       // No "In short" block, because there is no short.
-      expect(find.text('In short, from the records above'), findsNothing);
+      expect(find.text('Answer'), findsNothing);
     });
 
     testWidgets('still says which moment was searched', (tester) async {
@@ -339,21 +339,26 @@ void main() {
       },
     );
 
-    testWidgets('a confidence the backend did send is attributed to it', (
+    testWidgets('audit fields (source id, API path, confidence) are not shown', (
       tester,
     ) async {
       await _pump(
         tester,
         payload: answerJson(
-          evidence: [factJson()],
+          evidence: [
+            factJson(
+              sourceReference:
+                  '/v1/public/products/11111111-1111-1111-1111-111111111111'
+                  '/passport',
+            ),
+          ],
         ),
       );
-      expect(
-        find.text(
-          'Source confidence 95%, reported by catalog.product-passport',
-        ),
-        findsOneWidget,
-      );
+      final visible = _renderedText(tester).join(' | ');
+      expect(visible, isNot(contains('/v1/')));
+      expect(visible, isNot(contains('catalog.product-passport')));
+      expect(visible.toLowerCase(), isNot(contains('confidence')));
+      expect(visible.toLowerCase(), isNot(contains('digest')));
     });
 
     testWidgets('an unrecognised forecast direction reads neutrally', (
@@ -440,8 +445,8 @@ void main() {
         find.text('That question could not be answered'),
         findsOneWidget,
       );
-      expect(find.text('What this rests on'), findsNothing);
-      expect(find.text('In short, from the records above'), findsNothing);
+      expect(find.text('Why we say this'), findsNothing);
+      expect(find.text('Answer'), findsNothing);
     });
   });
 
@@ -499,10 +504,6 @@ void main() {
       expect(labels, contains('Ask a question about this product'));
       expect(labels, contains('Ask and show the evidence'));
       expect(labels, contains('Open the product this record is about'));
-      expect(
-        labels.any((label) => label.startsWith('Evidence digest')),
-        isTrue,
-      );
     });
   });
 }

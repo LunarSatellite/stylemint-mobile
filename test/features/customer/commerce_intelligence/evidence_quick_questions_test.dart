@@ -145,13 +145,13 @@ void main() {
       expect(find.text('Based on: Material'), findsOneWidget);
     });
 
-    testWidgets('records still come before the sentence', (tester) async {
+    testWidgets('the sentence comes before the records', (tester) async {
       await _pump(tester, payload: _scopedAnswer(), autoAsk: true);
       final factY = tester.getTopLeft(find.text('Material: 100% linen')).dy;
       final answerY = tester
           .getTopLeft(find.byKey(EvidenceAnswerPanel.answerKey))
           .dy;
-      expect(factY, lessThan(answerY));
+      expect(answerY, lessThan(factY));
     });
 
     testWidgets('a model-written sentence is labelled as such', (tester) async {

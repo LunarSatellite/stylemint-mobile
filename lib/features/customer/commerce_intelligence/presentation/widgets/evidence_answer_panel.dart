@@ -15,9 +15,10 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 ///
 /// Five rules hold this widget together:
 ///
-/// 1. The evidence is the body of the reply, drawn in full and never folded
-///    behind a chevron. The backend's prose summary sits *after* it, so the
-///    claim cannot be read without what it rests on.
+/// 1. The answer sentence comes first, and every record it rests on is drawn
+///    in full right below it under "Why we say this". Audit fields (source
+///    ids, API paths, confidence, digest) are for support, not shoppers, and
+///    are not drawn.
 /// 2. Nothing is drawn that the backend did not send. There is no confidence
 ///    this file computes, no star, no "verified" badge, no freshness guess.
 ///    Every number on screen came off the wire.
@@ -126,11 +127,9 @@ class _EvidenceAnswerPanelState extends ConsumerState<EvidenceAnswerPanel> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const MallSectionHeader(
-          title: 'Ask, and see the evidence',
-          eyebrow: 'Evidence-backed',
+          title: 'Ask about this product',
           subtitle:
-              'Answers here are built only from records that were true at '
-              'the moment they were read. Every one is shown.',
+              'Answers use only what the seller and StyleMint have on record.',
           padding: EdgeInsets.only(bottom: DesignTokens.s12),
         ),
         _Composer(
@@ -297,11 +296,10 @@ class _NoEvidence extends StatelessWidget {
       children: [
         const MallEmptyState(
           icon: Icons.search_off_rounded,
-          eyebrow: 'Nothing to stand on',
-          title: 'No evidence answers this yet',
+          title: "We don't have that information yet",
           body:
-              'There are no records this answer could rest on, so no answer '
-              'is shown. Nothing has been guessed in its place.',
+              "Nothing on record answers this, so we won't guess. "
+              'You can ask the seller in chat.',
         ),
         if (asOf != null) ...[
           const SizedBox(height: DesignTokens.s12),
@@ -334,13 +332,16 @@ class _Answered extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (asOf != null) _AsOfLine(asOfUtc: asOf, now: now),
-        const SizedBox(height: DesignTokens.s12),
+        // The answer comes first; the records it rests on follow it.
+        if (answer.answer.isNotEmpty) ...[
+          _Summary(answer: answer),
+          const SizedBox(height: DesignTokens.s16),
+        ],
         MallSectionHeader(
-          title: 'What this rests on',
+          title: 'Why we say this',
           subtitle: facts.length == 1
-              ? 'One record, shown in full.'
-              : '${facts.length} records, each shown in full.',
+              ? 'From 1 record.'
+              : 'From ${facts.length} records.',
           padding: const EdgeInsets.only(bottom: DesignTokens.s8),
         ),
         Column(
@@ -358,11 +359,9 @@ class _Answered extends StatelessWidget {
               ),
           ],
         ),
-        // The prose comes after the records on purpose: it is a summary of
-        // what is above, not a standalone claim.
-        if (answer.answer.isNotEmpty) ...[
-          const SizedBox(height: DesignTokens.s8),
-          _Summary(answer: answer),
+        if (asOf != null) ...[
+          const SizedBox(height: DesignTokens.s4),
+          _AsOfLine(asOfUtc: asOf, now: now),
         ],
         if (answer.consequences.isNotEmpty) ...[
           const SizedBox(height: DesignTokens.s16),
@@ -380,10 +379,6 @@ class _Answered extends StatelessWidget {
         if (answer.limitations.isNotEmpty) ...[
           const SizedBox(height: DesignTokens.s12),
           _Limitations(limitations: answer.limitations),
-        ],
-        if (answer.evidenceDigestSha256.isNotEmpty) ...[
-          const SizedBox(height: DesignTokens.s12),
-          _Digest(digest: answer.evidenceDigestSha256),
         ],
       ],
     );
@@ -460,7 +455,6 @@ class _FactCard extends StatelessWidget {
       validToUtc: fact.validToUtc,
     );
     final observed = EvidenceTime.observed(fact.observedUtc);
-    final confidence = fact.confidence;
     final kind = labelFor(fact);
     final productId = fact.productId;
     final linkable =
@@ -501,23 +495,8 @@ class _FactCard extends StatelessWidget {
               _MetaLine(icon: Icons.event_rounded, text: validity),
             if (observed != null)
               _MetaLine(icon: Icons.fact_check_outlined, text: observed),
-            if (fact.source.isNotEmpty)
-              _MetaLine(icon: Icons.source_outlined, text: fact.source),
-            if (fact.sourceReference.isNotEmpty)
-              _MetaLine(
-                icon: Icons.link_rounded,
-                text: fact.sourceReference,
-              ),
-            // The backend's number, spoken as the backend's number. Nothing
-            // here computes, rounds up, or turns it into a star.
-            if (confidence != null)
-              _MetaLine(
-                icon: Icons.percent_rounded,
-                text:
-                    'Source confidence ${(confidence * 100).round()}%, '
-                    'reported by '
-                    '${fact.source.isEmpty ? 'the source' : fact.source}',
-              ),
+            // source, sourceReference (an API path) and confidence are audit
+            // fields for support, not for shoppers, so they are not drawn.
             if (linkable) ...[
               const SizedBox(height: DesignTokens.s8),
               _OpenProductLink(productId: productId),
@@ -630,8 +609,7 @@ class _ConsequenceCard extends StatelessWidget {
               _MetaLine(
                 icon: Icons.percent_rounded,
                 text:
-                    'Probability the backend gave: '
-                    '${(probability * 100).round()}%',
+                    'Likelihood: ${(probability * 100).round()}%',
               ),
             if (horizon != null)
               _MetaLine(icon: Icons.schedule_rounded, text: horizon),
@@ -666,14 +644,14 @@ class _Summary extends StatelessWidget {
     final cited = answer.citedFacts;
     // Says how the sentence was written. A model-written one is labelled as
     // such; it reached the device only after the backend checked that every
-    // sentence cites a record above.
+    // sentence cites a record below.
     final eyebrow = answer.isGroundedAi
-        ? 'In short, written by AI from the records above'
-        : 'In short, from the records above';
+        ? 'Answer, written by AI from StyleMint records'
+        : 'Answer';
     final citedNames = cited.map(_FactCard.labelFor).where((n) => n.isNotEmpty);
     return Semantics(
       key: rootKey,
-      label: 'Summary of the records above: $text',
+      label: 'Answer: $text',
       excludeSemantics: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -712,35 +690,11 @@ class _Limitations extends StatelessWidget {
       key: rootKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const MallEyebrow('What this does not tell you'),
+        const MallEyebrow('Good to know'),
         const SizedBox(height: DesignTokens.s8),
         for (final limitation in limitations)
           _MetaLine(icon: Icons.info_outline_rounded, text: limitation),
       ],
-    );
-  }
-}
-
-/// The integrity digest, shortened for the eye and spoken in full for anyone
-/// who needs to quote it to support.
-class _Digest extends StatelessWidget {
-  const _Digest({required this.digest});
-
-  final String digest;
-
-  @override
-  Widget build(BuildContext context) {
-    final short = digest.length > 12 ? digest.substring(0, 12) : digest;
-    return Semantics(
-      label: 'Evidence digest $digest',
-      excludeSemantics: true,
-      child: Text(
-        'Evidence digest $short…',
-        style: DesignTokens.smallRegular.copyWith(
-          letterSpacing: 0.4,
-          color: DesignTokens.textMuted,
-        ),
-      ),
     );
   }
 }
