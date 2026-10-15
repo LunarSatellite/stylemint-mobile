@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart'
     show ShippingAddress;
@@ -217,6 +219,36 @@ const vendorProgramWire = <String, dynamic>{
 
 /// A repository that answers from the wire fixtures and records every call.
 /// Set a field to a failure to make that call fail.
+/// The seller's view of an application, as `GET /v1/credit/vendor/applications/{id}` sends it.
+Map<String, dynamic> get vendorApplicationWire => {
+  'agreement': agreementWire(
+    state: 1,
+    reasons: ['kyc_required', 'manual_review_required'],
+  ),
+  'buyerDisplayName': 'Asha',
+  'productName': 'Pashmina overcoat',
+  'monthlyInstalment': 16000,
+  'documents': [
+    {
+      'id': 'doc-id',
+      'kind': 1,
+      'contentType': 'image/jpeg',
+      'sizeBytes': 1000,
+      'uploadedUtc': '2026-03-02T06:10:00+00:00',
+    },
+    {
+      'id': 'doc-fin',
+      'kind': 2,
+      'contentType': 'application/pdf',
+      'sizeBytes': 2000,
+      'uploadedUtc': '2026-03-02T06:11:00+00:00',
+    },
+  ],
+  'riskScore': 560,
+  'riskBand': 3,
+  'riskReasons': ['kyc_required', 'manual_review_required'],
+};
+
 class FakeCreditRepository implements CreditRepository {
   FakeCreditRepository({
     Map<String, dynamic>? agreement,
@@ -247,6 +279,25 @@ class FakeCreditRepository implements CreditRepository {
   final payments =
       <({PaymentPurpose purpose, PlanPaymentRail rail, String key})>[];
   final reviews = <({bool approve, List<String> reasons})>[];
+  final notes = <String?>[];
+
+  /// The seller's view of the application, and links asked for.
+  Map<String, dynamic> application = vendorApplicationWire;
+  final links = <String>[];
+
+  @override
+  Future<Either<EmiFailure, VendorCreditApplication>> vendorApplication(
+    String agreementId,
+  ) async => right(readVendorCreditApplication(application));
+
+  @override
+  Future<Either<EmiFailure, String>> vendorDocumentLink({
+    required String agreementId,
+    required String documentId,
+  }) async {
+    links.add(documentId);
+    return right('https://blobs.example.test/$documentId.pdf');
+  }
 
   /// Plan checkout: set a failure to make that step fail.
   EmiFailure? checkoutFailure;
@@ -311,6 +362,44 @@ class FakeCreditRepository implements CreditRepository {
     return failure != null
         ? left(failure)
         : right(readCreditAgreement(agreement));
+  }
+
+  /// Documents attached, and submissions made.
+  final uploads =
+      <({String agreementId, CreditDocumentKind kind, String path})>[];
+  final submissions = <({String agreementId, String key})>[];
+  EmiFailure? uploadFailure;
+
+  /// The agreement as the seller's list sees it after submission.
+  Map<String, dynamic>? submittedAgreement;
+
+  @override
+  Future<Either<EmiFailure, Unit>> uploadDocument({
+    required String agreementId,
+    required CreditDocumentKind kind,
+    required File file,
+    String? filename,
+  }) async {
+    uploads.add((agreementId: agreementId, kind: kind, path: file.path));
+    final failure = uploadFailure;
+    return failure != null ? left(failure) : right(unit);
+  }
+
+  @override
+  Future<Either<EmiFailure, CreditAgreement>> submitDocuments({
+    required String agreementId,
+    required String idempotencyKey,
+  }) async {
+    submissions.add((agreementId: agreementId, key: idempotencyKey));
+    return right(
+      readCreditAgreement(
+        submittedAgreement ??
+            {
+              ...agreement,
+              'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
+            },
+      ),
+    );
   }
 
   @override
@@ -405,8 +494,10 @@ class FakeCreditRepository implements CreditRepository {
     required bool approve,
     required List<String> reasons,
     required String idempotencyKey,
+    String? note,
   }) async {
     reviews.add((approve: approve, reasons: reasons));
+    notes.add(note);
     final failure = reviewFailure;
     return failure != null
         ? left(failure)

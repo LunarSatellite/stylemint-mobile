@@ -62,6 +62,7 @@ PlanOptions readPlanOptions(Map<String, dynamic> json) {
         fromDownPayment: _money(o['fromDownPayment'], currency),
         goodsBeforePaidInFull: readBool(o['goodsReleasedBeforePaidInFull']),
         requiresVerifiedIdentity: readBool(o['requiresVerifiedIdentity']),
+        requiresDocuments: readBool(o['requiresDocuments']),
       ),
     );
   }
@@ -169,6 +170,8 @@ CreditAgreement readCreditAgreement(Map<String, dynamic> json) {
     instalments: List.unmodifiable(instalments),
     orderId: readOptionalString(json['orderId']),
     priceReduced: _optionalMoney(json['priceReduced'], currency),
+    decisionNote: readOptionalString(json['decisionNote']),
+    documentsSubmittedAt: readDate(json['documentsSubmittedUtc']),
   );
 }
 
@@ -264,3 +267,33 @@ VendorCreditProgram readVendorCreditProgram(Map<String, dynamic> json) =>
       prepayTenures: _ints(json['prepayTenures']),
       prepayDepositPercent: readInt(json['prepayDepositPercent']),
     );
+
+/// `GET /v1/credit/vendor/applications/{id}`.
+VendorCreditApplication readVendorCreditApplication(Map<String, dynamic> json) {
+  final raw = json['agreement'];
+  if (raw is! Map) throw const FormatException('Application: no agreement');
+  const bands = {1: 'A', 2: 'B', 3: 'C', 4: 'D'};
+  final band = json['riskBand'];
+  return VendorCreditApplication(
+    agreement: readCreditAgreement(Map<String, dynamic>.from(raw)),
+    buyerDisplayName: readOptionalString(json['buyerDisplayName']) ?? 'Buyer',
+    productName: readString(json['productName']),
+    documents: [
+      for (final d
+          in json['documents'] is List ? json['documents'] as List : const [])
+        if (d is Map)
+          CreditDocumentInfo(
+            id: readString(d['id']),
+            kind: readInt(d['kind']) == 1
+                ? CreditDocumentKind.identity
+                : CreditDocumentKind.financial,
+            contentType: readString(d['contentType']),
+          ),
+    ],
+    riskReasons: _strings(json['riskReasons']),
+    riskBand: band is int ? bands[band] : null,
+    riskScore: json['riskScore'] is num
+        ? (json['riskScore'] as num).toInt()
+        : null,
+  );
+}

@@ -143,3 +143,12 @@ final FutureProviderFamily<String?, String> planProductNameProvider =
         return name.isEmpty ? null : name;
       });
     });
+
+/// The seller's view of one EMI application: buyer name, documents, notes.
+final FutureProviderFamily<VendorCreditApplication, String>
+vendorCreditApplicationProvider = FutureProvider.autoDispose
+    .family<VendorCreditApplication, String>(
+      (ref, id) => _orThrow(
+        ref.watch(creditRepositoryProvider).vendorApplication(id),
+      ),
+    );

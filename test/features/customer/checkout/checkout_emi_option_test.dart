@@ -75,7 +75,10 @@ Future<FakeCreditRepository> _pump(
   bool signedIn = true,
   EmiCta cta = EmiCta.eligible,
   FakeCreditRepository? credit,
+  Map<String, dynamic>? options,
+  List<PickedCreditDocument> picks = const [],
 }) async {
+  final queue = [...picks];
   _usePhoneSize(tester);
   final repo = credit ?? FakeCreditRepository();
   final router = GoRouter(
@@ -110,7 +113,7 @@ Future<FakeCreditRepository> _pump(
         planOptionsProvider.overrideWith((ref, variantId) async {
           if (optionsError != null) throw optionsError;
           return offered
-              ? readPlanOptions(planOptionsWire)
+              ? readPlanOptions(options ?? planOptionsWire)
               : PlanOptions(
                   variantId: variantId,
                   price: const Money(amount: 60000, currency: 'NPR'),
@@ -121,6 +124,9 @@ Future<FakeCreditRepository> _pump(
         emiRepositoryProvider.overrideWithValue(_NoQuoteEmiRepository()),
         emiSignedInProvider.overrideWithValue(signedIn),
         emiEligibilityProvider.overrideWith((ref) async => _eligibility(cta)),
+        creditDocumentPickerProvider.overrideWithValue(
+          () async => queue.isEmpty ? null : queue.removeAt(0),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -294,5 +300,171 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('checkout-emi-pay-error')), findsOneWidget);
     expect(find.textContaining('Plan'), findsNothing);
+  });
+
+  group('EMI decided by the seller, from documents sent at checkout', () {
+    const variant = 'f0a10cdf-15d7-4402-8774-9ac69f7aa421';
+    final sellerOptions = <String, dynamic>{
+      ...planOptionsWire,
+      'options': [
+        {
+          ...(planOptionsWire['options']! as List).first
+              as Map<String, dynamic>,
+          'requiresVerifiedIdentity': false,
+          'requiresDocuments': true,
+        },
+      ],
+    };
+    const id = PickedCreditDocument(
+      path: '/tmp/citizenship.jpg',
+      name: 'citizenship.jpg',
+      sizeBytes: 1000,
+    );
+    const slip = PickedCreditDocument(
+      path: '/tmp/salary.pdf',
+      name: 'salary.pdf',
+      sizeBytes: 2000,
+    );
+
+    FakeCreditRepository repoWith(Map<String, dynamic>? agreement) {
+      final repo = FakeCreditRepository(
+        agreement: agreement ?? agreementWire(state: 1),
+      );
+      return repo;
+    }
+
+    testWidgets('signed out: sign in to apply', (tester) async {
+      await _pump(
+        tester,
+        [_item(variantId: variant)],
+        signedIn: false,
+        options: sellerOptions,
+      );
+      expect(find.text('Sign in to apply for EMI'), findsOneWidget);
+    });
+
+    testWidgets('no KYC gate: the buyer adds identity and financial proof, '
+        'sends, and then waits for the seller', (tester) async {
+      // A fresh applicant: no plan on this item yet.
+      final repo = repoWith(agreementWire(state: 1))
+        ..agreement = agreementWire(state: 1, id: 'new-plan')
+        ..submittedAgreement = {
+          ...agreementWire(state: 1, id: 'new-plan'),
+          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
+        };
+      await _pump(
+        tester,
+        [_item(variantId: 'other-variant')],
+        cta: EmiCta.getVerified,
+        credit: repo,
+        options: sellerOptions,
+        picks: const [id, slip],
+      );
+      expect(find.byKey(CheckoutEmiOption.documentsKey), findsOneWidget);
+      expect(find.byKey(CheckoutEmiOption.verifyKey), findsNothing);
+      final send = find.byKey(CheckoutEmiOption.sendKey);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.descendant(of: send, matching: find.byType(FilledButton)),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      await tester.tap(find.byKey(const Key('checkout-emi-add-identity')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('checkout-emi-add-financial')));
+      await tester.pumpAndSettle();
+      expect(find.text('citizenship.jpg'), findsOneWidget);
+      expect(find.text('salary.pdf'), findsOneWidget);
+
+      await tester.tap(send);
+      await tester.pumpAndSettle();
+      expect(repo.quotes, hasLength(1));
+      expect(repo.applications.single.key, isNotEmpty);
+      expect(repo.uploads.map((u) => u.kind), [
+        CreditDocumentKind.identity,
+        CreditDocumentKind.financial,
+      ]);
+      expect(repo.uploads.every((u) => u.agreementId == 'new-plan'), isTrue);
+      expect(repo.submissions.single.key, isNotEmpty);
+      expect(find.byKey(CheckoutEmiOption.waitingKey), findsOneWidget);
+      expect(find.text('Waiting for the seller to approve'), findsOneWidget);
+      expect(find.byKey(CheckoutEmiOption.payKey), findsNothing);
+    });
+
+    testWidgets('a file over 10 MB is refused before upload', (tester) async {
+      final repo = repoWith(null);
+      await _pump(
+        tester,
+        [_item(variantId: 'other-variant')],
+        credit: repo,
+        options: sellerOptions,
+        picks: const [
+          PickedCreditDocument(
+            path: '/tmp/big.pdf',
+            name: 'big.pdf',
+            sizeBytes: 11 * 1024 * 1024,
+          ),
+        ],
+      );
+      await tester.tap(find.byKey(const Key('checkout-emi-add-financial')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('larger than 10 MB'), findsOneWidget);
+      expect(find.text('big.pdf'), findsNothing);
+    });
+
+    testWidgets('already sent: shows the wait, not the form', (tester) async {
+      await _pump(
+        tester,
+        [_item(variantId: variant)],
+        credit: repoWith({
+          ...agreementWire(state: 1),
+          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
+        }),
+        options: sellerOptions,
+      );
+      expect(find.byKey(CheckoutEmiOption.waitingKey), findsOneWidget);
+      expect(find.byKey(CheckoutEmiOption.documentsKey), findsNothing);
+    });
+
+    testWidgets('approved by the seller: pay the down payment, which opens '
+        'the plan checkout', (tester) async {
+      await _pump(
+        tester,
+        [_item(variantId: variant)],
+        credit: repoWith(agreementWire(checkedOut: false)),
+        options: sellerOptions,
+      );
+      expect(find.byKey(CheckoutEmiOption.approvedKey), findsOneWidget);
+      expect(find.textContaining('Pay down payment'), findsOneWidget);
+      expect(find.textContaining('12,000'), findsWidgets);
+      await tester.tap(find.byKey(CheckoutEmiOption.payKey));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Plan checkout'), findsOneWidget);
+    });
+
+    testWidgets('declined by the seller: their reason, and apply again', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        [_item(variantId: variant)],
+        credit: repoWith({
+          ...agreementWire(state: 6, reasons: ['documents_not_sufficient']),
+          'decisionNote': 'Bank statement is older than 3 months.',
+        }),
+        options: sellerOptions,
+      );
+      expect(find.byKey(CheckoutEmiOption.declinedKey), findsOneWidget);
+      expect(
+        find.textContaining('Bank statement is older than 3 months.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Apply again'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(CheckoutEmiOption.documentsKey), findsOneWidget);
+    });
   });
 }

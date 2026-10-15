@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/json_read.dart';
@@ -67,6 +69,35 @@ class CreditRemoteDataSource {
     ),
   );
 
+  /// Attaches one identity document or proof of income to an application.
+  Future<void> uploadDocument({
+    required String agreementId,
+    required CreditDocumentKind kind,
+    required File file,
+    String? filename,
+  }) async {
+    await apiClient.postFile(
+      '/v1/credit/me/agreements/${Uri.encodeComponent(agreementId)}/documents',
+      file: file,
+      filename: filename,
+      fields: <String, dynamic>{'kind': kind.wire},
+    );
+  }
+
+  /// Sends the documents to the seller.
+  Future<CreditAgreement> submitDocuments({
+    required String agreementId,
+    required String idempotencyKey,
+  }) async => readCreditAgreement(
+    readJsonObject(
+      await apiClient.post(
+        '/v1/credit/me/agreements/${Uri.encodeComponent(agreementId)}/documents/submit',
+        data: const <String, dynamic>{},
+        options: _idempotent(idempotencyKey),
+      ),
+    ),
+  );
+
   Future<List<CreditAgreement>> listAgreements() async =>
       readCreditAgreements(await apiClient.get('/v1/credit/me/agreements'));
 
@@ -130,6 +161,7 @@ class CreditRemoteDataSource {
     required bool approve,
     required List<String> reasons,
     required String idempotencyKey,
+    String? note,
   }) async => readCreditAgreement(
     readJsonObject(
       await apiClient.post(
@@ -137,10 +169,33 @@ class CreditRemoteDataSource {
         data: <String, dynamic>{
           'approve': approve,
           if (reasons.isNotEmpty) 'reasons': reasons,
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
         },
         options: _idempotent(idempotencyKey),
       ),
     ),
+  );
+
+  Future<VendorCreditApplication> vendorApplication(
+    String agreementId,
+  ) async => readVendorCreditApplication(
+    readJsonObject(
+      await apiClient.get(
+        '/v1/credit/vendor/applications/${Uri.encodeComponent(agreementId)}',
+      ),
+    ),
+  );
+
+  Future<String> vendorDocumentLink({
+    required String agreementId,
+    required String documentId,
+  }) async => readString(
+    readJsonObject(
+      await apiClient.get(
+        '/v1/credit/vendor/agreements/${Uri.encodeComponent(agreementId)}'
+        '/documents/${Uri.encodeComponent(documentId)}/link',
+      ),
+    )['url'],
   );
 
   Future<VendorCreditProgram> vendorProgram() async => readVendorCreditProgram(

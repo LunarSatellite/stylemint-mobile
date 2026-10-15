@@ -112,6 +112,8 @@ void main() {
 
       await tester.tap(find.byKey(const Key('vendor-decline-out_of_stock')));
       await tester.pump();
+      await tester.ensureVisible(confirm);
+      await tester.pump();
       await tester.tap(confirm);
       for (var i = 0; i < 4; i++) {
         await tester.pump(const Duration(milliseconds: 100));
@@ -119,6 +121,58 @@ void main() {
 
       expect(repo.reviews.single.approve, isFalse);
       expect(repo.reviews.single.reasons, ['out_of_stock']);
+    });
+
+    testWidgets('shows the buyer by name and their documents, opened one at '
+        'a time on request', (tester) async {
+      final repo = FakeCreditRepository(agreement: referral());
+      repo.application = {
+        ...vendorApplicationWire,
+        'agreement': {
+          ...referral(),
+          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
+        },
+      };
+      await _pump(
+        tester,
+        repo,
+        const VendorPaymentPlanDetailScreen(agreementId: 'a1'),
+      );
+      expect(find.text('Buyer: Asha'), findsOneWidget);
+      expect(find.byKey(const Key('vendor-plan-documents')), findsOneWidget);
+      expect(find.text('Open identity document 1'), findsOneWidget);
+      expect(find.text('Open financial proof 1'), findsOneWidget);
+      expect(repo.links, isEmpty, reason: 'nothing is fetched until asked');
+      await _tap(tester, find.byKey(const Key('vendor-plan-document-doc-fin')));
+      expect(repo.links, ['doc-fin']);
+    });
+
+    testWidgets('declining can carry a note the buyer is shown', (
+      tester,
+    ) async {
+      final repo = FakeCreditRepository(agreement: referral());
+      await _pump(
+        tester,
+        repo,
+        const VendorPaymentPlanDetailScreen(agreementId: 'a1'),
+      );
+      await _tap(tester, find.byKey(const Key('vendor-plan-decline')));
+      await tester.tap(
+        find.byKey(const Key('vendor-decline-documents_not_sufficient')),
+      );
+      await tester.enterText(
+        find.byKey(const Key('vendor-decline-note')),
+        'Bank statement is older than 3 months.',
+      );
+      final confirm = find.byKey(const Key('vendor-decline-confirm'));
+      await tester.ensureVisible(confirm);
+      await tester.pump();
+      await tester.tap(confirm);
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(repo.reviews.single.reasons, ['documents_not_sufficient']);
+      expect(repo.notes.single, 'Bank statement is older than 3 months.');
     });
 
     testWidgets('a plan StyleMint guarantees is not the vendor\'s to decide', (
@@ -143,7 +197,9 @@ void main() {
       await _pump(
         tester,
         repo,
-        const Scaffold(body: SingleChildScrollView(child: VendorCreditProgramCard())),
+        const Scaffold(
+          body: SingleChildScrollView(child: VendorCreditProgramCard()),
+        ),
       );
 
       expect(find.textContaining('3% risk fee'), findsOneWidget);

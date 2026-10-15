@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart'
     show ShippingAddress;
@@ -20,6 +22,21 @@ abstract class CreditRepository {
 
   Future<Either<EmiFailure, CreditAgreement>> apply({
     required String quoteToken,
+    required String idempotencyKey,
+  });
+
+  /// Attaches one identity document or proof of income to an EMI application
+  /// waiting on the seller. PDF or image, up to 10 MB.
+  Future<Either<EmiFailure, Unit>> uploadDocument({
+    required String agreementId,
+    required CreditDocumentKind kind,
+    required File file,
+    String? filename,
+  });
+
+  /// Sends the application's documents to the seller to decide on.
+  Future<Either<EmiFailure, CreditAgreement>> submitDocuments({
+    required String agreementId,
     required String idempotencyKey,
   });
 
@@ -65,6 +82,20 @@ abstract class CreditRepository {
     required bool approve,
     required List<String> reasons,
     required String idempotencyKey,
+    String? note,
+  });
+
+  /// An EMI application as the seller deciding it sees it: the buyer's
+  /// display name, the documents they sent, and the risk notes.
+  Future<Either<EmiFailure, VendorCreditApplication>> vendorApplication(
+    String agreementId,
+  );
+
+  /// Where one of the buyer's documents is. Asked for one at a time; the
+  /// server records each opening.
+  Future<Either<EmiFailure, String>> vendorDocumentLink({
+    required String agreementId,
+    required String documentId,
   });
 
   Future<Either<EmiFailure, VendorCreditProgram>> vendorProgram();

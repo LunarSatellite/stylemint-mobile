@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/data/datasources/checkout_remote_datasource.dart';
@@ -60,6 +62,33 @@ class CreditRepositoryImpl implements CreditRepository {
     required String idempotencyKey,
   }) => _call(
     () => remote.apply(quoteToken: quoteToken, idempotencyKey: idempotencyKey),
+  );
+
+  @override
+  Future<Either<EmiFailure, Unit>> uploadDocument({
+    required String agreementId,
+    required CreditDocumentKind kind,
+    required File file,
+    String? filename,
+  }) => _call(() async {
+    await remote.uploadDocument(
+      agreementId: agreementId,
+      kind: kind,
+      file: file,
+      filename: filename,
+    );
+    return unit;
+  });
+
+  @override
+  Future<Either<EmiFailure, CreditAgreement>> submitDocuments({
+    required String agreementId,
+    required String idempotencyKey,
+  }) => _call(
+    () => remote.submitDocuments(
+      agreementId: agreementId,
+      idempotencyKey: idempotencyKey,
+    ),
   );
 
   @override
@@ -148,12 +177,30 @@ class CreditRepositoryImpl implements CreditRepository {
     required bool approve,
     required List<String> reasons,
     required String idempotencyKey,
+    String? note,
   }) => _call(
     () => remote.vendorReview(
       agreementId: agreementId,
       approve: approve,
       reasons: reasons,
       idempotencyKey: idempotencyKey,
+      note: note,
+    ),
+  );
+
+  @override
+  Future<Either<EmiFailure, VendorCreditApplication>> vendorApplication(
+    String agreementId,
+  ) => _call(() => remote.vendorApplication(agreementId));
+
+  @override
+  Future<Either<EmiFailure, String>> vendorDocumentLink({
+    required String agreementId,
+    required String documentId,
+  }) => _call(
+    () => remote.vendorDocumentLink(
+      agreementId: agreementId,
+      documentId: documentId,
     ),
   );
 

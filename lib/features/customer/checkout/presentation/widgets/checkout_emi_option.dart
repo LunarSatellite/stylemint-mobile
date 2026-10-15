@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
@@ -18,6 +20,47 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:uuid/uuid.dart';
+
+/// A file the buyer picked to send with an EMI application.
+class PickedCreditDocument {
+  const PickedCreditDocument({
+    required this.path,
+    required this.name,
+    required this.sizeBytes,
+  });
+
+  final String path;
+  final String name;
+  final int sizeBytes;
+}
+
+typedef CreditDocumentPicker = Future<PickedCreditDocument?> Function();
+
+/// Documents sent with an EMI application: PDF or image, at most 10 MB each.
+const creditDocumentMaxBytes = 10 * 1024 * 1024;
+const creditDocumentExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'heic'];
+const maxIdentityDocuments = 2;
+const maxFinancialDocuments = 3;
+
+Future<PickedCreditDocument?> _pickWithFilePicker() async {
+  final result = await FilePicker.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: creditDocumentExtensions,
+  );
+  final file = result?.files.firstOrNull;
+  final path = file?.path;
+  if (file == null || path == null) return null;
+  return PickedCreditDocument(
+    path: path,
+    name: file.name,
+    sizeBytes: file.size,
+  );
+}
+
+/// Picks one document from the device. Overridden in tests.
+final creditDocumentPickerProvider = Provider<CreditDocumentPicker>(
+  (ref) => _pickWithFilePicker,
+);
 
 /// "Pay with EMI", inline on the checkout screen.
 ///
@@ -47,6 +90,11 @@ class CheckoutEmiOption extends ConsumerWidget {
   static const Key verifyKey = Key('checkout-emi-verify');
   static const Key inReviewKey = Key('checkout-emi-in-review');
   static const Key errorKey = Key('checkout-emi-error');
+  static const Key documentsKey = Key('checkout-emi-documents');
+  static const Key sendKey = Key('checkout-emi-send');
+  static const Key waitingKey = Key('checkout-emi-waiting');
+  static const Key approvedKey = Key('checkout-emi-approved');
+  static const Key declinedKey = Key('checkout-emi-declined');
 
   /// Whether a plan-options failure just means "no plan on this item"
   /// (draw nothing) rather than "could not ask" (offer a retry).
@@ -222,6 +270,15 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
   bool _paying = false;
   String? _error;
 
+  // ── EMI with documents, decided by the seller ──
+  final List<PickedCreditDocument> _identity = [];
+  final List<PickedCreditDocument> _financial = [];
+  final Set<String> _uploaded = {};
+  String? _agreementId;
+  CreditAgreement? _latest;
+  bool _reapplying = false;
+  String _submitKey = _uuid.v4();
+
   /// One key per selection the buyer means to pay for: a retry after a
   /// dropped connection is the same application, not a second one.
   String _applyKey = _uuid.v4();
@@ -380,6 +437,347 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     );
   }
 
+  /// The buyer's latest application for this item, while it is still live:
+  /// waiting on the seller, approved, or just declined.
+  CreditAgreement? _liveAgreement() {
+    if (!ref.watch(emiSignedInProvider)) return null;
+    final plans = ref.watch(myPaymentPlansProvider).asData?.value ?? const [];
+    CreditAgreement? latest = _latest;
+    for (final a in plans) {
+      if (a.variantId != _variantId || a.guarantor != PlanGuarantor.vendor) {
+        continue;
+      }
+      if (latest == null ||
+          (a.appliedAt != null &&
+              latest.appliedAt != null &&
+              a.appliedAt!.isAfter(latest.appliedAt!))) {
+        latest = a;
+      }
+    }
+    if (latest == null) return null;
+    return switch (latest.status) {
+      AgreementStatus.pendingApproval => latest,
+      AgreementStatus.approved => latest,
+      AgreementStatus.declined => _reapplying ? null : latest,
+      _ => null,
+    };
+  }
+
+  Future<void> _pickDocument(CreditDocumentKind kind) async {
+    final picked = await ref.read(creditDocumentPickerProvider)();
+    if (picked == null || !mounted) return;
+    final extension = picked.name.split('.').last.toLowerCase();
+    setState(() {
+      if (!creditDocumentExtensions.contains(extension)) {
+        _error = 'Choose a PDF or a photo (JPEG, PNG or HEIC).';
+      } else if (picked.sizeBytes <= 0 ||
+          picked.sizeBytes > creditDocumentMaxBytes) {
+        _error = 'That file is larger than 10 MB. Choose a smaller one.';
+      } else {
+        _error = null;
+        (kind == CreditDocumentKind.identity ? _identity : _financial).add(
+          picked,
+        );
+      }
+    });
+  }
+
+  /// Quote → apply → upload each document → send to the seller. Each write
+  /// keeps its idempotency key across retries; documents already uploaded
+  /// are not sent twice.
+  Future<void> _sendToSeller(String? resumeAgreementId) async {
+    setState(() {
+      _paying = true;
+      _error = null;
+    });
+    final repo = ref.read(creditRepositoryProvider);
+    var agreementId = resumeAgreementId ?? _agreementId;
+
+    void fail(String message) => setState(() {
+      _paying = false;
+      _error = message;
+    });
+
+    if (agreementId == null) {
+      final quoted = await repo.createQuote(
+        variantId: _variantId,
+        kind: _kind.kind,
+        downPaymentPercent: _kind.adjustable ? _percent : null,
+        tenureMonths: _tenure,
+      );
+      if (!mounted) return;
+      final quote = quoted.fold((f) {
+        fail(creditFailureMessage(f));
+        return null;
+      }, (q) => q);
+      if (quote == null) return;
+      final applied = await repo.apply(
+        quoteToken: quote.token,
+        idempotencyKey: _applyKey,
+      );
+      if (!mounted) return;
+      final agreement = applied.fold((f) {
+        fail(creditFailureMessage(f));
+        return null;
+      }, (a) => a);
+      if (agreement == null) return;
+      if (agreement.status != AgreementStatus.pendingApproval) {
+        // Declined outright (a hard reason), or already decided.
+        refreshPaymentPlans(ref);
+        setState(() {
+          _paying = false;
+          _reapplying = false;
+          _latest = agreement;
+        });
+        return;
+      }
+      agreementId = agreement.id;
+      setState(() => _agreementId = agreementId);
+    }
+
+    for (final (kind, docs) in [
+      (CreditDocumentKind.identity, _identity),
+      (CreditDocumentKind.financial, _financial),
+    ]) {
+      for (final doc in docs) {
+        if (_uploaded.contains(doc.path)) continue;
+        final up = await repo.uploadDocument(
+          agreementId: agreementId,
+          kind: kind,
+          file: File(doc.path),
+          filename: doc.name,
+        );
+        if (!mounted) return;
+        final failure = up.fold((f) => f, (_) => null);
+        if (failure != null) {
+          fail(
+            'Could not upload ${doc.name}: ${creditFailureMessage(failure)}',
+          );
+          return;
+        }
+        _uploaded.add(doc.path);
+      }
+    }
+
+    final submitted = await repo.submitDocuments(
+      agreementId: agreementId,
+      idempotencyKey: _submitKey,
+    );
+    if (!mounted) return;
+    submitted.fold((f) => fail(creditFailureMessage(f)), (agreement) {
+      refreshPaymentPlans(ref);
+      setState(() {
+        _paying = false;
+        _reapplying = false;
+        _latest = agreement;
+      });
+    });
+  }
+
+  void _applyAgain() => setState(() {
+    _reapplying = true;
+    _latest = null;
+    _agreementId = null;
+    _identity.clear();
+    _financial.clear();
+    _uploaded.clear();
+    _applyKey = _uuid.v4();
+    _submitKey = _uuid.v4();
+    _error = null;
+  });
+
+  void _payDownPayment(CreditAgreement agreement) {
+    final args = PlanDetailArgs(
+      productName: widget.item.productName,
+      justApplied: true,
+    );
+    unawaited(
+      context.push(
+        agreement.needsCheckout
+            ? RouteNames.paymentPlanCheckoutPath(agreement.id)
+            : RouteNames.paymentPlanDetailPath(agreement.id),
+        extra: args,
+      ),
+    );
+  }
+
+  Widget _documentsSection(Money down, {String? resumeAgreementId}) {
+    if (!ref.watch(emiSignedInProvider)) {
+      return _Button(label: 'Sign in to apply for EMI', onPressed: _signIn);
+    }
+    final ready = _identity.isNotEmpty && _financial.isNotEmpty;
+    Widget list(
+      CreditDocumentKind kind,
+      List<PickedCreditDocument> docs,
+      int max,
+      String label,
+      String hint,
+    ) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _Label(label),
+        Text(
+          hint,
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 12,
+            color: DesignTokens.textMuted,
+          ),
+        ),
+        for (final d in docs)
+          Row(
+            children: [
+              const Icon(
+                Icons.description_outlined,
+                size: 16,
+                color: DesignTokens.textMuted,
+              ),
+              const SizedBox(width: DesignTokens.s6),
+              Expanded(
+                child: Text(
+                  d.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 13,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+              ),
+              if (!_uploaded.contains(d.path) && !_paying)
+                IconButton(
+                  tooltip: 'Remove',
+                  color: DesignTokens.textMuted,
+                  icon: const Icon(Icons.close, size: 16),
+                  onPressed: () => setState(() => docs.remove(d)),
+                ),
+            ],
+          ),
+        if (docs.length < max)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              key: Key('checkout-emi-add-${kind.name}'),
+              onPressed: _paying ? null : () => _pickDocument(kind),
+              icon: const Icon(Icons.upload_file),
+              label: Text(docs.isEmpty ? 'Add file' : 'Add another'),
+            ),
+          ),
+      ],
+    );
+    return Column(
+      key: CheckoutEmiOption.documentsKey,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'The seller approves EMI on their product. Send them your identity '
+          'and proof of income; once they approve, you pay the down payment '
+          'here.',
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 12,
+            color: DesignTokens.textMuted,
+          ),
+        ),
+        const SizedBox(height: DesignTokens.s8),
+        list(
+          CreditDocumentKind.identity,
+          _identity,
+          maxIdentityDocuments,
+          'Identity document',
+          'Citizenship, national ID or passport (both sides if needed).',
+        ),
+        const SizedBox(height: DesignTokens.s8),
+        list(
+          CreditDocumentKind.financial,
+          _financial,
+          maxFinancialDocuments,
+          'Financial proof (1–3 files)',
+          'Salary slip, bank statement or income proof. PDF or photo, up to 10 MB.',
+        ),
+        const SizedBox(height: DesignTokens.s8),
+        _Button(
+          key: CheckoutEmiOption.sendKey,
+          label: _paying
+              ? 'Sending to the seller…'
+              : 'Send EMI request to the seller',
+          onPressed: ready && !_paying
+              ? () => _sendToSeller(resumeAgreementId)
+              : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _status(CreditAgreement a) {
+    final plan =
+        '${a.tenureMonths} months · down payment ${_money(a.downPayment)} · '
+        'total ${_money(a.totalPayable)}';
+    TextStyle muted() => const TextStyle(
+      fontFamily: DesignTokens.fontFamily,
+      fontSize: 13,
+      color: DesignTokens.textMuted,
+    );
+    return switch (a.status) {
+      AgreementStatus.pendingApproval when a.documentsSubmittedAt == null =>
+        _documentsSection(a.downPayment, resumeAgreementId: a.id),
+      AgreementStatus.pendingApproval => Column(
+        key: CheckoutEmiOption.waitingKey,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _Label('Waiting for the seller to approve'),
+          Text(plan, style: muted()),
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            'We will let you know as soon as they decide. Once approved, '
+            'you pay the down payment here.',
+            style: muted(),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          _Button(
+            label: 'Refresh status',
+            outlined: true,
+            onPressed: () => setState(() {
+              _latest = null;
+              refreshPaymentPlans(ref);
+            }),
+          ),
+        ],
+      ),
+      AgreementStatus.approved => Column(
+        key: CheckoutEmiOption.approvedKey,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _Label('Approved by the seller'),
+          Text(plan, style: muted()),
+          const SizedBox(height: DesignTokens.s8),
+          _Button(
+            key: CheckoutEmiOption.payKey,
+            label: 'Pay down payment ${_money(a.downPayment)}',
+            onPressed: () => _payDownPayment(a),
+          ),
+        ],
+      ),
+      _ => Column(
+        key: CheckoutEmiOption.declinedKey,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _Label('The seller declined this EMI request'),
+          Text(
+            (a.decisionNote?.isNotEmpty ?? false)
+                ? 'Seller’s reason: ${a.decisionNote}'
+                : a.reasons.isEmpty
+                ? 'No reason was given.'
+                : a.reasons.map(reasonForBuyer).join(' '),
+            style: muted(),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          _Button(label: 'Apply again', outlined: true, onPressed: _applyAgain),
+        ],
+      ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final price = widget.options.price;
@@ -406,6 +804,7 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     final title = widget.named
         ? 'Pay with EMI · ${widget.item.productName}'
         : 'Pay with EMI';
+    final live = _liveAgreement();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: DesignTokens.s16),
@@ -441,108 +840,120 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
                 ),
               ],
             ),
-            if (_kinds.length > 1) ...[
+            if (live != null) ...[
               const SizedBox(height: DesignTokens.s12),
+              _status(live),
+            ] else ...[
+              if (_kinds.length > 1) ...[
+                const SizedBox(height: DesignTokens.s12),
+                Wrap(
+                  spacing: DesignTokens.s8,
+                  runSpacing: DesignTokens.s8,
+                  children: [
+                    for (final k in _kinds)
+                      ChoiceChip(
+                        key: Key('checkout-emi-kind-${k.kind.name}'),
+                        label: Text(k.kind.label),
+                        selected: identical(k, _kind),
+                        selectedColor: DesignTokens.chipsSelectedFill,
+                        onSelected: (_) => _select(kind: k),
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: DesignTokens.s12),
+              const _Label('Months'),
+              const SizedBox(height: DesignTokens.s6),
               Wrap(
                 spacing: DesignTokens.s8,
                 runSpacing: DesignTokens.s8,
                 children: [
-                  for (final k in _kinds)
+                  for (final months in _kind.option.tenures)
                     ChoiceChip(
-                      key: Key('checkout-emi-kind-${k.kind.name}'),
-                      label: Text(k.kind.label),
-                      selected: identical(k, _kind),
+                      key: Key('checkout-emi-tenure-$months'),
+                      label: Text('$months months'),
+                      selected: months == _tenure,
                       selectedColor: DesignTokens.chipsSelectedFill,
-                      onSelected: (_) => _select(kind: k),
+                      onSelected: (_) => _select(tenure: months),
                     ),
                 ],
               ),
-            ],
-            const SizedBox(height: DesignTokens.s12),
-            const _Label('Months'),
-            const SizedBox(height: DesignTokens.s6),
-            Wrap(
-              spacing: DesignTokens.s8,
-              runSpacing: DesignTokens.s8,
-              children: [
-                for (final months in _kind.option.tenures)
-                  ChoiceChip(
-                    key: Key('checkout-emi-tenure-$months'),
-                    label: Text('$months months'),
-                    selected: months == _tenure,
-                    selectedColor: DesignTokens.chipsSelectedFill,
-                    onSelected: (_) => _select(tenure: months),
+              const SizedBox(height: DesignTokens.s12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _Label(
+                      _kind.adjustable
+                          ? 'Down payment $_percent% (min ${_kind.minPercent}%)'
+                          : 'Down payment $_percent%',
+                    ),
                   ),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.s12),
-            Row(
-              children: [
-                Expanded(
-                  child: _Label(
-                    _kind.adjustable
-                        ? 'Down payment $_percent% (min ${_kind.minPercent}%)'
-                        : 'Down payment $_percent%',
-                  ),
-                ),
-                if (_kind.adjustable) ...[
-                  IconButton(
-                    key: const Key('checkout-emi-down-minus'),
-                    tooltip: 'Lower down payment',
-                    color: DesignTokens.textWhite,
-                    onPressed: _percent - emiDownPaymentStep >= _kind.minPercent
-                        ? () => _select(percent: _percent - emiDownPaymentStep)
-                        : null,
-                    icon: const Icon(Icons.remove_circle_outline),
-                  ),
-                  IconButton(
-                    key: const Key('checkout-emi-down-plus'),
-                    tooltip: 'Raise down payment',
-                    color: DesignTokens.textWhite,
-                    onPressed: _percent + emiDownPaymentStep <= _kind.maxPercent
-                        ? () => _select(percent: _percent + emiDownPaymentStep)
-                        : null,
-                    icon: const Icon(Icons.add_circle_outline),
-                  ),
+                  if (_kind.adjustable) ...[
+                    IconButton(
+                      key: const Key('checkout-emi-down-minus'),
+                      tooltip: 'Lower down payment',
+                      color: DesignTokens.textWhite,
+                      onPressed:
+                          _percent - emiDownPaymentStep >= _kind.minPercent
+                          ? () =>
+                                _select(percent: _percent - emiDownPaymentStep)
+                          : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+                    IconButton(
+                      key: const Key('checkout-emi-down-plus'),
+                      tooltip: 'Raise down payment',
+                      color: DesignTokens.textWhite,
+                      onPressed:
+                          _percent + emiDownPaymentStep <= _kind.maxPercent
+                          ? () =>
+                                _select(percent: _percent + emiDownPaymentStep)
+                          : null,
+                      icon: const Icon(Icons.add_circle_outline),
+                    ),
+                  ],
                 ],
-              ],
-            ),
-            _Figure(
-              key: const Key('checkout-emi-down'),
-              label: 'Down payment now',
-              value: _money(down),
-            ),
-            _Figure(
-              key: const Key('checkout-emi-monthly'),
-              label: 'Then monthly',
-              value: '${_money(monthly)} × $_tenure',
-              emphasised: true,
-            ),
-            _Figure(
-              key: const Key('checkout-emi-total'),
-              label: 'Total',
-              value: _money(total),
-            ),
-            const SizedBox(height: DesignTokens.s12),
-            _Cta(
-              requiresVerification: _kind.option.requiresVerifiedIdentity,
-              downPayment: down,
-              paying: _paying,
-              onPay: _pay,
-              onVerify: _openKyc,
-              onSignIn: _signIn,
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: DesignTokens.s8),
-              Text(
-                _error!,
-                key: const Key('checkout-emi-pay-error'),
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  color: DesignTokens.colorError,
-                ),
               ),
+              _Figure(
+                key: const Key('checkout-emi-down'),
+                label: 'Down payment now',
+                value: _money(down),
+              ),
+              _Figure(
+                key: const Key('checkout-emi-monthly'),
+                label: 'Then monthly',
+                value: '${_money(monthly)} × $_tenure',
+                emphasised: true,
+              ),
+              _Figure(
+                key: const Key('checkout-emi-total'),
+                label: 'Total',
+                value: _money(total),
+              ),
+              const SizedBox(height: DesignTokens.s12),
+              if (_kind.option.requiresDocuments)
+                _documentsSection(down)
+              else
+                _Cta(
+                  requiresVerification: _kind.option.requiresVerifiedIdentity,
+                  downPayment: down,
+                  paying: _paying,
+                  onPay: _pay,
+                  onVerify: _openKyc,
+                  onSignIn: _signIn,
+                ),
+              if (_error != null) ...[
+                const SizedBox(height: DesignTokens.s8),
+                Text(
+                  _error!,
+                  key: const Key('checkout-emi-pay-error'),
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 12,
+                    color: DesignTokens.colorError,
+                  ),
+                ),
+              ],
             ],
           ],
         ),

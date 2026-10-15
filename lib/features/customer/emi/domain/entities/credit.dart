@@ -212,6 +212,7 @@ class PlanOption {
     required this.fromDownPayment,
     required this.goodsBeforePaidInFull,
     required this.requiresVerifiedIdentity,
+    this.requiresDocuments = false,
   });
 
   final PlanKind kind;
@@ -225,6 +226,10 @@ class PlanOption {
   final Money fromDownPayment;
   final bool goodsBeforePaidInFull;
   final bool requiresVerifiedIdentity;
+
+  /// The seller decides from documents the buyer sends with the application:
+  /// an identity document and proof of income. EMI on the seller's own stock.
+  final bool requiresDocuments;
 
   int get longestTenure => tenures.isEmpty ? 0 : tenures.last;
 }
@@ -383,7 +388,15 @@ class CreditAgreement {
     required this.instalments,
     this.orderId,
     this.priceReduced,
+    this.decisionNote,
+    this.documentsSubmittedAt,
   });
+
+  /// The seller's own words with their decision — a decline's reason.
+  final String? decisionNote;
+
+  /// When the buyer sent their documents to the seller; null until then.
+  final DateTime? documentsSubmittedAt;
 
   final String id;
   final String productId;
@@ -596,4 +609,53 @@ T? _byWire<T>(
     return names[trimmed.toLowerCase().replaceAll(RegExp(r'[\s_\-]'), '')];
   }
   return null;
+}
+
+/// What a document sent with an EMI application proves.
+enum CreditDocumentKind {
+  identity('Identity'),
+  financial('Financial');
+
+  const CreditDocumentKind(this.wire);
+  final String wire;
+}
+
+/// A document sent with an EMI application. Never its location: the seller
+/// asks for that one document at a time.
+class CreditDocumentInfo {
+  const CreditDocumentInfo({
+    required this.id,
+    required this.kind,
+    required this.contentType,
+  });
+
+  final String id;
+  final CreditDocumentKind kind;
+  final String contentType;
+
+  bool get isPdf => contentType == 'application/pdf';
+}
+
+/// An EMI application as the seller deciding it sees it. The buyer appears
+/// by display name only — never a phone number or an email.
+class VendorCreditApplication {
+  const VendorCreditApplication({
+    required this.agreement,
+    required this.buyerDisplayName,
+    required this.productName,
+    required this.documents,
+    required this.riskReasons,
+    this.riskBand,
+    this.riskScore,
+  });
+
+  final CreditAgreement agreement;
+  final String buyerDisplayName;
+  final String productName;
+  final List<CreditDocumentInfo> documents;
+  final List<String> riskReasons;
+
+  /// A–D, as the server's scorecard banded the buyer.
+  final String? riskBand;
+  final int? riskScore;
 }
