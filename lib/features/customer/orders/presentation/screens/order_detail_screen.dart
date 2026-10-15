@@ -443,6 +443,9 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           // confirmation — before the rider is at the door, while they are,
           // and after. A label scan on top would be a second "confirm" for
           // the same parcel.
+          // A mixed order: say plainly which seller's part was cancelled
+          // before any tracking for the part that is still coming.
+          CancelledPartsCard(parts: order.cancelledParts),
           if (ConfirmReceiptCard.isOfferedFor(order) && !riderDelivery)
             ConfirmReceiptCard(order: order),
           if (trackingNumber?.startsWith('SM-D-') == true) ...[
@@ -575,6 +578,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
         children: [
           CancelledOrderSummary(order: order),
           const SizedBox(height: DesignTokens.s16),
+          CancelledPartsCard(parts: order.cancelledParts),
           // No `cancelledAt`: the card reads the recorded cancellation event.
           CancellationDetailsCard(order: order),
           const SizedBox(height: DesignTokens.s16),

@@ -48,9 +48,18 @@ class CancelledOrderSummary extends StatelessWidget {
       children: [
         MallStatusSummary(
           eyebrow: 'Order #${detail?.orderNumber ?? '—'}',
-          title: 'Cancelled',
+          title: detail?.cancelledBySellers == true
+              ? 'Cancelled by the seller'
+              : 'Cancelled',
           tone: MallStatusTone.danger,
-          detail: 'Nothing is on its way. Your money is coming back.',
+          detail:
+              detail?.cancelledParts.every(
+                        (p) => p.refund == CancelledPartRefund.notCharged,
+                      ) ==
+                      true &&
+                  detail!.cancelledParts.isNotEmpty
+              ? 'Nothing is on its way. You were not charged.'
+              : 'Nothing is on its way. Your money is coming back.',
           footnote: placed == null ? null : 'Placed $placed',
         ),
         if (detail != null) ...[
@@ -577,6 +586,90 @@ class CancelledOrderHistory extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// The parts of an order that were cancelled — one row per seller — with who
+/// cancelled, why, and where the refund stands. On a mixed order this sits
+/// above the tracking of what is still coming, so a cancelled part never
+/// reads as "shipping in progress". Draws nothing when nothing was cancelled.
+class CancelledPartsCard extends StatelessWidget {
+  const CancelledPartsCard({required this.parts, super.key});
+
+  final List<CancelledOrderPart> parts;
+
+  @override
+  Widget build(BuildContext context) {
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return Container(
+      key: const Key('cancelled-parts-card'),
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: DesignTokens.s16),
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: DesignTokens.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < parts.length; i++) ...[
+            if (i > 0) const SizedBox(height: DesignTokens.s12),
+            _CancelledPartRow(part: parts[i]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CancelledPartRow extends StatelessWidget {
+  const _CancelledPartRow({required this.part});
+
+  final CancelledOrderPart part;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = DesignTokens.smallRegular.copyWith(
+      color: DesignTokens.textMuted,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.cancel_outlined,
+              size: 18,
+              color: DesignTokens.colorError,
+            ),
+            const SizedBox(width: DesignTokens.s8),
+            Expanded(
+              child: Text(
+                part.headline,
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.colorError,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (part.itemNames.isNotEmpty) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Text(part.itemNames.join(', '), style: DesignTokens.smallRegular),
+        ],
+        if (part.reason.isNotEmpty) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Text('Reason: ${part.reason}', style: muted),
+        ],
+        if (part.refund != CancelledPartRefund.unknown) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            part.amount == null || part.refund == CancelledPartRefund.notCharged
+                ? part.refund.label
+                : '${part.refund.label} · ${formatMoney(part.amount!)}',
+            style: muted,
+          ),
+        ],
+      ],
     );
   }
 }

@@ -31,6 +31,54 @@ class OrderDetailItem {
   final String status;
 }
 
+/// Where the money for a cancelled part of an order stands. Read from the
+/// sub-order's `refundStatus`.
+enum CancelledPartRefund {
+  pending('Refund processing'),
+  completed('Refunded'),
+  failed('Refund failed — contact support'),
+  notCharged('You were not charged'),
+  unknown('');
+
+  const CancelledPartRefund(this.label);
+  final String label;
+
+  static CancelledPartRefund fromWire(String? wire) =>
+      switch (wire?.toLowerCase()) {
+        'pending' => CancelledPartRefund.pending,
+        'completed' => CancelledPartRefund.completed,
+        'failed' => CancelledPartRefund.failed,
+        'notcharged' => CancelledPartRefund.notCharged,
+        _ => CancelledPartRefund.unknown,
+      };
+}
+
+/// One seller's part of the order that will not arrive because it was
+/// cancelled — by the seller (rejected) or otherwise.
+class CancelledOrderPart {
+  const CancelledOrderPart({
+    required this.subOrderId,
+    required this.cancelledBySeller,
+    required this.reason,
+    required this.refund,
+    required this.itemNames,
+    this.amount,
+  });
+
+  final String subOrderId;
+  final bool cancelledBySeller;
+
+  /// The seller's reason in plain words (and their note, when given); empty
+  /// when none was recorded.
+  final String reason;
+  final CancelledPartRefund refund;
+  final List<String> itemNames;
+  final Money? amount;
+
+  String get headline =>
+      cancelledBySeller ? 'Cancelled by the seller' : 'Cancelled';
+}
+
 class OrderDetail {
   const OrderDetail({
     required this.id,
@@ -55,7 +103,18 @@ class OrderDetail {
     required this.canReturn,
     this.submittedReturnId,
     this.delivery,
+    this.cancelledParts = const <CancelledOrderPart>[],
   });
+
+  /// Parts of this order that were cancelled (one per seller). On a mixed
+  /// order the rest is still on its way; when every part is here the whole
+  /// order is cancelled.
+  final List<CancelledOrderPart> cancelledParts;
+
+  /// True when every cancelled part was cancelled by its seller.
+  bool get cancelledBySellers =>
+      cancelledParts.isNotEmpty &&
+      cancelledParts.every((p) => p.cancelledBySeller);
 
   /// The StyleMint-rider delivery behind this order, when there is one. Its
   /// [OrderDelivery.awaitingConfirmation] puts "Your parcel is at the door —
@@ -129,6 +188,7 @@ class OrderDetail {
     return OrderDetail(
       receiverName: receiverName,
       receiverPhone: receiverPhone,
+      cancelledParts: cancelledParts,
       delivery: delivery ?? this.delivery,
       submittedReturnId: submittedReturnId ?? this.submittedReturnId,
       id: id ?? this.id,

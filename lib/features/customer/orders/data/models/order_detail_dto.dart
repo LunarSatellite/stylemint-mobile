@@ -55,6 +55,17 @@ abstract class SubOrderDto with _$SubOrderDto {
     // unrecognised value degrades to delivery instead of throwing.
     @Default('Delivery') String fulfillmentChannel,
     DateTime? collectedUtc,
+    // Cancellation facts (backend SubOrderDto). `cancelledBy` is the
+    // SubOrderActorKind: 1=Vendor, 2=Customer, 3=System, 4=Courier, 5=Admin.
+    int? cancelledBy,
+    // VendorRejectionReason: 1=OutOfStock, 2=CannotFulfillInTime,
+    // 3=PricingError, 4=AddressNotServiceable, 5=SuspectedFraud, 6=Other.
+    int? vendorRejectionReasonCode,
+    String? cancellationNote,
+    // Pending / Completed / Failed / NotCharged.
+    String? refundStatus,
+    @Default(0) double subtotalAmount,
+    @Default('NPR') String subtotalCurrency,
     @Default(<OrderDetailItemDto>[]) List<OrderDetailItemDto> lines,
   }) = _SubOrderDto;
 
@@ -62,6 +73,45 @@ abstract class SubOrderDto with _$SubOrderDto {
 
   factory SubOrderDto.fromJson(Map<String, dynamic> json) =>
       _$SubOrderDtoFromJson(json);
+
+  static const _cancelled = 8;
+  static const _actorVendor = 1;
+
+  bool get isCancelled => state == _cancelled;
+  bool get isCancelledBySeller => isCancelled && cancelledBy == _actorVendor;
+
+  CancelledOrderPart toCancelledPart() {
+    final reason = sellerReasonText(vendorRejectionReasonCode);
+    final note = cancellationNote?.trim() ?? '';
+    final parts = <String>[
+      if (isCancelledBySeller && reason.isNotEmpty) reason,
+      if (note.isNotEmpty && note != reason) note,
+    ];
+    return CancelledOrderPart(
+      subOrderId: id,
+      cancelledBySeller: isCancelledBySeller,
+      reason: parts.join(' — '),
+      refund: CancelledPartRefund.fromWire(refundStatus),
+      itemNames: lines
+          .map((l) => l.productTitleSnapshot)
+          .where((t) => t.isNotEmpty)
+          .toList(growable: false),
+      amount: subtotalAmount > 0
+          ? Money(amount: subtotalAmount, currency: subtotalCurrency)
+          : null,
+    );
+  }
+
+  /// The seller's reason in the buyer's words.
+  static String sellerReasonText(int? code) => switch (code) {
+    1 => 'Out of stock',
+    2 => "The seller can't fulfil it in time",
+    3 => 'Pricing error',
+    4 => "The seller can't deliver to your address",
+    5 => 'The seller could not verify the order',
+    6 => 'Other',
+    _ => '',
+  };
 }
 
 /// Maps the `shipTo` `ShippingAddressSnapshot`.
@@ -165,10 +215,16 @@ abstract class OrderDetailDto with _$OrderDetailDto {
     // before the order itself is closed. With every sub-order delivered the
     // order reads as delivered, rather than "in transit" until the order
     // catches up.
+    // A part the seller (or buyer) cancelled will never arrive: it neither
+    // holds the order on "Preparing for Shipping" nor stops it reading as
+    // delivered once everything still live has arrived.
+    final live = subOrders.where((s) => !s.isCancelled).toList();
+    final allCancelled = subOrders.isNotEmpty && live.isEmpty;
     final allDelivered =
-        subOrders.isNotEmpty &&
-        subOrders.every((s) => s.state == _subOrderDelivered);
-    final overallStatus = allDelivered && (state == 2 || state == 3)
+        live.isNotEmpty && live.every((s) => s.state == _subOrderDelivered);
+    final overallStatus = allCancelled
+        ? OrderTrackStatus.cancelled
+        : allDelivered && (state == 2 || state == 3)
         ? OrderTrackStatus.delivered
         : _statusFromState(state);
     // Checkout only offers collection when every line comes from one seller,
@@ -203,7 +259,12 @@ abstract class OrderDetailDto with _$OrderDetailDto {
       items: subOrders
           .expand(
             (s) => s.lines.map(
-              (l) => l.toDomain(s.id, _subOrderStateLabel(s.state)),
+              (l) => l.toDomain(
+                s.id,
+                s.isCancelledBySeller
+                    ? 'Cancelled by the seller'
+                    : _subOrderStateLabel(s.state),
+              ),
             ),
           )
           .toList(growable: false),
@@ -229,6 +290,10 @@ abstract class OrderDetailDto with _$OrderDetailDto {
       canCancel: overallStatus == OrderTrackStatus.preparingForShipping,
       canReturn: overallStatus == OrderTrackStatus.delivered,
       delivery: delivery,
+      cancelledParts: subOrders
+          .where((s) => s.isCancelled)
+          .map((s) => s.toCancelledPart())
+          .toList(growable: false),
     );
   }
 
