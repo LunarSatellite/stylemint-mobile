@@ -71,10 +71,17 @@ void main() {
     expect(find.byKey(CheckoutEmiOption.noteKey), findsNothing);
   });
 
-  testWidgets('several items explain EMI is one item at a time', (tester) async {
+  testWidgets('several items: a named EMI card per eligible item, plus the one-item note', (tester) async {
     await _pump(tester, [_item(), _item(variantId: 'v-2', name: 'Silk scarf')]);
-    expect(find.byKey(CheckoutEmiOption.cardKey), findsNothing);
+    expect(find.byKey(const ValueKey('checkout-emi-card-v-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('checkout-emi-card-v-2')), findsOneWidget);
+    expect(find.text('Pay with EMI · Silk scarf'), findsOneWidget);
     expect(find.byKey(CheckoutEmiOption.noteKey), findsOneWidget);
+  });
+
+  testWidgets('quantity above one still offers EMI', (tester) async {
+    await _pump(tester, [_item(quantity: 2)]);
+    expect(find.byKey(CheckoutEmiOption.cardKey), findsOneWidget);
   });
 
   testWidgets('a line without a variant id draws nothing', (tester) async {

@@ -207,14 +207,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     const SizedBox(height: DesignTokens.s12),
                     // Pay with EMI: a single eligible item opens the plan
                     // sheet (down payment now, the rest monthly).
-                    CheckoutEmiOption(
-                      items: ref
-                          .watch(cartNotifierProvider)
-                          .maybeWhen(
-                            loadSuccess: (cart) => cart.items,
-                            orElse: () => const <CartItem>[],
-                          ),
-                    ),
+                    CheckoutEmiOption(items: _cartItemsForEmi()),
                     _PaymentMethodList(
                       availableMethods: _buildPaymentMethods(summary),
                       selectedMethod: selectedPayment,
@@ -247,6 +240,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           onRetry: () => ref.read(checkoutNotifierProvider.notifier).load(),
         ),
       ),
+    );
+  }
+
+  /// The cart's lines, for the EMI option (it needs each line's variant).
+  /// Checkout can be opened before the cart was ever loaded (a deep link, a
+  /// cold start straight into checkout); load it then rather than showing no
+  /// EMI at all.
+  List<CartItem> _cartItemsForEmi() {
+    final cart = ref.watch(cartNotifierProvider);
+    return cart.maybeWhen(
+      loadSuccess: (c) => c.items,
+      initial: () {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) ref.read(cartNotifierProvider.notifier).fetchCart();
+        });
+        return const <CartItem>[];
+      },
+      orElse: () => const <CartItem>[],
     );
   }
 

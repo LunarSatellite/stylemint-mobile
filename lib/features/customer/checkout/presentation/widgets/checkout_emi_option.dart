@@ -10,14 +10,11 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// "Pay with EMI" on the checkout screen.
 ///
 /// Payment plans are per variant and check out one item at a time
-/// (`POST /v1/checkout/sessions/payment-plan`), so:
-/// - a cart of exactly one line whose variant has plan options shows a card
-///   that opens the same plan sheet as the product page (tenure, down
-///   payment, schedule, verification, then the plan checkout, where the down
-///   payment is paid online);
-/// - a cart of several lines says which items can be bought on EMI on their
-///   own, without changing the cart;
-/// - anything else draws nothing.
+/// (`POST /v1/checkout/sessions/payment-plan`). Every cart line whose variant
+/// has plan options gets a card that opens the same plan sheet as the product
+/// page (tenure, down payment, schedule, verification, then the plan
+/// checkout, where the down payment is paid online). Lines without options
+/// draw nothing.
 class CheckoutEmiOption extends ConsumerWidget {
   const CheckoutEmiOption({required this.items, super.key});
 
@@ -28,51 +25,53 @@ class CheckoutEmiOption extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final withVariant = items.where((i) => i.variantId != null).toList();
-    if (withVariant.isEmpty) return const SizedBox.shrink();
-
-    if (items.length == 1 && items.first.quantity == 1) {
-      final item = items.first;
-      final options =
-          ref.watch(planOptionsProvider(item.variantId!)).asData?.value;
-      if (options == null || options.options.isEmpty) {
-        return const SizedBox.shrink();
-      }
-      return _EmiCard(item: item, options: options);
+    // One card per item that has a payment plan, whatever else is in the
+    // cart: the plan checks out that item on its own
+    // (`POST /v1/checkout/sessions/payment-plan`), the rest of the cart stays.
+    final cards = <Widget>[];
+    for (final item in items) {
+      final id = item.variantId;
+      if (id == null) continue;
+      final options = ref.watch(planOptionsProvider(id)).asData?.value;
+      if (options == null || options.options.isEmpty) continue;
+      cards.add(_EmiCard(item: item, options: options, named: items.length > 1));
     }
-
-    // Several lines: name the ones that could go on a plan by themselves.
-    final eligible = <String>[];
-    for (final item in withVariant) {
-      final options =
-          ref.watch(planOptionsProvider(item.variantId!)).asData?.value;
-      if (options != null && options.options.isNotEmpty) {
-        eligible.add(item.productName);
-      }
-    }
-    if (eligible.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      key: noteKey,
-      padding: const EdgeInsets.only(bottom: DesignTokens.s16),
-      child: Text(
-        'EMI is available for ${eligible.join(', ')}. '
-        'Payment plans cover one item at a time — buy it on its own '
-        '(one piece) to pay a down payment now and the rest monthly.',
-        style: const TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 13,
-          color: DesignTokens.textMuted,
-        ),
-      ),
+    if (cards.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ...cards,
+        if (items.length > 1)
+          Padding(
+            key: noteKey,
+            padding: const EdgeInsets.only(bottom: DesignTokens.s16),
+            child: const Text(
+              'A payment plan covers one item: choosing EMI checks out that '
+              'item on its own, and the rest stays in your cart.',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 12,
+                color: DesignTokens.textMuted,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
 
 class _EmiCard extends StatelessWidget {
-  const _EmiCard({required this.item, required this.options});
+  const _EmiCard({
+    required this.item,
+    required this.options,
+    required this.named,
+  });
 
   final CartItem item;
   final PlanOptions options;
+
+  /// Name the item when the cart holds more than one.
+  final bool named;
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +84,7 @@ class _EmiCard extends StatelessWidget {
         color: DesignTokens.primaryGreenDark,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          key: CheckoutEmiOption.cardKey,
+          key: named ? ValueKey('checkout-emi-card-${item.variantId}') : CheckoutEmiOption.cardKey,
           borderRadius: BorderRadius.circular(16),
           onTap: () => showEmiCalculatorSheet(
             context,
@@ -109,8 +108,8 @@ class _EmiCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Pay with EMI',
+                      Text(
+                        named ? 'Pay with EMI · ${item.productName}' : 'Pay with EMI',
                         style: TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 15,
