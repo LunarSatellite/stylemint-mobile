@@ -542,7 +542,11 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
 
   bool _isLive(CreditAgreement a) => switch (a.status) {
     AgreementStatus.pendingApproval => true,
-    AgreementStatus.approved => a.needsCheckout,
+    // An approval only counts when the seller decided it from documents the
+    // buyer sent with that application. One approved before documents were
+    // required (no documentsSubmittedAt) is not carried over: the buyer
+    // applies afresh, with documents.
+    AgreementStatus.approved => a.needsCheckout && a.documentsSubmittedAt != null,
     AgreementStatus.declined => !_reapplying,
     _ => false,
   };

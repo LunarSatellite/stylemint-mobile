@@ -470,7 +470,10 @@ void main() {
       await _pump(
         tester,
         [_item(variantId: variant)],
-        credit: repoWith(agreementWire(checkedOut: false)),
+        credit: repoWith({
+          ...agreementWire(checkedOut: false),
+          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
+        }),
         options: sellerOptions,
       );
       expect(find.byKey(CheckoutEmiOption.approvedKey), findsOneWidget);
@@ -481,6 +484,19 @@ void main() {
       expect(find.textContaining('Plan checkout'), findsOneWidget);
     });
 
+    testWidgets('an approval given without documents is not reused: the buyer '
+        'is asked for documents again', (tester) async {
+      await _pump(
+        tester,
+        [_item(variantId: variant)],
+        credit: repoWith(agreementWire(checkedOut: false)),
+        options: sellerOptions,
+      );
+      expect(find.byKey(CheckoutEmiOption.approvedKey), findsNothing);
+      expect(find.byKey(CheckoutEmiOption.payKey), findsNothing);
+      expect(find.byKey(CheckoutEmiOption.documentsKey), findsOneWidget);
+    });
+
     testWidgets('approved, seller allows cash: online or cash on delivery for '
         'the down payment', (tester) async {
       await _pump(
@@ -489,6 +505,7 @@ void main() {
         credit: repoWith({
           ...agreementWire(checkedOut: false),
           'cashOnDeliveryDownPaymentAllowed': true,
+          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
         }),
         options: sellerOptions,
       );
