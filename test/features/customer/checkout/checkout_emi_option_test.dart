@@ -516,20 +516,34 @@ void main() {
       expect(find.byKey(CheckoutEmiOption.payCashKey), findsNothing);
     });
 
-    testWidgets('cash chosen and order placed: waits for delivery, no pay '
-        'button', (tester) async {
-      await _pump(
-        tester,
-        [_item(variantId: variant)],
-        credit: repoWith({
+    testWidgets('an approval already used for an order is not reused: the next '
+        'purchase is a new application for the seller', (tester) async {
+      for (final used in [
+        {
           ...agreementWire(),
           'cashOnDeliveryDownPaymentAllowed': true,
           'downPaymentOnDelivery': true,
-        }),
-        options: sellerOptions,
-      );
-      expect(find.byKey(CheckoutEmiOption.cashPendingKey), findsOneWidget);
-      expect(find.byKey(CheckoutEmiOption.payKey), findsNothing);
+        },
+        agreementWire(), // approved, its order placed, paid online pending
+        agreementWire(state: 3), // active: down payment paid
+        agreementWire(state: 4), // completed
+        agreementWire(state: 7), // cancelled
+        agreementWire(state: 8), // expired
+      ]) {
+        await _pump(
+          tester,
+          [_item(variantId: variant)],
+          credit: repoWith(used),
+          options: sellerOptions,
+        );
+        expect(
+          find.byKey(CheckoutEmiOption.documentsKey),
+          findsOneWidget,
+          reason: 'state ${used['state']}',
+        );
+        expect(find.byKey(CheckoutEmiOption.approvedKey), findsNothing);
+        expect(find.byKey(CheckoutEmiOption.payKey), findsNothing);
+      }
     });
 
     testWidgets('declined by the seller: their reason, and apply again', (

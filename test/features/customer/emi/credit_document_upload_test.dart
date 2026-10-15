@@ -37,6 +37,36 @@ void main() {
     });
   });
 
+  group('a server error says what the server said', () {
+    test('a 500 with a reason shows the reason, not "temporarily '
+        'unavailable"', () {
+      expect(
+        creditFailureMessage(
+          const EmiFailure(
+            EmiFailureKind.server,
+            code: 'system.internal_error',
+            message: 'The order could not be placed: no delivery address.',
+            statusCode: 500,
+          ),
+        ),
+        'The order could not be placed: no delivery address.',
+      );
+    });
+
+    test('only a real 503 (or a bare 5xx) is "temporarily unavailable"', () {
+      for (final f in const [
+        EmiFailure(
+          EmiFailureKind.server,
+          message: 'Down for maintenance',
+          statusCode: 503,
+        ),
+        EmiFailure(EmiFailureKind.server, statusCode: 500),
+      ]) {
+        expect(creditFailureMessage(f), contains('temporarily unavailable'));
+      }
+    });
+  });
+
   test('a refused upload shows the server reason, not a generic line', () {
     expect(
       creditFailureMessage(

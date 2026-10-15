@@ -6,8 +6,13 @@ String? emiCommonMessage(EmiFailure failure) => switch (failure.kind) {
   EmiFailureKind.offline =>
     'You appear to be offline. Check your connection and try again.',
   EmiFailureKind.auth => 'Your session has expired. Sign in again.',
-  EmiFailureKind.server =>
+  // Only a real 503 (or a 5xx with nothing to say) is "temporarily
+  // unavailable"; any other server error says what the server said.
+  EmiFailureKind.server
+      when failure.statusCode == 503 ||
+          (failure.message?.trim().isEmpty ?? true) =>
     'StyleMint is temporarily unavailable. Please try again in a moment.',
+  EmiFailureKind.server => failure.message!.trim(),
   EmiFailureKind.notFound =>
     'EMI is not available yet. Please check back soon.',
   EmiFailureKind.tooLarge => 'That file is too large to upload.',

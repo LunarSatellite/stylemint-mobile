@@ -506,16 +506,30 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     );
   }
 
-  /// The buyer's latest application for this item, while it is still live:
-  /// waiting on the seller, approved, or just declined.
+  /// The buyer's latest application for this item, while it is still the
+  /// purchase in progress: waiting on the seller, approved and not yet used
+  /// for an order, or just declined. An approval buys exactly one order: once
+  /// one is placed on it (or it is paid, cancelled or lapses) the next attempt
+  /// is a new application the seller must approve again.
   CreditAgreement? _liveAgreement() {
     if (!ref.watch(emiSignedInProvider)) return null;
     final plans = ref.watch(myPaymentPlansProvider).asData?.value ?? const [];
-    CreditAgreement? latest = _latest;
-    for (final a in plans) {
-      if (a.variantId != _variantId || a.guarantor != PlanGuarantor.vendor) {
-        continue;
-      }
+    final mine = [
+      for (final a in plans)
+        if (a.variantId == _variantId && a.guarantor == PlanGuarantor.vendor) a,
+    ];
+
+    // What the server says about an application this card started wins over
+    // the copy the card kept: it may have been used for an order since.
+    final local = _latest;
+    final ownId = local?.id ?? _agreementId;
+    final server = ownId == null
+        ? null
+        : mine.where((a) => a.id == ownId).firstOrNull;
+    if (server != null && !_isLive(server)) _forgetSpentApplication();
+
+    CreditAgreement? latest = server != null && _isLive(server) ? server : _latest;
+    for (final a in mine) {
       if (latest == null ||
           (a.appliedAt != null &&
               latest.appliedAt != null &&
@@ -523,13 +537,25 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
         latest = a;
       }
     }
-    if (latest == null) return null;
-    return switch (latest.status) {
-      AgreementStatus.pendingApproval => latest,
-      AgreementStatus.approved => latest,
-      AgreementStatus.declined => _reapplying ? null : latest,
-      _ => null,
-    };
+    return latest != null && _isLive(latest) ? latest : null;
+  }
+
+  bool _isLive(CreditAgreement a) => switch (a.status) {
+    AgreementStatus.pendingApproval => true,
+    AgreementStatus.approved => a.needsCheckout,
+    AgreementStatus.declined => !_reapplying,
+    _ => false,
+  };
+
+  /// The application this card started is spent: the next send is a new
+  /// application, with new keys, so nothing of the old one is replayed.
+  void _forgetSpentApplication() {
+    if (_paying) return;
+    _latest = null;
+    _agreementId = null;
+    _uploaded.clear();
+    _applyKey = _uuid.v4();
+    _submitKey = _uuid.v4();
   }
 
   Future<void> _pickDocument(CreditDocumentKind kind) async {
