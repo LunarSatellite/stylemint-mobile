@@ -293,6 +293,7 @@ class ApiClient {
     Map<String, dynamic>? fields,
     Options? options,
     ProgressCallback? onSendProgress,
+    DioMediaType? contentType,
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -300,6 +301,7 @@ class ApiClient {
         fieldName: await MultipartFile.fromFile(
           file.path,
           filename: filename ?? file.uri.pathSegments.last,
+          contentType: contentType,
         ),
       });
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
@@ -34,7 +35,9 @@ class PickedCreditDocument {
   final int sizeBytes;
 }
 
-typedef CreditDocumentPicker = Future<PickedCreditDocument?> Function();
+/// Picks one document: camera, photo library, or a file (PDF).
+typedef CreditDocumentPicker =
+    Future<PickedCreditDocument?> Function(BuildContext context);
 
 /// Documents sent with an EMI application: PDF or image, at most 10 MB each.
 const creditDocumentMaxBytes = 10 * 1024 * 1024;
@@ -42,24 +45,76 @@ const creditDocumentExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'heic'];
 const maxIdentityDocuments = 2;
 const maxFinancialDocuments = 3;
 
-Future<PickedCreditDocument?> _pickWithFilePicker() async {
-  final result = await FilePicker.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: creditDocumentExtensions,
+enum _DocumentSource { camera, photos, file }
+
+/// As the KYC screens do: a photo from the camera or the library, re-encoded
+/// to JPEG and resized (`imageQuality`/`maxWidth`) so a phone photo is well
+/// under 10 MB; or a file — a PDF statement, say.
+Future<PickedCreditDocument?> _chooseDocument(BuildContext context) async {
+  final source = await showModalBottomSheet<_DocumentSource>(
+    context: context,
+    builder: (sheet) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            key: const Key('credit-doc-camera'),
+            leading: const Icon(Icons.photo_camera_outlined),
+            title: const Text('Take a photo'),
+            onTap: () => Navigator.of(sheet).pop(_DocumentSource.camera),
+          ),
+          ListTile(
+            key: const Key('credit-doc-photos'),
+            leading: const Icon(Icons.photo_library_outlined),
+            title: const Text('Choose from photos'),
+            onTap: () => Navigator.of(sheet).pop(_DocumentSource.photos),
+          ),
+          ListTile(
+            key: const Key('credit-doc-file'),
+            leading: const Icon(Icons.picture_as_pdf_outlined),
+            title: const Text('Choose a file (PDF)'),
+            onTap: () => Navigator.of(sheet).pop(_DocumentSource.file),
+          ),
+        ],
+      ),
+    ),
   );
-  final file = result?.files.firstOrNull;
-  final path = file?.path;
-  if (file == null || path == null) return null;
-  return PickedCreditDocument(
-    path: path,
-    name: file.name,
-    sizeBytes: file.size,
-  );
+  switch (source) {
+    case null:
+      return null;
+    case _DocumentSource.camera || _DocumentSource.photos:
+      final picked = await ImagePicker().pickImage(
+        source: source == _DocumentSource.camera
+            ? ImageSource.camera
+            : ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 2000,
+      );
+      if (picked == null) return null;
+      return PickedCreditDocument(
+        path: picked.path,
+        name: 'photo.jpg',
+        sizeBytes: await File(picked.path).length(),
+      );
+    case _DocumentSource.file:
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: creditDocumentExtensions,
+      );
+      final file = result?.files.firstOrNull;
+      final path = file?.path;
+      if (file == null || path == null) return null;
+      return PickedCreditDocument(
+        path: path,
+        name: file.name,
+        sizeBytes: file.size,
+      );
+  }
 }
 
 /// Picks one document from the device. Overridden in tests.
 final creditDocumentPickerProvider = Provider<CreditDocumentPicker>(
-  (ref) => _pickWithFilePicker,
+  (ref) => _chooseDocument,
 );
 
 /// "Pay with EMI", inline on the checkout screen.
@@ -70,11 +125,11 @@ final creditDocumentPickerProvider = Provider<CreditDocumentPicker>(
 /// allows), the monthly amount and the total. The figures come from the same
 /// arithmetic and quote endpoint as the product page's plan sheet.
 ///
-/// The card's button follows the buyer: sign in, get verified (opens the KYC
-/// flow and comes back here), verification in review, or — once verified —
-/// "Pay down payment Rs X with EMI", which asks for a signed quote, applies
-/// (a verified buyer is approved automatically unless there is a real risk
-/// reason), and opens the plan checkout where the down payment is paid.
+/// EMI never asks for StyleMint identity verification: the buyer adds an
+/// identity document and 1–3 financial proofs, sends the request to the
+/// seller, waits for their decision, then pays the down payment. Only pay
+/// later / prepay plans the server marks `requiresVerifiedIdentity` (and not
+/// `requiresDocuments`) still go through verification.
 ///
 /// A plan covers one item and checks it out on its own
 /// (`POST /v1/checkout/sessions/payment-plan`); the rest of the cart stays.
@@ -94,6 +149,8 @@ class CheckoutEmiOption extends ConsumerWidget {
   static const Key sendKey = Key('checkout-emi-send');
   static const Key waitingKey = Key('checkout-emi-waiting');
   static const Key approvedKey = Key('checkout-emi-approved');
+  static const Key payCashKey = Key('checkout-emi-pay-cash');
+  static const Key cashPendingKey = Key('checkout-emi-cash-pending');
   static const Key declinedKey = Key('checkout-emi-declined');
 
   /// Whether a plan-options failure just means "no plan on this item"
@@ -242,6 +299,7 @@ class CheckoutEmiPlans extends ConsumerStatefulWidget {
     required this.item,
     required this.options,
     this.named = false,
+    this.onlyKind,
     this.quoteDebounce = const Duration(milliseconds: 300),
     super.key,
   });
@@ -249,6 +307,9 @@ class CheckoutEmiPlans extends ConsumerStatefulWidget {
   final CartItem item;
   final PlanOptions options;
   final bool named;
+
+  /// Offer only this kind (the product page's EMI application offers EMI).
+  final PlanKind? onlyKind;
   final Duration quoteDebounce;
 
   @override
@@ -285,9 +346,17 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
 
   String get _variantId => widget.item.variantId!;
 
+  /// EMI (instalment) always goes through the seller with documents; other
+  /// kinds when the server says so.
+  static bool _needsDocuments(PlanOption o) =>
+      o.kind == PlanKind.instalment || o.requiresDocuments;
+
   /// EMI first, then pay later, then prepay.
   List<_Kind> _orderedKinds() {
-    final kinds = [for (final o in widget.options.options) _Kind(o)];
+    final kinds = [
+      for (final o in widget.options.options)
+        if (widget.onlyKind == null || o.kind == widget.onlyKind) _Kind(o),
+    ];
     int rank(PlanKind k) => switch (k) {
       PlanKind.instalment => 0,
       PlanKind.payLater => 1,
@@ -464,11 +533,12 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
   }
 
   Future<void> _pickDocument(CreditDocumentKind kind) async {
-    final picked = await ref.read(creditDocumentPickerProvider)();
+    final picked = await ref.read(creditDocumentPickerProvider)(context);
     if (picked == null || !mounted) return;
     final extension = picked.name.split('.').last.toLowerCase();
     setState(() {
-      if (!creditDocumentExtensions.contains(extension)) {
+      if (picked.name.contains('.') &&
+          !creditDocumentExtensions.contains(extension)) {
         _error = 'Choose a PDF or a photo (JPEG, PNG or HEIC).';
       } else if (picked.sizeBytes <= 0 ||
           picked.sizeBytes > creditDocumentMaxBytes) {
@@ -586,10 +656,11 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     _error = null;
   });
 
-  void _payDownPayment(CreditAgreement agreement) {
+  void _payDownPayment(CreditAgreement agreement, {bool cash = false}) {
     final args = PlanDetailArgs(
       productName: widget.item.productName,
       justApplied: true,
+      cashOnDelivery: cash,
     );
     unawaited(
       context.push(
@@ -744,6 +815,20 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
           ),
         ],
       ),
+      AgreementStatus.approved when a.downPaymentOnDelivery => Column(
+        key: CheckoutEmiOption.cashPendingKey,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _Label('Order placed — down payment in cash on delivery'),
+          Text(plan, style: muted()),
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            'Pay ${_money(a.downPayment)} in cash when the item arrives. '
+            'Your plan starts that day.',
+            style: muted(),
+          ),
+        ],
+      ),
       AgreementStatus.approved => Column(
         key: CheckoutEmiOption.approvedKey,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -753,9 +838,28 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
           const SizedBox(height: DesignTokens.s8),
           _Button(
             key: CheckoutEmiOption.payKey,
-            label: 'Pay down payment ${_money(a.downPayment)}',
+            label: a.cashOnDeliveryDownPaymentAllowed
+                ? 'Pay down payment ${_money(a.downPayment)} online'
+                : 'Pay down payment ${_money(a.downPayment)}',
             onPressed: () => _payDownPayment(a),
           ),
+          if (a.cashOnDeliveryDownPaymentAllowed && a.needsCheckout) ...[
+            const SizedBox(height: DesignTokens.s8),
+            _Button(
+              key: CheckoutEmiOption.payCashKey,
+              label:
+                  'Pay down payment on delivery (cash) · '
+                  '${_money(a.downPayment)}',
+              outlined: true,
+              onPressed: () => _payDownPayment(a, cash: true),
+            ),
+            const SizedBox(height: DesignTokens.s4),
+            Text(
+              'With cash, the rider collects only the down payment. Your '
+              'plan starts the day the item is delivered.',
+              style: muted(),
+            ),
+          ],
         ],
       ),
       _ => Column(
@@ -931,7 +1035,10 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
                 value: _money(total),
               ),
               const SizedBox(height: DesignTokens.s12),
-              if (_kind.option.requiresDocuments)
+              // EMI is decided by the seller from the buyer's documents — never
+              // by StyleMint identity verification, even when an older server
+              // still reports `requiresVerifiedIdentity` for it.
+              if (_needsDocuments(_kind.option))
                 _documentsSection(down)
               else
                 _Cta(
@@ -1050,14 +1157,14 @@ class _Cta extends ConsumerWidget {
     key: CheckoutEmiOption.payKey,
     label: paying
         ? 'Preparing your plan…'
-        : 'Pay down payment ${_money(downPayment)} with EMI',
+        : 'Pay down payment ${_money(downPayment)}',
     onPressed: paying ? null : onPay,
   );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(emiSignedInProvider)) {
-      return _Button(label: 'Sign in to pay with EMI', onPressed: onSignIn);
+      return _Button(label: 'Sign in to use this plan', onPressed: onSignIn);
     }
     if (!requiresVerification) return _payButton();
 
@@ -1079,7 +1186,7 @@ class _Cta extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'Your verification is in review. You can pay with EMI as '
+                  'Your verification is in review. You can use this plan as '
                   'soon as it is approved — we will let you know.',
                   key: CheckoutEmiOption.inReviewKey,
                   style: TextStyle(
@@ -1100,7 +1207,7 @@ class _Cta extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'EMI needs a verified identity. It takes a few minutes, '
+                  'This plan needs a verified identity. It takes a few minutes, '
                   'and you come straight back here.',
                   style: TextStyle(
                     fontFamily: DesignTokens.fontFamily,
@@ -1111,7 +1218,7 @@ class _Cta extends ConsumerWidget {
                 const SizedBox(height: DesignTokens.s8),
                 _Button(
                   key: CheckoutEmiOption.verifyKey,
-                  label: 'Get verified to pay with EMI',
+                  label: 'Get verified to use this plan',
                   onPressed: onVerify,
                 ),
               ],

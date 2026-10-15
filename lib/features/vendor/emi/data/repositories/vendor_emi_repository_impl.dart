@@ -29,6 +29,7 @@ class VendorEmiRepositoryImpl implements VendorEmiRepository {
     required bool enabled,
     required int minDownPaymentPercent,
     required List<int> tenures,
+    bool? allowCashOnDeliveryDownPayment,
   }) => guardedEmiCall(
     networkInfo,
     () => remoteDataSource.putTerms(
@@ -37,6 +38,7 @@ class VendorEmiRepositoryImpl implements VendorEmiRepository {
       minDownPaymentPercent: minDownPaymentPercent,
       tenures: tenures,
       idempotencyKey: _uuid.v4(),
+      allowCashOnDeliveryDownPayment: allowCashOnDeliveryDownPayment,
     ),
   );
 

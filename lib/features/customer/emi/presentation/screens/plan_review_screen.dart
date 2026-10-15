@@ -315,7 +315,15 @@ class _Fact extends StatelessWidget {
 
 /// What the detail screen is told when it is opened from the review.
 class PlanDetailArgs {
-  const PlanDetailArgs({this.productName, this.justApplied = false});
+  const PlanDetailArgs({
+    this.productName,
+    this.justApplied = false,
+    this.cashOnDelivery = false,
+  });
+
+  /// Plan checkout only: the buyer chose to pay the down payment in cash on
+  /// delivery, so that is the method it opens on.
+  final bool cashOnDelivery;
 
   final String? productName;
 

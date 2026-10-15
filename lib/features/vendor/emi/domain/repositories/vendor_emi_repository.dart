@@ -11,6 +11,7 @@ abstract class VendorEmiRepository {
     required bool enabled,
     required int minDownPaymentPercent,
     required List<int> tenures,
+    bool? allowCashOnDeliveryDownPayment,
   });
 
   Future<Either<EmiFailure, List<VendorEmiTerms>>> getEmiProducts();

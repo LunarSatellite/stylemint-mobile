@@ -24,6 +24,7 @@ class VendorEmiRemoteDataSource {
     required int minDownPaymentPercent,
     required List<int> tenures,
     required String idempotencyKey,
+    bool? allowCashOnDeliveryDownPayment,
   }) async => readVendorEmiTerms(
     readJsonObject(
       await apiClient.put(
@@ -32,6 +33,7 @@ class VendorEmiRemoteDataSource {
           enabled: enabled,
           minDownPaymentPercent: minDownPaymentPercent,
           tenures: tenures,
+          allowCashOnDeliveryDownPayment: allowCashOnDeliveryDownPayment,
         ),
         options: Options(
           headers: <String, dynamic>{

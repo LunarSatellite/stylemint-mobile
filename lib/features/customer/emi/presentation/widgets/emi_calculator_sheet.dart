@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_quote.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/product_emi_offer.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/emi_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -529,11 +530,33 @@ class _EmiCalculatorSheetState extends ConsumerState<EmiCalculatorSheet> {
                   ),
                 ),
               const SizedBox(height: DesignTokens.s20),
-              EmiCtaButton(
-                requiresVerification: terms.requiresVerification,
-                busy: _continuing,
-                onContinue: _continue,
-              ),
+              if (terms.kind == PlanKind.instalment)
+                // EMI is approved by the seller from the buyer's documents,
+                // never through identity verification.
+                EmiApplyButton(
+                  onPressed: () {
+                    final router = GoRouter.of(context);
+                    Navigator.of(context).pop();
+                    unawaited(
+                      router.push(
+                        RouteNames.paymentPlanApplyEmi,
+                        extra: EmiApplyArgs(
+                          productId: widget.productId,
+                          variantId: widget.variantId,
+                          productName: widget.productName,
+                        ),
+                      ),
+                    );
+                  },
+                )
+              else
+                EmiCtaButton(
+                  requiresVerification:
+                      terms.requiresVerification &&
+                      !(terms.option?.requiresDocuments ?? false),
+                  busy: _continuing,
+                  onContinue: _continue,
+                ),
               if (_continueFailure != null) ...[
                 const SizedBox(height: DesignTokens.s8),
                 Text(
@@ -739,7 +762,24 @@ class _Notice extends StatelessWidget {
   );
 }
 
-/// The sheet's button. In order:
+/// The sheet's button for EMI: on to the application, where the buyer adds
+/// identity and financial proof and sends the request to the seller.
+class EmiApplyButton extends StatelessWidget {
+  const EmiApplyButton({required this.onPressed, super.key});
+
+  final VoidCallback onPressed;
+
+  static const label = 'Apply for EMI with your documents';
+
+  @override
+  Widget build(BuildContext context) => _CtaButton(
+    key: const Key('plan-apply-emi'),
+    label: label,
+    onPressed: onPressed,
+  );
+}
+
+/// The sheet's button for pay later and prepay. In order:
 ///
 /// * signed out → sign in;
 /// * for a plan that needs a verified identity, decided by

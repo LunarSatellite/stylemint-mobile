@@ -23,6 +23,7 @@ abstract class VendorEmiTermsState with _$VendorEmiTermsState {
     @Default(false) bool enabled,
     @Default(emiMinDownPaymentPercent) int minDownPaymentPercent,
     @Default(<int>[]) List<int> tenures,
+    @Default(true) bool allowCashOnDeliveryDownPayment,
 
     @Default(false) bool saving,
 
@@ -42,6 +43,8 @@ abstract class VendorEmiTermsState with _$VendorEmiTermsState {
     // Compared with the draft the saved terms load into, so a listing that
     // was never configured is not "changed" just by opening it.
     return terms.enabled != enabled ||
+        terms.allowCashOnDeliveryDownPayment !=
+            allowCashOnDeliveryDownPayment ||
         snapDownPaymentPercent(terms.minDownPaymentPercent) !=
             minDownPaymentPercent ||
         !_sameTenures(
@@ -112,7 +115,14 @@ class VendorEmiTermsNotifier extends StateNotifier<VendorEmiTermsState> {
     enabled: terms.enabled,
     minDownPaymentPercent: snapDownPaymentPercent(terms.minDownPaymentPercent),
     tenures: terms.tenures.isEmpty ? emiAllowedTenures : terms.tenures,
+    allowCashOnDeliveryDownPayment: terms.allowCashOnDeliveryDownPayment,
     error: null,
+  );
+
+  void setAllowCashOnDeliveryDownPayment(bool value) => state = state.copyWith(
+    allowCashOnDeliveryDownPayment: value,
+    error: null,
+    justSaved: false,
   );
 
   void setEnabled(bool value) =>
@@ -146,6 +156,7 @@ class VendorEmiTermsNotifier extends StateNotifier<VendorEmiTermsState> {
       enabled: state.enabled,
       minDownPaymentPercent: state.minDownPaymentPercent,
       tenures: state.tenures,
+      allowCashOnDeliveryDownPayment: state.allowCashOnDeliveryDownPayment,
     );
     if (!mounted) return false;
     return result.fold(

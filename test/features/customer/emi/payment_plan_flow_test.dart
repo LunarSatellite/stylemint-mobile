@@ -10,6 +10,8 @@ import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_quote.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/product_emi_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/repositories/emi_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/checkout_emi_option.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/emi_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plan_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_checkout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_review_screen.dart';
@@ -75,6 +77,11 @@ Future<GoRouter> _pumpApp(
       GoRoute(
         path: '/',
         builder: (_, _) => Scaffold(body: home),
+      ),
+      GoRoute(
+        path: RouteNames.paymentPlanApplyEmi,
+        builder: (_, state) =>
+            EmiApplyScreen(args: state.extra! as EmiApplyArgs),
       ),
       GoRoute(
         path: RouteNames.paymentPlanReview,
@@ -214,8 +221,9 @@ void main() {
         await tester.tap(find.text('open'));
         await _settle(tester);
 
-        // EMI lends, so an unverified buyer is sent to get verified.
-        expect(find.text(EmiCtaButton.getVerifiedLabel), findsOneWidget);
+        // EMI goes to the seller with documents: never "Get verified".
+        expect(find.text(EmiApplyButton.label), findsOneWidget);
+        expect(find.text(EmiCtaButton.getVerifiedLabel), findsNothing);
 
         await _tapVisible(tester, find.byKey(const Key('plan-kind-prepay')));
 
@@ -236,13 +244,39 @@ void main() {
       await tester.tap(find.text('open'));
       await _settle(tester);
 
+      await _tapVisible(tester, find.byKey(const Key('plan-kind-prepay')));
       await _tapVisible(tester, find.byKey(const Key('plan-continue')));
 
-      expect(repo.quotes.single.kind, PlanKind.instalment);
-      expect(repo.quotes.single.down, 20, reason: 'opens on the minimum');
-      expect(repo.quotes.single.tenure, 6, reason: 'and the longest tenure');
-      expect(find.text('Review your EMI plan'), findsOneWidget);
-      expect(find.textContaining('16,000'), findsWidgets);
+      expect(repo.quotes.single.kind, PlanKind.prepay);
+      expect(repo.quotes.single.down, 10, reason: 'opens on the minimum');
+      expect(repo.quotes.single.tenure, 3, reason: 'and the longest tenure');
+      expect(find.byType(PlanReviewScreen), findsOneWidget);
+    });
+
+    testWidgets('EMI from the product page applies with documents for the '
+        'seller, never through identity verification', (tester) async {
+      // A fresh application: no plan on this item yet.
+      final repo = FakeCreditRepository(
+        agreement: {...agreementWire(), 'variantId': 'another-variant'},
+      );
+      await _pumpApp(
+        tester,
+        repo: repo,
+        home: _opener(_menu),
+        verified: false,
+      );
+      await tester.tap(find.text('open'));
+      await _settle(tester);
+
+      expect(find.text(EmiCtaButton.getVerifiedLabel), findsNothing);
+      await _tapVisible(tester, find.byKey(const Key('plan-apply-emi')));
+
+      expect(find.byType(EmiApplyScreen), findsOneWidget);
+      expect(find.byKey(CheckoutEmiOption.documentsKey), findsOneWidget);
+      expect(find.text('Send EMI request to the seller'), findsOneWidget);
+      expect(find.textContaining('Get verified'), findsNothing);
+      expect(find.text('KYC screen'), findsNothing);
+      expect(repo.quotes, isEmpty, reason: 'nothing is applied for yet');
     });
 
     testWidgets('a refused quote is explained under the button', (
@@ -258,6 +292,7 @@ void main() {
       await tester.tap(find.text('open'));
       await _settle(tester);
 
+      await _tapVisible(tester, find.byKey(const Key('plan-kind-prepay')));
       await _tapVisible(tester, find.byKey(const Key('plan-continue')));
 
       expect(find.byKey(const Key('plan-continue-error')), findsOneWidget);
@@ -277,6 +312,8 @@ void main() {
       await _pumpApp(tester, repo: r, home: _opener(_menu));
       await tester.tap(find.text('open'));
       await _settle(tester);
+      // EMI applies with documents; the review is for the other plans.
+      await _tapVisible(tester, find.byKey(const Key('plan-kind-prepay')));
       await _tapVisible(tester, find.byKey(const Key('plan-continue')));
       return r;
     }
@@ -588,6 +625,44 @@ void main() {
         );
       },
     );
+
+    testWidgets('an EMI whose seller allows it offers cash on delivery for the '
+        'down payment only', (tester) async {
+      final repo = FakeCreditRepository(
+        agreement: {
+          ...agreementWire(checkedOut: false),
+          'cashOnDeliveryDownPaymentAllowed': true,
+        },
+      )..placedRedirect = null;
+      await openApproved(tester, repo: repo);
+
+      await _tapVisible(tester, find.byKey(const Key('plan-checkout')));
+      final cash = find.byKey(const Key('plan-checkout-rail-cashOnDelivery'));
+      await _reveal(tester, cash);
+      expect(cash, findsOneWidget);
+      expect(
+        find.textContaining('the rider collects only the down payment'),
+        findsOneWidget,
+      );
+      await tester.tap(cash);
+      await tester.pump();
+      expect(find.textContaining('in cash on delivery'), findsOneWidget);
+      await _tapVisible(tester, find.byKey(const Key('plan-checkout-place')));
+
+      expect(repo.placements.single.rail, PlanPaymentRail.cashOnDelivery);
+      expect(launched, isEmpty, reason: 'nothing is paid online');
+    });
+
+    testWidgets('no cash option when the seller does not allow it', (
+      tester,
+    ) async {
+      await openApproved(tester);
+      await _tapVisible(tester, find.byKey(const Key('plan-checkout')));
+      expect(
+        find.byKey(const Key('plan-checkout-rail-cashOnDelivery')),
+        findsNothing,
+      );
+    });
 
     testWidgets('with nothing due up front it places without a payment page', (
       tester,

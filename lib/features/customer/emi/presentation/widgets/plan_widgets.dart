@@ -359,7 +359,7 @@ class _PaySheetState extends ConsumerState<_PaySheet> {
             },
             child: Column(
               children: [
-                for (final rail in PlanPaymentRail.values)
+                for (final rail in PlanPaymentRail.online)
                   RadioListTile<PlanPaymentRail>(
                     key: Key('plan-rail-${rail.name}'),
                     value: rail,

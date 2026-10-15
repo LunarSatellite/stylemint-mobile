@@ -163,6 +163,26 @@ class OfferEmiSection extends ConsumerWidget {
                   ),
               ],
             ),
+            const SizedBox(height: DesignTokens.s4),
+            SwitchListTile.adaptive(
+              key: const Key('offer-emi-cod-down-payment'),
+              contentPadding: EdgeInsets.zero,
+              value: state.allowCashOnDeliveryDownPayment,
+              onChanged: busy
+                  ? null
+                  : notifier.setAllowCashOnDeliveryDownPayment,
+              title: const Text(
+                'Allow cash on delivery for the down payment',
+                style: DesignTokens.smallRegular,
+              ),
+              subtitle: Text(
+                'The rider collects the down payment in cash; the plan starts '
+                'when it is delivered.',
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ),
             const SizedBox(height: DesignTokens.s12),
             _SampleQuote(state: state, saved: saved, effectiveMin: effective),
             const SizedBox(height: DesignTokens.s12),

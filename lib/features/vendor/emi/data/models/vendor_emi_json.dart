@@ -18,6 +18,10 @@ VendorEmiTerms readVendorEmiTerms(Map<String, dynamic> json) {
     minDownPaymentPercent: chosen,
     effectiveMinDownPaymentPercent: effective <= 0 ? chosen : effective,
     tenures: readTenures(json['tenures']),
+    allowCashOnDeliveryDownPayment:
+        json['allowCashOnDeliveryDownPayment'] is bool
+        ? json['allowCashOnDeliveryDownPayment'] as bool
+        : true,
     interestRatePercentMonthly:
         readOptionalDouble(json['interestRatePercentMonthly']) ?? 0,
     approvalMode: readOptionalString(json['approvalMode']) ?? 'Manual',
@@ -34,7 +38,10 @@ Map<String, dynamic> vendorEmiTermsBody({
   required bool enabled,
   required int minDownPaymentPercent,
   required List<int> tenures,
+  bool? allowCashOnDeliveryDownPayment,
 }) => <String, dynamic>{
+  if (allowCashOnDeliveryDownPayment != null)
+    'allowCashOnDeliveryDownPayment': allowCashOnDeliveryDownPayment,
   'enabled': enabled,
   'minDownPaymentPercent': minDownPaymentPercent,
   'tenures': [...tenures]..sort(),

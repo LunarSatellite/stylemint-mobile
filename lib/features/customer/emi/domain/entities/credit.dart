@@ -190,7 +190,13 @@ enum PaymentPurpose {
 enum PlanPaymentRail {
   card(1, 'Visa / Mastercard'),
   payPal(2, 'PayPal'),
-  eSewa(3, 'eSewa');
+  eSewa(3, 'eSewa'),
+
+  /// EMI down payment only, collected by the rider at delivery.
+  cashOnDelivery(4, 'Cash on delivery');
+
+  /// The rails for paying online — every one but cash on delivery.
+  static const online = [card, payPal, eSewa];
 
   const PlanPaymentRail(this.wire, this.label);
   final int wire;
@@ -390,6 +396,8 @@ class CreditAgreement {
     this.priceReduced,
     this.decisionNote,
     this.documentsSubmittedAt,
+    this.cashOnDeliveryDownPaymentAllowed = false,
+    this.downPaymentOnDelivery = false,
   });
 
   /// The seller's own words with their decision — a decline's reason.
@@ -397,6 +405,13 @@ class CreditAgreement {
 
   /// When the buyer sent their documents to the seller; null until then.
   final DateTime? documentsSubmittedAt;
+
+  /// EMI whose seller lets the down payment be paid in cash on delivery.
+  final bool cashOnDeliveryDownPaymentAllowed;
+
+  /// The down payment is to be collected in cash when the item arrives; the
+  /// plan starts then.
+  final bool downPaymentOnDelivery;
 
   final String id;
   final String productId;
@@ -468,7 +483,11 @@ class CreditAgreement {
 
   /// The payment the buyer should be offered first, if any.
   PaymentPurpose? get primaryPayment => switch (status) {
-    AgreementStatus.approved when needsActivationPayment && !needsCheckout =>
+    // A down payment due in cash is collected by the rider, not paid here.
+    AgreementStatus.approved
+        when needsActivationPayment &&
+            !needsCheckout &&
+            !downPaymentOnDelivery =>
       PaymentPurpose.activation,
     AgreementStatus.active when nextDue != null => PaymentPurpose.instalment,
     _ => null,

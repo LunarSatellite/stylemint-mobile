@@ -148,6 +148,10 @@ abstract class RouteNames {
   /// agreement id.
   static const paymentPlans = '/payment-plans';
   static const paymentPlanReview = '/payment-plans/review';
+
+  /// Applying for EMI from the product page (seller-approved, with
+  /// documents). Registered before [paymentPlanDetail].
+  static const paymentPlanApplyEmi = '/payment-plans/apply-emi';
   static const paymentPlanDetail = '/payment-plans/:agreementId';
   static String paymentPlanDetailPath(String agreementId) => paymentPlanDetail
       .replaceFirst(':agreementId', Uri.encodeComponent(agreementId));

@@ -194,53 +194,34 @@ void main() {
     expect(_rowValue(tester, 'emi-last'), 'Rs 2,080');
   });
 
-  testWidgets('signed out, the button asks the buyer to sign in', (
-    tester,
-  ) async {
-    await _pump(tester);
-    expect(find.text(EmiCtaButton.signInLabel), findsOneWidget);
-  });
-
-  testWidgets('kyc_required asks the buyer to get verified', (tester) async {
-    await _pump(
-      tester,
-      signedIn: true,
-      eligibility: _eligibility(reasons: const ['kyc_required']),
-    );
-    await _settleQuote(tester);
-    expect(find.text(EmiCtaButton.getVerifiedLabel), findsOneWidget);
-  });
-
-  testWidgets('kyc_in_review says the verification is in review', (
-    tester,
-  ) async {
-    await _pump(
-      tester,
-      signedIn: true,
-      eligibility: _eligibility(
+  for (final (name, signedIn, eligibility) in [
+    ('signed out', false, null),
+    ('kyc_required', true, _eligibility(reasons: const ['kyc_required'])),
+    (
+      'kyc_in_review',
+      true,
+      _eligibility(
         reasons: const ['kyc_in_review'],
         status: KycStatus.underReview,
       ),
-    );
-    await _settleQuote(tester);
-    expect(find.text(EmiCtaButton.inReviewLabel), findsOneWidget);
-  });
-
-  testWidgets('an eligible buyer can continue to a quote', (tester) async {
-    await _pump(
+    ),
+    (
+      'verified',
+      true,
+      _eligibility(eligible: true, status: KycStatus.approved),
+    ),
+  ]) {
+    testWidgets('$name: EMI applies with documents, never Get verified', (
       tester,
-      signedIn: true,
-      eligibility: _eligibility(eligible: true, status: KycStatus.approved),
-    );
-    await _settleQuote(tester);
-
-    final label = find.text(EmiCtaButton.continueLabel);
-    expect(label, findsOneWidget);
-    final button = tester.widget<FilledButton>(
-      find.ancestor(of: label, matching: find.byType(FilledButton)),
-    );
-    expect(button.onPressed, isNotNull);
-  });
+    ) async {
+      await _pump(tester, signedIn: signedIn, eligibility: eligibility);
+      await _settleQuote(tester);
+      expect(find.text(EmiApplyButton.label), findsOneWidget);
+      expect(find.text(EmiCtaButton.getVerifiedLabel), findsNothing);
+      expect(find.text(EmiCtaButton.inReviewLabel), findsNothing);
+      expect(find.text(EmiCtaButton.signInLabel), findsNothing);
+    });
+  }
 
   testWidgets('emi_quote.not_available replaces the plan with a notice', (
     tester,

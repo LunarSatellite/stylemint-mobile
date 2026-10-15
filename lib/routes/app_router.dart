@@ -76,6 +76,7 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/presen
 import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_gate_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_job_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/emi_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plan_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_checkout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plans_screen.dart';
@@ -1053,6 +1054,13 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.paymentPlans,
         builder: (ctx, state) => const PaymentPlansScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.paymentPlanApplyEmi,
+        redirect: (ctx, state) =>
+            state.extra is EmiApplyArgs ? null : RouteNames.paymentPlans,
+        builder: (ctx, state) =>
+            EmiApplyScreen(args: state.extra! as EmiApplyArgs),
       ),
       GoRoute(
         path: RouteNames.paymentPlanReview,

@@ -17,7 +17,11 @@ class VendorEmiTerms {
     this.minimumPrice,
     this.sampleQuote,
     this.updatedUtc,
+    this.allowCashOnDeliveryDownPayment = true,
   });
+
+  /// Buyers may pay the EMI down payment in cash on delivery. On by default.
+  final bool allowCashOnDeliveryDownPayment;
 
   final String productId;
   final String productName;

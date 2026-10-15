@@ -212,7 +212,7 @@ class _ProfileCard extends ConsumerWidget {
             InkWell(
               onTap: () => context.push(RouteNames.customerKyc),
               child: Text(
-                'Verify your identity to use payment plans →',
+                'Verify your identity for pay-later plans (not needed for EMI) →',
                 style: DesignTokens.smallRegular.copyWith(
                   color: DesignTokens.primaryGreen,
                   fontWeight: FontWeight.w600,

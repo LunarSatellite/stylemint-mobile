@@ -47,6 +47,7 @@ class _RecordingApiClient extends ApiClient {
     Map<String, dynamic>? fields,
     Options? options,
     ProgressCallback? onSendProgress,
+    DioMediaType? contentType,
   }) async {
     uploadUri = uri;
     uploadFile = file;

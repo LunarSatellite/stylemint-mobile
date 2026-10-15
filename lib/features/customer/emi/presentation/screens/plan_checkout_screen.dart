@@ -99,11 +99,21 @@ class _PlanCheckoutScreenState extends ConsumerState<PlanCheckoutScreen> {
       _loadFailure = failure;
       _plan = plan;
       _checkout = checkout;
+      if (widget.args.cashOnDelivery && _cashAllowed(plan)) {
+        _rail = PlanPaymentRail.cashOnDelivery;
+      }
       _sessionSpent = false;
       _key = const Uuid().v4();
       _setAddresses(addresses);
     });
   }
+
+  /// EMI whose seller lets the down payment be paid in cash on delivery.
+  static bool _cashAllowed(CreditAgreement? plan) =>
+      plan != null &&
+      plan.kind == PlanKind.instalment &&
+      plan.cashOnDeliveryDownPaymentAllowed &&
+      plan.needsActivationPayment;
 
   void _setAddresses(List<ShippingAddress> addresses) {
     _addresses = addresses.where((a) => !a.isEmpty).toList(growable: false);
@@ -316,7 +326,10 @@ class _PlanCheckoutScreenState extends ConsumerState<PlanCheckoutScreen> {
           },
           child: Column(
             children: [
-              for (final rail in PlanPaymentRail.values)
+              for (final rail in [
+                ...PlanPaymentRail.online,
+                if (_cashAllowed(plan)) PlanPaymentRail.cashOnDelivery,
+              ])
                 RadioListTile<PlanPaymentRail>(
                   key: Key('plan-checkout-rail-${rail.name}'),
                   value: rail,
@@ -327,8 +340,13 @@ class _PlanCheckoutScreenState extends ConsumerState<PlanCheckoutScreen> {
           ),
         ),
         Text(
-          'Payment plans are paid online. Cash on delivery is not available '
-          'for them.',
+          _cashAllowed(plan)
+              ? 'Cash on delivery: the rider collects only the down payment '
+                    '(${planMoney(plan.downPayment)}). Your plan starts the '
+                    'day it is delivered; the monthly payments are paid online.'
+              : 'Payment plans are paid online. Cash on delivery is not '
+                    'available for this one.',
+          key: const Key('plan-checkout-cod-note'),
           style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
         ),
         if (_error != null) ...[
@@ -370,6 +388,9 @@ class _PlanCheckoutScreenState extends ConsumerState<PlanCheckoutScreen> {
                 : Text(
                     nothingToday
                         ? 'Place order'
+                        : _rail == PlanPaymentRail.cashOnDelivery
+                        ? 'Place order · pay ${planMoney(dueToday)} '
+                              'in cash on delivery'
                         : 'Place order and pay ${planMoney(dueToday)}',
                   ),
           ),

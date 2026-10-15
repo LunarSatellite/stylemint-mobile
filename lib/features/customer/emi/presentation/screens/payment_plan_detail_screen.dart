@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/credit_messages.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/emi_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
@@ -200,6 +201,24 @@ class _PaymentPlanDetailScreenState
           ),
         ],
         const SizedBox(height: DesignTokens.s16),
+        if (a.kind == PlanKind.instalment &&
+            a.status == AgreementStatus.pendingApproval &&
+            a.documentsSubmittedAt == null)
+          // EMI waits on the seller, who decides from the buyer's documents.
+          _ActionButton(
+            key: const Key('plan-add-documents'),
+            label: 'Add your documents for the seller',
+            onPressed: () => unawaited(
+              context.push(
+                RouteNames.paymentPlanApplyEmi,
+                extra: EmiApplyArgs(
+                  productId: a.productId,
+                  variantId: a.variantId,
+                  productName: name ?? 'this item',
+                ),
+              ),
+            ),
+          ),
         if (a.needsCheckout)
           _ActionButton(
             key: const Key('plan-checkout'),

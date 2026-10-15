@@ -164,6 +164,9 @@ void main() {
         enabled: any(named: 'enabled'),
         minDownPaymentPercent: any(named: 'minDownPaymentPercent'),
         tenures: any(named: 'tenures'),
+        allowCashOnDeliveryDownPayment: any(
+          named: 'allowCashOnDeliveryDownPayment',
+        ),
       ),
     ).thenAnswer((_) async => answer);
 
@@ -226,6 +229,9 @@ void main() {
           enabled: any(named: 'enabled'),
           minDownPaymentPercent: any(named: 'minDownPaymentPercent'),
           tenures: any(named: 'tenures'),
+          allowCashOnDeliveryDownPayment: any(
+            named: 'allowCashOnDeliveryDownPayment',
+          ),
         ),
       );
     });
@@ -278,6 +284,32 @@ void main() {
           enabled: true,
           minDownPaymentPercent: 20,
           tenures: [3, 6],
+          allowCashOnDeliveryDownPayment: true,
+        ),
+      ).called(1);
+    });
+
+    test('cash on delivery for the down payment is on by default, and '
+        'turning it off is a change that is saved', () async {
+      when(
+        () => repository.getTerms('p1'),
+      ).thenAnswer((_) async => right(_terms()));
+      saveAnswers(right(_terms()));
+      final n = notifier();
+      await n.load();
+      expect(n.state.allowCashOnDeliveryDownPayment, isTrue);
+      expect(n.state.isDirty, isFalse);
+
+      n.setAllowCashOnDeliveryDownPayment(false);
+      expect(n.state.isDirty, isTrue);
+      await n.save();
+      verify(
+        () => repository.saveTerms(
+          'p1',
+          enabled: any(named: 'enabled'),
+          minDownPaymentPercent: any(named: 'minDownPaymentPercent'),
+          tenures: any(named: 'tenures'),
+          allowCashOnDeliveryDownPayment: false,
         ),
       ).called(1);
     });

@@ -172,6 +172,10 @@ CreditAgreement readCreditAgreement(Map<String, dynamic> json) {
     priceReduced: _optionalMoney(json['priceReduced'], currency),
     decisionNote: readOptionalString(json['decisionNote']),
     documentsSubmittedAt: readDate(json['documentsSubmittedUtc']),
+    cashOnDeliveryDownPaymentAllowed: readBool(
+      json['cashOnDeliveryDownPaymentAllowed'],
+    ),
+    downPaymentOnDelivery: readBool(json['downPaymentOnDelivery']),
   );
 }
 

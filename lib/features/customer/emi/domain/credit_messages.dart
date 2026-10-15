@@ -49,6 +49,12 @@ String creditFailureMessage(EmiFailure failure) {
       return 'The amount owed has changed. Refresh and try again.';
     case 'resource.not_found':
       return 'We could not find this plan.';
+    case 'credit_document.invalid':
+    case 'credit_document.too_many':
+    case 'credit_document.incomplete':
+    case 'credit_document.not_accepted':
+      // The server says exactly what is wrong with the file; show that.
+      return serverMessageOr(failure, 'That file could not be accepted.');
   }
   if (failure.kind == EmiFailureKind.notFound) {
     return 'Payment plans are not available yet. Please check back soon.';

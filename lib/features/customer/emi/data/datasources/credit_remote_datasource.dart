@@ -76,10 +76,16 @@ class CreditRemoteDataSource {
     required File file,
     String? filename,
   }) async {
+    // The part's type is decided from the file's own bytes, never from the
+    // picked name: a photo name with no or a wrong extension made Dio send
+    // application/octet-stream, which the server refused ("could not
+    // upload"). The name sent is a neutral one to match.
+    final type = await creditDocumentMediaType(file);
     await apiClient.postFile(
       '/v1/credit/me/agreements/${Uri.encodeComponent(agreementId)}/documents',
       file: file,
-      filename: filename,
+      filename: type == null ? filename : 'document.${type.$2}',
+      contentType: type == null ? null : DioMediaType.parse(type.$1),
       fields: <String, dynamic>{'kind': kind.wire},
     );
   }
@@ -222,4 +228,37 @@ class CreditRemoteDataSource {
       ),
     ),
   );
+}
+
+/// The accepted document type the file's leading bytes show — (media type,
+/// extension) — or null when they show none (the server then refuses it
+/// with its own reason).
+Future<(String, String)?> creditDocumentMediaType(File file) async {
+  final head = <int>[];
+  await for (final chunk in file.openRead(0, 16)) {
+    head.addAll(chunk);
+  }
+  return sniffCreditDocument(head);
+}
+
+(String, String)? sniffCreditDocument(List<int> h) {
+  bool at(int i, List<int> bytes) {
+    if (h.length < i + bytes.length) return false;
+    for (var j = 0; j < bytes.length; j++) {
+      if (h[i + j] != bytes[j]) return false;
+    }
+    return true;
+  }
+
+  if (at(0, const [0x25, 0x50, 0x44, 0x46])) return ('application/pdf', 'pdf');
+  if (at(0, const [0xFF, 0xD8, 0xFF])) return ('image/jpeg', 'jpg');
+  if (at(0, const [0x89, 0x50, 0x4E, 0x47])) return ('image/png', 'png');
+  if (at(4, 'ftyp'.codeUnits) && h.length >= 12) {
+    final brand = String.fromCharCodes(h.sublist(8, 12));
+    if (const ['heic', 'heix', 'hevc', 'heim', 'heis'].contains(brand)) {
+      return ('image/heic', 'heic');
+    }
+    if (const ['mif1', 'msf1'].contains(brand)) return ('image/heif', 'heif');
+  }
+  return null;
 }

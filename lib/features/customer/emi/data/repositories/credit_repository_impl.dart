@@ -153,6 +153,7 @@ class CreditRepositoryImpl implements CreditRepository {
         PlanPaymentRail.card => PaymentMethodType.card,
         PlanPaymentRail.payPal => PaymentMethodType.paypal,
         PlanPaymentRail.eSewa => PaymentMethodType.eSewa,
+        PlanPaymentRail.cashOnDelivery => PaymentMethodType.cod,
       },
       idempotencyKey: idempotencyKey,
     );
