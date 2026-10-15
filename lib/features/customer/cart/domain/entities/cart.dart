@@ -64,6 +64,7 @@ class CartItem {
     required this.isInStock,
     this.creatorHandle,
     this.commissionRate,
+    this.variantId,
   });
 
   final String id;
@@ -83,6 +84,10 @@ class CartItem {
   /// Commission rate as a fraction 0.0–1.0 (e.g. 0.15 = 15%).
   final double? commissionRate;
 
+  /// The cart line's product variant (backend CartLineDto.productVariantId).
+  /// Payment plans (EMI) are offered per variant, so checkout needs it.
+  final String? variantId;
+
   CartItem copyWith({
     String? id,
     String? productId,
@@ -94,6 +99,7 @@ class CartItem {
     bool? isInStock,
     String? creatorHandle,
     double? commissionRate,
+    String? variantId,
   }) {
     return CartItem(
       id: id ?? this.id,
@@ -106,6 +112,7 @@ class CartItem {
       isInStock: isInStock ?? this.isInStock,
       creatorHandle: creatorHandle ?? this.creatorHandle,
       commissionRate: commissionRate ?? this.commissionRate,
+      variantId: variantId ?? this.variantId,
     );
   }
 
@@ -121,7 +128,8 @@ class CartItem {
       other.unitPrice == unitPrice &&
       other.isInStock == isInStock &&
       other.creatorHandle == creatorHandle &&
-      other.commissionRate == commissionRate;
+      other.commissionRate == commissionRate &&
+      other.variantId == variantId;
 
   @override
   int get hashCode => Object.hash(
@@ -135,6 +143,7 @@ class CartItem {
     isInStock,
     creatorHandle,
     commissionRate,
+    variantId,
   );
 }
 

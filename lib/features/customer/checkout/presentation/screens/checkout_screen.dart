@@ -8,8 +8,11 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/notifiers/checkout_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/checkout_emi_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/delivery_distance_note.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -202,6 +205,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       style: DesignTokens.sectionInnerTitle,
                     ),
                     const SizedBox(height: DesignTokens.s12),
+                    // Pay with EMI: a single eligible item opens the plan
+                    // sheet (down payment now, the rest monthly).
+                    CheckoutEmiOption(
+                      items: ref
+                          .watch(cartNotifierProvider)
+                          .maybeWhen(
+                            loadSuccess: (cart) => cart.items,
+                            orElse: () => const <CartItem>[],
+                          ),
+                    ),
                     _PaymentMethodList(
                       availableMethods: _buildPaymentMethods(summary),
                       selectedMethod: selectedPayment,
