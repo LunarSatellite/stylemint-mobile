@@ -176,7 +176,30 @@ CreditAgreement readCreditAgreement(Map<String, dynamic> json) {
       json['cashOnDeliveryDownPaymentAllowed'],
     ),
     downPaymentOnDelivery: readBool(json['downPaymentOnDelivery']),
+    lateFee: _optionalMoney(json['lateFeeAmount'], currency),
+    lateFeeGraceDays: readInt(json['lateFeeGraceDays']),
+    deliveredAt: readDate(json['deliveredUtc']),
+    // EMI-after-delivery contract v1: absent from an older server, in which
+    // case the agreement counts them from its instalments.
+    reportedPaidToDate: _optionalMoney(json['paidToDate'], currency),
+    reportedInstalmentsPaid: _optionalInt(json['instalmentsPaid']),
+    reportedInstalmentsRemaining: _optionalInt(json['instalmentsRemaining']),
+    reportedNextInstalment: json['nextInstalment'] is Map
+        ? _instalment(
+            Map<String, dynamic>.from(json['nextInstalment'] as Map),
+            currency,
+          )
+        : null,
+    reportedLateFeesOutstanding: _optionalMoney(
+      json['lateFeesOutstanding'],
+      currency,
+    ),
   );
+}
+
+int? _optionalInt(Object? raw) {
+  final value = readOptionalDouble(raw);
+  return value == null || value < 0 ? null : value.toInt();
 }
 
 List<CreditAgreement> readCreditAgreements(Object? raw) {

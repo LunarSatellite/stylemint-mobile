@@ -398,7 +398,82 @@ class CreditAgreement {
     this.documentsSubmittedAt,
     this.cashOnDeliveryDownPaymentAllowed = false,
     this.downPaymentOnDelivery = false,
+    this.lateFee,
+    this.lateFeeGraceDays = 0,
+    this.deliveredAt,
+    this.reportedPaidToDate,
+    this.reportedInstalmentsPaid,
+    this.reportedInstalmentsRemaining,
+    this.reportedNextInstalment,
+    this.reportedLateFeesOutstanding,
   });
+
+  /// The flat fee charged once on an instalment more than [lateFeeGraceDays]
+  /// days late. Null or zero: this plan charges none.
+  final Money? lateFee;
+  final int lateFeeGraceDays;
+
+  bool get chargesLateFee => (lateFee?.amount ?? 0) > 0;
+
+  /// When the item reached the buyer; null until then (or from a server that
+  /// does not say).
+  final DateTime? deliveredAt;
+
+  // What the server counts itself (EMI-after-delivery contract v1). Each is
+  // null from a server that predates it; the getters below then count from
+  // [instalments].
+  final Money? reportedPaidToDate;
+  final int? reportedInstalmentsPaid;
+  final int? reportedInstalmentsRemaining;
+  final PlanInstalment? reportedNextInstalment;
+  final Money? reportedLateFeesOutstanding;
+
+  /// Whether the plan has started, so its down payment has been paid.
+  bool get _started =>
+      activatedAt != null ||
+      status == AgreementStatus.active ||
+      status == AgreementStatus.completed ||
+      status == AgreementStatus.defaulted;
+
+  /// The down payment (once the plan started) plus everything paid on
+  /// instalments, late fees included.
+  Money get paidToDate {
+    final reported = reportedPaidToDate;
+    if (reported != null) return reported;
+    var paid = _started ? downPayment.amount : 0.0;
+    for (final i in instalments) {
+      paid += i.paid.amount;
+    }
+    return Money(amount: paid, currency: price.currency);
+  }
+
+  /// Instalments settled: paid, waived or covered by a refund.
+  int get instalmentsPaid =>
+      reportedInstalmentsPaid ??
+      instalments.where((i) => i.status.isSettled).length;
+
+  /// Instalments still to pay.
+  int get instalmentsRemaining =>
+      reportedInstalmentsRemaining ??
+      instalments.where((i) => !i.status.isSettled).length;
+
+  /// The earliest instalment not yet settled.
+  PlanInstalment? get nextInstalment => reportedNextInstalment ?? nextDue;
+
+  /// Late fees charged and not yet paid, across the plan.
+  Money get lateFeesOutstanding {
+    final reported = reportedLateFeesOutstanding;
+    if (reported != null) return reported;
+    var fees = 0.0;
+    for (final i in instalments) {
+      if (!i.status.isSettled) fees += i.lateFeeDue.amount;
+    }
+    return Money(amount: fees, currency: price.currency);
+  }
+
+  /// Running, so a balance is being paid down month by month.
+  bool get isRepaying =>
+      status == AgreementStatus.active || status == AgreementStatus.defaulted;
 
   /// The seller's own words with their decision — a decline's reason.
   final String? decisionNote;
@@ -492,6 +567,127 @@ class CreditAgreement {
     AgreementStatus.active when nextDue != null => PaymentPurpose.instalment,
     _ => null,
   };
+}
+
+// ── Where an instalment stands, for the buyer ───────────────────────────────
+
+/// The contract's display rule: settled → paid; overdue → overdue; otherwise
+/// the due date against today in Kathmandu.
+enum InstalmentPhase {
+  paid,
+  overdue,
+
+  /// Due today — or past its date while the server has not yet marked it
+  /// overdue.
+  dueToday,
+
+  /// Due within the next [planDueSoonDays] days.
+  dueSoon,
+  upcoming,
+
+  /// No date yet: the plan has not started.
+  notStarted;
+
+  bool get needsPaying =>
+      this == overdue || this == dueToday || this == dueSoon;
+}
+
+/// How many days ahead "due soon" looks.
+const int planDueSoonDays = 3;
+
+/// Nepal Time is a fixed UTC+05:45 with no daylight saving.
+const Duration _kathmanduOffset = Duration(hours: 5, minutes: 45);
+
+/// Today's calendar date in Asia/Kathmandu, for [now] (any zone).
+DateTime kathmanduToday(DateTime now) {
+  final k = now.toUtc().add(_kathmanduOffset);
+  return DateTime(k.year, k.month, k.day);
+}
+
+/// Days from [today] (a Kathmandu date) to [instalment]'s due date; null when
+/// it has none.
+int? daysUntilDue(PlanInstalment instalment, DateTime today) {
+  final d = instalment.dueDate;
+  if (d == null) return null;
+  // Both are whole dates; UTC arithmetic keeps a DST shift out of it.
+  return DateTime.utc(d.year, d.month, d.day)
+      .difference(DateTime.utc(today.year, today.month, today.day))
+      .inDays;
+}
+
+InstalmentPhase instalmentPhase(PlanInstalment instalment, DateTime today) {
+  if (instalment.status.isSettled) return InstalmentPhase.paid;
+  if (instalment.status == InstalmentStatus.overdue) {
+    return InstalmentPhase.overdue;
+  }
+  final days = daysUntilDue(instalment, today);
+  if (days == null) return InstalmentPhase.notStarted;
+  if (days <= 0) return InstalmentPhase.dueToday;
+  if (days <= planDueSoonDays) return InstalmentPhase.dueSoon;
+  return InstalmentPhase.upcoming;
+}
+
+/// The one plan payment worth interrupting the buyer for: overdue, or due
+/// within [planDueSoonDays] days.
+class PlanDueAlert {
+  const PlanDueAlert({
+    required this.agreement,
+    required this.instalment,
+    required this.phase,
+    required this.daysUntil,
+  });
+
+  final CreditAgreement agreement;
+  final PlanInstalment instalment;
+  final InstalmentPhase phase;
+
+  /// Days until the due date; zero or less when due today or past.
+  final int daysUntil;
+
+  bool get isOverdue => phase == InstalmentPhase.overdue;
+
+  /// Identifies this reminder, so dismissing it hides only this one.
+  String get key => '${agreement.id}:${instalment.number}:${phase.name}';
+}
+
+/// The most pressing alert among [plans]: anything overdue first, then the
+/// soonest due. Null when nothing is close.
+PlanDueAlert? planDueAlert(
+  List<CreditAgreement> plans,
+  DateTime today, {
+  Set<String> dismissed = const {},
+}) {
+  PlanDueAlert? best;
+  int rank(PlanDueAlert a) => a.isOverdue ? 0 : 1;
+  for (final plan in plans) {
+    if (!plan.isRepaying) continue;
+    PlanInstalment? pick;
+    for (final i in plan.instalments) {
+      if (i.status == InstalmentStatus.overdue) {
+        pick = i;
+        break;
+      }
+    }
+    pick ??= plan.nextInstalment;
+    if (pick == null) continue;
+    final phase = instalmentPhase(pick, today);
+    if (!phase.needsPaying) continue;
+    final alert = PlanDueAlert(
+      agreement: plan,
+      instalment: pick,
+      phase: phase,
+      daysUntil: daysUntilDue(pick, today) ?? 0,
+    );
+    if (dismissed.contains(alert.key)) continue;
+    final current = best;
+    if (current == null ||
+        rank(alert) < rank(current) ||
+        (rank(alert) == rank(current) &&
+            alert.daysUntil < current.daysUntil)) {
+      best = alert;
+    }
+  }
+  return best;
 }
 
 // ── The buyer's standing ────────────────────────────────────────────────────

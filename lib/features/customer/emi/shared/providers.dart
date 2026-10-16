@@ -1,5 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
@@ -125,7 +126,8 @@ final FutureProvider<VendorCreditProgram> vendorCreditProgramProvider =
 void refreshPaymentPlans(WidgetRef ref, {String? agreementId}) {
   ref
     ..invalidate(myPaymentPlansProvider)
-    ..invalidate(creditProfileProvider);
+    ..invalidate(creditProfileProvider)
+    ..invalidate(orderPaymentPlanProvider);
   if (agreementId != null) ref.invalidate(paymentPlanProvider(agreementId));
 }
 
@@ -152,3 +154,62 @@ vendorCreditApplicationProvider = FutureProvider.autoDispose
         ref.watch(creditRepositoryProvider).vendorApplication(id),
       ),
     );
+
+// ── EMI after delivery: the order's plan, and what is due soon ──────────────
+
+/// The clock plan reminders read "today" from; tests pin it.
+final planClockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// Due-soon and overdue reminders the buyer closed this session, by
+/// [PlanDueAlert.key]. A new instalment, or one turning overdue, shows again.
+final dismissedPlanAlertsProvider = StateProvider<Set<String>>(
+  (ref) => const <String>{},
+);
+
+/// The buyer's most pressing plan payment — overdue, or due within three
+/// days — or null. Null too while the plans load or when they cannot be
+/// read: a reminder never stands in the way of the screen it sits on.
+final Provider<PlanDueAlert?> planDueAlertProvider =
+    Provider.autoDispose<PlanDueAlert?>((ref) {
+      final plans = ref.watch(myPaymentPlansProvider).asData?.value;
+      if (plans == null) return null;
+      return planDueAlert(
+        plans,
+        kathmanduToday(ref.watch(planClockProvider)()),
+        dismissed: ref.watch(dismissedPlanAlertsProvider),
+      );
+    });
+
+/// Which order's plan to look up: the order's id, and the plan id the order
+/// names. [creditAgreementId] is null when the server did not say (one that
+/// predates the field) and empty when it said the order has no plan.
+typedef OrderPlanKey = ({String orderId, String? creditAgreementId});
+
+/// The payment plan an order is bought on, or null for an order paid
+/// outright — and null, never an error, when the plan cannot be read, so the
+/// order screen simply goes without the card.
+final FutureProviderFamily<CreditAgreement?, OrderPlanKey>
+orderPaymentPlanProvider = FutureProvider.autoDispose
+    .family<CreditAgreement?, OrderPlanKey>((ref, key) async {
+      final named = key.creditAgreementId?.trim();
+      if (named != null && named.isEmpty) return null;
+      try {
+        final repo = ref.watch(creditRepositoryProvider);
+        if (named != null) {
+          final result = await repo.getAgreement(named);
+          return result.fold((_) => null, (plan) => plan);
+        }
+        // An older server: find the plan whose order this is.
+        final orderId = key.orderId.trim().toLowerCase();
+        if (orderId.isEmpty) return null;
+        final result = await repo.listAgreements();
+        return result.fold((_) => null, (plans) {
+          for (final plan in plans) {
+            if (plan.orderId?.trim().toLowerCase() == orderId) return plan;
+          }
+          return null;
+        });
+      } on Object {
+        return null;
+      }
+    });
