@@ -32,7 +32,7 @@ class PaymentPlansScreen extends ConsumerWidget {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('Payment plans'),
+        title: const Text('My EMI plans'),
       ),
       body: SafeArea(
         child: RefreshIndicator(

@@ -328,7 +328,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             // next, and paying it.
             ProfileMenuItem(
               icon: Icons.event_repeat_rounded,
-              label: 'Payment plans',
+              label: 'My EMI plans',
               onTap: () => context.push(RouteNames.paymentPlans),
             ),
             // Premium virtual try-on: where access comes from and until when.
