@@ -20,9 +20,15 @@ class _FakeRepo extends Mock implements VendorOrdersRepository {
   Either<NetworkExceptions, DeliveryRequest>? opened;
   Either<NetworkExceptions, DeliveryRequest>? selection;
 
+  /// The answer to an open carrying the seller's verified-rider consent.
+  Either<NetworkExceptions, DeliveryRequest>? openedWithConsent;
+
   int currentCalls = 0;
   int openCalls = 0;
   final List<String> selected = [];
+
+  /// `allowVerifiedNonPro` of every open, in order.
+  final List<bool> openConsents = [];
 
   @override
   Future<Either<NetworkExceptions, DeliveryRequest?>> currentDeliveryRequest(
@@ -34,9 +40,14 @@ class _FakeRepo extends Mock implements VendorOrdersRepository {
 
   @override
   Future<Either<NetworkExceptions, DeliveryRequest>> openDeliveryRequest(
-    String orderId,
-  ) async {
+    String orderId, {
+    bool allowVerifiedNonPro = false,
+  }) async {
     openCalls++;
+    openConsents.add(allowVerifiedNonPro);
+    if (allowVerifiedNonPro && openedWithConsent != null) {
+      return openedWithConsent!;
+    }
     return opened ?? right(_request(DeliveryRequestState.searching));
   }
 
@@ -71,6 +82,9 @@ DeliveryRequest _request(
   DeliveryRequestState state, {
   List<InterestedRider> interested = const [],
   AssignedRider? assigned,
+  String? noRidersReason,
+  bool canUseVerifiedRider = false,
+  DateTime? verifiedRiderConsentUtc,
 }) => DeliveryRequest(
   packageId: 'pkg-1',
   state: state,
@@ -82,6 +96,21 @@ DeliveryRequest _request(
     const Duration(minutes: 14, seconds: 32),
   ),
   assigned: assigned,
+  noRidersReason: noRidersReason,
+  canUseVerifiedRider: canUseVerifiedRider,
+  verifiedRiderConsentUtc: verifiedRiderConsentUtc,
+);
+
+/// A high-value parcel that found no Pro rider.
+DeliveryRequest _noPro() => _request(
+  DeliveryRequestState.noRiders,
+  noRidersReason: DeliveryRequest.noProRiderHighValue,
+  canUseVerifiedRider: true,
+);
+
+DeliveryRequest _searchingWithConsent() => _request(
+  DeliveryRequestState.searching,
+  verifiedRiderConsentUtc: DateTime.now().toUtc(),
 );
 
 DeliveryRequest _assignedRequest() => _request(
@@ -485,6 +514,132 @@ void main() {
           interested: [_rider(name: 'Ramchandra Bahadur Shrestha')],
         ),
       );
+      await pumpSheet(tester, width: 320, textScale: 1.3);
+      expectNoLayoutErrors(tester);
+    });
+
+    // ── High-value parcel with no Pro rider ─────────────────────────────
+
+    testWidgets(
+      'no Pro rider: says so, asks, and only on yes retries with consent',
+      (tester) async {
+        repo
+          ..opened = right(_noPro())
+          ..openedWithConsent = right(_searchingWithConsent());
+        await pumpSheet(tester);
+
+        await tester.tap(find.byKey(VendorDeliveryPartnerSheet.findKey));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.text('No Pro rider is available for this high-value parcel'),
+          findsOneWidget,
+        );
+        expect(find.text('Use a verified rider instead?'), findsOneWidget);
+        expect(
+          find.textContaining('identity checked by StyleMint but is not a Pro'),
+          findsOneWidget,
+        );
+        expect(repo.openConsents, [false]);
+
+        await tester.tap(
+          find.byKey(VendorDeliveryPartnerSheet.confirmVerifiedKey),
+        );
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(repo.openConsents, [false, true]);
+        expect(find.text('Waiting for riders…'), findsOneWidget);
+        expect(
+          find.text('High-value parcel: you agreed to a verified rider.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('no Pro rider: "Not now" widens nothing and keeps the choice', (
+      tester,
+    ) async {
+      repo.opened = right(_noPro());
+      await pumpSheet(tester);
+
+      await tester.tap(find.byKey(VendorDeliveryPartnerSheet.findKey));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Not now'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Use a verified rider instead?'), findsNothing);
+      expect(repo.openConsents, [false]);
+      expect(find.byKey(VendorDeliveryPartnerSheet.useVerifiedKey), findsOne);
+    });
+
+    testWidgets(
+      'a reopened sheet in the no-Pro state does not ask by itself; '
+      'its button does',
+      (tester) async {
+        repo
+          ..current = right(_noPro())
+          ..openedWithConsent = right(_searchingWithConsent());
+        await pumpSheet(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Use a verified rider instead?'), findsNothing);
+        final useVerified = find.byKey(
+          VendorDeliveryPartnerSheet.useVerifiedKey,
+        );
+        await tester.ensureVisible(useVerified);
+        await tester.tap(useVerified);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(
+          find.byKey(VendorDeliveryPartnerSheet.confirmVerifiedKey),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(repo.openConsents, [true]);
+      },
+    );
+
+    testWidgets('consented but nobody verified nearby says so, never asks', (
+      tester,
+    ) async {
+      repo.current = right(
+        _request(
+          DeliveryRequestState.noRiders,
+          noRidersReason: DeliveryRequest.noVerifiedRiderHighValue,
+        ),
+      );
+      await pumpSheet(tester);
+
+      expect(find.text('No verified rider is nearby either'), findsOneWidget);
+      expect(find.byKey(VendorDeliveryPartnerSheet.useVerifiedKey), findsNothing);
+    });
+
+    testWidgets('an ordinary no-riders answer never asks', (tester) async {
+      repo.opened = right(_request(DeliveryRequestState.noRiders));
+      await pumpSheet(tester);
+
+      await tester.tap(find.byKey(VendorDeliveryPartnerSheet.findKey));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('No rider is within 5 km right now'), findsOneWidget);
+      expect(find.text('Use a verified rider instead?'), findsNothing);
+      expect(repo.openConsents, [false]);
+    });
+
+    testWidgets('no overflow in the no-Pro panel at 320dp with text ×1.3', (
+      tester,
+    ) async {
+      repo.current = right(_noPro());
       await pumpSheet(tester, width: 320, textScale: 1.3);
       expectNoLayoutErrors(tester);
     });

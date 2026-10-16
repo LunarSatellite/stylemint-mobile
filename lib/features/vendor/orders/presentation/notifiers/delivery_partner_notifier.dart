@@ -16,9 +16,15 @@ sealed class DeliveryPartnerState {
 
 /// Reading the current request, or opening one when [finding].
 final class DeliveryPartnerLoading extends DeliveryPartnerState {
-  const DeliveryPartnerLoading({this.finding = false});
+  const DeliveryPartnerLoading({
+    this.finding = false,
+    this.consenting = false,
+  });
 
   final bool finding;
+
+  /// The request being opened carries the seller's verified-rider consent.
+  final bool consenting;
 }
 
 /// No request has been opened for this parcel yet.
@@ -102,12 +108,21 @@ class DeliveryPartnerNotifier extends StateNotifier<DeliveryPartnerState> {
 
   /// Opens a request — or re-opens one that expired or found nobody, which
   /// re-plans the parcel and notifies whoever is in range now.
-  Future<void> findPartner() async {
-    _retry = findPartner;
+  ///
+  /// [allowVerifiedNonPro] only after the seller said yes to "Use a verified
+  /// rider instead?" for a high-value parcel that found no Pro rider.
+  Future<void> findPartner({bool allowVerifiedNonPro = false}) async {
+    _retry = () => findPartner(allowVerifiedNonPro: allowVerifiedNonPro);
     final generation = ++_generation;
     _stopPolling();
-    state = const DeliveryPartnerLoading(finding: true);
-    final either = await _repository.openDeliveryRequest(subOrderId);
+    state = DeliveryPartnerLoading(
+      finding: true,
+      consenting: allowVerifiedNonPro,
+    );
+    final either = await _repository.openDeliveryRequest(
+      subOrderId,
+      allowVerifiedNonPro: allowVerifiedNonPro,
+    );
     if (!mounted || generation != _generation) return;
     either.fold(_fail, _show);
   }

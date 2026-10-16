@@ -157,6 +157,9 @@ class DeliveryRequest {
     this.openedUtc,
     this.expiresUtc,
     this.assigned,
+    this.noRidersReason,
+    this.canUseVerifiedRider = false,
+    this.verifiedRiderConsentUtc,
   });
 
   factory DeliveryRequest.fromJson(Map<String, dynamic> json) {
@@ -182,7 +185,13 @@ class DeliveryRequest {
             : DeliveryRequestState.searching);
 
     final radius = _double(json['radiusKm']);
+    final consent = json['verifiedRiderConsent'];
     return DeliveryRequest(
+      noRidersReason: _stringOrNull(json['noRidersReason']),
+      canUseVerifiedRider: json['canUseVerifiedRider'] == true,
+      verifiedRiderConsentUtc: consent is Map
+          ? _date(consent['consentedUtc'])
+          : null,
       packageId: _string(json['packageId']),
       state: state,
       notifiedCount: _double(json['notifiedCount']).toInt(),
@@ -202,6 +211,37 @@ class DeliveryRequest {
   final double radiusKm;
   final List<InterestedRider> interested;
   final AssignedRider? assigned;
+
+  /// Why nobody was found, when there is a specific reason — see
+  /// [noProRiderHighValue] and [noVerifiedRiderHighValue]. Null otherwise.
+  final String? noRidersReason;
+
+  /// The seller may repeat the request agreeing to a verified rider. Only
+  /// ever true with [noProRiderHighValue].
+  final bool canUseVerifiedRider;
+
+  /// When the seller agreed to a verified non-Pro rider for this parcel, or
+  /// null when they have not.
+  final DateTime? verifiedRiderConsentUtc;
+
+  /// `noRidersReason`: a high-value parcel may only go to a Pro rider and
+  /// none is available. The seller is asked whether a verified rider may
+  /// take it instead.
+  static const String noProRiderHighValue = 'delivery.no_pro_rider_high_value';
+
+  /// `noRidersReason`: the seller already agreed to a verified rider and no
+  /// verified rider is in range either.
+  static const String noVerifiedRiderHighValue =
+      'delivery.no_verified_rider_high_value';
+
+  /// A high-value parcel found no Pro rider.
+  bool get noProRider =>
+      state == DeliveryRequestState.noRiders &&
+      noRidersReason == noProRiderHighValue;
+
+  /// A high-value parcel found no Pro rider and the seller can be asked
+  /// whether a verified rider may take it instead.
+  bool get offersVerifiedRider => noProRider && canUseVerifiedRider;
 
   /// Time left before the request closes; zero once it has, null when the
   /// server sent no expiry.

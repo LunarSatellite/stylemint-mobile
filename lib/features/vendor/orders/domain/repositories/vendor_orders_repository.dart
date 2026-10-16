@@ -136,9 +136,14 @@ abstract interface class VendorOrdersRepository {
 
   /// Opens (or re-opens) a "find a delivery partner" request: every eligible
   /// rider nearby is notified and can say they are interested.
+  ///
+  /// [allowVerifiedNonPro]: the seller agreed to hand a high-value parcel
+  /// with no Pro rider to a verified rider of any tier. Only after the
+  /// seller confirms; the server records who agreed and when.
   Future<Either<NetworkExceptions, DeliveryRequest>> openDeliveryRequest(
-    String orderId,
-  );
+    String orderId, {
+    bool allowVerifiedNonPro = false,
+  });
 
   /// The current request for this sub-order, or null when none was opened.
   Future<Either<NetworkExceptions, DeliveryRequest?>> currentDeliveryRequest(

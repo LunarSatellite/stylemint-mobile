@@ -618,11 +618,15 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
 
   @override
   Future<Either<NetworkExceptions, DeliveryRequest>> openDeliveryRequest(
-    String orderId,
-  ) => guardedNetworkCall(networkInfo, () async {
+    String orderId, {
+    bool allowVerifiedNonPro = false,
+  }) => guardedNetworkCall(networkInfo, () async {
+    // A fresh key every time, so the consent retry is never answered with
+    // the earlier "no Pro rider" reply.
     final json = await remoteDataSource.openDeliveryRequest(
       orderId,
       idempotencyKey: _uuid.v4(),
+      allowVerifiedNonPro: allowVerifiedNonPro,
     );
     return DeliveryRequest.fromJson(json);
   });

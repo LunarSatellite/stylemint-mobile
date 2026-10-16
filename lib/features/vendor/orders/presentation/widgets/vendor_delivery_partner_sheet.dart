@@ -75,6 +75,12 @@ class VendorDeliveryPartnerSheet extends ConsumerStatefulWidget {
   static const Key handedOverKey = ValueKey<String>(
     'vendor-partner-handed-over',
   );
+  static const Key useVerifiedKey = ValueKey<String>(
+    'vendor-partner-use-verified',
+  );
+  static const Key confirmVerifiedKey = ValueKey<String>(
+    'vendor-partner-confirm-verified',
+  );
   static Key chooseKey(String offerId) =>
       ValueKey<String>('vendor-partner-choose-$offerId');
   static Key detailsKey(String offerId) =>
@@ -155,6 +161,36 @@ class _VendorDeliveryPartnerSheetState
     SmSnackbar.error(context, NetworkExceptions.getMessage(failure));
   }
 
+  /// A high-value parcel found no Pro rider. Asks — and only on "yes" repeats
+  /// the request with the seller's consent, which the server records.
+  Future<void> _askVerifiedRider() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: DesignTokens.surfaceRaised,
+        title: const Text('Use a verified rider instead?'),
+        content: const Text(
+          'No Pro rider is available for this high-value parcel. A verified '
+          'rider has had their identity checked by StyleMint but is not a Pro '
+          'rider. Your choice is recorded for this parcel only.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            key: VendorDeliveryPartnerSheet.confirmVerifiedKey,
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Use a verified rider'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _notifier.findPartner(allowVerifiedNonPro: true);
+  }
+
   /// The rider's details; "Choose this rider" there comes back here and runs
   /// the same confirm-and-select as the row's own button.
   Future<void> _openDetails(InterestedRider rider) async {
@@ -171,6 +207,22 @@ class _VendorDeliveryPartnerSheetState
   Widget build(BuildContext context) {
     final state = ref.watch(deliveryPartnerNotifierProvider(widget.subOrderId));
     final now = DateTime.now().toUtc();
+
+    // The vendor's own search came back "no Pro rider for this high-value
+    // parcel": ask at once. A poll or a reopened sheet shows the button
+    // instead, so the question is never repeated on its own.
+    ref.listen(deliveryPartnerNotifierProvider(widget.subOrderId), (
+      previous,
+      next,
+    ) {
+      if (previous is DeliveryPartnerLoading &&
+          previous.finding &&
+          !previous.consenting &&
+          next is DeliveryPartnerLive &&
+          next.request.offersVerifiedRider) {
+        unawaited(_askVerifiedRider());
+      }
+    });
 
     final assigned =
         state is DeliveryPartnerLive &&
@@ -215,11 +267,14 @@ class _VendorDeliveryPartnerSheetState
             ),
             const SizedBox(height: DesignTokens.s16),
             switch (state) {
-              DeliveryPartnerLoading(:final finding) => _Busy(
-                label: finding
-                    ? 'Asking riders near you…'
-                    : 'Checking for riders…',
-              ),
+              DeliveryPartnerLoading(:final finding, :final consenting) =>
+                _Busy(
+                  label: consenting
+                      ? 'Asking verified riders near you…'
+                      : finding
+                      ? 'Asking riders near you…'
+                      : 'Checking for riders…',
+                ),
               DeliveryPartnerNotRequested() => _NotRequested(
                 onFind: _notifier.findPartner,
               ),
@@ -235,6 +290,7 @@ class _VendorDeliveryPartnerSheetState
                   onChoose: _choose,
                   onDetails: _openDetails,
                   onAskAgain: _notifier.findPartner,
+                  onUseVerified: () => unawaited(_askVerifiedRider()),
                   onOwnCourier: () => Navigator.of(
                     context,
                   ).pop(const VendorPartnerUseOwnCourier()),
@@ -367,6 +423,7 @@ class _Live extends StatelessWidget {
     required this.onChoose,
     required this.onDetails,
     required this.onAskAgain,
+    required this.onUseVerified,
     required this.onOwnCourier,
     required this.onHandedOver,
   });
@@ -377,6 +434,7 @@ class _Live extends StatelessWidget {
   final ValueChanged<InterestedRider> onChoose;
   final ValueChanged<InterestedRider> onDetails;
   final VoidCallback onAskAgain;
+  final VoidCallback onUseVerified;
   final VoidCallback onOwnCourier;
   final ValueChanged<AssignedRider> onHandedOver;
 
@@ -415,6 +473,85 @@ class _Live extends StatelessWidget {
                 key: VendorDeliveryPartnerSheet.askAgainKey,
                 label: 'Ask again',
                 onPressed: onAskAgain,
+              ),
+            ],
+          ),
+        );
+
+      case DeliveryRequestState.noRiders when request.noProRider:
+        return _Panel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'No Pro rider is available for this high-value parcel',
+                style: DesignTokens.h3,
+              ),
+              const SizedBox(height: DesignTokens.s4),
+              Text(
+                request.canUseVerifiedRider
+                    ? 'High-value parcels go to Pro riders only. You can hand '
+                          'it to a verified rider instead, try again later, or '
+                          'use your own courier.'
+                    : 'High-value parcels go to Pro riders only. Try again '
+                          'later, or use your own courier.',
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s12),
+              if (request.canUseVerifiedRider) ...[
+                _PrimaryButton(
+                  key: VendorDeliveryPartnerSheet.useVerifiedKey,
+                  label: 'Use a verified rider',
+                  onPressed: onUseVerified,
+                ),
+                const SizedBox(height: DesignTokens.s8),
+              ],
+              OutlinedButton(
+                key: VendorDeliveryPartnerSheet.askAgainKey,
+                onPressed: onAskAgain,
+                child: const Text('Try again'),
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              OutlinedButton(
+                onPressed: onOwnCourier,
+                child: const Text('Use your own courier'),
+              ),
+            ],
+          ),
+        );
+
+      case DeliveryRequestState.noRiders
+          when request.noRidersReason ==
+              DeliveryRequest.noVerifiedRiderHighValue:
+        return _Panel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'No verified rider is nearby either',
+                style: DesignTokens.h3,
+              ),
+              const SizedBox(height: DesignTokens.s4),
+              Text(
+                'You agreed to a verified rider for this high-value parcel, '
+                'but none is close enough right now. Try again in a few '
+                'minutes, or hand it to your own courier.',
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s12),
+              _PrimaryButton(
+                key: VendorDeliveryPartnerSheet.askAgainKey,
+                label: 'Try again',
+                onPressed: onAskAgain,
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              OutlinedButton(
+                onPressed: onOwnCourier,
+                child: const Text('Use your own courier'),
               ),
             ],
           ),
@@ -459,6 +596,15 @@ class _Live extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _SearchHeader(request: request, now: now),
+            if (request.verifiedRiderConsentUtc != null) ...[
+              const SizedBox(height: DesignTokens.s8),
+              Text(
+                'High-value parcel: you agreed to a verified rider.',
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ],
             if (request.interested.isEmpty) ...[
               const SizedBox(height: DesignTokens.s8),
               Text(

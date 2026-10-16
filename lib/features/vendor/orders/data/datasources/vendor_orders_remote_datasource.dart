@@ -377,13 +377,21 @@ class VendorOrdersRemoteDataSource {
   /// a request: the parcel is re-planned and every eligible rider within the
   /// radius is notified. Riders answer with interest; nothing is assigned
   /// until [selectDeliveryPartner].
+  ///
+  /// [allowVerifiedNonPro] is the seller's "yes" to handing a high-value
+  /// parcel to a verified rider of any tier after the answer
+  /// `delivery.no_pro_rider_high_value`. The server records the consent; it
+  /// is never sent without the seller confirming.
   Future<Map<String, dynamic>> openDeliveryRequest(
     String subOrderId, {
     required String idempotencyKey,
+    bool allowVerifiedNonPro = false,
   }) async {
     final response = await apiClient.post(
       '/v1/vendor/sub-orders/$subOrderId/delivery-requests',
-      data: const <String, dynamic>{},
+      data: allowVerifiedNonPro
+          ? const <String, dynamic>{'allowVerifiedNonPro': true}
+          : const <String, dynamic>{},
       options: _idempotent(idempotencyKey),
     );
     return (response as Map).cast<String, dynamic>();

@@ -137,4 +137,57 @@ void main() {
     expect(DeliveryRequestState.ridersInterested.isSettled, isFalse);
     expect(DeliveryRequestState.noRiders.isSettled, isFalse);
   });
+
+  group('high-value parcel with no Pro rider', () {
+    Map<String, dynamic> json(Map<String, dynamic> extra) => {
+      'packageId': 'pkg-1',
+      'state': 'NoRiders',
+      'notifiedCount': 0,
+      'radiusKm': 5,
+      'interested': <dynamic>[],
+      'assigned': null,
+      ...extra,
+    };
+
+    test('reads the reason and the offer of a verified rider', () {
+      final request = DeliveryRequest.fromJson(
+        json({
+          'noRidersReason': 'delivery.no_pro_rider_high_value',
+          'canUseVerifiedRider': true,
+          'verifiedRiderConsent': null,
+        }),
+      );
+
+      expect(request.noProRider, isTrue);
+      expect(request.offersVerifiedRider, isTrue);
+      expect(request.verifiedRiderConsentUtc, isNull);
+    });
+
+    test('reads the recorded consent and does not offer again', () {
+      final request = DeliveryRequest.fromJson(
+        json({
+          'noRidersReason': 'delivery.no_verified_rider_high_value',
+          'canUseVerifiedRider': false,
+          'verifiedRiderConsent': {
+            'consentedByAccountId': 'vendor-1',
+            'consentedUtc': '2026-10-16T06:00:00Z',
+          },
+        }),
+      );
+
+      expect(request.noProRider, isFalse);
+      expect(request.offersVerifiedRider, isFalse);
+      expect(
+        request.verifiedRiderConsentUtc,
+        DateTime.utc(2026, 10, 16, 6),
+      );
+    });
+
+    test('an older backend without the fields reads as an ordinary answer', () {
+      final request = DeliveryRequest.fromJson(json({}));
+
+      expect(request.noRidersReason, isNull);
+      expect(request.offersVerifiedRider, isFalse);
+    });
+  });
 }
