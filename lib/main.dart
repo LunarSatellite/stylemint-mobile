@@ -780,6 +780,22 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     if (KycDecidedPush.fromData(message.data) != null) {
       _refreshAfterKycDecision();
     }
+    // A buyer's plan moved (paid, reminded, delivered): the plans list, the
+    // plan, the order's plan card and the due banner re-read.
+    final type = notificationTypeFromTemplateKey(
+      message.data['type']?.toString(),
+    );
+    if (type != null &&
+        type.startsWith('plan.') &&
+        !type.startsWith('plan.vendor.')) {
+      final agreementId = message.data['agreementId']?.toString().trim();
+      refreshPaymentPlans(
+        ref,
+        agreementId: agreementId == null || agreementId.isEmpty
+            ? null
+            : agreementId,
+      );
+    }
     final delivery = DeliveryPushEvent.fromData(message.data);
     if (delivery != null) ref.read(deliveryPushBusProvider).publish(delivery);
   }

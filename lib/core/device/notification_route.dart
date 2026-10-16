@@ -191,6 +191,15 @@ String? notificationLocation(
           : '/delivery/${Uri.encodeComponent(tracking)}/recovery';
     }
 
+    // A seller's notices about a buyer's plan (EMI-after-delivery contract
+    // v1) open the seller's view of that plan, never the buyer's.
+    if (type.startsWith('plan.vendor.')) {
+      final agreementId = payload.id('agreementId');
+      return agreementId != null && _isGuid(agreementId)
+          ? RouteNames.vendorPaymentPlanDetailPath(agreementId)
+          : RouteNames.vendorPaymentPlans;
+    }
+
     // Vendor-facing order notifications name the vendor's sub-order.
     if (type.startsWith('vendor.') || type.contains('.vendor.')) {
       final subOrderId = payload.id('subOrderId');
