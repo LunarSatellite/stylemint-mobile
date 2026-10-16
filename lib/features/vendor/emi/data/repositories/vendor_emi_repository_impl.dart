@@ -4,6 +4,7 @@ import 'package:stylemint_mobile_frontend/features/customer/emi/data/repositorie
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_failure.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/data/datasources/vendor_emi_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/domain/entities/vendor_emi.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/domain/entities/vendor_emi_plan.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/domain/repositories/vendor_emi_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:uuid/uuid.dart';
@@ -57,4 +58,12 @@ class VendorEmiRepositoryImpl implements VendorEmiRepository {
     networkInfo,
     () => remoteDataSource.putSettings(exposureLimit),
   );
+
+  @override
+  Future<Either<EmiFailure, List<VendorEmiPlan>>> getPlans() =>
+      guardedEmiCall(networkInfo, remoteDataSource.getPlans);
+
+  @override
+  Future<Either<EmiFailure, VendorEmiPlan>> getPlan(String agreementId) =>
+      guardedEmiCall(networkInfo, () => remoteDataSource.getPlan(agreementId));
 }
