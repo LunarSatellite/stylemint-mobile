@@ -163,7 +163,7 @@ String? notificationLocation(
   NotificationViewer viewer = const NotificationViewer(),
 }) {
   // 0. A seller EMI notice (`plan.vendor.*`, emi-after contract v1) opens
-  //    the seller's EMI plan screen — collections and schedule — even though
+  //    the seller's EMI plan screen (collections, schedule) even though
   //    its `deepLink` names the approval screen of the same plan.
   if (payload.type?.startsWith('plan.vendor.') ?? false) {
     return vendorEmiPlanLocation(payload);
