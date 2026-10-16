@@ -45,7 +45,8 @@ class PlanProgressRows extends ConsumerWidget {
                 : 'Next instalment',
             value: next.dueDate == null
                 ? planMoney(next.outstanding)
-                : '${planMoney(next.outstanding)} · ${planDate(next.dueDate!)}',
+                : '${planMoney(next.outstanding)} · '
+                      '${planDate(next.dueDate!)}',
           ),
         if (total > 0)
           PlanRow(
@@ -207,7 +208,9 @@ class PlanDueBanner extends ConsumerWidget {
     if (alert == null) return const SizedBox.shrink();
     final i = alert.instalment;
     final overdue = alert.isOverdue;
-    final colour = overdue ? DesignTokens.colorError : DesignTokens.colorWarning;
+    final colour = overdue
+        ? DesignTokens.colorError
+        : DesignTokens.colorWarning;
     final title = switch (alert.phase) {
       InstalmentPhase.overdue => 'Instalment overdue',
       InstalmentPhase.dueToday when alert.daysUntil < 0 => 'Instalment due now',
