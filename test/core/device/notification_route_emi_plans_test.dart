@@ -61,42 +61,6 @@ void main() {
       expect(location, RouteNames.paymentPlanDetailPath(_agreementId));
     });
   });
-
-  group('seller plan notices open the seller plan', () {
-    const types = [
-      'plan.vendor.upcoming',
-      'plan.vendor.overdue',
-      'plan.vendor.payment.received',
-      'plan.vendor.completed',
-    ];
-    for (final type in types) {
-      test('$type without a deepLink', () {
-        expect(
-          _push({
-            'type': type,
-            'agreementId': _agreementId,
-            'orderId': _orderId,
-          }),
-          RouteNames.vendorPaymentPlanDetailPath(_agreementId),
-        );
-      });
-
-      test('$type by its deepLink', () {
-        expect(
-          _push({
-            'type': type,
-            'deepLink': '/vendor/payment-plans/$_agreementId',
-          }),
-          '/vendor/payment-plans/$_agreementId',
-        );
-      });
-    }
-
-    test('with no usable id, the seller list of plans', () {
-      expect(
-        _push({'type': 'plan.vendor.overdue'}),
-        RouteNames.vendorPaymentPlans,
-      );
-    });
-  });
+  // Seller plan notices (`plan.vendor.*`) are covered by
+  // vendor_emi_notification_route_test.dart: they open the seller EMI plan.
 }
