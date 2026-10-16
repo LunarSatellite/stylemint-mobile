@@ -518,7 +518,7 @@ void main() {
       expectNoLayoutErrors(tester);
     });
 
-    // ── High-value parcel with no Pro rider ─────────────────────────────
+    // ── High-value parcel with no Pro rider ──────────────────────────
 
     testWidgets(
       'no Pro rider: says so, asks, and only on yes retries with consent',
@@ -619,7 +619,10 @@ void main() {
       await pumpSheet(tester);
 
       expect(find.text('No verified rider is nearby either'), findsOneWidget);
-      expect(find.byKey(VendorDeliveryPartnerSheet.useVerifiedKey), findsNothing);
+      expect(
+        find.byKey(VendorDeliveryPartnerSheet.useVerifiedKey),
+        findsNothing,
+      );
     });
 
     testWidgets('an ordinary no-riders answer never asks', (tester) async {
