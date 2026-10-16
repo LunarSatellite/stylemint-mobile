@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/models/cart_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/checkout_emi_option.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/credit_documents_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/data/saved_credit_documents.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/data/models/credit_json.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_eligibility.dart';
@@ -49,6 +51,55 @@ class _NoQuoteEmiRepository implements EmiRepository {
       left(const EmiFailure(EmiFailureKind.unknown));
 }
 
+/// Saved EMI documents, in memory: what the device would keep.
+class FakeSavedDocuments implements SavedCreditDocumentStore {
+  bool consent = false;
+  final List<SavedCreditDocument> docs = [];
+  int _next = 0;
+
+  @override
+  Future<bool> hasConsent() async => consent;
+
+  @override
+  Future<void> setConsent(bool value) async {
+    if (!value) return deleteAll();
+    consent = true;
+  }
+
+  @override
+  Future<List<SavedCreditDocument>> list() async =>
+      consent ? [...docs] : const [];
+
+  @override
+  Future<SavedCreditDocument?> save({
+    required CreditDocumentKind kind,
+    required String path,
+    required String name,
+    required int sizeBytes,
+  }) async {
+    if (!consent) return null;
+    final doc = SavedCreditDocument(
+      id: 'saved-${_next++}',
+      kind: kind,
+      name: name,
+      sizeBytes: sizeBytes,
+      savedAt: DateTime(2026, 10, 16),
+      path: '/private/emi-documents/$name',
+    );
+    docs.add(doc);
+    return doc;
+  }
+
+  @override
+  Future<void> delete(String id) async => docs.removeWhere((d) => d.id == id);
+
+  @override
+  Future<void> deleteAll() async {
+    docs.clear();
+    consent = false;
+  }
+}
+
 EmiEligibility _eligibility(EmiCta cta) => EmiEligibility(
   kycTier: cta == EmiCta.eligible ? 2 : 0,
   kycStatus: KycStatus.none,
@@ -77,9 +128,10 @@ Future<FakeCreditRepository> _pump(
   FakeCreditRepository? credit,
   Map<String, dynamic>? options,
   List<PickedCreditDocument> picks = const [],
-  bool openPlans = true,
+  FakeSavedDocuments? saved,
 }) async {
   final queue = [...picks];
+  final savedDocs = saved ?? FakeSavedDocuments();
   _usePhoneSize(tester);
   final repo = credit ?? FakeCreditRepository();
   final router = GoRouter(
@@ -128,17 +180,19 @@ Future<FakeCreditRepository> _pump(
         creditDocumentPickerProvider.overrideWithValue(
           (_) async => queue.isEmpty ? null : queue.removeAt(0),
         ),
+        savedCreditDocumentStoreProvider.overrideWithValue(savedDocs),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
   await tester.pumpAndSettle();
-  // Checkout shows a card; the plans open on their own screen.
-  if (openPlans && find.byKey(CheckoutEmiOption.openKey).evaluate().length == 1) {
-    await tester.tap(find.byKey(CheckoutEmiOption.openKey));
-    await tester.pumpAndSettle();
-  }
   return repo;
+}
+
+/// "Add documents" on the inline plan card: opens the documents page.
+Future<void> _openDocuments(WidgetTester tester) async {
+  await tester.tap(find.byKey(CheckoutEmiOption.addDocumentsKey));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -243,28 +297,28 @@ void main() {
   testWidgets('several items: plans per eligible item, plus the one-item '
       'note', (tester) async {
     await _pump(tester, [_item(), _item(variantId: 'v-2', name: 'Silk scarf')]);
-    expect(find.byKey(const ValueKey('checkout-emi-entry-v-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('checkout-emi-entry-v-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('checkout-emi-card-v-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('checkout-emi-card-v-2')), findsOneWidget);
     expect(find.text('Pay with EMI · Silk scarf'), findsOneWidget);
     expect(find.byKey(CheckoutEmiOption.noteKey), findsOneWidget);
-
-    // Each card opens that item's plans on their own screen.
-    await tester.tap(find.text('Pay with EMI · Silk scarf'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('checkout-emi-card-v-2')), findsOneWidget);
-    expect(find.byType(CheckoutEmiScreen), findsOneWidget);
   });
 
-  testWidgets('checkout shows a card; the plans open on the next screen', (
-    tester,
-  ) async {
-    await _pump(tester, [_item()], openPlans: false);
-    expect(find.byKey(CheckoutEmiOption.openKey), findsOneWidget);
-    expect(find.byKey(CheckoutEmiOption.cardKey), findsNothing);
-    await tester.tap(find.byKey(CheckoutEmiOption.openKey));
-    await tester.pumpAndSettle();
-    expect(find.byType(CheckoutEmiScreen), findsOneWidget);
+  testWidgets('the plan is on the checkout page itself; only the documents '
+      'open on their own page, from "Add documents"', (tester) async {
+    await _pump(tester, [_item()]);
+    // Plan, figures and the next step are right on checkout.
     expect(find.byKey(CheckoutEmiOption.cardKey), findsOneWidget);
+    expect(find.byKey(const Key('checkout-emi-tenure-6')), findsOneWidget);
+    expect(find.byKey(const Key('checkout-emi-monthly')), findsOneWidget);
+    expect(find.byKey(CheckoutEmiOption.addDocumentsKey), findsOneWidget);
+    expect(find.byType(CreditDocumentsScreen), findsNothing);
+    expect(find.byKey(const Key('checkout-emi-add-identity')), findsNothing);
+
+    await _openDocuments(tester);
+    expect(find.byType(CreditDocumentsScreen), findsOneWidget);
+    expect(find.byKey(const Key('checkout-emi-add-identity')), findsOneWidget);
+    expect(find.byKey(const Key('checkout-emi-add-financial')), findsOneWidget);
+    expect(find.byKey(CheckoutEmiOption.sendKey), findsOneWidget);
   });
 
   testWidgets('a line without a variant id draws nothing', (tester) async {
@@ -422,6 +476,7 @@ void main() {
       );
       expect(find.byKey(CheckoutEmiOption.documentsKey), findsOneWidget);
       expect(find.byKey(CheckoutEmiOption.verifyKey), findsNothing);
+      await _openDocuments(tester);
       final send = find.byKey(CheckoutEmiOption.sendKey);
       expect(
         tester
@@ -469,10 +524,133 @@ void main() {
           ),
         ],
       );
+      await _openDocuments(tester);
       await tester.tap(find.byKey(const Key('checkout-emi-add-financial')));
       await tester.pumpAndSettle();
       expect(find.textContaining('larger than 10 MB'), findsOneWidget);
       expect(find.text('big.pdf'), findsNothing);
+    });
+
+    Future<FakeCreditRepository> pumpFresh(
+      WidgetTester tester,
+      FakeSavedDocuments saved, {
+      List<PickedCreditDocument> picks = const [id, slip],
+    }) {
+      final repo = repoWith(agreementWire(state: 1))
+        ..agreement = agreementWire(state: 1, id: 'new-plan')
+        ..submittedAgreement = {
+          ...agreementWire(state: 1, id: 'new-plan'),
+          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
+        };
+      return _pump(
+        tester,
+        [_item(variantId: 'other-variant')],
+        credit: repo,
+        options: sellerOptions,
+        picks: picks,
+        saved: saved,
+      );
+    }
+
+    Future<void> addBothAndSend(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('checkout-emi-add-identity')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('checkout-emi-add-financial')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(CheckoutEmiOption.sendKey));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('saving documents asks first, and is off by default: '
+        'without consent nothing is kept', (tester) async {
+      final saved = FakeSavedDocuments();
+      await pumpFresh(tester, saved);
+      await _openDocuments(tester);
+      expect(find.text(CreditDocumentsScreen.consentText), findsOneWidget);
+      expect(
+        tester
+            .widget<SwitchListTile>(find.byKey(CreditDocumentsScreen.consentKey))
+            .value,
+        isFalse,
+      );
+      await addBothAndSend(tester);
+      expect(find.byKey(CheckoutEmiOption.waitingKey), findsOneWidget);
+      expect(saved.docs, isEmpty);
+      expect(saved.consent, isFalse);
+    });
+
+    testWidgets('with consent the documents are kept on the phone and offered '
+        'the next time, still uploaded fresh', (tester) async {
+      final saved = FakeSavedDocuments();
+      await pumpFresh(tester, saved);
+      await _openDocuments(tester);
+      await tester.tap(find.byKey(CreditDocumentsScreen.consentKey));
+      await tester.pumpAndSettle();
+      await addBothAndSend(tester);
+      expect(saved.consent, isTrue);
+      expect(saved.docs.map((d) => (d.kind, d.name)), [
+        (CreditDocumentKind.identity, 'citizenship.jpg'),
+        (CreditDocumentKind.financial, 'salary.pdf'),
+      ]);
+
+      // The next EMI application: nothing picked, the saved ones offered.
+      await tester.pumpWidget(const SizedBox());
+      final repo = await pumpFresh(tester, saved, picks: const []);
+      await _openDocuments(tester);
+      expect(find.byKey(CreditDocumentsScreen.savedKey), findsOneWidget);
+      expect(find.text('Use saved documents'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('credit-docs-use-saved-0')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('credit-docs-use-saved-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(CheckoutEmiOption.sendKey));
+      await tester.pumpAndSettle();
+      expect(repo.uploads.map((u) => u.kind), [
+        CreditDocumentKind.identity,
+        CreditDocumentKind.financial,
+      ]);
+      expect(saved.docs, hasLength(2), reason: 'not saved a second time');
+    });
+
+    testWidgets('saved documents can be deleted one by one or all at once, '
+        'and turning consent off deletes them', (tester) async {
+      final saved = FakeSavedDocuments()..consent = true;
+      for (final d in [id, slip, id]) {
+        await saved.save(
+          kind: d == slip
+              ? CreditDocumentKind.financial
+              : CreditDocumentKind.identity,
+          path: d.path,
+          name: d.name,
+          sizeBytes: d.sizeBytes,
+        );
+      }
+      await pumpFresh(tester, saved, picks: const []);
+      await _openDocuments(tester);
+      await tester.tap(find.byKey(const Key('credit-docs-delete-saved-0')));
+      await tester.pumpAndSettle();
+      expect(saved.docs.map((d) => d.id), ['saved-1', 'saved-2']);
+      expect(find.byKey(const Key('credit-docs-use-saved-0')), findsNothing);
+
+      await tester.tap(find.byKey(CreditDocumentsScreen.deleteAllKey));
+      await tester.pumpAndSettle();
+      expect(saved.docs, isEmpty);
+      expect(find.byKey(CreditDocumentsScreen.savedKey), findsNothing);
+
+      // Consent on again with one saved, then off: it is deleted.
+      await tester.tap(find.byKey(CreditDocumentsScreen.consentKey));
+      await tester.pumpAndSettle();
+      expect(saved.consent, isTrue);
+      await saved.save(
+        kind: CreditDocumentKind.identity,
+        path: id.path,
+        name: id.name,
+        sizeBytes: id.sizeBytes,
+      );
+      await tester.tap(find.byKey(CreditDocumentsScreen.consentKey));
+      await tester.pumpAndSettle();
+      expect(saved.consent, isFalse);
+      expect(saved.docs, isEmpty);
     });
 
     testWidgets('already sent: shows the wait, not the form', (tester) async {
@@ -599,7 +777,6 @@ void main() {
           'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
         }),
         options: sellerOptions,
-        openPlans: false,
       );
       expect(find.text('EMI ordered'), findsOneWidget);
       expect(find.text('Pay with EMI'), findsNothing);

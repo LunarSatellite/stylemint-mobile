@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/credit_documents_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/credit_messages.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/emi_eligibility.dart';
@@ -118,8 +119,7 @@ final creditDocumentPickerProvider = Provider<CreditDocumentPicker>(
   (ref) => _chooseDocument,
 );
 
-/// "Pay with EMI" on the checkout screen: a card per eligible item that opens
-/// [CheckoutEmiScreen].
+/// "Pay with EMI", inline on the checkout screen.
 ///
 /// Every cart line whose variant has plan options (`GET /v1/credit/offers/
 /// {variantId}`) gets a card that shows the plans right here: each kind on
@@ -128,8 +128,9 @@ final creditDocumentPickerProvider = Provider<CreditDocumentPicker>(
 /// arithmetic and quote endpoint as the product page's plan sheet.
 ///
 /// EMI never asks for StyleMint identity verification: the buyer adds an
-/// identity document and 1–3 financial proofs, sends the request to the
-/// seller, waits for their decision, then pays the down payment. Only pay
+/// identity document and 1–3 financial proofs on their own page
+/// ([CreditDocumentsScreen], opened from "Add documents"), sends the request
+/// to the seller, waits for their decision, then pays the down payment. Only pay
 /// later / prepay plans the server marks `requiresVerifiedIdentity` (and not
 /// `requiresDocuments`) still go through verification.
 ///
@@ -142,8 +143,8 @@ class CheckoutEmiOption extends ConsumerWidget {
 
   static const Key cardKey = Key('checkout-emi-card');
 
-  /// The checkout card that opens the EMI screen (single eligible item).
-  static const Key openKey = Key('checkout-emi-open');
+  /// "Add documents" on the plan card: opens [CreditDocumentsScreen].
+  static const Key addDocumentsKey = Key('checkout-emi-add-documents');
   static const Key noteKey = Key('checkout-emi-note');
   static const Key loadingKey = Key('checkout-emi-loading');
   static const Key payKey = Key('checkout-emi-pay');
@@ -195,11 +196,11 @@ class CheckoutEmiOption extends ConsumerWidget {
         data: (options) {
           if (options.options.isEmpty) return;
           plans++;
-          // A card on checkout; the plans, documents and seller request open
-          // on their own screen.
+          // The plans, inline on checkout; only the documents open on their
+          // own page.
           children.add(
-            _EmiEntry(
-              key: ValueKey('checkout-emi-entry-$id'),
+            CheckoutEmiPlans(
+              key: ValueKey('checkout-emi-plans-$id'),
               item: item,
               options: options,
               named: items.length > 1,
@@ -230,149 +231,6 @@ class CheckoutEmiOption extends ConsumerWidget {
       ],
     );
   }
-}
-
-/// "Pay with EMI" on the checkout screen: one tap opens [CheckoutEmiScreen].
-/// When this item is already ordered on a plan that has not started, the card
-/// says so instead of offering EMI again.
-class _EmiEntry extends ConsumerWidget {
-  const _EmiEntry({
-    required this.item,
-    required this.options,
-    required this.named,
-    super.key,
-  });
-
-  final CartItem item;
-  final PlanOptions options;
-  final bool named;
-
-  static const Key orderedKey = Key('checkout-emi-entry-ordered');
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ordered = ref.watch(emiSignedInProvider)
-        ? (ref.watch(myPaymentPlansProvider).asData?.value ?? const [])
-              .where(
-                (a) =>
-                    a.variantId == item.variantId &&
-                    a.guarantor == PlanGuarantor.vendor &&
-                    a.status == AgreementStatus.approved &&
-                    !a.needsCheckout,
-              )
-              .firstOrNull
-        : null;
-    final base = ordered != null ? 'EMI ordered' : 'Pay with EMI';
-    final title = named ? '$base · ${item.productName}' : base;
-    final subtitle = ordered == null
-        ? 'Choose a plan, add your documents and send the request to the '
-              'seller.'
-        : ordered.downPaymentOnDelivery
-        ? 'Pay ${_money(ordered.downPayment)} down payment in cash on '
-              'delivery.'
-        : 'Pay the ${_money(ordered.downPayment)} down payment to start the '
-              'plan.';
-    return Padding(
-      padding: const EdgeInsets.only(bottom: DesignTokens.s16),
-      child: Material(
-        color: DesignTokens.primaryGreenDark,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          key: named ? null : CheckoutEmiOption.openKey,
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => unawaited(
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => CheckoutEmiScreen(
-                  item: item,
-                  options: options,
-                  named: named,
-                ),
-              ),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.calendar_month_outlined,
-                  color: DesignTokens.primaryGreen,
-                ),
-                const SizedBox(width: DesignTokens.s12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: DesignTokens.textWhite,
-                        ),
-                      ),
-                      const SizedBox(height: DesignTokens.s4),
-                      Text(
-                        subtitle,
-                        key: ordered != null ? orderedKey : null,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 12,
-                          color: DesignTokens.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: DesignTokens.textMuted,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The EMI plans for one checkout item on their own screen: plan, documents,
-/// request to the seller, then the down payment.
-class CheckoutEmiScreen extends StatelessWidget {
-  const CheckoutEmiScreen({
-    required this.item,
-    required this.options,
-    this.named = false,
-    super.key,
-  });
-
-  final CartItem item;
-  final PlanOptions options;
-  final bool named;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: DesignTokens.bgAppBody,
-    appBar: AppBar(
-      title: Text(named ? 'EMI plan · ${item.productName}' : 'EMI plan'),
-    ),
-    body: SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(DesignTokens.s16),
-        children: [
-          CheckoutEmiPlans(
-            key: ValueKey('checkout-emi-plans-${item.variantId}'),
-            item: item,
-            options: options,
-            named: named,
-          ),
-        ],
-      ),
-    ),
-  );
 }
 
 class _LoadingRow extends StatelessWidget {
@@ -743,24 +601,28 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     _submitKey = _uuid.v4();
   }
 
-  Future<void> _pickDocument(CreditDocumentKind kind) async {
-    final picked = await ref.read(creditDocumentPickerProvider)(context);
-    if (picked == null || !mounted) return;
-    final extension = picked.name.split('.').last.toLowerCase();
-    setState(() {
-      if (picked.name.contains('.') &&
-          !creditDocumentExtensions.contains(extension)) {
-        _error = 'Choose a PDF or a photo (JPEG, PNG or HEIC).';
-      } else if (picked.sizeBytes <= 0 ||
-          picked.sizeBytes > creditDocumentMaxBytes) {
-        _error = 'That file is larger than 10 MB. Choose a smaller one.';
-      } else {
-        _error = null;
-        (kind == CreditDocumentKind.identity ? _identity : _financial).add(
-          picked,
-        );
-      }
-    });
+  /// Opens the documents page for this application. The page edits this
+  /// card's own lists, so the picks survive going back; "Send" on that page
+  /// comes back here and sends.
+  Future<void> _openDocuments(String? resumeAgreementId) async {
+    final send = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => CreditDocumentsScreen(
+          identity: _identity,
+          financial: _financial,
+          uploaded: _uploaded,
+          productName: widget.item.productName,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _error = null);
+    if (send == true &&
+        _identity.isNotEmpty &&
+        _financial.isNotEmpty &&
+        !_paying) {
+      await _sendToSeller(resumeAgreementId);
+    }
   }
 
   /// Quote → apply → upload each document → send to the seller. Each write
@@ -887,66 +749,7 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     if (!ref.watch(emiSignedInProvider)) {
       return _Button(label: 'Sign in to apply for EMI', onPressed: _signIn);
     }
-    final ready = _identity.isNotEmpty && _financial.isNotEmpty;
-    Widget list(
-      CreditDocumentKind kind,
-      List<PickedCreditDocument> docs,
-      int max,
-      String label,
-      String hint,
-    ) => Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Label(label),
-        Text(
-          hint,
-          style: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 12,
-            color: DesignTokens.textMuted,
-          ),
-        ),
-        for (final d in docs)
-          Row(
-            children: [
-              const Icon(
-                Icons.description_outlined,
-                size: 16,
-                color: DesignTokens.textMuted,
-              ),
-              const SizedBox(width: DesignTokens.s6),
-              Expanded(
-                child: Text(
-                  d.name,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 13,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-              ),
-              if (!_uploaded.contains(d.path) && !_paying)
-                IconButton(
-                  tooltip: 'Remove',
-                  color: DesignTokens.textMuted,
-                  icon: const Icon(Icons.close, size: 16),
-                  onPressed: () => setState(() => docs.remove(d)),
-                ),
-            ],
-          ),
-        if (docs.length < max)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              key: Key('checkout-emi-add-${kind.name}'),
-              onPressed: _paying ? null : () => _pickDocument(kind),
-              icon: const Icon(Icons.upload_file),
-              label: Text(docs.isEmpty ? 'Add file' : 'Add another'),
-            ),
-          ),
-      ],
-    );
+    final picked = _identity.length + _financial.length;
     return Column(
       key: CheckoutEmiOption.documentsKey,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -961,31 +764,27 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
             color: DesignTokens.textMuted,
           ),
         ),
-        const SizedBox(height: DesignTokens.s8),
-        list(
-          CreditDocumentKind.identity,
-          _identity,
-          maxIdentityDocuments,
-          'Identity document',
-          'Citizenship, national ID or passport (both sides if needed).',
-        ),
-        const SizedBox(height: DesignTokens.s8),
-        list(
-          CreditDocumentKind.financial,
-          _financial,
-          maxFinancialDocuments,
-          'Financial proof (1–3 files)',
-          'Salary slip, bank statement or income proof. PDF or photo, up to 10 MB.',
-        ),
+        if (picked > 0) ...[
+          const SizedBox(height: DesignTokens.s6),
+          Text(
+            '${_identity.length} identity · ${_financial.length} financial '
+            'document${_financial.length == 1 ? '' : 's'} added',
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 12,
+              color: DesignTokens.textWhite,
+            ),
+          ),
+        ],
         const SizedBox(height: DesignTokens.s8),
         _Button(
-          key: CheckoutEmiOption.sendKey,
+          key: CheckoutEmiOption.addDocumentsKey,
           label: _paying
               ? 'Sending to the seller…'
-              : 'Send EMI request to the seller',
-          onPressed: ready && !_paying
-              ? () => _sendToSeller(resumeAgreementId)
-              : null,
+              : picked == 0
+              ? 'Add documents'
+              : 'Review documents and send',
+          onPressed: _paying ? null : () => _openDocuments(resumeAgreementId),
         ),
       ],
     );
@@ -1152,10 +951,12 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
         : local.monthlyInstallment;
     final total = confirmed ? quote.totalPayable : local.totalPayable;
 
-    final title = widget.named
-        ? 'Pay with EMI · ${widget.item.productName}'
-        : 'Pay with EMI';
     final live = _liveAgreement();
+    // Already ordered on a plan: the card names the order, not the offer.
+    final base = live != null && _isOrdered(live)
+        ? 'EMI ordered'
+        : 'Pay with EMI';
+    final title = widget.named ? '$base · ${widget.item.productName}' : base;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: DesignTokens.s16),
