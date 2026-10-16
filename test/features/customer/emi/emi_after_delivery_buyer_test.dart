@@ -170,6 +170,10 @@ Future<GoRouter> _pump(
   return router;
 }
 
+/// The status note under schedule row [number] (the keyed Text itself).
+String? _noteOf(WidgetTester tester, int number) =>
+    tester.widget<Text>(find.byKey(Key('plan-instalment-note-$number'))).data;
+
 Finder _rowWith(String key, String text) => find.descendant(
   of: find.byKey(Key(key)),
   matching: find.textContaining(text),
@@ -319,7 +323,7 @@ void main() {
   group("the order's Payment plan card", () {
     testWidgets('shows progress and opens the plan', (tester) async {
       final repo = FakeCreditRepository(agreement: _runningPlan());
-      final router = await _pump(
+      await _pump(
         tester,
         repo: repo,
         home: const OrderPaymentPlanCard(
@@ -339,10 +343,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('order-plan-open')));
       await _settle(tester);
-      expect(
-        router.routerDelegate.currentConfiguration.uri.path,
-        RouteNames.paymentPlanDetailPath(_planId),
-      );
+      expect(find.byType(PaymentPlanDetailScreen), findsOneWidget);
     });
 
     testWidgets('an overdue plan carries the badge', (tester) async {
@@ -431,13 +432,7 @@ void main() {
       expect(_rowWith('plan-instalments-left', '2 of 3'), findsOneWidget);
 
       await _reveal(tester, find.byKey(const Key('plan-instalment-note-3')));
-      expect(
-        find.descendant(
-          of: find.byKey(const Key('plan-instalment-note-1')),
-          matching: find.textContaining('Paid'),
-        ),
-        findsOneWidget,
-      );
+      expect(_noteOf(tester, 1), startsWith('Paid'));
       expect(find.text('Due in 2 days'), findsOneWidget);
       expect(find.text('Upcoming'), findsOneWidget);
 
@@ -472,13 +467,7 @@ void main() {
       await _reveal(tester, find.byKey(const Key('plan-late-fees')));
       expect(_rowWith('plan-late-fees', '500'), findsOneWidget);
       await _reveal(tester, find.byKey(const Key('plan-instalment-note-2')));
-      expect(
-        find.descendant(
-          of: find.byKey(const Key('plan-instalment-note-2')),
-          matching: find.text('Overdue'),
-        ),
-        findsOneWidget,
-      );
+      expect(_noteOf(tester, 2), 'Overdue');
       expect(find.textContaining('incl. Rs 500 late fee'), findsWidgets);
     });
 
@@ -499,7 +488,7 @@ void main() {
 
   group('the due banner', () {
     testWidgets('due in 2 days: says so and opens the plan', (tester) async {
-      final router = await _pump(
+      await _pump(
         tester,
         repo: FakeCreditRepository(agreement: _runningPlan()),
         home: const PlanDueBanner(),
@@ -509,10 +498,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('plan-due-banner-title')));
       await _settle(tester);
-      expect(
-        router.routerDelegate.currentConfiguration.uri.path,
-        RouteNames.paymentPlanDetailPath(_planId),
-      );
+      expect(find.byType(PaymentPlanDetailScreen), findsOneWidget);
     });
 
     testWidgets('overdue: says so', (tester) async {

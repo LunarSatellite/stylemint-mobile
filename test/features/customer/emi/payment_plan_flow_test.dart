@@ -524,7 +524,10 @@ void main() {
         find.descendant(of: reduced, matching: find.textContaining('16,000')),
         findsOneWidget,
       );
-      expect(find.text('Covered by a refund'), findsOneWidget);
+      // The schedule sits below the plan's progress rows.
+      final covered = find.text('Covered by a refund');
+      await tester.scrollUntilVisible(covered, 200);
+      expect(covered, findsOneWidget);
     });
 
     testWidgets('a reversed plan says it is refunded, and why', (tester) async {
