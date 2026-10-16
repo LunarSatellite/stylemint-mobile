@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers
 import 'package:stylemint_mobile_frontend/features/vendor/emi/domain/entities/vendor_emi.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/domain/vendor_emi_messages.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/widgets/vendor_credit_program_card.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/widgets/vendor_emi_plans_card.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/widgets/vendor_plan_requests_card.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -49,6 +50,7 @@ class VendorEmiScreen extends ConsumerWidget {
                     ..invalidate(vendorEmiSettingsProvider)
                     ..invalidate(vendorEmiProductsProvider)
                     ..invalidate(vendorPaymentPlansProvider)
+                    ..invalidate(vendorEmiPlansProvider)
                     ..invalidate(vendorCreditProgramProvider);
                   await ref.read(vendorEmiSettingsProvider.future);
                 },
@@ -67,6 +69,8 @@ class VendorEmiScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: DesignTokens.s16),
                     const VendorPlanRequestsCard(),
+                    const SizedBox(height: DesignTokens.s12),
+                    const VendorEmiPlansCard(),
                     const SizedBox(height: DesignTokens.s16),
                     settings.when(
                       loading: () => const LinearProgressIndicator(),

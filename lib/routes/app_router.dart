@@ -155,6 +155,8 @@ import 'package:stylemint_mobile_frontend/features/onboarding/presentation/scree
 import 'package:stylemint_mobile_frontend/features/payouts/domain/payout_destination_enums.dart';
 import 'package:stylemint_mobile_frontend/features/payouts/presentation/screens/payment_methods_screen.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/screens/vendor_emi_plan_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/screens/vendor_emi_plans_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/screens/vendor_payment_plan_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/screens/vendor_payment_plans_screen.dart';
 import 'package:stylemint_mobile_frontend/features/wallet/presentation/screens/wallet_screen.dart';
@@ -1696,6 +1698,16 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorPaymentPlans,
         builder: (ctx, state) => const VendorPaymentPlansScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorEmiPlans,
+        builder: (ctx, state) => const VendorEmiPlansScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorEmiPlanDetail,
+        builder: (ctx, state) => VendorEmiPlanDetailScreen(
+          agreementId: state.pathParameters['agreementId']!,
+        ),
       ),
       GoRoute(
         path: RouteNames.vendorPaymentPlanDetail,

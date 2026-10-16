@@ -161,6 +161,15 @@ class _VendorMoreMenu extends StatelessWidget {
                 onTap: () => _go(context, RouteNames.vendorEmi),
               ),
               const _MoreDivider(),
+              // Running EMI plans: collected, remaining, next due, overdue
+              // (v1/credit/vendor/plans). Says it is being set up until the
+              // backend has it.
+              _MoreItem(
+                icon: Icons.payments_outlined,
+                title: 'EMI plans',
+                onTap: () => _go(context, RouteNames.vendorEmiPlans),
+              ),
+              const _MoreDivider(),
               // StyleMint Codes: the vendor's physical stores, with QR shelf
               // cards and NFC tags for their products (v1/vendor/stores).
               _MoreItem(
