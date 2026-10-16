@@ -22,6 +22,10 @@ VendorOrderPaymentPlan? readVendorOrderPaymentPlan(Object? json) {
     monthlyInstalment: money(json['monthlyInstalmentAmount']),
     downPaymentOnDelivery: json['downPaymentOnDelivery'] == true,
     downPaymentPaid: json['downPaymentPaid'] == true,
+    agreementId: switch (json['agreementId']) {
+      final String id when id.trim().isNotEmpty => id.trim(),
+      _ => null,
+    },
   );
 }
 
