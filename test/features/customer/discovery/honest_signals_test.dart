@@ -394,7 +394,12 @@ void main() {
         RegExp(r'[Oo]nly\s+(\$|\{|\d)'),
         RegExp(r'\$\w+\s+left\b'),
         RegExp(r'\{\s*\w+\s*\}\s*left\b'),
-        RegExp(r'\d+\s+left\b'),
+        // The digits must not sit inside a larger formatted number: an EMI
+        // plan's "Rs 32,000 left" is money the buyer is owed an exact figure
+        // for, and the bare pattern matched the "000 left" inside it. A
+        // thousands separator or another digit before the run means this is an
+        // amount, not a count of items.
+        RegExp(r'(?<![\d,])\d+\s+left\b'),
         RegExp(r'left\s+in\s+stock', caseSensitive: false),
         RegExp(r'\bstockRemaining\b'),
       ];
