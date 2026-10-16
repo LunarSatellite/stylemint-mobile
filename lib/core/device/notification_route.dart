@@ -10,6 +10,7 @@
 /// those still open the app, and nothing else.
 ///
 /// Resolution order:
+///  0. a seller EMI notice (`plan.vendor.*`) opens the seller's EMI plan;
 ///  1. an explicit link (`deepLink`, `deep_link`, `link`, `url`, `route`);
 ///  2. by type — KYC decision, delivery notifications (their own contract,
 ///     see `delivery_push.dart`), buyer orders, payment plans, payouts,
@@ -161,6 +162,13 @@ String? notificationLocation(
   NotificationPayload payload, {
   NotificationViewer viewer = const NotificationViewer(),
 }) {
+  // 0. A seller EMI notice (`plan.vendor.*`, emi-after contract v1) opens
+  //    the seller's EMI plan screen — collections and schedule — even though
+  //    its `deepLink` names the approval screen of the same plan.
+  if (payload.type?.startsWith('plan.vendor.') ?? false) {
+    return vendorEmiPlanLocation(payload);
+  }
+
   // 1. An explicit link always wins.
   final link = pushDestinationUri(payload.data);
   if (link != null) {
@@ -266,6 +274,23 @@ String paymentPlanLocation(NotificationPayload payload) {
   return agreementId != null && _isGuid(agreementId)
       ? RouteNames.paymentPlanDetailPath(agreementId)
       : RouteNames.paymentPlans;
+}
+
+/// The seller's EMI plan a `plan.vendor.*` notice is about: by its
+/// `agreementId`, else the id at the end of its `deepLink`
+/// (`/vendor/payment-plans/{id}`); with neither, the seller's plans list.
+String vendorEmiPlanLocation(NotificationPayload payload) {
+  var agreementId = payload.id('agreementId');
+  if (agreementId == null || !_isGuid(agreementId)) {
+    final link = pushDestinationUri(payload.data);
+    final segments = link == null
+        ? const <String>[]
+        : deepLinkLocation(link).split('?').first.split('/');
+    agreementId = segments.isEmpty ? null : segments.last;
+  }
+  return agreementId != null && _isGuid(agreementId)
+      ? RouteNames.vendorEmiPlanDetailPath(agreementId)
+      : RouteNames.vendorEmiPlans;
 }
 
 /// The viewer for a notification tapped while the router shows [location]:
