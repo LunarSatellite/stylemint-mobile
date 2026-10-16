@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/rider_ratings/domain/entities/rider_rating.dart';
 import 'package:stylemint_mobile_frontend/features/rider_ratings/presentation/widgets/rider_rating_card.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker_binding.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/emi/presentation/widgets/vendor_order_plan_progress.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
@@ -784,6 +785,8 @@ class _PaymentCard extends StatelessWidget {
                         'months (${whole(plan.monthlyInstalment)}/month)'
                   : whole(plan.financed),
             ),
+            if (plan.agreementId case final agreementId?)
+              VendorOrderPlanProgress(agreementId: agreementId),
           ],
           row(
             'Rider collects on delivery',

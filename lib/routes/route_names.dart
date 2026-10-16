@@ -332,6 +332,17 @@ abstract class RouteNames {
         Uri.encodeComponent(agreementId),
       );
 
+  /// The seller's running EMI plans (after approval): collections, what is
+  /// left, what is next — and one plan with its full schedule. Seller EMI
+  /// notifications (`plan.vendor.*`) open the detail.
+  static const vendorEmiPlans = '/vendor/emi-plans';
+  static const vendorEmiPlanDetail = '/vendor/emi-plans/:agreementId';
+  static String vendorEmiPlanDetailPath(String agreementId) =>
+      vendorEmiPlanDetail.replaceFirst(
+        ':agreementId',
+        Uri.encodeComponent(agreementId),
+      );
+
   static String vendorProductEmiPath(String productId) => vendorProductEmi
       .replaceFirst(':productId', Uri.encodeComponent(productId));
   // Per-product StyleMint shelf codes (extra: VendorProduct).

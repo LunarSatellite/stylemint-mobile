@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/credit_messages.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -194,6 +196,22 @@ class _VendorPaymentPlanDetailScreenState
             ],
           ),
         ),
+        if (a.kind == PlanKind.instalment &&
+            a.guarantor == PlanGuarantor.vendor &&
+            a.status != AgreementStatus.pendingApproval &&
+            a.status != AgreementStatus.declined &&
+            a.status != AgreementStatus.cancelled &&
+            a.status != AgreementStatus.expired)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              key: const Key('vendor-plan-open-collections'),
+              onPressed: () =>
+                  context.push(RouteNames.vendorEmiPlanDetailPath(a.id)),
+              icon: const Icon(Icons.payments_outlined, size: 18),
+              label: const Text('Collections and schedule'),
+            ),
+          ),
         const SizedBox(height: DesignTokens.s8),
         Text(
           a.guarantor == PlanGuarantor.vendor

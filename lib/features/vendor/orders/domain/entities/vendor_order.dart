@@ -309,7 +309,12 @@ class VendorOrderPaymentPlan {
     required this.monthlyInstalment,
     required this.downPaymentOnDelivery,
     required this.downPaymentPaid,
+    this.agreementId,
   });
+
+  /// The credit agreement behind the plan — the seller's EMI plan screen
+  /// reads it by this id. Null when the server did not name it.
+  final String? agreementId;
 
   /// Backend kind name: Instalment (EMI), PayLater or Prepay.
   final String kind;
@@ -344,7 +349,8 @@ class VendorOrderPaymentPlan {
       other.tenureMonths == tenureMonths &&
       other.monthlyInstalment == monthlyInstalment &&
       other.downPaymentOnDelivery == downPaymentOnDelivery &&
-      other.downPaymentPaid == downPaymentPaid;
+      other.downPaymentPaid == downPaymentPaid &&
+      other.agreementId == agreementId;
 
   @override
   int get hashCode => Object.hash(
@@ -356,6 +362,7 @@ class VendorOrderPaymentPlan {
     monthlyInstalment,
     downPaymentOnDelivery,
     downPaymentPaid,
+    agreementId,
   );
 }
 
