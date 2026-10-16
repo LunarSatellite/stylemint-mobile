@@ -27,8 +27,8 @@ import 'package:uuid/uuid.dart';
 /// whole price; with nothing due up front, the plan starts at once. Every
 /// figure is the server's.
 ///
-/// Pops with the [PlanCheckoutPlaced] result, so the plan screen can say the
-/// payment is on its way.
+/// Once placed it opens the order-placed page for the new order (with
+/// `paymentPending` when a first payment page was opened).
 class PlanCheckoutScreen extends ConsumerStatefulWidget {
   const PlanCheckoutScreen({
     required this.agreementId,
@@ -194,7 +194,14 @@ class _PlanCheckoutScreenState extends ConsumerState<PlanCheckoutScreen> {
         final url = placed.redirectUrl;
         final uri = url == null ? null : Uri.tryParse(url);
         if (uri != null) await ref.read(planPaymentLauncherProvider)(uri);
-        if (mounted) context.pop(placed);
+        // The order is placed: show the order-placed page, as the ordinary
+        // checkout does — not the checkout the buyer came from.
+        if (mounted) {
+          context.go(
+            '${RouteNames.orderSuccess.replaceAll(':orderId', placed.orderNumber)}'
+            '${uri != null ? '?paymentPending=1' : ''}',
+          );
+        }
       },
     );
   }

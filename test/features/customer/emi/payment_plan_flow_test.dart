@@ -107,6 +107,15 @@ Future<GoRouter> _pumpApp(
         ),
       ),
       GoRoute(
+        path: RouteNames.orderSuccess,
+        builder: (_, state) => Scaffold(
+          body: Text(
+            'Order placed ${state.pathParameters['orderId']}'
+            '${state.uri.queryParameters['paymentPending'] == '1' ? ' pending' : ''}',
+          ),
+        ),
+      ),
+      GoRoute(
         path: RouteNames.customerKyc,
         builder: (_, _) => const Scaffold(body: Text('KYC screen')),
       ),
@@ -617,12 +626,12 @@ void main() {
           launched.single.toString(),
           'https://pay.example.test/first-payment',
         );
-        expect(find.byKey(const Key('plan-payment-started')), findsOneWidget);
         expect(
-          find.byKey(const Key('plan-checkout')),
-          findsNothing,
-          reason: 'the plan has its order now',
+          find.text('Order placed NK2026-00042 pending'),
+          findsOneWidget,
+          reason: 'the order-placed page, not back to checkout',
         );
+        expect(find.byKey(const Key('plan-checkout-place')), findsNothing);
       },
     );
 
@@ -651,6 +660,11 @@ void main() {
 
       expect(repo.placements.single.rail, PlanPaymentRail.cashOnDelivery);
       expect(launched, isEmpty, reason: 'nothing is paid online');
+      expect(
+        find.text('Order placed NK2026-00042'),
+        findsOneWidget,
+        reason: 'cash on delivery opens the order-placed page, not checkout',
+      );
     });
 
     testWidgets('no cash option when the seller does not allow it', (
@@ -688,6 +702,7 @@ void main() {
 
       expect(repo.placements, hasLength(1));
       expect(launched, isEmpty);
+      expect(find.text('Order placed NK2026-00042'), findsOneWidget);
     });
 
     testWidgets('without an address there is nothing to place', (tester) async {
