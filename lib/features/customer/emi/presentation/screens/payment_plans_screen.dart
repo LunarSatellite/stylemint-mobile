@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/credit_messages.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_progress_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -63,6 +64,9 @@ class PaymentPlansScreen extends ConsumerWidget {
               return ListView(
                 padding: const EdgeInsets.all(DesignTokens.s20),
                 children: [
+                  const PlanDueBanner(
+                    padding: EdgeInsets.only(bottom: DesignTokens.s12),
+                  ),
                   const _ProfileCard(),
                   const SizedBox(height: DesignTokens.s20),
                   if (sorted.isEmpty)
@@ -97,10 +101,11 @@ class _PlanTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final a = agreement;
     final name = ref.watch(planProductNameProvider(a.productId)).asData?.value;
-    final next = a.nextDue;
+    final next = a.nextInstalment;
     final subtitle = switch (a.status) {
       AgreementStatus.active when next?.dueDate != null =>
-        'Next ${planMoney(next!.outstanding)} on ${planDate(next.dueDate!)}',
+        '${planMoney(a.outstanding)} left · next '
+            '${planMoney(next!.outstanding)} on ${planDate(next.dueDate!)}',
       AgreementStatus.approved when a.needsCheckout => 'Check out to start',
       AgreementStatus.approved when a.downPaymentOnDelivery =>
         'Ordered — pay ${planMoney(a.downPayment)} in cash on delivery',

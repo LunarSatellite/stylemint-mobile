@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/customer/emi/domain/credit_me
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/emi_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_review_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_progress_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -160,7 +161,6 @@ class _PaymentPlanDetailScreenState
     final name =
         widget.args.productName ??
         ref.watch(planProductNameProvider(a.productId)).asData?.value;
-    final next = a.nextDue;
     final primary = a.primaryPayment;
     final dueNow = _dueNow(a);
     return ListView(
@@ -230,7 +230,7 @@ class _PaymentPlanDetailScreenState
             key: const Key('plan-pay-primary'),
             label: primary == PaymentPurpose.activation
                 ? 'Pay ${planMoney(a.downPayment)} to start'
-                : 'Pay ${planMoney(_inPlanCurrency(a, dueNow))}',
+                : 'Pay now · ${planMoney(_inPlanCurrency(a, dueNow))}',
             onPressed: () => _pay(
               a,
               primary,
@@ -261,21 +261,11 @@ class _PaymentPlanDetailScreenState
         PlanCard(
           child: Column(
             children: [
-              if (a.status == AgreementStatus.active ||
-                  a.status == AgreementStatus.defaulted) ...[
-                PlanRow(
-                  key: const Key('plan-outstanding'),
-                  label: 'Still to pay',
-                  value: planMoney(a.outstanding),
-                  emphasised: true,
-                ),
-                if (next != null && next.dueDate != null)
-                  PlanRow(
-                    label: 'Next payment',
-                    value:
-                        '${planMoney(next.outstanding)} · '
-                        '${planDate(next.dueDate!)}',
-                  ),
+              if (a.isRepaying || a.status == AgreementStatus.completed) ...[
+                // Paid so far, remaining, the next instalment, how many are
+                // left and late fees owed — the server's own counts when it
+                // sends them, else counted from the schedule.
+                PlanProgressRows(agreement: a),
                 const Divider(color: DesignTokens.borderDefault, height: 24),
               ],
               PlanRow(label: 'Price', value: planMoney(a.price)),
@@ -299,6 +289,16 @@ class _PaymentPlanDetailScreenState
         const Text('Schedule', style: DesignTokens.mediumSemibold),
         const SizedBox(height: DesignTokens.s4),
         for (final i in a.instalments) PlanInstalmentTile(instalment: i),
+        if (a.chargesLateFee) ...[
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            'A late fee of ${planMoney(a.lateFee!)} is added to an instalment '
+            'paid more than ${a.lateFeeGraceDays} '
+            '${a.lateFeeGraceDays == 1 ? 'day' : 'days'} after its due date.',
+            key: const Key('plan-late-fee-terms'),
+            style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+          ),
+        ],
         const SizedBox(height: DesignTokens.s16),
         Text(
           a.guarantor.statement,

@@ -134,14 +134,32 @@ class PlanStatusChip extends StatelessWidget {
 }
 
 /// One instalment as a row: when, how much, and where it stands.
-class PlanInstalmentTile extends StatelessWidget {
+///
+/// An unpaid one reads against today in Kathmandu: due today, due in a few
+/// days, or upcoming.
+class PlanInstalmentTile extends ConsumerWidget {
   const PlanInstalmentTile({required this.instalment, super.key});
 
   final PlanInstalment instalment;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final i = instalment;
+    final today = kathmanduToday(ref.watch(planClockProvider)());
+    final phase = instalmentPhase(i, today);
+    final days = daysUntilDue(i, today);
+    final dueNote = switch (phase) {
+      InstalmentPhase.dueToday when (days ?? 0) < 0 => 'Due now',
+      InstalmentPhase.dueToday => 'Due today',
+      InstalmentPhase.dueSoon =>
+        days == 1 ? 'Due tomorrow' : 'Due in $days days',
+      InstalmentPhase.notStarted => 'Starts when the plan starts',
+      _ => 'Upcoming',
+    };
+    final dueColour = phase == InstalmentPhase.dueToday ||
+            phase == InstalmentPhase.dueSoon
+        ? DesignTokens.colorWarning
+        : DesignTokens.textMuted;
     final (icon, colour, note) = switch (i.status) {
       InstalmentStatus.paid => (
         Icons.check_circle_rounded,
@@ -161,12 +179,14 @@ class PlanInstalmentTile extends StatelessWidget {
       InstalmentStatus.partiallyPaid => (
         Icons.timelapse_rounded,
         DesignTokens.colorWarning,
-        '${planMoney(i.paid)} paid',
+        '${planMoney(i.paid)} paid · ${dueNote.toLowerCase()}',
       ),
       InstalmentStatus.scheduled => (
-        Icons.radio_button_unchecked_rounded,
-        DesignTokens.textMuted,
-        i.dueDate == null ? 'Starts when the plan starts' : 'Due',
+        phase.needsPaying
+            ? Icons.schedule_rounded
+            : Icons.radio_button_unchecked_rounded,
+        dueColour,
+        dueNote,
       ),
     };
     final due = i.dueDate;
@@ -188,6 +208,7 @@ class PlanInstalmentTile extends StatelessWidget {
                 ),
                 Text(
                   note,
+                  key: Key('plan-instalment-note-${i.number}'),
                   style: DesignTokens.tiny.copyWith(color: colour),
                 ),
               ],
