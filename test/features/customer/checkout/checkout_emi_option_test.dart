@@ -557,15 +557,79 @@ void main() {
       expect(find.byKey(CheckoutEmiOption.payCashKey), findsNothing);
     });
 
-    testWidgets('an approval already used for an order is not reused: the next '
-        'purchase is a new application for the seller', (tester) async {
-      for (final used in [
-        {
+    testWidgets('ordered with the down payment in cash: shows the order and '
+        'the cash to pay on delivery, never EMI again', (tester) async {
+      await _pump(
+        tester,
+        [_item(variantId: variant)],
+        credit: repoWith({
           ...agreementWire(),
           'cashOnDeliveryDownPaymentAllowed': true,
           'downPaymentOnDelivery': true,
-        },
-        agreementWire(), // approved, its order placed, paid online pending
+          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
+        }),
+        options: sellerOptions,
+      );
+      expect(find.byKey(CheckoutEmiOption.cashPendingKey), findsOneWidget);
+      expect(
+        find.textContaining('Ordered — pay Rs 12,000 down payment in cash'),
+        findsOneWidget,
+        reason: 'the down payment, in cash on delivery',
+      );
+      expect(find.textContaining('12,000'), findsWidgets);
+      expect(find.textContaining('in cash on delivery'), findsWidgets);
+      expect(find.byKey(CheckoutEmiOption.documentsKey), findsNothing);
+      expect(find.byKey(CheckoutEmiOption.sendKey), findsNothing);
+      expect(find.byKey(CheckoutEmiOption.payKey), findsNothing);
+      expect(find.byKey(CheckoutEmiOption.payCashKey), findsNothing);
+      await tester.tap(find.byKey(CheckoutEmiOption.viewPlanKey));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Plan detail'), findsOneWidget);
+    });
+
+    testWidgets('the checkout card says the item is ordered on EMI', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        [_item(variantId: variant)],
+        credit: repoWith({
+          ...agreementWire(),
+          'downPaymentOnDelivery': true,
+          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
+        }),
+        options: sellerOptions,
+        openPlans: false,
+      );
+      expect(find.text('EMI ordered'), findsOneWidget);
+      expect(find.text('Pay with EMI'), findsNothing);
+      expect(
+        find.textContaining('down payment in cash on delivery'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('ordered, down payment online still due: finish paying it '
+        'from the plan, no new application', (tester) async {
+      await _pump(
+        tester,
+        [_item(variantId: variant)],
+        credit: repoWith({
+          ...agreementWire(),
+          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
+        }),
+        options: sellerOptions,
+      );
+      expect(find.byKey(CheckoutEmiOption.orderedKey), findsOneWidget);
+      expect(find.byKey(CheckoutEmiOption.documentsKey), findsNothing);
+      await tester.tap(find.byKey(CheckoutEmiOption.orderedPayKey));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Plan detail'), findsOneWidget);
+    });
+
+    testWidgets('a plan that started or closed is not reused: the next '
+        'purchase is a new application for the seller', (tester) async {
+      for (final used in [
         agreementWire(state: 3), // active: down payment paid
         agreementWire(state: 4), // completed
         agreementWire(state: 7), // cancelled

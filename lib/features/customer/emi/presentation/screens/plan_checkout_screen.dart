@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart'
     show ShippingAddress;
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/credit_messages.dart';
@@ -185,6 +186,11 @@ class _PlanCheckoutScreenState extends ConsumerState<PlanCheckoutScreen> {
       }),
       (placed) async {
         refreshPaymentPlans(ref, agreementId: widget.agreementId);
+        // The server took the bought item out of the cart; show the cart as
+        // it now is rather than with the item still in it.
+        if (ref.exists(cartNotifierProvider)) {
+          unawaited(ref.read(cartNotifierProvider.notifier).fetchCart());
+        }
         final url = placed.redirectUrl;
         final uri = url == null ? null : Uri.tryParse(url);
         if (uri != null) await ref.read(planPaymentLauncherProvider)(uri);

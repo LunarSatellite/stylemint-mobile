@@ -156,6 +156,11 @@ class CheckoutEmiOption extends ConsumerWidget {
   static const Key approvedKey = Key('checkout-emi-approved');
   static const Key payCashKey = Key('checkout-emi-pay-cash');
   static const Key cashPendingKey = Key('checkout-emi-cash-pending');
+
+  /// Ordered on an approved plan, the down payment to be paid online.
+  static const Key orderedKey = Key('checkout-emi-ordered');
+  static const Key orderedPayKey = Key('checkout-emi-ordered-pay');
+  static const Key viewPlanKey = Key('checkout-emi-view-plan');
   static const Key declinedKey = Key('checkout-emi-declined');
 
   /// Whether a plan-options failure just means "no plan on this item"
@@ -228,7 +233,9 @@ class CheckoutEmiOption extends ConsumerWidget {
 }
 
 /// "Pay with EMI" on the checkout screen: one tap opens [CheckoutEmiScreen].
-class _EmiEntry extends StatelessWidget {
+/// When this item is already ordered on a plan that has not started, the card
+/// says so instead of offering EMI again.
+class _EmiEntry extends ConsumerWidget {
   const _EmiEntry({
     required this.item,
     required this.options,
@@ -240,9 +247,31 @@ class _EmiEntry extends StatelessWidget {
   final PlanOptions options;
   final bool named;
 
+  static const Key orderedKey = Key('checkout-emi-entry-ordered');
+
   @override
-  Widget build(BuildContext context) {
-    final title = named ? 'Pay with EMI · ${item.productName}' : 'Pay with EMI';
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ordered = ref.watch(emiSignedInProvider)
+        ? (ref.watch(myPaymentPlansProvider).asData?.value ?? const [])
+              .where(
+                (a) =>
+                    a.variantId == item.variantId &&
+                    a.guarantor == PlanGuarantor.vendor &&
+                    a.status == AgreementStatus.approved &&
+                    !a.needsCheckout,
+              )
+              .firstOrNull
+        : null;
+    final base = ordered != null ? 'EMI ordered' : 'Pay with EMI';
+    final title = named ? '$base · ${item.productName}' : base;
+    final subtitle = ordered == null
+        ? 'Choose a plan, add your documents and send the request to the '
+              'seller.'
+        : ordered.downPaymentOnDelivery
+        ? 'Pay ${_money(ordered.downPayment)} down payment in cash on '
+              'delivery.'
+        : 'Pay the ${_money(ordered.downPayment)} down payment to start the '
+              'plan.';
     return Padding(
       padding: const EdgeInsets.only(bottom: DesignTokens.s16),
       child: Material(
@@ -285,10 +314,10 @@ class _EmiEntry extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: DesignTokens.s4),
-                      const Text(
-                        'Choose a plan, add your documents and send the '
-                        'request to the seller.',
-                        style: TextStyle(
+                      Text(
+                        subtitle,
+                        key: ordered != null ? orderedKey : null,
+                        style: const TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 12,
                           color: DesignTokens.textMuted,
@@ -634,9 +663,11 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
 
   /// The buyer's latest application for this item, while it is still the
   /// purchase in progress: waiting on the seller, approved and not yet used
-  /// for an order, or just declined. An approval buys exactly one order: once
-  /// one is placed on it (or it is paid, cancelled or lapses) the next attempt
-  /// is a new application the seller must approve again.
+  /// for an order, approved and ordered but not yet started (its down payment
+  /// still to be paid online, or collected in cash on delivery), or just
+  /// declined. An approval buys exactly one order: once the plan starts (or
+  /// it is cancelled or lapses) the next attempt is a new application the
+  /// seller must approve again.
   CreditAgreement? _liveAgreement() {
     if (!ref.watch(emiSignedInProvider)) return null;
     final plans = ref.watch(myPaymentPlansProvider).asData?.value ?? const [];
@@ -644,6 +675,22 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
       for (final a in plans)
         if (a.variantId == _variantId && a.guarantor == PlanGuarantor.vendor) a,
     ];
+
+    // An order already placed on a plan for this item is the purchase in
+    // progress, whatever else was applied for since: the buyer is shown that
+    // order, never offered the plan again.
+    final ordered = [
+      for (final a in mine)
+        if (_isOrdered(a)) a,
+    ];
+    if (ordered.isNotEmpty) {
+      ordered.sort(
+        (x, y) => (y.appliedAt ?? DateTime(0)).compareTo(
+          x.appliedAt ?? DateTime(0),
+        ),
+      );
+      return ordered.first;
+    }
 
     // What the server says about an application this card started wins over
     // the copy the card kept: it may have been used for an order since.
@@ -666,13 +713,21 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     return latest != null && _isLive(latest) ? latest : null;
   }
 
+  /// Approved and checked out: its order exists and waits for the down
+  /// payment (online, or in cash when the item is delivered).
+  static bool _isOrdered(CreditAgreement a) =>
+      a.status == AgreementStatus.approved && !a.needsCheckout;
+
   bool _isLive(CreditAgreement a) => switch (a.status) {
     AgreementStatus.pendingApproval => true,
+    // Ordered on this approval: the order is what the buyer sees until the
+    // plan starts.
+    AgreementStatus.approved when _isOrdered(a) => true,
     // An approval only counts when the seller decided it from documents the
     // buyer sent with that application. One approved before documents were
     // required (no documentsSubmittedAt) is not carried over: the buyer
     // applies afresh, with documents.
-    AgreementStatus.approved => a.needsCheckout && a.documentsSubmittedAt != null,
+    AgreementStatus.approved => a.documentsSubmittedAt != null,
     AgreementStatus.declined => !_reapplying,
     _ => false,
   };
@@ -971,17 +1026,53 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
           ),
         ],
       ),
-      AgreementStatus.approved when a.downPaymentOnDelivery => Column(
-        key: CheckoutEmiOption.cashPendingKey,
+      // Ordered with the down payment in cash: nothing to apply for or pay
+      // here — the rider collects the down payment, and the plan starts then.
+      AgreementStatus.approved when _isOrdered(a) && a.downPaymentOnDelivery =>
+        Column(
+          key: CheckoutEmiOption.cashPendingKey,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Label(
+              'Ordered — pay ${_money(a.downPayment)} down payment in cash '
+              'on delivery',
+            ),
+            Text(plan, style: muted()),
+            const SizedBox(height: DesignTokens.s4),
+            Text(
+              'Pay the rider ${_money(a.downPayment)} in cash when the item '
+              'arrives — only the down payment, not the full price. Your plan '
+              'starts that day.',
+              style: muted(),
+            ),
+            const SizedBox(height: DesignTokens.s8),
+            _Button(
+              key: CheckoutEmiOption.viewPlanKey,
+              label: 'View plan',
+              outlined: true,
+              onPressed: () => _payDownPayment(a),
+            ),
+          ],
+        ),
+      // Ordered, the down payment to be paid online: finish that payment from
+      // the plan — never a new application.
+      AgreementStatus.approved when _isOrdered(a) => Column(
+        key: CheckoutEmiOption.orderedKey,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _Label('Order placed — down payment in cash on delivery'),
+          const _Label('Ordered — down payment due'),
           Text(plan, style: muted()),
           const SizedBox(height: DesignTokens.s4),
           Text(
-            'Pay ${_money(a.downPayment)} in cash when the item arrives. '
-            'Your plan starts that day.',
+            'Your order is placed. Pay the down payment of '
+            '${_money(a.downPayment)} to start the plan.',
             style: muted(),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          _Button(
+            key: CheckoutEmiOption.orderedPayKey,
+            label: 'Pay down payment ${_money(a.downPayment)}',
+            onPressed: () => _payDownPayment(a),
           ),
         ],
       ),
