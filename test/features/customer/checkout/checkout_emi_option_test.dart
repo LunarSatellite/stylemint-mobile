@@ -346,7 +346,8 @@ void main() {
     expect(find.byKey(CheckoutEmiOption.documentsKey), findsOneWidget);
     expect(find.byKey(CheckoutEmiOption.verifyKey), findsNothing);
     expect(find.textContaining('Get verified'), findsNothing);
-    expect(find.text('Send EMI request to the seller'), findsOneWidget);
+    // The documents and the send step are on their own page.
+    expect(find.text('Add documents'), findsOneWidget);
   });
 
   testWidgets('pay later signed out: sign in first', (tester) async {

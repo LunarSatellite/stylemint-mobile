@@ -273,7 +273,7 @@ void main() {
 
       expect(find.byType(EmiApplyScreen), findsOneWidget);
       expect(find.byKey(CheckoutEmiOption.documentsKey), findsOneWidget);
-      expect(find.text('Send EMI request to the seller'), findsOneWidget);
+      expect(find.text('Add documents'), findsOneWidget);
       expect(find.textContaining('Get verified'), findsNothing);
       expect(find.text('KYC screen'), findsNothing);
       expect(repo.quotes, isEmpty, reason: 'nothing is applied for yet');

@@ -171,7 +171,7 @@ class FileSavedCreditDocumentStore implements SavedCreditDocumentStore {
     final json = await _read();
     final dir = await _dir();
     final docs = [...(json['documents'] as List<dynamic>? ?? const [])];
-    for (final e in docs.whereType<Map>().where((e) => e['id'] == id)) {
+    for (final e in docs.whereType<Map<String, dynamic>>().where((e) => e['id'] == id)) {
       final file = File('${dir.path}/${e['file']}');
       if (file.existsSync()) await file.delete();
     }
