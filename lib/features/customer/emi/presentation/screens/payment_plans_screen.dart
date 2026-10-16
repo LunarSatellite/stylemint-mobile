@@ -102,6 +102,8 @@ class _PlanTile extends ConsumerWidget {
       AgreementStatus.active when next?.dueDate != null =>
         'Next ${planMoney(next!.outstanding)} on ${planDate(next.dueDate!)}',
       AgreementStatus.approved when a.needsCheckout => 'Check out to start',
+      AgreementStatus.approved when a.downPaymentOnDelivery =>
+        'Ordered — pay ${planMoney(a.downPayment)} in cash on delivery',
       AgreementStatus.approved => 'Pay ${planMoney(a.downPayment)} to start',
       AgreementStatus.reversed =>
         a.reversedForReturn

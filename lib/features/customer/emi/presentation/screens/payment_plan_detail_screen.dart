@@ -346,6 +346,16 @@ class _Headline extends StatelessWidget {
         justApplied ? 'Sent to the seller' : 'Waiting for approval',
         'The seller reviews this request. Check back here for their decision.',
       ),
+      // Ordered with the down payment in cash: the rider collects it, so
+      // there is nothing to pay here.
+      AgreementStatus.approved when !a.needsCheckout && a.downPaymentOnDelivery => (
+        Icons.local_shipping_rounded,
+        DesignTokens.primaryGreen,
+        'Ordered — down payment in cash on delivery',
+        'Pay the rider ${planMoney(a.downPayment)} in cash when the item '
+            'arrives — only the down payment, not the full price. Your plan '
+            'starts that day.',
+      ),
       AgreementStatus.approved => (
         Icons.verified_rounded,
         DesignTokens.primaryGreen,

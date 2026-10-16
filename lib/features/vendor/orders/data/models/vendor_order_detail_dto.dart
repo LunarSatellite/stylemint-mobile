@@ -1,5 +1,6 @@
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/rider_ratings/domain/entities/rider_rating.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_payment_plan_json.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
@@ -58,6 +59,10 @@ class VendorOrderDetailDto {
       riderRating:
           RiderRatingEligibility.fromJson(json) ??
           RiderRatingEligibility.fromJson(json['delivery']),
+      // An EMI order: its down payment, instalments, and the cash the rider
+      // collects (the down payment, never the price).
+      paymentPlan: readVendorOrderPaymentPlan(json['paymentPlan']),
+      cashToCollect: readCashToCollect(json),
     );
   }
 
