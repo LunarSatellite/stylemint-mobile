@@ -221,6 +221,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               _BottomBar(
                 hasAddress: hasAddress || isPickup,
                 isProcessing: isProcessing,
+                emiApproved: hasApprovedEmiAwaitingCheckout(
+                  ref,
+                  _cartItemsForEmi(),
+                ),
                 onAddAddress: () => unawaited(_openAddAddress(context)),
                 onPlaceOrder: () {
                   ref
@@ -1437,12 +1441,19 @@ class _BottomBar extends StatelessWidget {
     required this.isProcessing,
     required this.onAddAddress,
     required this.onPlaceOrder,
+    this.emiApproved = false,
   });
 
   final bool hasAddress;
   final bool isProcessing;
   final VoidCallback onAddAddress;
   final VoidCallback onPlaceOrder;
+
+  /// The seller approved EMI for an item in the cart: no "Place Order",
+  /// which would buy it outright — the EMI card above is the way to pay.
+  final bool emiApproved;
+
+  static const Key emiNoteKey = Key('checkout-emi-approved-note');
 
   @override
   Widget build(BuildContext context) {
@@ -1460,7 +1471,21 @@ class _BottomBar extends StatelessWidget {
         ),
       ),
       child: SafeArea(
-        child: hasAddress ? _placeOrderRow() : _addAddressButton(),
+        child: emiApproved
+            ? const Text(
+                'Your EMI is approved. Complete it with the EMI button above '
+                '— no other payment is needed.',
+                key: emiNoteKey,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 13,
+                  color: DesignTokens.textMuted,
+                ),
+              )
+            : hasAddress
+            ? _placeOrderRow()
+            : _addAddressButton(),
       ),
     );
   }

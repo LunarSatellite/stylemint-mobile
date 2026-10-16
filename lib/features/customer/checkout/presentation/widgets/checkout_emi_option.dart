@@ -114,6 +114,27 @@ Future<PickedCreditDocument?> _chooseDocument(BuildContext context) async {
   }
 }
 
+/// Whether a cart item has a seller-approved EMI plan still waiting to be
+/// checked out. While it does, checkout offers only the EMI path for it: the
+/// ordinary "Place Order" would buy the item outright at full price.
+bool hasApprovedEmiAwaitingCheckout(WidgetRef ref, List<CartItem> items) {
+  if (!ref.watch(emiSignedInProvider)) return false;
+  final variants = {
+    for (final i in items)
+      if (i.variantId != null && i.variantId!.isNotEmpty) i.variantId!,
+  };
+  if (variants.isEmpty) return false;
+  final plans = ref.watch(myPaymentPlansProvider).asData?.value ?? const [];
+  return plans.any(
+    (a) =>
+        variants.contains(a.variantId) &&
+        a.guarantor == PlanGuarantor.vendor &&
+        a.status == AgreementStatus.approved &&
+        a.needsCheckout &&
+        a.documentsSubmittedAt != null,
+  );
+}
+
 /// Picks one document from the device. Overridden in tests.
 final creditDocumentPickerProvider = Provider<CreditDocumentPicker>(
   (ref) => _chooseDocument,
