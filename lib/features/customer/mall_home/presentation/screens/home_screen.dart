@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_progress_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/home_mode.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/mall_home_page.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/home_mode_switch.dart';
@@ -60,6 +61,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ref.read(homeModeProvider.notifier).state = value,
             ),
           ),
+          // A payment-plan instalment due within three days, or overdue —
+          // over the Mall only, never over a playing reel.
+          if (!showReels && ref.watch(mallViewerSignedInProvider))
+            Positioned(
+              left: DesignTokens.s16,
+              right: DesignTokens.s16,
+              bottom: DesignTokens.s12 + MediaQuery.paddingOf(context).bottom,
+              child: const PlanDueBanner(),
+            ),
         ],
       ),
     );

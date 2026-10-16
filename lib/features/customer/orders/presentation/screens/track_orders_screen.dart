@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_progress_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/buy_it_again_section.dart';
@@ -191,6 +192,15 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // An instalment due within three days, or overdue.
+                const PlanDueBanner(
+                  padding: EdgeInsets.fromLTRB(
+                    DesignTokens.s16,
+                    DesignTokens.s8,
+                    DesignTokens.s16,
+                    0,
+                  ),
+                ),
                 // ── Buy It Again (predicted reorders) ─────────────
                 const BuyItAgainSection(),
 

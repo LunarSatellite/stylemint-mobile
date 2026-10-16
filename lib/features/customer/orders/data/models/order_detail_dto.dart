@@ -201,6 +201,10 @@ abstract class OrderDetailDto with _$OrderDetailDto {
     @Default(true) bool taxIncluded,
     @Default(0) double grandTotalAmount,
     @Default('NPR') String grandTotalCurrency,
+    // The payment plan this order is bought on (EMI-after-delivery contract
+    // v1). Absent from an older server → null ("not said"); present and
+    // null → '' ("paid outright").
+    @JsonKey(readValue: _readCreditAgreementId) String? creditAgreementId,
   }) = _OrderDetailDto;
 
   const OrderDetailDto._();
@@ -251,6 +255,7 @@ abstract class OrderDetailDto with _$OrderDetailDto {
     return OrderDetail(
       id: id,
       orderNumber: orderNumber,
+      creditAgreementId: creditAgreementId,
       status: overallStatus,
       placedAt: placedUtc,
       // Not returned by this endpoint — approximate until a real ETA field
@@ -356,4 +361,12 @@ abstract class OrderDetailDto with _$OrderDetailDto {
         return 'Cash on Delivery';
     }
   }
+}
+
+/// `creditAgreementId` as sent, telling "not sent" (null) from "sent as
+/// null" (''), so the order screen only looks a plan up when it may exist.
+Object? _readCreditAgreementId(Map<dynamic, dynamic> json, String key) {
+  if (!json.containsKey(key)) return null;
+  final value = json[key];
+  return value is String ? value.trim() : '';
 }

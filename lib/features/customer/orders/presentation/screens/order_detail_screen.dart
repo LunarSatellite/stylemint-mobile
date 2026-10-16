@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_progress_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
@@ -411,6 +412,12 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             order: order,
             expanded: _expanded,
             onToggle: _toggleOtherDetails,
+          ),
+          // Bought on EMI: paid so far, what is left and the next
+          // instalment. Draws nothing for an order paid outright.
+          OrderPaymentPlanCard(
+            orderId: order.id,
+            creditAgreementId: order.creditAgreementId,
           ),
           // "How was your rider?" — only when the order says the buyer can
           // rate the StyleMint rider who delivered it, or already did.

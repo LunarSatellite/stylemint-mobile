@@ -104,6 +104,7 @@ class OrderDetail {
     this.submittedReturnId,
     this.delivery,
     this.cancelledParts = const <CancelledOrderPart>[],
+    this.creditAgreementId,
   });
 
   /// Parts of this order that were cancelled (one per seller). On a mixed
@@ -163,6 +164,11 @@ class OrderDetail {
   final bool canCancel;
   final bool canReturn;
 
+  /// The payment plan (EMI, pay later) this order is bought on. Null when the
+  /// server did not say — one that predates the field; empty when it said
+  /// the order was paid outright.
+  final String? creditAgreementId;
+
   OrderDetail copyWith({
     String? id,
     String? orderNumber,
@@ -189,6 +195,7 @@ class OrderDetail {
       receiverName: receiverName,
       receiverPhone: receiverPhone,
       cancelledParts: cancelledParts,
+      creditAgreementId: creditAgreementId,
       delivery: delivery ?? this.delivery,
       submittedReturnId: submittedReturnId ?? this.submittedReturnId,
       id: id ?? this.id,
