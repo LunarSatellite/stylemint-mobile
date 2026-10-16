@@ -38,9 +38,14 @@ class VendorEmiPlanDetailScreen extends ConsumerWidget {
             ref.invalidate(vendorEmiPlanProvider(agreementId));
             await ref.read(vendorEmiPlanProvider(agreementId).future);
           },
-          child: plan.when(
-            loading: () => const SmPageLoader(),
-            error: (error, _) => ListView(
+          // Not when(): while Riverpod retries a failed load the value is
+          // loading-with-error, and a 404 must read as "being set up" at once.
+          child: switch ((plan.value, plan.error)) {
+            (final VendorEmiPlan p, _) => _PlanBody(
+              plan: p,
+              today: ref.watch(vendorEmiTodayProvider),
+            ),
+            (_, final Object error) => ListView(
               children: [
                 if (vendorEmiPlansUnavailable(error))
                   const VendorEmiPlansSettingUp()
@@ -54,9 +59,8 @@ class VendorEmiPlanDetailScreen extends ConsumerWidget {
                   ),
               ],
             ),
-            data: (p) =>
-                _PlanBody(plan: p, today: ref.watch(vendorEmiTodayProvider)),
-          ),
+            _ => const SmPageLoader(),
+          },
         ),
       ),
     );
