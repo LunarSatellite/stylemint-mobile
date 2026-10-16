@@ -93,7 +93,8 @@ Future<PickedCreditDocument?> _chooseDocument(BuildContext context) async {
       if (picked == null) return null;
       return PickedCreditDocument(
         path: picked.path,
-        name: 'photo.jpg',
+        // The picked file's own name, so several photos are told apart.
+        name: picked.name.isNotEmpty ? picked.name : 'photo.jpg',
         sizeBytes: await File(picked.path).length(),
       );
     case _DocumentSource.file:
@@ -117,7 +118,8 @@ final creditDocumentPickerProvider = Provider<CreditDocumentPicker>(
   (ref) => _chooseDocument,
 );
 
-/// "Pay with EMI", inline on the checkout screen.
+/// "Pay with EMI" on the checkout screen: a card per eligible item that opens
+/// [CheckoutEmiScreen].
 ///
 /// Every cart line whose variant has plan options (`GET /v1/credit/offers/
 /// {variantId}`) gets a card that shows the plans right here: each kind on
@@ -139,6 +141,9 @@ class CheckoutEmiOption extends ConsumerWidget {
   final List<CartItem> items;
 
   static const Key cardKey = Key('checkout-emi-card');
+
+  /// The checkout card that opens the EMI screen (single eligible item).
+  static const Key openKey = Key('checkout-emi-open');
   static const Key noteKey = Key('checkout-emi-note');
   static const Key loadingKey = Key('checkout-emi-loading');
   static const Key payKey = Key('checkout-emi-pay');
@@ -185,9 +190,11 @@ class CheckoutEmiOption extends ConsumerWidget {
         data: (options) {
           if (options.options.isEmpty) return;
           plans++;
+          // A card on checkout; the plans, documents and seller request open
+          // on their own screen.
           children.add(
-            CheckoutEmiPlans(
-              key: ValueKey('checkout-emi-plans-$id'),
+            _EmiEntry(
+              key: ValueKey('checkout-emi-entry-$id'),
               item: item,
               options: options,
               named: items.length > 1,
@@ -218,6 +225,125 @@ class CheckoutEmiOption extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// "Pay with EMI" on the checkout screen: one tap opens [CheckoutEmiScreen].
+class _EmiEntry extends StatelessWidget {
+  const _EmiEntry({
+    required this.item,
+    required this.options,
+    required this.named,
+    super.key,
+  });
+
+  final CartItem item;
+  final PlanOptions options;
+  final bool named;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = named ? 'Pay with EMI · ${item.productName}' : 'Pay with EMI';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: DesignTokens.s16),
+      child: Material(
+        color: DesignTokens.primaryGreenDark,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          key: named ? null : CheckoutEmiOption.openKey,
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => unawaited(
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => CheckoutEmiScreen(
+                  item: item,
+                  options: options,
+                  named: named,
+                ),
+              ),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.calendar_month_outlined,
+                  color: DesignTokens.primaryGreen,
+                ),
+                const SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: DesignTokens.textWhite,
+                        ),
+                      ),
+                      const SizedBox(height: DesignTokens.s4),
+                      const Text(
+                        'Choose a plan, add your documents and send the '
+                        'request to the seller.',
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 12,
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: DesignTokens.textMuted,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The EMI plans for one checkout item on their own screen: plan, documents,
+/// request to the seller, then the down payment.
+class CheckoutEmiScreen extends StatelessWidget {
+  const CheckoutEmiScreen({
+    required this.item,
+    required this.options,
+    this.named = false,
+    super.key,
+  });
+
+  final CartItem item;
+  final PlanOptions options;
+  final bool named;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: DesignTokens.bgAppBody,
+    appBar: AppBar(
+      title: Text(named ? 'EMI plan · ${item.productName}' : 'EMI plan'),
+    ),
+    body: SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        children: [
+          CheckoutEmiPlans(
+            key: ValueKey('checkout-emi-plans-${item.variantId}'),
+            item: item,
+            options: options,
+            named: named,
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _LoadingRow extends StatelessWidget {

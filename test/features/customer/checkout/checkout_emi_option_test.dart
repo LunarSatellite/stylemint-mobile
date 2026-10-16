@@ -77,6 +77,7 @@ Future<FakeCreditRepository> _pump(
   FakeCreditRepository? credit,
   Map<String, dynamic>? options,
   List<PickedCreditDocument> picks = const [],
+  bool openPlans = true,
 }) async {
   final queue = [...picks];
   _usePhoneSize(tester);
@@ -132,6 +133,11 @@ Future<FakeCreditRepository> _pump(
     ),
   );
   await tester.pumpAndSettle();
+  // Checkout shows a card; the plans open on their own screen.
+  if (openPlans && find.byKey(CheckoutEmiOption.openKey).evaluate().length == 1) {
+    await tester.tap(find.byKey(CheckoutEmiOption.openKey));
+    await tester.pumpAndSettle();
+  }
   return repo;
 }
 
@@ -237,10 +243,28 @@ void main() {
   testWidgets('several items: plans per eligible item, plus the one-item '
       'note', (tester) async {
     await _pump(tester, [_item(), _item(variantId: 'v-2', name: 'Silk scarf')]);
-    expect(find.byKey(const ValueKey('checkout-emi-card-v-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('checkout-emi-card-v-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('checkout-emi-entry-v-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('checkout-emi-entry-v-2')), findsOneWidget);
     expect(find.text('Pay with EMI · Silk scarf'), findsOneWidget);
     expect(find.byKey(CheckoutEmiOption.noteKey), findsOneWidget);
+
+    // Each card opens that item's plans on their own screen.
+    await tester.tap(find.text('Pay with EMI · Silk scarf'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('checkout-emi-card-v-2')), findsOneWidget);
+    expect(find.byType(CheckoutEmiScreen), findsOneWidget);
+  });
+
+  testWidgets('checkout shows a card; the plans open on the next screen', (
+    tester,
+  ) async {
+    await _pump(tester, [_item()], openPlans: false);
+    expect(find.byKey(CheckoutEmiOption.openKey), findsOneWidget);
+    expect(find.byKey(CheckoutEmiOption.cardKey), findsNothing);
+    await tester.tap(find.byKey(CheckoutEmiOption.openKey));
+    await tester.pumpAndSettle();
+    expect(find.byType(CheckoutEmiScreen), findsOneWidget);
+    expect(find.byKey(CheckoutEmiOption.cardKey), findsOneWidget);
   });
 
   testWidgets('a line without a variant id draws nothing', (tester) async {
