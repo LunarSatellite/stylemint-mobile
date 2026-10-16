@@ -18,6 +18,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/wi
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_step_sheets.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -342,6 +343,12 @@ class _VendorOrderDetailScreenState
               children: [
                 _OrderSummaryCard(order: order),
                 const SizedBox(height: 12),
+                // An EMI order: down payment, instalments and what the rider
+                // collects — never the price as cash to collect.
+                if (order.paymentPlan != null || order.cashToCollect != null) ...[
+                  _PaymentCard(order: order),
+                  const SizedBox(height: 12),
+                ],
                 _CustomerCard(order: order),
                 const SizedBox(height: 12),
                 // A collection order has no shipping address — checkout
@@ -692,6 +699,113 @@ class _OrderSummaryCard extends StatelessWidget {
     final hh = local.hour.toString().padLeft(2, '0');
     final mm = local.minute.toString().padLeft(2, '0');
     return 'Placed on $hh:$mm ${months[local.month - 1]} ${local.day}, ${local.year}';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Payment card — how the buyer pays, and what the rider collects
+// ---------------------------------------------------------------------------
+
+class _PaymentCard extends StatelessWidget {
+  const _PaymentCard({required this.order});
+
+  final VendorOrder order;
+
+  static const Key cardKey = Key('vendor-order-payment');
+  static const Key cashKey = Key('vendor-order-cash-to-collect');
+
+  static String _how(VendorOrderPaymentPlan plan) =>
+      switch ((plan.downPaymentOnDelivery, plan.downPaymentPaid)) {
+        (true, false) => 'collect in cash on delivery',
+        (true, true) => 'collected in cash',
+        (false, true) => 'paid online',
+        (false, false) => 'to be paid online',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final plan = order.paymentPlan;
+    String whole(Money m) => formatMoney(m, decimalDigits: 0);
+    Widget row(String label, String value, {bool strong = false, Key? key}) =>
+        Padding(
+          key: key,
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 13,
+                    color: Color(0xFF9F9FA9),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 13,
+                    fontWeight: strong ? FontWeight.w700 : FontWeight.w500,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+    final cash = order.cashToCollect;
+    return _Card(
+      child: Column(
+        key: cardKey,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            plan == null ? 'Payment' : 'Payment · ${plan.label}',
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: DesignTokens.textWhite,
+            ),
+          ),
+          if (plan != null) ...[
+            row('Item price', whole(plan.price)),
+            row('Down payment', '${whole(plan.downPayment)} · ${_how(plan)}'),
+            row(
+              'Instalments',
+              plan.tenureMonths > 0
+                  ? '${whole(plan.financed)} over ${plan.tenureMonths} '
+                        'months (${whole(plan.monthlyInstalment)}/month)'
+                  : whole(plan.financed),
+            ),
+          ],
+          row(
+            'Rider collects on delivery',
+            cash == null ? 'Nothing' : whole(cash),
+            strong: true,
+            key: cashKey,
+          ),
+          if (plan != null) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'The instalments are collected by StyleMint after delivery — '
+              'the rider never collects the full price.',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 11,
+                color: DesignTokens.textMuted,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

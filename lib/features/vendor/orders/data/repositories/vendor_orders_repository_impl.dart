@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/datasources/vendor_orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_dto.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_payment_plan_json.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_return_request_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
@@ -43,10 +44,14 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
           status: status,
         );
         final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
-            .map(
-              (e) =>
-                  VendorOrderDto.fromJson(e as Map<String, dynamic>).toDomain(),
-            )
+            .map((e) {
+              final row = e as Map<String, dynamic>;
+              // An EMI row carries its plan, so the list can say "EMI · down
+              // payment in cash" instead of reading the price as collected.
+              return VendorOrderDto.fromJson(row).toDomain().copyWith(
+                paymentPlan: readVendorOrderPaymentPlan(row['paymentPlan']),
+              );
+            })
             .toList(growable: false);
         return right(
           PagedResult(

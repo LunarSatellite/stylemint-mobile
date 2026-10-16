@@ -295,6 +295,70 @@ class VendorOrderItem {
   );
 }
 
+/// The payment plan (EMI) that pays for a seller's order (backend
+/// `paymentPlan`). The order's total is the plan's price, but the buyer pays
+/// it as [downPayment] and then [tenureMonths] instalments, so the seller's
+/// screens show these figures rather than the price as if collected at once.
+class VendorOrderPaymentPlan {
+  const VendorOrderPaymentPlan({
+    required this.kind,
+    required this.price,
+    required this.downPayment,
+    required this.financed,
+    required this.tenureMonths,
+    required this.monthlyInstalment,
+    required this.downPaymentOnDelivery,
+    required this.downPaymentPaid,
+  });
+
+  /// Backend kind name: Instalment (EMI), PayLater or Prepay.
+  final String kind;
+  final Money price;
+  final Money downPayment;
+
+  /// What is paid in instalments: the price less the down payment.
+  final Money financed;
+  final int tenureMonths;
+  final Money monthlyInstalment;
+
+  /// The down payment is collected in cash on delivery (else paid online).
+  final bool downPaymentOnDelivery;
+
+  /// The down payment has been received and the plan has started.
+  final bool downPaymentPaid;
+
+  /// "EMI", "Pay later" or "Pay now, buy later".
+  String get label => switch (kind) {
+    'PayLater' => 'Pay later',
+    'Prepay' => 'Pay now, buy later',
+    _ => 'EMI',
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is VendorOrderPaymentPlan &&
+      other.kind == kind &&
+      other.price == price &&
+      other.downPayment == downPayment &&
+      other.financed == financed &&
+      other.tenureMonths == tenureMonths &&
+      other.monthlyInstalment == monthlyInstalment &&
+      other.downPaymentOnDelivery == downPaymentOnDelivery &&
+      other.downPaymentPaid == downPaymentPaid;
+
+  @override
+  int get hashCode => Object.hash(
+    kind,
+    price,
+    downPayment,
+    financed,
+    tenureMonths,
+    monthlyInstalment,
+    downPaymentOnDelivery,
+    downPaymentPaid,
+  );
+}
+
 class VendorOrder {
   const VendorOrder({
     required this.id,
@@ -314,7 +378,18 @@ class VendorOrder {
     this.fulfillmentChannel = OrderFulfillmentChannel.delivery,
     this.collectedAt,
     this.riderRating,
+    this.paymentPlan,
+    this.cashToCollect,
   });
+
+  /// The EMI (or other plan) that pays for this order; null for an ordinary
+  /// order.
+  final VendorOrderPaymentPlan? paymentPlan;
+
+  /// What the rider collects in cash on delivery — only the down payment on
+  /// an EMI with a cash down payment. Null when nothing is collected, or from
+  /// the list (only the detail carries it).
+  final Money? cashToCollect;
 
   final String id;
   final String orderNumber;
@@ -386,8 +461,12 @@ class VendorOrder {
     OrderFulfillmentChannel? fulfillmentChannel,
     DateTime? collectedAt,
     RiderRatingEligibility? riderRating,
+    VendorOrderPaymentPlan? paymentPlan,
+    Money? cashToCollect,
   }) {
     return VendorOrder(
+      paymentPlan: paymentPlan ?? this.paymentPlan,
+      cashToCollect: cashToCollect ?? this.cashToCollect,
       id: id ?? this.id,
       orderNumber: orderNumber ?? this.orderNumber,
       itemCount: itemCount ?? this.itemCount,
@@ -427,7 +506,9 @@ class VendorOrder {
       other.shippingAddress == shippingAddress &&
       other.fulfillmentChannel == fulfillmentChannel &&
       other.collectedAt == collectedAt &&
-      other.riderRating == riderRating;
+      other.riderRating == riderRating &&
+      other.paymentPlan == paymentPlan &&
+      other.cashToCollect == cashToCollect;
 
   @override
   int get hashCode => Object.hash(
@@ -448,6 +529,8 @@ class VendorOrder {
     fulfillmentChannel,
     collectedAt,
     riderRating,
+    paymentPlan,
+    cashToCollect,
   );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {

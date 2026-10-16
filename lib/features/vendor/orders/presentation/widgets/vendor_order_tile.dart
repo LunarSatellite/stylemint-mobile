@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+
+/// One line for an EMI order, e.g. "EMI · Rs 30,000 down payment — collect in
+/// cash on delivery" or "EMI · Rs 30,000 down payment paid online".
+String vendorPlanSummary(VendorOrderPaymentPlan plan) {
+  final down = formatMoney(plan.downPayment, decimalDigits: 0);
+  final how = switch ((plan.downPaymentOnDelivery, plan.downPaymentPaid)) {
+    (true, false) => 'collect in cash on delivery',
+    (true, true) => 'collected in cash',
+    (false, true) => 'paid online',
+    (false, false) => 'to be paid online',
+  };
+  return '${plan.label} · $down down payment — $how';
+}
 
 /// Vendor order list row — matches "Design Specification Doc - Orders Ready to
 /// Ship": 48px icon tile, Order #, "{customer} • {N} items", a Shipping-Method
@@ -112,6 +126,30 @@ class VendorOrderTile extends StatelessWidget {
                       ),
                       child: Text(
                         'Shipping Method: ${order.shippingMethod}',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.tagInfoText,
+                          fontWeight: FontWeight.w600,
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                  ],
+                  // An EMI order: the price is not collected at once — say
+                  // what the down payment is and how it is paid.
+                  if (order.paymentPlan case final plan?) ...[
+                    const SizedBox(height: DesignTokens.s8),
+                    Container(
+                      key: Key('vendor-order-plan-${order.id}'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s8,
+                        vertical: DesignTokens.s4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: DesignTokens.tagInfoFill,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(
+                        vendorPlanSummary(plan),
                         style: DesignTokens.smallRegular.copyWith(
                           color: DesignTokens.tagInfoText,
                           fontWeight: FontWeight.w600,
