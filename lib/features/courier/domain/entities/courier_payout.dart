@@ -134,6 +134,9 @@ class CourierPayoutEarning {
     this.cashCollected,
     this.fare,
     this.lines = const [],
+    this.fareMethodRoad,
+    this.fareDistanceKm,
+    this.fareTier,
   });
 
   final String entryId;
@@ -158,6 +161,19 @@ class CourierPayoutEarning {
   /// The ledger's own `{code, label, amount}` lines, when that is what the
   /// row carries instead.
   final List<FareLine> lines;
+
+  /// With [lines] (rider-payout contract v2): true = road km, false =
+  /// estimated, null = a fare from before the road-distance fare.
+  final bool? fareMethodRoad;
+  final double? fareDistanceKm;
+
+  /// "Pro" | "Traveler" | "Neighbor" as the server spells it.
+  final String? fareTier;
+
+  /// Whether there is more to show than the amount: several lines, or how
+  /// the distance was priced.
+  bool get hasFareDetail =>
+      (fare?.isItemised ?? false) || lines.length > 1 || fareMethodRoad != null;
 
   Money get money => Money(amount: amount, currency: currency);
 }

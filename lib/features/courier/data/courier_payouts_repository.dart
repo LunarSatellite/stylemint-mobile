@@ -156,6 +156,13 @@ abstract final class CourierPayoutMapper {
       cashCollected: _positive(_num(json['cashCollected'])),
       fare: CourierFareMapper.breakdown(rawFare, fallbackCurrency: currency),
       lines: lines,
+      fareMethodRoad: switch (rawFare is Map ? _text(rawFare['method'])?.toLowerCase() : null) {
+        'road' => true,
+        'estimated' => false,
+        _ => null,
+      },
+      fareDistanceKm: rawFare is Map ? _num(rawFare['distanceKm']) : null,
+      fareTier: rawFare is Map ? _text(rawFare['tier']) : null,
     );
   }
 

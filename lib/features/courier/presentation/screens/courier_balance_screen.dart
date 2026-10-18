@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_fare.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_payout.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_fare_breakdown.dart';
@@ -728,6 +729,8 @@ class CourierEarningTile extends StatefulWidget {
 
   final CourierPayoutEarning earning;
 
+  static const Key linesKey = ValueKey<String>('courier-earning-fare-lines');
+
   @override
   State<CourierEarningTile> createState() => _CourierEarningTileState();
 }
@@ -739,9 +742,16 @@ class _CourierEarningTileState extends State<CourierEarningTile> {
   Widget build(BuildContext context) {
     final e = widget.earning;
     final fare = e.fare;
-    final hasFare = fare != null && fare.isItemised;
-    final hasLines = e.lines.length > 1;
-    final expandable = hasFare || hasLines;
+    final expandable = e.hasFareDetail;
+    // How the distance was priced, for the ledger's line form (v2).
+    final km = e.fareDistanceKm;
+    final summary = [
+      if (e.fareMethodRoad case final road?)
+        km == null
+            ? (road ? 'Road distance' : 'Distance estimated')
+            : '${km.toStringAsFixed(1)} km${road ? ' by road' : ', estimated'}',
+      if (fareTierLabel(e.fareTier) case final tier?) '$tier tier',
+    ].join(' · ');
 
     final statusColor = switch (e.status) {
       CourierEarningStatus.available => DesignTokens.primaryGreen,
@@ -824,11 +834,23 @@ class _CourierEarningTileState extends State<CourierEarningTile> {
                 padding: const EdgeInsets.only(top: DesignTokens.s8),
                 child: CourierFareBreakdown(fare: fare, dense: true),
               )
-            else if (_open && hasLines)
+            else if (_open)
               Padding(
+                key: CourierEarningTile.linesKey,
                 padding: const EdgeInsets.only(top: DesignTokens.s8),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (summary.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          summary,
+                          style: DesignTokens.tiny.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
+                        ),
+                      ),
                     for (final line in e.lines)
                       Row(
                         children: [

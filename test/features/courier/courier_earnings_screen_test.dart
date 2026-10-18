@@ -289,6 +289,46 @@ void main() {
     expectNoLayoutErrors(tester);
   });
 
+  testWidgets("the ledger's line form (contract v2) shows how it was priced", (
+    tester,
+  ) async {
+    payouts.earnings = right(
+      CourierPage(
+        items: [
+          CourierPayoutMapper.earning(
+            _earningJson(
+              status: 3,
+              fare: {
+                'ref': null,
+                'method': 'estimated',
+                'distanceKm': 2.0,
+                'tier': 'Neighbor',
+                'lines': [
+                  {
+                    'code': 'trip',
+                    'label': 'Base Rs 50 + 2.0 km × Rs 30',
+                    'amount': 100.0,
+                  },
+                  {'code': 'night', 'label': 'Night pick-up', 'amount': 30.0},
+                ],
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+    await pump(tester);
+
+    expect(find.byKey(CourierEarningTile.linesKey), findsNothing);
+    await tester.tap(find.text('SMD-8F2K1Q'));
+    await tester.pump();
+    expect(find.byKey(CourierEarningTile.linesKey), findsOneWidget);
+    expect(find.text('2.0 km, estimated · Neighbour tier'), findsOneWidget);
+    expect(find.text('Base Rs 50 + 2.0 km × Rs 30'), findsOneWidget);
+    expect(find.text('Night pick-up'), findsOneWidget);
+    expect(find.text('Available'), findsWidgets);
+  });
+
   testWidgets('not deployed (404): "being set up", with the old totals', (
     tester,
   ) async {

@@ -1,5 +1,15 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
+/// "Pro" | "Traveler" | "Neighbor" (the server's spelling) in the app's
+/// British spelling; null when absent.
+String? fareTierLabel(String? tier) => switch (tier?.trim().toLowerCase()) {
+  null || '' => null,
+  'neighbor' || 'neighbour' => 'Neighbour',
+  'traveler' || 'traveller' => 'Traveller',
+  'pro' => 'Pro',
+  _ => tier!.trim(),
+};
+
 /// What kind of surcharge a fare line is (rider-fare contract v1 extra
 /// `code`). Unknown codes keep their server label and amount, so an extra
 /// the backend adds later is still shown and still adds up to the total.
@@ -113,13 +123,7 @@ class FareBreakdown {
   Money get totalMoney => money(total);
 
   /// British spelling, as the rest of the app labels tiers.
-  String? get tierLabel => switch (tier?.trim().toLowerCase()) {
-    null || '' => null,
-    'neighbor' || 'neighbour' => 'Neighbour',
-    'traveler' || 'traveller' => 'Traveller',
-    'pro' => 'Pro',
-    _ => tier!.trim(),
-  };
+  String? get tierLabel => fareTierLabel(tier);
 
   /// What the tier multiplier added (positive) or took off (negative) the
   /// base + distance. Null when there is nothing to work it out from, or when
