@@ -1,7 +1,8 @@
 /// Who the payout destination belongs to. Wire value matches backend `PayeeKind`.
 enum PayeeKind {
   creator(1),
-  vendor(2);
+  vendor(2),
+  courier(3);
 
   const PayeeKind(this.value);
   final int value;

@@ -8,17 +8,22 @@ class PayoutDestinationsState {
     this.isLoading = true,
     this.isMutating = false,
     this.errorMessage,
+    this.loadFailed = false,
     this.items = const [],
   });
 
   final bool isLoading;
   final bool isMutating;
   final String? errorMessage;
+
+  /// The last list read failed: the screen must not say "none".
+  final bool loadFailed;
   final List<PayoutDestinationDto> items;
 
   PayoutDestinationsState copyWith({
     bool? isLoading,
     bool? isMutating,
+    bool? loadFailed,
     String? errorMessage,
     bool clearError = false,
     List<PayoutDestinationDto>? items,
@@ -27,6 +32,7 @@ class PayoutDestinationsState {
       isLoading: isLoading ?? this.isLoading,
       isMutating: isMutating ?? this.isMutating,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      loadFailed: loadFailed ?? this.loadFailed,
       items: items ?? this.items,
     );
   }
@@ -46,11 +52,12 @@ class PayoutDestinationsController
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final items = await _ds.list(_role);
-      state = state.copyWith(isLoading: false, items: items);
+      state = state.copyWith(isLoading: false, items: items, loadFailed: false);
     } catch (_) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Could not load payment methods.',
+        loadFailed: true,
       );
     }
   }

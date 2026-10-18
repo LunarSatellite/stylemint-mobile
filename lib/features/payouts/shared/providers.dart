@@ -11,7 +11,7 @@ final payoutDestinationsDataSourceProvider =
       ),
     );
 
-/// Keyed by PayeeKind int value (1 = creator, 2 = vendor).
+/// Keyed by PayeeKind int value (1 = creator, 2 = vendor, 3 = courier).
 final payoutDestinationsControllerProvider = StateNotifierProvider.family
     .autoDispose<PayoutDestinationsController, PayoutDestinationsState, int>(
       (ref, role) => PayoutDestinationsController(

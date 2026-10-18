@@ -57,7 +57,32 @@ class PayoutMethodsScreen extends ConsumerWidget {
           : RefreshIndicator(
               color: DesignTokens.primaryGreen,
               onRefresh: () => ref.read(provider.notifier).load(),
-              child: state.items.isEmpty
+              child: state.items.isEmpty && state.loadFailed
+                  // A failed read is not "no methods": say it could not load.
+                  ? ListView(
+                      children: [
+                        const SizedBox(height: 120),
+                        const Icon(
+                          Icons.cloud_off_rounded,
+                          size: 48,
+                          color: DesignTokens.textMuted,
+                        ),
+                        const SizedBox(height: DesignTokens.s12),
+                        const Center(
+                          child: Text(
+                            'Payment methods could not be loaded',
+                            style: DesignTokens.bodyText,
+                          ),
+                        ),
+                        Center(
+                          child: TextButton(
+                            onPressed: () => ref.read(provider.notifier).load(),
+                            child: const Text('Try again'),
+                          ),
+                        ),
+                      ],
+                    )
+                  : state.items.isEmpty
                   ? ListView(
                       children: const [
                         SizedBox(height: 120),

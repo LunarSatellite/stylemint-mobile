@@ -132,7 +132,7 @@ class CourierProfileScreen extends ConsumerWidget {
               const SizedBox(height: DesignTokens.s24),
               _Entry(
                 icon: Icons.account_balance_wallet_rounded,
-                title: 'Balance',
+                title: 'Earnings & payouts',
                 subtitle: earnings.when(
                   loading: () => 'Loading…',
                   error: (_, _) => 'What your deliveries have paid',

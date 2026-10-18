@@ -8,7 +8,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_bottom_
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_nav_icons.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// The delivery partner's app: Home, Balance, Profile.
+/// The delivery partner's app: Home, Earnings, Profile.
 ///
 /// Tabs rather than a single scrolling dashboard with links, so the surface
 /// reads like the rest of the app — the customer, creator and vendor sides all
@@ -51,7 +51,7 @@ class _CourierShellScreenState extends ConsumerState<CourierShellScreen> {
           // The app's own glyph set has no wallet; analytics is the closest
           // honest fit for a screen of figures, and a borrowed glyph beats a
           // one-off icon that matches nothing else in the bar.
-          SmBottomNavItem.glyph(SmNavIcons.analytics, label: 'Balance'),
+          SmBottomNavItem.glyph(SmNavIcons.analytics, label: 'Earnings'),
           SmBottomNavItem.glyph(SmNavIcons.person, label: 'Profile'),
         ],
         // Tapping the current tab is a refresh everywhere else in the app, and
