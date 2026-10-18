@@ -12,6 +12,8 @@ class VendorProfileDto {
     this.logoUrl,
     this.description,
     this.websiteUrl,
+    this.serviceCategory = 0,
+    this.serviceLicenceNumber,
   });
 
   factory VendorProfileDto.fromJson(
@@ -27,6 +29,9 @@ class VendorProfileDto {
     logoUrl: json['logoUrl'] as String?,
     description: json['description'] as String?,
     websiteUrl: json['websiteUrl'] as String?,
+    // service-banks contract v1; absent before the deploy → product seller.
+    serviceCategory: (json['serviceCategory'] as num?)?.toInt() ?? 0,
+    serviceLicenceNumber: json['serviceLicenceNumber'] as String?,
   );
 
   final String id;
@@ -39,6 +44,8 @@ class VendorProfileDto {
   final String? logoUrl;
   final String? description;
   final String? websiteUrl;
+  final int serviceCategory;
+  final String? serviceLicenceNumber;
 
   VendorProfile toDomain() => VendorProfile(
     id: id,
@@ -51,5 +58,7 @@ class VendorProfileDto {
     logoUrl: logoUrl,
     description: description,
     websiteUrl: websiteUrl,
+    serviceCategory: serviceCategory,
+    serviceLicenceNumber: serviceLicenceNumber,
   );
 }
