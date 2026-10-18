@@ -165,3 +165,10 @@ class TravelSearch {
 
 /// [StaySearch] wire date helper, shared with the datasource.
 String searchWireDate(DateTime d) => _wire(d);
+
+/// Today's date in Kathmandu (UTC+05:45, no daylight saving) — the calendar
+/// every Services date is in, whatever the device's zone.
+DateTime kathmanduDay(DateTime now) {
+  final k = now.toUtc().add(const Duration(hours: 5, minutes: 45));
+  return DateTime(k.year, k.month, k.day);
+}

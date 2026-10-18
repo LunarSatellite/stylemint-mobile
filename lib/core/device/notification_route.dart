@@ -211,6 +211,11 @@ String? notificationLocation(
     // Every `order.*` template goes to the buyer.
     if (type.startsWith('order.')) return buyerOrderLocation(payload);
 
+    // Services. The server sends the screen as `deepLink` (handled above);
+    // this is for a payload that carries only an id, or nothing at all.
+    final services = servicesNotificationLocation(payload, viewer: viewer);
+    if (services != null) return services;
+
     // Payment-plan reminders and the default notice. The server sends the
     // plan's screen as `deepLink` (handled above); this is for a payload
     // that carries only the plan's id, or nothing at all.
@@ -291,6 +296,49 @@ String vendorEmiPlanLocation(NotificationPayload payload) {
   return agreementId != null && _isGuid(agreementId)
       ? RouteNames.vendorEmiPlanDetailPath(agreementId)
       : RouteNames.vendorEmiPlans;
+}
+
+/// The buyer's booking, enquiry or appointment a Services notification is
+/// about, or null when [payload] is not one.
+///
+///  * bookings contract v1 §7: buyer `booking.confirmed|reminder|cancelled|
+///    refunded` (push `type` is `service_booking`), by `bookingId`, else the
+///    buyer's bookings. `booking.vendor.*` is the seller's and is left alone.
+///  * banks contract v1 §7: `service.appointment.*` by `appointmentId`,
+///    `service.enquiry.*` by `leadId`; `service.bank.*` is the bank's.
+String? servicesNotificationLocation(
+  NotificationPayload payload, {
+  NotificationViewer viewer = const NotificationViewer(),
+}) {
+  final type = payload.type;
+  if (type == null) return null;
+
+  final isBuyerBooking =
+      (type.startsWith('booking.') && !type.startsWith('booking.vendor.')) ||
+      (type == 'service_booking' && !viewer.onVendorSide);
+  if (isBuyerBooking) {
+    final id = payload.id('bookingId');
+    return id != null && _isGuid(id)
+        ? RouteNames.bookingDetailPath(id)
+        : RouteNames.myBookings;
+  }
+
+  if (type.startsWith('service.appointment.') ||
+      (type == 'service_appointment' && !viewer.onVendorSide)) {
+    final id = payload.id('appointmentId');
+    return id != null && _isGuid(id)
+        ? RouteNames.bankAppointmentDetailPath(id)
+        : RouteNames.myBookings;
+  }
+
+  if (type.startsWith('service.enquiry.') ||
+      (type == 'service_lead' && !viewer.onVendorSide)) {
+    final id = payload.id('leadId');
+    return id != null && _isGuid(id)
+        ? RouteNames.bankEnquiryDetailPath(id)
+        : RouteNames.myBookings;
+  }
+  return null;
 }
 
 /// The viewer for a notification tapped while the router shows [location]:

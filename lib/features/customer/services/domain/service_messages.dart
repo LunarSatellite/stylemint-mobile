@@ -32,28 +32,26 @@ String serviceFailureMessage(ServiceFailure failure, {String what = 'this'}) {
 /// Words for the error codes the Services contracts name. Codes this build
 /// does not know fall back to the server's sentence.
 const _codeMessages = <String, String>{
-  // Stays and travel.
-  'booking.sold_out':
-      'Those dates just sold out. Pick other dates or another room.',
+  // Stays and travel (bookings contract v1 §6).
+  'service_listing.not_found': 'This listing is no longer available.',
+  'service_listing.not_bookable': 'This listing is not taking bookings now.',
+  'room_type.not_found': 'That room is no longer offered. Pick another.',
+  'departure.not_found': 'That departure is no longer offered. Pick another.',
+  'booking.not_found': 'We could not find this booking.',
   'booking.unavailable':
-      'Those dates just sold out. Pick other dates or another room.',
-  'booking.seats_unavailable':
-      'Not enough seats are left on that departure. Pick fewer travellers '
-      'or another date.',
+      'Those rooms or seats were just taken. Check the dates and get a '
+      'fresh price.',
+  'booking.busy': 'Lots of people are booking this right now. Try again.',
   'booking.hold_expired':
-      'We held your booking for a while, but the hold has expired. Get a '
-      'fresh price and try again.',
-  'quote.expired': 'That price has expired. Get a fresh price and try again.',
-  'booking.quote_expired':
-      'That price has expired. Get a fresh price and try again.',
+      'We held this booking for you, but the hold has run out. Start a new '
+      'booking to pay.',
+  'booking.nothing_to_pay': 'There is nothing left to pay online.',
   'booking.payment_mode_not_allowed':
       'This listing does not take that way to pay. Choose another.',
-  'booking.min_nights': 'This stay needs more nights. Change your dates.',
-  'booking.max_nights': 'This stay allows fewer nights. Change your dates.',
-  'booking.invalid_dates': 'Check-out must be after check-in.',
-  'booking.too_many_guests': 'Too many guests for that room. Add a room.',
+  'booking.payment_unavailable':
+      'We could not start the payment. Nothing was charged. Try again.',
   'booking.not_cancellable': 'This booking can no longer be cancelled here.',
-  'booking.already_cancelled': 'This booking is already cancelled.',
+  'booking.invalid_transition': 'This booking has already changed. Refresh.',
   // Banks (banks contract v1 §6).
   'service_vendor.not_found': 'This bank is not on StyleMint any more.',
   'bank_product.not_found': 'This product is no longer offered.',
@@ -84,4 +82,15 @@ const _codeMessages = <String, String>{
       'Lots of people are booking right now. Try again in a moment.',
   'service_appointment.not_cancellable':
       'This appointment can no longer be cancelled here.',
+};
+
+/// Why a quote came back `available: false` (bookings contract v1 §2).
+String quoteUnavailableMessage(String? reason) => switch (reason) {
+  'sold_out' => 'Sold out for these dates. Try other dates or another room.',
+  'closed' => 'Not taking bookings for these dates.',
+  'capacity' => 'Too many guests for this choice. Add a room or pick fewer.',
+  'min_nights' => 'This stay needs more nights. Change your dates.',
+  'max_nights' => 'This stay allows fewer nights. Change your dates.',
+  'departure_closed' => 'This departure is no longer taking bookings.',
+  _ => 'Not available for this choice. Try another.',
 };
