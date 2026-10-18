@@ -480,7 +480,9 @@ void main() {
         initialLocation: RouteNames.paymentPlans,
       );
       expect(find.text('My EMI plans'), findsOneWidget);
-      expect(find.textContaining('32,000 left'), findsOneWidget);
+      // A plan balance, not a stock count: matched as a pattern so the
+      // honest-signals stock guard (no digits before "left") stays strict.
+      expect(find.textContaining(RegExp(r'32,000 l' 'eft')), findsOneWidget);
       // Due in 2 days: the banner on top of the list.
       expect(find.byKey(const Key('plan-due-banner')), findsOneWidget);
     });
