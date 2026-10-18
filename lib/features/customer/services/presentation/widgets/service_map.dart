@@ -91,7 +91,21 @@ Widget _osmMap(
             ),
         ],
       ),
-      const SimpleAttributionWidget(source: Text('OpenStreetMap')),
+      // OSM requires the credit to be permanently visible, as on the
+      // courier maps.
+      const Align(
+        alignment: Alignment.bottomRight,
+        child: ColoredBox(
+          color: Color(0xCC000000),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '© OpenStreetMap contributors',
+              style: TextStyle(fontSize: 9, color: Colors.white),
+            ),
+          ),
+        ),
+      ),
     ],
   );
 }
