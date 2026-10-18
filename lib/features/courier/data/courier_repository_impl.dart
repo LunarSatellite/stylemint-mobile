@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
+import 'package:stylemint_mobile_frontend/features/courier/data/courier_fare_mapper.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_job_mapper.dart';
 import 'package:stylemint_mobile_frontend/features/courier/data/courier_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_job.dart';
@@ -486,6 +487,10 @@ class CourierRepositoryImpl implements CourierRepository {
     pickup: _place(json['pickup']),
     dropoff: _place(json['dropoff']),
     distanceToPickupKm: _doubleOrNull(json['distanceToPickupKm']),
+    fare: CourierFareMapper.breakdown(
+      json['fareBreakdown'],
+      fallbackCurrency: json['proposedPayoutCurrency'] as String?,
+    ),
   );
 
   /// `{ latitude, longitude, label }`, or null when absent or not a real
@@ -534,6 +539,10 @@ class CourierRepositoryImpl implements CourierRepository {
         fromGeohash: _string(json['fromGeohash']),
         toGeohash: _string(json['toGeohash']),
         handedOffUtc: _dateOrNull(json['handedOffUtc']),
+        fare: CourierFareMapper.breakdown(
+          json['fareBreakdown'],
+          fallbackCurrency: json['currency'] as String?,
+        ),
       );
 
   static DeliveryHop _hop(Map<String, dynamic> json) => DeliveryHop(
@@ -557,6 +566,10 @@ class CourierRepositoryImpl implements CourierRepository {
     // map can pin the shop rather than the centre of its geohash cell.
     pickup: _place(json['pickup']),
     dropoff: _place(json['dropoff']),
+    fare: CourierFareMapper.breakdown(
+      json['fareBreakdown'],
+      fallbackCurrency: json['courierPayoutCurrency'] as String?,
+    ),
   );
 
   static DeliveryExceptionCode? _exceptionCode(int? wire) => wire == null

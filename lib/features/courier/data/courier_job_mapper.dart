@@ -1,3 +1,4 @@
+import 'package:stylemint_mobile_frontend/features/courier/data/courier_fare_mapper.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_job.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -42,6 +43,7 @@ abstract final class CourierJobMapper {
       pickup: stop(json['pickup']),
       dropoff: stop(json['dropoff']),
       distanceKm: _double(json['distanceKm']),
+      fare: CourierFareMapper.breakdown(json['fareBreakdown']),
     );
   }
 

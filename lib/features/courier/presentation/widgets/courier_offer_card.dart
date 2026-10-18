@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_fare_breakdown.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -145,6 +146,23 @@ class CourierOfferCard extends StatelessWidget {
                 'Offered round ${offer.roundNumber} — others passed on it',
                 style: DesignTokens.tiny.copyWith(
                   color: DesignTokens.textLight,
+                ),
+              ),
+            ),
+          // How the payout is made up, before the rider commits to it. Offers
+          // issued before the breakdown shipped have none and show only the
+          // headline figure, as they always did.
+          if (offer.fare case final fare? when fare.isItemised)
+            Padding(
+              padding: const EdgeInsets.only(top: DesignTokens.s8),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: DesignTokens.bgAppBodyLight,
+                  borderRadius: BorderRadius.circular(DesignTokens.s8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(DesignTokens.s8),
+                  child: CourierFareBreakdown(fare: fare, dense: true),
                 ),
               ),
             ),

@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/courier/domain/entities/couri
 import 'package:stylemint_mobile_frontend/features/courier/presentation/notifiers/courier_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_device_key_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_action_feedback.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_fare_breakdown.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
@@ -212,29 +213,32 @@ class CourierHopScreen extends ConsumerWidget {
             ),
             const SizedBox(height: DesignTokens.s16),
 
-            Container(
-              padding: const EdgeInsets.all(DesignTokens.s16),
-              decoration: BoxDecoration(
-                color: DesignTokens.bgAppBody,
-                borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text('You earn', style: DesignTokens.smallRegular),
-                  ),
-                  Text(
-                    formatMoney(
-                      Money(
-                        amount: hop.payoutAmount,
-                        currency: hop.payoutCurrency,
-                      ),
+            if (hop.fare case final fare? when fare.isItemised)
+              CourierFareCard(fare: fare)
+            else
+              Container(
+                padding: const EdgeInsets.all(DesignTokens.s16),
+                decoration: BoxDecoration(
+                  color: DesignTokens.bgAppBody,
+                  borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text('You earn', style: DesignTokens.smallRegular),
                     ),
-                    style: DesignTokens.h3,
-                  ),
-                ],
+                    Text(
+                      formatMoney(
+                        Money(
+                          amount: hop.payoutAmount,
+                          currency: hop.payoutCurrency,
+                        ),
+                      ),
+                      style: DesignTokens.h3,
+                    ),
+                  ],
+                ),
               ),
-            ),
 
             if (hop.isLate)
               Padding(

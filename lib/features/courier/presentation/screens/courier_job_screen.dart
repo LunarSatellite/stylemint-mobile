@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/courier/domain/entities/couri
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_delivery_qr_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_hop_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_fare_breakdown.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_job_map.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -261,6 +262,10 @@ class _JobSheet extends ConsumerWidget {
             if (notes != null) ...[
               const SizedBox(height: DesignTokens.s12),
               _Notes(notes: notes),
+            ],
+            if (job.fare case final fare? when fare.isItemised) ...[
+              const SizedBox(height: DesignTokens.s20),
+              CourierFareCard(fare: fare),
             ],
           ],
         ),
