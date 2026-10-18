@@ -278,7 +278,7 @@ void main() {
             'date': '2026-10-24',
             'closed': true,
             'closedReason': 'Holiday: Dashain',
-            'slots': [],
+            'slots': <Object>[],
           },
         ],
       });

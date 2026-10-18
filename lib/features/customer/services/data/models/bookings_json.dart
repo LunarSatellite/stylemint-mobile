@@ -241,7 +241,7 @@ PackageDetail readPackageDetail(Map<String, dynamic> json) {
     longitude: readOptionalDouble(json['longitude']),
     photoUrls: _strings(json['photoUrls']),
     itinerary: List.unmodifiable(
-      [
+      <ItineraryDay>[
         for (final d in _maps(json['itinerary']))
           ItineraryDay(
             day: readInt(d['day']),
