@@ -43,7 +43,7 @@ const _codeMessages = <String, String>{
       'fresh price.',
   'booking.busy': 'Lots of people are booking this right now. Try again.',
   'booking.hold_expired':
-      'We held this booking for you, but the hold has run out. Start a new '
+      'The booking was held while you paid, but the hold has run out. Start a new '
       'booking to pay.',
   'booking.nothing_to_pay': 'There is nothing left to pay online.',
   'booking.payment_mode_not_allowed':

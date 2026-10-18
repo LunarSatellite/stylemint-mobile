@@ -6,7 +6,6 @@ import 'package:stylemint_mobile_frontend/features/customer/services/presentatio
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/booking_confirmed_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/stay_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/widgets/service_widgets.dart';
-import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
 import 'services_fakes.dart';
 
@@ -206,7 +205,7 @@ void main() {
     ) async {
       final repo = FakeBookingsRepository();
       final launched = <Uri>[];
-      final router = await pumpServices(
+      await pumpServices(
         tester,
         location: _stayLocation,
         bookings: repo,
@@ -230,8 +229,10 @@ void main() {
       expect(repo.payments.single['rail'], BookingPaymentRail.eSewa);
       expect(launched.single.toString(), 'https://pay.example/esewa/$bookingId');
       expect(
-        router.routeInformationProvider.value.uri.path,
-        RouteNames.bookingConfirmedPath(bookingId),
+        tester
+            .widget<BookingConfirmedScreen>(find.byType(BookingConfirmedScreen))
+            .bookingId,
+        bookingId,
       );
       // The provider has not reported yet: waiting, not confirmed.
       expect(

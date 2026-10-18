@@ -23,6 +23,10 @@ final bookingsRepositoryProvider = Provider<BookingsRepository>(
   ),
 );
 
+/// No automatic retry: Riverpod 3 would keep a failed load "loading" while it
+/// retries, and a 404 has to read as "Services are coming soon" at once.
+Duration? _noRetry(int retryCount, Object error) => null;
+
 Future<T> _orThrow<T>(Future<Either<ServiceFailure, T>> call) async =>
     (await call).fold((f) => throw ServiceLoadException(f), (v) => v);
 
@@ -31,6 +35,7 @@ staySearchProvider = FutureProvider.autoDispose
     .family<List<StaySearchItem>, StaySearch>(
       (ref, search) =>
           _orThrow(ref.watch(bookingsRepositoryProvider).searchStays(search)),
+      retry: _noRetry,
     );
 
 /// A stay, priced for the buyer's dates when [StayKey.search] is set.
@@ -43,6 +48,7 @@ final FutureProviderFamily<StayDetail, StayKey> stayDetailProvider =
             .watch(bookingsRepositoryProvider)
             .getStay(key.listingId, search: key.search),
       ),
+      retry: _noRetry,
     );
 
 final FutureProviderFamily<List<PackageSearchItem>, TravelSearch>
@@ -51,23 +57,27 @@ packageSearchProvider = FutureProvider.autoDispose
       (ref, search) => _orThrow(
         ref.watch(bookingsRepositoryProvider).searchPackages(search),
       ),
+      retry: _noRetry,
     );
 
 final FutureProviderFamily<PackageDetail, String> packageDetailProvider =
     FutureProvider.autoDispose.family<PackageDetail, String>(
       (ref, id) =>
           _orThrow(ref.watch(bookingsRepositoryProvider).getPackage(id)),
+      retry: _noRetry,
     );
 
 /// The buyer's bookings, newest first.
 final FutureProvider<List<Booking>> myBookingsProvider =
     FutureProvider.autoDispose<List<Booking>>(
       (ref) => _orThrow(ref.watch(bookingsRepositoryProvider).myBookings()),
+      retry: _noRetry,
     );
 
 final FutureProviderFamily<Booking, String> myBookingProvider =
     FutureProvider.autoDispose.family<Booking, String>(
       (ref, id) => _orThrow(ref.watch(bookingsRepositoryProvider).myBooking(id)),
+      retry: _noRetry,
     );
 
 /// After any change to a booking, everything that shows it refreshes.

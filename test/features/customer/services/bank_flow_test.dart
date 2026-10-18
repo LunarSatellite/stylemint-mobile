@@ -112,15 +112,15 @@ void main() {
     testWidgets('Enquire opens the enquiry form for the product', (
       tester,
     ) async {
-      final router = await pumpServices(
+      await pumpServices(
         tester,
         location: RouteNames.serviceBankProductPath(loanId),
       );
       await tester.tap(find.byKey(BankProductScreen.enquireKey));
       await settle(tester);
       expect(
-        router.routeInformationProvider.value.uri.path,
-        RouteNames.bankEnquiryFormPath(loanId),
+        tester.widget<BankEnquiryScreen>(find.byType(BankEnquiryScreen)).productId,
+        loanId,
       );
       expect(find.byKey(BankFormKeys.field('loanAmount')), findsOneWidget);
     });
@@ -189,7 +189,7 @@ void main() {
       tester,
     ) async {
       final repo = FakeBanksRepository();
-      final router = await pumpServices(
+      await pumpServices(
         tester,
         location: RouteNames.bankEnquiryFormPath(loanId),
         banks: repo,
@@ -210,8 +210,10 @@ void main() {
       expect(sent['phone'], '+9779841000000');
       expect(sent['consentVersion'], 'bank-contact-v1');
       expect(
-        router.routeInformationProvider.value.uri.path,
-        RouteNames.bankEnquiryDetailPath(leadId),
+        tester
+            .widget<EnquiryDetailScreen>(find.byType(EnquiryDetailScreen))
+            .leadId,
+        leadId,
       );
       expect(find.byKey(const Key('bank-request-sent')), findsOneWidget);
     });
@@ -250,7 +252,7 @@ void main() {
   group('Appointment', () {
     testWidgets('branch, day and slot → booked with consent', (tester) async {
       final repo = FakeBanksRepository();
-      final router = await pumpServices(
+      await pumpServices(
         tester,
         location: RouteNames.bankAppointmentFormPath(bankId),
         banks: repo,
@@ -277,8 +279,12 @@ void main() {
       expect(b['date'], DateTime(2026, 10, 20));
       expect(b['consentVersion'], 'bank-contact-v1');
       expect(
-        router.routeInformationProvider.value.uri.path,
-        RouteNames.bankAppointmentDetailPath(appointmentId),
+        tester
+            .widget<AppointmentDetailScreen>(
+              find.byType(AppointmentDetailScreen),
+            )
+            .appointmentId,
+        appointmentId,
       );
       expect(find.byKey(const Key('bank-request-sent')), findsOneWidget);
     });

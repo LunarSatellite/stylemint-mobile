@@ -17,8 +17,9 @@ void main() {
     await pumpServices(tester, location: _packageLocation);
 
     expect(find.byKey(const Key('package-day-1')), findsOneWidget);
-    await reveal(tester, find.text('Permits'));
+    await reveal(tester, find.text('Guide'));
     expect(find.text('Guide'), findsOneWidget);
+    await reveal(tester, find.text('Permits'));
     await reveal(tester, find.text('Flights'));
     await reveal(tester, find.byKey(Key('package-seats-$departureId')));
     expect(
@@ -47,6 +48,7 @@ void main() {
     await reveal(tester, find.byKey(const Key('package-adults-plus')));
     for (var i = 0; i < 4; i++) {
       await tester.tap(find.byKey(const Key('package-adults-plus')));
+      await tester.pump();
     }
     await settle(tester);
     await tester.tap(find.byKey(PackageDetailScreen.bookKey));
@@ -54,7 +56,10 @@ void main() {
 
     expect(repo.packageQuotes, isEmpty);
     await reveal(tester, find.byKey(PackageDetailScreen.quoteErrorKey));
-    expect(find.text('Only 5 seats are left on this departure.'), findsOneWidget);
+    expect(
+      find.text('This departure has 5 seats left. Choose fewer travellers.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('departure + adults/children → quote → names → pay', (

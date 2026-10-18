@@ -477,7 +477,7 @@ class _RoomCard extends StatelessWidget {
               )
             else if (units != null && units <= 3)
               Text(
-                units == 1 ? 'Only 1 left' : 'Only $units left',
+                'Few rooms left for these dates',
                 style: DesignTokens.tiny.copyWith(
                   color: DesignTokens.colorWarning,
                 ),

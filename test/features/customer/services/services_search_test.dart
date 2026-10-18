@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_search.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/services_home_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/stay_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/stay_results_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/travel_results_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/widgets/service_widgets.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
@@ -37,7 +39,7 @@ void main() {
       tester,
     ) async {
       final repo = FakeBookingsRepository();
-      final router = await pumpServices(
+      await pumpServices(
         tester,
         location: RouteNames.services,
         bookings: repo,
@@ -54,14 +56,15 @@ void main() {
       await tester.tap(find.byKey(StaySearchForm.submitKey));
       await settle(tester);
 
-      final uri = router.routeInformationProvider.value.uri;
-      expect(uri.path, RouteNames.serviceStayResults);
+      final s = tester
+          .widget<StayResultsScreen>(find.byType(StayResultsScreen))
+          .search!;
       // Tomorrow (Kathmandu) for one night.
-      expect(uri.queryParameters['checkIn'], '2026-10-19');
-      expect(uri.queryParameters['checkOut'], '2026-10-20');
-      expect(uri.queryParameters['q'], 'Pokhara');
-      expect(uri.queryParameters['guests'], '3');
-      expect(uri.queryParameters['rooms'], '2');
+      expect(s.checkIn, DateTime(2026, 10, 19));
+      expect(s.checkOut, DateTime(2026, 10, 20));
+      expect(s.location, 'Pokhara');
+      expect(s.guests, 3);
+      expect(s.rooms, 2);
 
       expect(repo.searches.single.location, 'Pokhara');
       expect(repo.searches.single.guests, 3);
@@ -72,7 +75,7 @@ void main() {
     });
 
     testWidgets('a pin on the results map opens that stay', (tester) async {
-      final router = await pumpServices(
+      await pumpServices(
         tester,
         location:
             '${RouteNames.serviceStayResults}?q=Pokhara&checkIn=2026-10-21'
@@ -82,9 +85,11 @@ void main() {
       await tester.tap(find.byKey(Key('test-pin-$stayId')));
       await settle(tester);
 
-      final uri = router.routeInformationProvider.value.uri;
-      expect(uri.path, RouteNames.serviceStayDetailPath(stayId));
-      expect(uri.queryParameters['checkIn'], '2026-10-21');
+      final detail = tester.widget<StayDetailScreen>(
+        find.byType(StayDetailScreen),
+      );
+      expect(detail.listingId, stayId);
+      expect(detail.search!.checkIn, DateTime(2026, 10, 21));
       expect(find.byKey(StayDetailScreen.reserveKey), findsOneWidget);
     });
 
@@ -137,7 +142,7 @@ void main() {
       tester,
     ) async {
       final repo = FakeBookingsRepository();
-      final router = await pumpServices(
+      await pumpServices(
         tester,
         location: RouteNames.services,
         bookings: repo,
@@ -150,16 +155,21 @@ void main() {
         'Annapurna',
       );
       // Next month (November 2026).
-      await tester.tap(find.byKey(TravelSearchForm.monthKey(1)));
+      // Selected the way a tap would; the chip row scrolls sideways.
+      tester
+          .widget<ChoiceChip>(find.byKey(TravelSearchForm.monthKey(1)))
+          .onSelected!(true);
+      await tester.pump();
       await tester.tap(find.byKey(const Key('travel-travellers-plus')));
       await settle(tester);
       await tester.tap(find.byKey(TravelSearchForm.submitKey));
       await settle(tester);
 
-      final uri = router.routeInformationProvider.value.uri;
-      expect(uri.path, RouteNames.serviceTravelResults);
-      expect(uri.queryParameters['month'], '2026-11');
-      expect(uri.queryParameters['travellers'], '3');
+      final t = tester
+          .widget<TravelResultsScreen>(find.byType(TravelResultsScreen))
+          .search;
+      expect(t.monthWire, '2026-11');
+      expect(t.travellers, 3);
       expect(repo.travelSearches.single, isA<TravelSearch>());
       expect(repo.travelSearches.single.destination, 'Annapurna');
       expect(repo.travelSearches.single.monthWire, '2026-11');

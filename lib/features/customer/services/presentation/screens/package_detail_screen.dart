@@ -54,9 +54,9 @@ class _PackageDetailScreenState extends ConsumerState<PackageDetailScreen> {
     if (_adults + _children > departure.seatsAvailable) {
       setState(
         () => _quoteError = departure.seatsAvailable == 1
-            ? 'Only 1 seat is left on this departure.'
-            : 'Only ${departure.seatsAvailable} seats are left on this '
-                  'departure.',
+            ? 'This departure has 1 seat left. Choose fewer travellers.'
+            : 'This departure has ${departure.seatsAvailable} seats left. Choose '
+                  'fewer travellers.',
       );
       return;
     }

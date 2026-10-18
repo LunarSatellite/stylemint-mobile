@@ -21,6 +21,10 @@ final banksRepositoryProvider = Provider<BanksRepository>(
   ),
 );
 
+/// No automatic retry: Riverpod 3 would keep a failed load "loading" while it
+/// retries, and a 404 has to read as "Services are coming soon" at once.
+Duration? _noRetry(int retryCount, Object error) => null;
+
 Future<T> _orThrow<T>(Future<Either<ServiceFailure, T>> call) async =>
     (await call).fold((f) => throw ServiceLoadException(f), (v) => v);
 
@@ -28,6 +32,7 @@ Future<T> _orThrow<T>(Future<Either<ServiceFailure, T>> call) async =>
 final FutureProvider<List<BankSummary>> banksListProvider =
     FutureProvider.autoDispose<List<BankSummary>>(
       (ref) => _orThrow(ref.watch(banksRepositoryProvider).listBanks()),
+      retry: _noRetry,
     );
 
 /// Published products across banks, for comparing; null type for all.
@@ -36,22 +41,26 @@ bankProductsProvider = FutureProvider.autoDispose
     .family<List<BankProduct>, BankProductType?>(
       (ref, type) =>
           _orThrow(ref.watch(banksRepositoryProvider).listProducts(type: type)),
+      retry: _noRetry,
     );
 
 final FutureProviderFamily<BankDetail, String> bankDetailProvider =
     FutureProvider.autoDispose.family<BankDetail, String>(
       (ref, id) => _orThrow(ref.watch(banksRepositoryProvider).getBank(id)),
+      retry: _noRetry,
     );
 
 final FutureProviderFamily<BankProduct, String> bankProductProvider =
     FutureProvider.autoDispose.family<BankProduct, String>(
       (ref, id) => _orThrow(ref.watch(banksRepositoryProvider).getProduct(id)),
+      retry: _noRetry,
     );
 
 final FutureProviderFamily<List<BankBranch>, String> bankBranchesProvider =
     FutureProvider.autoDispose.family<List<BankBranch>, String>(
       (ref, bankId) =>
           _orThrow(ref.watch(banksRepositoryProvider).listBranches(bankId)),
+      retry: _noRetry,
     );
 
 final FutureProviderFamily<BranchAvailability, String>
@@ -60,6 +69,7 @@ branchAvailabilityProvider = FutureProvider.autoDispose
       (ref, branchId) => _orThrow(
         ref.watch(banksRepositoryProvider).getAvailability(branchId: branchId),
       ),
+      retry: _noRetry,
     );
 
 typedef EnquiryFormKey = ({
@@ -79,27 +89,32 @@ final FutureProviderFamily<EnquiryForm, EnquiryFormKey> enquiryFormProvider =
               kind: key.kind,
             ),
       ),
+      retry: _noRetry,
     );
 
 /// The buyer's enquiries (appointment leads included), newest first.
 final FutureProvider<List<BankLead>> myEnquiriesProvider =
     FutureProvider.autoDispose<List<BankLead>>(
       (ref) => _orThrow(ref.watch(banksRepositoryProvider).myEnquiries()),
+      retry: _noRetry,
     );
 
 final FutureProviderFamily<BankLead, String> myEnquiryProvider =
     FutureProvider.autoDispose.family<BankLead, String>(
       (ref, id) => _orThrow(ref.watch(banksRepositoryProvider).myEnquiry(id)),
+      retry: _noRetry,
     );
 
 /// The buyer's appointments, newest first.
 final FutureProvider<List<BankAppointment>> myAppointmentsProvider =
     FutureProvider.autoDispose<List<BankAppointment>>(
       (ref) => _orThrow(ref.watch(banksRepositoryProvider).myAppointments()),
+      retry: _noRetry,
     );
 
 final FutureProviderFamily<BankAppointment, String> myAppointmentProvider =
     FutureProvider.autoDispose.family<BankAppointment, String>(
       (ref, id) =>
           _orThrow(ref.watch(banksRepositoryProvider).myAppointment(id)),
+      retry: _noRetry,
     );
