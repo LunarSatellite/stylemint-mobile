@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_category.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -313,6 +314,20 @@ class _VendorApplyStep6ScreenState
             color: DesignTokens.textMuted,
           ),
         ),
+        if (draft.serviceCategory != 0) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            [
+              ServiceCategory.fromWire(draft.serviceCategory).label,
+              if (draft.licenceNumber != null)
+                'Licence ${draft.licenceNumber}',
+              if (draft.licenceDocumentRef != null) 'certificate uploaded',
+            ].join('  •  '),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+        ],
       ],
     );
   }

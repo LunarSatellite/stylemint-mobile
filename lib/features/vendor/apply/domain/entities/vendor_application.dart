@@ -55,16 +55,18 @@ class VendorApplication {
       Object.hash(id, status, rejectionReason, submittedAt, updatedAt);
 }
 
-/// Legal form of the vendor entity — wire values are confirmed against the
-/// backend's `Onboarding.Enums.BusinessType` (ints 1-6), but the backend
-/// swagger doesn't expose member names, so the labels below are inferred and
-/// unconfirmed. Verify with backend before this ships.
+/// Legal form of the vendor entity — the backend's
+/// `Onboarding.Enums.BusinessType` (and Identity's copy): 1 Individual,
+/// 2 SoleProprietorship, 3 LimitedLiability, 4 Corporation, 5 Partnership,
+/// 6 NonProfit. Until 2026-10-18 the labels here were guessed and 3–5 were
+/// mislabelled (Partnership sent 3 = LimitedLiability); a bank must apply
+/// as 3 or 4 (service-banks contract v1), so the codes now match.
 enum BusinessType {
   individual(1, 'Individual'),
   soleProprietorship(2, 'Sole Proprietorship'),
-  partnership(3, 'Partnership'),
-  limitedLiabilityCompany(4, 'Limited Liability Company'),
-  corporation(5, 'Corporation'),
+  limitedLiabilityCompany(3, 'Limited Liability Company (Pvt Ltd)'),
+  corporation(4, 'Corporation'),
+  partnership(5, 'Partnership'),
   nonProfit(6, 'Non-Profit');
 
   const BusinessType(this.code, this.label);
@@ -167,6 +169,11 @@ class VendorApplicationForm {
     this.priceRangeCurrency,
     this.brandStory,
     this.bankAccount,
+    this.serviceCategory = 0,
+    this.licenceNumber,
+    this.licenceIssuer,
+    this.licenceExpiresOn,
+    this.licenceDocumentRef,
   });
 
   final String brandName;
@@ -189,6 +196,22 @@ class VendorApplicationForm {
   final String? priceRangeCurrency;
   final String? brandStory;
   final VendorBankAccountForm? bankAccount;
+
+  /// service-banks contract v1: 0 product seller, 1 Hotel, 2 TravelAgency,
+  /// 3 Bank. The licence fields are only sent for a service vendor.
+  final int serviceCategory;
+
+  /// Bank: the NRB licence number (required). Hotel / travel: the tourism
+  /// licence (optional).
+  final String? licenceNumber;
+  final String? licenceIssuer;
+  final DateTime? licenceExpiresOn;
+
+  /// The uploaded licence certificate (`blobReference` from the KYC blob
+  /// upload), attached to the draft as document kind 5 OperatingLicence.
+  final String? licenceDocumentRef;
+
+  bool get isServiceVendor => serviceCategory != 0;
 }
 
 enum KYCDocumentType {
