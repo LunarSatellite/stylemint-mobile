@@ -261,6 +261,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentat
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/presentation/screens/vendor_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/demand_signals/presentation/screens/vendor_demand_signals_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/services/service_vendor_routes.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/sponsored_products/presentation/screens/vendor_sponsored_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/store_actions/presentation/screens/vendor_store_actions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/stores/domain/entities/vendor_store.dart';
@@ -1703,6 +1704,9 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.vendorEmiPlans,
         builder: (ctx, state) => const VendorEmiPlansScreen(),
       ),
+      // Hotels, travel agencies and banks (bookings, availability, leads,
+      // appointments, the service step of the vendor application).
+      ...serviceVendorRoutes,
       GoRoute(
         path: RouteNames.vendorEmiPlanDetail,
         builder: (ctx, state) => VendorEmiPlanDetailScreen(

@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entit
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/store_digital_twin.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/digital_twin_scenario_button.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/services/home/service_vendor_today_card.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_menu_button.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/store_actions/shared/providers.dart';
@@ -89,6 +90,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
                 ref.read(vendorPendingActionsNotifierProvider.notifier).load();
                 ref.invalidate(storeActionCountProvider);
                 ref.invalidate(storeDigitalTwinProvider);
+                refreshServiceVendorToday(ref);
               },
             ),
             loadFailure: (_) => SmErrorView(
@@ -189,6 +191,9 @@ class _DashboardContent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: DesignTokens.s12),
+            // Hotels, travel agencies and banks: today's bookings or leads
+            // first. Draws nothing for a product seller.
+            const ServiceVendorTodayCard(),
             _buildStorePulse(),
             const SizedBox(height: DesignTokens.s16),
             _buildRevenueCard(),
