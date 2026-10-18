@@ -425,3 +425,20 @@ InputDecoration serviceInputDecoration(String label, {String? hint}) =>
         borderSide: const BorderSide(color: DesignTokens.inputFieldBorder),
       ),
     );
+
+/// A form's page: every field stays built (unlike a lazy list), so the
+/// form validates all of them, including the ones scrolled out of view.
+class ServiceFormScroll extends StatelessWidget {
+  const ServiceFormScroll({required this.children, super.key});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    padding: const EdgeInsets.all(DesignTokens.s16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    ),
+  );
+}

@@ -230,8 +230,7 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
       body: SafeArea(
         child: Form(
           key: _form,
-          child: ListView(
-            padding: const EdgeInsets.all(DesignTokens.s16),
+          child: ServiceFormScroll(
             children: [
               _Summary(args: args),
               const ServiceSectionTitle('How do you want to pay?'),

@@ -341,7 +341,7 @@ class _TravelSearchFormState extends ConsumerState<TravelSearchForm> {
 // ── Banks ────────────────────────────────────────────────────────────────────
 
 /// Which product type the Banks section is filtered to; null shows banks.
-final bankTypeFilterProvider = StateProvider.autoDispose<BankProductType?>(
+final bankTypeFilterProvider = StateProvider<BankProductType?>(
   (ref) => null,
 );
 
@@ -358,14 +358,13 @@ class BanksSection extends ConsumerWidget {
     final type = ref.watch(bankTypeFilterProvider);
     return Column(
       children: [
-        SizedBox(
-          height: 52,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.s16,
-              vertical: DesignTokens.s8,
-            ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.s16,
+            vertical: DesignTokens.s8,
+          ),
+          child: Row(
             children: [
               for (final t in <BankProductType?>[null, ...BankProductType.values])
                 Padding(

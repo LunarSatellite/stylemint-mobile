@@ -239,6 +239,9 @@ class _EnquiryFormState extends ConsumerState<_EnquiryForm>
             FormFieldType.select ||
             FormFieldType.date ||
             FormFieldType.boolean => _answers[f.key],
+            // Numbers go as plain digits ("250000"), however typed.
+            FormFieldType.number || FormFieldType.amount =>
+              _controllers[f.key]?.text.replaceAll(RegExp(r'[,\s]'), ''),
             _ => _controllers[f.key]?.text.trim(),
           }
           case final v? when v.isNotEmpty)
@@ -376,8 +379,7 @@ class _EnquiryFormState extends ConsumerState<_EnquiryForm>
   @override
   Widget build(BuildContext context) => Form(
     key: formKey,
-    child: ListView(
-      padding: const EdgeInsets.all(DesignTokens.s16),
+    child: ServiceFormScroll(
       children: [
         Text(widget.product.name, style: DesignTokens.h3),
         Text(
@@ -584,8 +586,7 @@ class _AppointmentFormState extends ConsumerState<_AppointmentForm>
     final branchId = _branchId;
     return Form(
       key: formKey,
-      child: ListView(
-        padding: const EdgeInsets.all(DesignTokens.s16),
+      child: ServiceFormScroll(
         children: [
           Text(widget.bank.name, style: DesignTokens.h3),
           if (widget.product != null)
