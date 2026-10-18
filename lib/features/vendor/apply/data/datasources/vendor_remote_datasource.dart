@@ -2,6 +2,7 @@ import 'package:dio/dio.dart' show FormData, MultipartFile, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/data/models/vendor_application_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_time.dart';
 
 class VendorRemoteDataSource {
   VendorRemoteDataSource({required this.apiClient});
@@ -135,6 +136,52 @@ class VendorRemoteDataSource {
             if (bank.w9StorageUri != null) 'w9StorageUri': bank.w9StorageUri,
             'taxAttestationAccepted': bank.taxAttestationAccepted,
           },
+        // service-banks contract v1: only for a hotel, travel agency or bank,
+        // so a product seller's request is unchanged.
+        if (form.isServiceVendor) ...serviceStepBody(form),
+      },
+      options: _idempotent(idempotencyKey),
+    );
+    return VendorApplicationDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// The service fields as the contract names them.
+  static Map<String, dynamic> serviceStepBody(VendorApplicationForm form) =>
+      <String, dynamic>{
+        'serviceCategory': form.serviceCategory,
+        'licenceNumber': form.licenceNumber,
+        'licenceIssuer': form.licenceIssuer,
+        'licenceExpiresOn': form.licenceExpiresOn == null
+            ? null
+            : wireDate(form.licenceExpiresOn!),
+      };
+
+  /// Wizard — service category and licence (service-banks contract v1).
+  Future<VendorApplicationDto> patchServiceStep({
+    required VendorApplicationForm form,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.patch(
+      '/v1/vendor/application/draft/service',
+      data: serviceStepBody(form),
+      options: _idempotent(idempotencyKey),
+    );
+    return VendorApplicationDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Wizard 1C documents — replaces the draft's documents. Used for the
+  /// service vendor's operating licence (kind 5).
+  Future<VendorApplicationDto> patchStep4Documents({
+    required List<({int kind, String storageUri})> documents,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.patch(
+      '/v1/vendor/application/draft/step-4',
+      data: <String, dynamic>{
+        'documents': [
+          for (final d in documents)
+            <String, dynamic>{'kind': d.kind, 'storageUri': d.storageUri},
+        ],
       },
       options: _idempotent(idempotencyKey),
     );

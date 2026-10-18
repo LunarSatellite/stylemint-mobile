@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/widgets/kyc_document_tile.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_routes.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -204,7 +205,9 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
           );
     ref.read(vendorApplyDraftProvider.notifier).draft = draft;
 
-    context.push(RouteNames.vendorApplyStep2);
+    // The service step (products / hotel / travel agency / bank, and the
+    // licence) comes next; it continues to step 2.
+    context.push(ServiceRoutes.applyService);
   }
 
   void _showError(String message) {

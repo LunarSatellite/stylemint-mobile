@@ -11,6 +11,8 @@
 ///
 /// Resolution order:
 ///  0. a seller EMI notice (`plan.vendor.*`) opens the seller's EMI plan;
+///     a service vendor's booking, enquiry or appointment notice opens it
+///     (see `service_notification_route.dart`);
 ///  1. an explicit link (`deepLink`, `deep_link`, `link`, `url`, `route`);
 ///  2. by type — KYC decision, delivery notifications (their own contract,
 ///     see `delivery_push.dart`), buyer orders, payment plans, payouts,
@@ -27,6 +29,7 @@ import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
 import 'package:stylemint_mobile_frontend/core/device/push_destination.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/customer/kyc/domain/kyc_push.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_notification_route.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
 /// A backend id (GUID), as opposed to an order number.
@@ -168,6 +171,17 @@ String? notificationLocation(
   if (payload.type?.startsWith('plan.vendor.') ?? false) {
     return vendorEmiPlanLocation(payload);
   }
+
+  // 0b. A service vendor's notice (`booking.vendor.*`,
+  //     `service.bank.enquiry.*`, `service.bank.appointment.*`) opens the
+  //     booking, lead or appointment — before any buyer `booking.*` rule.
+  final pushLink = pushDestinationUri(payload.data);
+  final serviceVendor = serviceVendorNotificationLocation(
+    payload.type,
+    payload.data,
+    link: pushLink == null ? null : deepLinkLocation(pushLink),
+  );
+  if (serviceVendor != null) return serviceVendor;
 
   // 1. An explicit link always wins.
   final link = pushDestinationUri(payload.data);
