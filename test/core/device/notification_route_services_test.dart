@@ -115,13 +115,15 @@ void main() {
       );
     });
 
-    test('the bank\'s own service.bank.* notices are left alone', () {
+    test('the bank\'s own service.bank.* notices open the seller screen', () {
+      // Routed by the seller app (service_notification_route.dart), never
+      // to the buyer's appointment.
       expect(
         _push({
           'type': 'service.bank.appointment.booked',
           'appointmentId': _appointmentId,
         }),
-        isNull,
+        '/vendor/bank/appointments/$_appointmentId',
       );
     });
   });
