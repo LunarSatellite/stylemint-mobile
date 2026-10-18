@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fpdart/fpdart.dart';
+import 'package:fpdart/fpdart.dart' hide State;
 import 'package:stylemint_mobile_frontend/features/vendor/services/bookings/data/vendor_bookings_repository.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/bookings/domain/service_booking.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/bookings/presentation/booking_widgets.dart';

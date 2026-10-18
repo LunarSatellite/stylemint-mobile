@@ -289,6 +289,7 @@ class VendorApplyDraft {
       licenceDocumentRef: licenceDocumentRef,
       licenceDocumentName: licenceDocumentName,
     );
+  }
 
   VendorApplyDraft _copy({
     required int serviceCategory,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fpdart/fpdart.dart';
+import 'package:fpdart/fpdart.dart' hide State;
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/bank/data/bank_leads_repository.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/bank/domain/bank_lead.dart';

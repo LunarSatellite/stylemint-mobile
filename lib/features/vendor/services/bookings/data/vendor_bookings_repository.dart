@@ -140,7 +140,7 @@ class VendorBookingsRepositoryImpl implements VendorBookingsRepository {
   ) => guardedServiceCall(() async {
     final starting = await _all(from: today, to: today);
     final checkedIn = await _all(state: BookingState.checkedIn.wire);
-    final arrivals = [
+    final arrivals = <ServiceBooking>[
       for (final b in starting)
         if (b.state == BookingState.pendingPayment ||
             b.state == BookingState.confirmed ||
@@ -148,12 +148,12 @@ class VendorBookingsRepositoryImpl implements VendorBookingsRepository {
                 !_endsOn(b, today)))
           b,
     ]..sort(_byStart);
-    final leaving = [
+    final leaving = <ServiceBooking>[
       for (final b in checkedIn)
         if (_endsOn(b, today) || _endedBefore(b, today)) b,
     ]..sort(_byStart);
     final arrivalIds = {for (final b in arrivals) b.id};
-    final inHouse = [
+    final inHouse = <ServiceBooking>[
       for (final b in checkedIn)
         if (!_endsOn(b, today) &&
             !_endedBefore(b, today) &&
@@ -189,7 +189,7 @@ class VendorBookingsRepositoryImpl implements VendorBookingsRepository {
       to: today.add(Duration(days: days)),
     );
     return List<ServiceBooking>.unmodifiable(
-      [
+      <ServiceBooking>[
         for (final b in items)
           if (b.state.isLive) b,
       ]..sort(_byStart),
