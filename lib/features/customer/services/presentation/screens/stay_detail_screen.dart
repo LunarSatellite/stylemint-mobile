@@ -46,7 +46,10 @@ class _StayDetailScreenState extends ConsumerState<StayDetailScreen> {
   bool _quoting = false;
   String? _quoteError;
 
-  StayKey get _key => (listingId: widget.listingId, search: _search);
+  /// The page is priced for the search the buyer came with; changing dates
+  /// or guests here does not reload it — Reserve asks for a fresh quote for
+  /// whatever is chosen, and that quote is what the buyer books.
+  StayKey get _key => (listingId: widget.listingId, search: widget.search);
 
   Future<void> _pickDates() async {
     final today = kathmanduDay(ref.read(servicesClockProvider)());

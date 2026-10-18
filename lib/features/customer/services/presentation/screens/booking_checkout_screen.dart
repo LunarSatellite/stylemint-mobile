@@ -211,15 +211,17 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
         ),
       );
     }
-    final option = _mode == null ? null : quote.optionFor(_mode!);
+    final mode = _mode;
+    final option = mode == null ? null : quote.optionFor(mode);
     final paysOnline = option != null && option.payNow.amount > 0;
-    final label = _booking != null && paysOnline
-        ? 'Pay ${serviceMoney(option.payNow)}'
-        : option == null
-        ? 'Choose how to pay'
-        : paysOnline
-        ? 'Pay ${serviceMoney(option.payNow)}'
-        : 'Confirm booking';
+    final String label;
+    if (option == null) {
+      label = 'Choose how to pay';
+    } else if (option.payNow.amount > 0) {
+      label = 'Pay ${serviceMoney(option.payNow)}';
+    } else {
+      label = 'Confirm booking';
+    }
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -272,7 +274,7 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
                 ),
               ],
               ServiceSectionTitle(_isPackage ? 'Travellers' : 'Guest'),
-              if (_isPackage)
+              if (_isPackage) ...[
                 for (var i = 0; i < _travellerNames.length; i++)
                   _TravellerFields(
                     index: i,
@@ -280,8 +282,8 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
                     name: _travellerNames[i],
                     age: _travellerAges[i],
                     enabled: _booking == null,
-                  )
-              else
+                  ),
+              ] else
                 TextFormField(
                   key: BookingCheckoutScreen.guestNameKey,
                   controller: _guestName,
