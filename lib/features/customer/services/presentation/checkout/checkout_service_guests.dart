@@ -217,7 +217,7 @@ class CheckoutServiceGuestsState extends ConsumerState<CheckoutServiceGuests> {
           ServiceLineSummary(line: l),
           if (hold != null)
             Text(
-              'Held for you until ${serviceInstant(hold)}.',
+              'Held until ${serviceInstant(hold)}.',
               style: DesignTokens.tiny.copyWith(color: DesignTokens.textLight),
             ),
           if (lineError != null)

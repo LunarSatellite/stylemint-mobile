@@ -51,7 +51,7 @@ void main() {
             },
             'roomTypes': [
               {
-                'id': roomId,
+                'roomTypeId': roomId,
                 'name': 'Deluxe Double',
                 'baseRate': 4500,
                 'maxAdults': 2,
