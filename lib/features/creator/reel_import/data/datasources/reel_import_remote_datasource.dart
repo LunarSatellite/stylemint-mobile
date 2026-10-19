@@ -228,9 +228,66 @@ class ReelImportRemoteDataSource {
     );
   }
 
-  // GET /api/v1/customer/search?type=products&q=...&limit=20
-  // Searches the product catalog for tagging candidates.
+  /// Tagging candidates: `GET v1/tag-picker/items` (service items contract
+  /// v1 §5.3) — every listed product AND service item (hotel stays, travel
+  /// packages, bank products), so a hotel, agency or bank tags its own
+  /// listings in its reels and creators tag them like products. The old
+  /// customer search below returns no service items; it is only the
+  /// fallback while the picker is not deployed (404).
   Future<List<TaggedProductForImportDto>> searchProducts(String query) async {
+    try {
+      return await searchTaggableItems(query);
+    } on DioException catch (e) {
+      if (e.response?.statusCode != 404) rethrow;
+      return searchCatalogProducts(query);
+    }
+  }
+
+  /// `GET v1/tag-picker/items?q=&scope=&pageSize=` → paged TaggableItem.
+  /// [scope] `all` (default) or `mine` (the caller's own listings).
+  Future<List<TaggedProductForImportDto>> searchTaggableItems(
+    String query, {
+    String scope = 'all',
+  }) async {
+    final response = await apiClient.get(
+      '/v1/tag-picker/items',
+      queryParameters: {
+        if (query.trim().isNotEmpty) 'q': query.trim(),
+        'scope': scope,
+        'pageSize': 20,
+      },
+      options: Options(headers: {'requiresToken': true}),
+    );
+    final m = response is Map ? response : const {};
+    final items = m['items'] is List ? m['items'] as List : const [];
+    return [
+      for (final e in items)
+        if (e is Map && (e['productId'] as String? ?? '').isNotEmpty)
+          TaggedProductForImportDto(
+            productId: e['productId'] as String,
+            productName: e['name'] as String? ?? '',
+            imageUrl: e['primaryImageUrl'] as String? ?? '',
+            amount: e['displayPrice'] is Map
+                ? ((e['displayPrice'] as Map)['amount'] as num?)?.toDouble() ??
+                      0.0
+                : 0.0,
+            currency: e['displayPrice'] is Map
+                ? (e['displayPrice'] as Map)['currency'] as String? ?? 'NPR'
+                : 'NPR',
+            vendorName: e['vendorDisplayName'] as String? ?? '',
+            isService: e['isService'] == true,
+            priceLabel: e['displayPrice'] is Map
+                ? (e['displayPrice'] as Map)['label'] as String?
+                : null,
+          ),
+    ];
+  }
+
+  // GET /api/v1/customer/search?type=products&q=...&limit=20
+  // Searches the product catalog for tagging candidates (products only).
+  Future<List<TaggedProductForImportDto>> searchCatalogProducts(
+    String query,
+  ) async {
     final response = await apiClient.get(
       '/api/v1/customer/search',
       queryParameters: {'q': query, 'type': 'products', 'limit': 20},

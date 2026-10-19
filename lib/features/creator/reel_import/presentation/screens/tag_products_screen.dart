@@ -1022,6 +1022,8 @@ class _ProductCard extends StatelessWidget {
   final TagProductCommission? commission;
 
   String _formattedPrice() {
+    // A stay, trip or bank product: its own label ("from Rs 4,500/night").
+    if (product.serviceLabel case final label?) return label;
     final amt = product.price.amount.toStringAsFixed(0);
     final n = int.tryParse(amt) ?? 0;
     if (n >= 1000) {
@@ -1287,6 +1289,7 @@ class _SheetProductRow extends StatelessWidget {
   final TagProductCommission? commission;
 
   String _formattedPrice() {
+    if (product.serviceLabel case final label?) return label;
     final n = product.price.amount.toInt();
     if (n >= 1000) {
       return '${n ~/ 1000},${(n % 1000).toString().padLeft(3, '0')}';

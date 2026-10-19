@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/bookings.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/service_messages.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/widgets/booking_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/widgets/service_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/shared/bookings_providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:uuid/uuid.dart';
@@ -27,6 +29,7 @@ class BookingDetailScreen extends ConsumerStatefulWidget {
   static const Key previewFeeKey = Key('booking-cancel-fee');
   static const Key previewRefundKey = Key('booking-cancel-refund');
   static const Key errorKey = Key('booking-detail-error');
+  static const Key orderKey = Key('booking-detail-order');
 
   @override
   ConsumerState<BookingDetailScreen> createState() =>
@@ -236,6 +239,16 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           child: Column(
             children: [
               ServiceRow(label: 'Booking', value: b.number),
+              // Bought in an order (services are sold like items): its
+              // pay-now part was paid, and is refunded, through the order.
+              if (b.orderNumber != null)
+                InkWell(
+                  key: BookingDetailScreen.orderKey,
+                  onTap: () => context.push(
+                    '${RouteNames.orders}/${Uri.encodeComponent(b.orderNumber!)}',
+                  ),
+                  child: ServiceRow(label: 'Order', value: b.orderNumber!),
+                ),
               ServiceRow(
                 label: stay ? 'Dates' : 'Departure',
                 value: bookingDates(b),
@@ -356,7 +369,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           ),
         ],
         const SizedBox(height: DesignTokens.s20),
-        if (b.canPay) ...[
+        if (b.canPay && b.orderNumber == null) ...[
           ServicePrimaryButton(
             key: BookingDetailScreen.payKey,
             label: 'Pay ${serviceMoney(b.payNowAmount)} with eSewa',

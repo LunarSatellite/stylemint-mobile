@@ -23,7 +23,11 @@ class TrackedOrder {
     required this.placedAt,
     required this.itemCount,
     required this.status,
+    this.hasServiceLines = false,
   });
+
+  /// The order includes a stay or trip: its bookings are under Bookings.
+  final bool hasServiceLines;
 
   final String id;
   final String orderNumber; // e.g. "RC20230126" (rendered as "Order #…")

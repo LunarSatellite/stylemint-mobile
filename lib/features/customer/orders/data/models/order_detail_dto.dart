@@ -2,6 +2,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_delivery.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/data/models/service_line_json.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_line.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
 
@@ -22,12 +24,21 @@ abstract class OrderDetailItemDto with _$OrderDetailItemDto {
     @Default(0) int quantity,
     @Default(0) double unitPriceAmount,
     @Default('NPR') String unitPriceCurrency,
+    // Service cart contract v1 §4.1: a stay or trip line and its booking.
+    // Read by hand; absent before the contract.
+    Object? lineKind,
+    Object? booking,
   }) = _OrderDetailItemDto;
 
   const OrderDetailItemDto._();
 
   factory OrderDetailItemDto.fromJson(Map<String, dynamic> json) =>
       _$OrderDetailItemDtoFromJson(json);
+
+  /// This line's booking, when it is a stay or trip.
+  ServiceLine? get bookingLine => isServiceLineKind(lineKind) || booking != null
+      ? readServiceLine(booking, lineId: id)
+      : null;
 
   OrderDetailItem toDomain(String subOrderId, String subOrderStatusLabel) =>
       OrderDetailItem(
@@ -205,6 +216,9 @@ abstract class OrderDetailDto with _$OrderDetailDto {
     // v1). Absent from an older server → null ("not said"); present and
     // null → '' ("paid outright").
     @JsonKey(readValue: _readCreditAgreementId) String? creditAgreementId,
+    // Service cart contract v1 §4.1.
+    double? payAtVenueTotalAmount,
+    @Default('NPR') String payAtVenueTotalCurrency,
   }) = _OrderDetailDto;
 
   const OrderDetailDto._();
@@ -215,6 +229,17 @@ abstract class OrderDetailDto with _$OrderDetailDto {
   /// [delivery] is the hand-read `delivery` block (see `OrderDeliveryJson`),
   /// passed in because it is not one of this DTO's generated fields.
   OrderDetail toDomain({OrderDelivery? delivery}) {
+    // Stays and trips (service cart contract v1 §4.1) live in their own
+    // sub-orders, with no address, delivery or return. The product part
+    // decides the channel, the cancel and the return; the bookings are
+    // listed apart, each cancelled through its own policy.
+    final bookingLines = <ServiceLine>[
+      for (final s in subOrders)
+        for (final l in s.lines) ?l.bookingLine,
+    ];
+    final productSubOrders = subOrders
+        .where((s) => s.fulfillmentChannel.toLowerCase() != 'service')
+        .toList();
     // A parcel the buyer has just confirmed is Delivered on its sub-order
     // before the order itself is closed. With every sub-order delivered the
     // order reads as delivered, rather than "in transit" until the order
@@ -237,8 +262,8 @@ abstract class OrderDetailDto with _$OrderDetailDto {
     // mixed order (which cannot exist today) on the delivery path instead of
     // silently hiding a real address.
     final channel =
-        subOrders.isNotEmpty &&
-            subOrders.every(
+        productSubOrders.isNotEmpty &&
+            productSubOrders.every(
               (s) => OrderFulfillmentChannel.fromWire(
                 s.fulfillmentChannel,
               ).isCollection,
@@ -261,9 +286,16 @@ abstract class OrderDetailDto with _$OrderDetailDto {
       // Not returned by this endpoint — approximate until a real ETA field
       // ships (delivery-routing module).
       estimatedDelivery: placedUtc.add(const Duration(days: 7)),
+      bookingLines: List.unmodifiable(bookingLines),
+      payAtVenue: (payAtVenueTotalAmount ?? 0) > 0
+          ? Money(
+              amount: payAtVenueTotalAmount!,
+              currency: payAtVenueTotalCurrency,
+            )
+          : null,
       items: subOrders
           .expand(
-            (s) => s.lines.map(
+            (s) => s.lines.where((l) => l.bookingLine == null).map(
               (l) => l.toDomain(
                 s.id,
                 s.isCancelledBySeller
@@ -285,17 +317,24 @@ abstract class OrderDetailDto with _$OrderDetailDto {
       // no address. toDisplayString() bottoms out at "Location saved",
       // which would print a destination nobody chose as fact. Absent
       // renders as absent.
-      shippingAddress: channel.isCollection ? '' : shipTo.toDisplayString(),
+      shippingAddress: channel.isCollection || productSubOrders.isEmpty
+          ? ''
+          : shipTo.toDisplayString(),
       fulfillmentChannel: channel,
       collectedAt: collectedAt,
       receiverName: shipTo.receiverName,
       receiverPhone: shipTo.receiverPhone,
       paymentMethod: _paymentMethodLabel(paymentMethod),
       trackingNumber: trackingNumber,
-      canCancel: overallStatus == OrderTrackStatus.preparingForShipping,
-      canReturn: overallStatus == OrderTrackStatus.delivered,
+      // The whole-order cancel never touches stays and trips (§4.2).
+      canCancel:
+          overallStatus == OrderTrackStatus.preparingForShipping &&
+          productSubOrders.isNotEmpty,
+      canReturn:
+          overallStatus == OrderTrackStatus.delivered &&
+          productSubOrders.isNotEmpty,
       delivery: delivery,
-      cancelledParts: subOrders
+      cancelledParts: productSubOrders
           .where((s) => s.isCancelled)
           .map((s) => s.toCancelledPart())
           .toList(growable: false),

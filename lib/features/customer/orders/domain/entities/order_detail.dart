@@ -1,6 +1,7 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_delivery.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_line.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 class OrderDetailItem {
@@ -105,7 +106,18 @@ class OrderDetail {
     this.delivery,
     this.cancelledParts = const <CancelledOrderPart>[],
     this.creditAgreementId,
+    this.bookingLines = const <ServiceLine>[],
+    this.payAtVenue,
   });
+
+  /// The stays and trips bought in this order (service cart contract v1
+  /// §4.1), each with its booking: number, state, dates, guests, what was
+  /// paid now and what is due at the venue. Kept apart from [items], which
+  /// are the products — returns, reviews and delivery are about those.
+  final List<ServiceLine> bookingLines;
+
+  /// Still to pay hotels and agencies at the venue; null when nothing is.
+  final Money? payAtVenue;
 
   /// Parts of this order that were cancelled (one per seller). On a mixed
   /// order the rest is still on its way; when every part is here the whole
@@ -192,6 +204,8 @@ class OrderDetail {
     OrderDelivery? delivery,
   }) {
     return OrderDetail(
+      bookingLines: bookingLines,
+      payAtVenue: payAtVenue,
       receiverName: receiverName,
       receiverPhone: receiverPhone,
       cancelledParts: cancelledParts,

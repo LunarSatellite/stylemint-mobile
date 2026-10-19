@@ -24,6 +24,8 @@ abstract class TrackedOrderDto with _$TrackedOrderDto {
     @Default(1)
     int
     state, // OrderState: 1=Placed,2=Paid,3=Fulfilling,4=Completed,5=Cancelled
+    // Service cart contract v1 §4.1: the order includes a stay or trip.
+    @Default(false) bool hasServiceLines,
   }) = _TrackedOrderDto;
 
   const TrackedOrderDto._();
@@ -38,6 +40,7 @@ abstract class TrackedOrderDto with _$TrackedOrderDto {
     placedAt: placedUtc,
     itemCount: itemCount,
     status: _statusFromState(state),
+    hasServiceLines: hasServiceLines,
   );
 
   // Backend OrderState is coarser than the mobile shipping-stage pill (it
