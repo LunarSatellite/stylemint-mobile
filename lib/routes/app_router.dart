@@ -691,6 +691,10 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.productDetail,
         builder: (ctx, state) => ProductDetailScreen(
           productId: state.pathParameters['productId']!,
+          replaceLineId:
+              state.uri.queryParameters[RouteNames.productReplaceLineParam],
+          reelTagContextId:
+              state.uri.queryParameters[RouteNames.productReelTagParam],
         ),
         routes: [
           GoRoute(

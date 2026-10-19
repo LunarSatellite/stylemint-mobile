@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/data/models/service_line_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'cart_dto.freezed.dart';
@@ -22,6 +23,10 @@ abstract class CartItemDto with _$CartItemDto {
     @JsonKey(name: 'creatorHandleSnapshot') String? creatorHandle,
     @JsonKey(name: 'commissionRateSnapshot') num? commissionRate,
     String? productVariantId,
+    // Service cart contract v1 §2.2: 1 product, 2 service (stay or trip).
+    // Raw, and read by hand: a server before the contract sends neither.
+    Object? lineKind,
+    Object? service,
   }) = _CartItemDto;
 
   const CartItemDto._();
@@ -46,6 +51,9 @@ abstract class CartItemDto with _$CartItemDto {
     creatorHandle: creatorHandle,
     commissionRate: commissionRate?.toDouble(),
     variantId: productVariantId,
+    service: isServiceLineKind(lineKind) || service != null
+        ? readServiceLine(service, lineId: id)
+        : null,
   );
 }
 
@@ -181,6 +189,11 @@ abstract class CartDto with _$CartDto {
     @JsonKey(fromJson: _savedForLaterFromJson, toJson: _savedForLaterToJson)
     @Default(<SavedForLaterItemDto>[])
     List<SavedForLaterItemDto> savedForLater,
+    // Service cart contract v1 §2.3. Absent before the contract.
+    num? payNowTotalAmount,
+    num? payAtVenueTotalAmount,
+    @Default(false) bool hasServiceLines,
+    @Default(true) bool requiresShippingAddress,
   }) = _CartDto;
 
   const CartDto._();
@@ -213,5 +226,16 @@ abstract class CartDto with _$CartDto {
     savedForLater: savedForLater
         .map((dto) => dto.toDomain())
         .toList(growable: false),
+    payNowTotal: payNowTotalAmount == null
+        ? null
+        : Money(amount: payNowTotalAmount!.toDouble(), currency: totalCurrency),
+    payAtVenueTotal: payAtVenueTotalAmount == null
+        ? null
+        : Money(
+            amount: payAtVenueTotalAmount!.toDouble(),
+            currency: totalCurrency,
+          ),
+    hasServiceLines: hasServiceLines,
+    requiresShippingAddress: requiresShippingAddress,
   );
 }

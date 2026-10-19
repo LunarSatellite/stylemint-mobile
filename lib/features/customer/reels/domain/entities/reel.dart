@@ -1,5 +1,6 @@
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/feed_provenance.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_item.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/platform_video_id.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
@@ -183,6 +184,9 @@ class TaggedProductEntity {
     required this.price,
     required this.quantity,
     this.imageUrls = const <String>[],
+    this.serviceType,
+    this.priceLabel,
+    this.addableToCart = true,
   });
 
   final String id;
@@ -202,6 +206,33 @@ class TaggedProductEntity {
   /// sends only the single url, and some callers want one picture. Read
   /// [gallery], which reconciles the two.
   final List<String> imageUrls;
+
+  /// A hotel stay, travel package or bank product tagged like a product
+  /// (service items contract v1 §5.1). Null for a product, and on a server
+  /// before that contract.
+  final ServiceItemType? serviceType;
+
+  /// The tag's `displayPrice.label`: "from Rs 4,500/night", "Rs 45,000 per
+  /// person". Null for a bank and on an older server.
+  final String? priceLabel;
+
+  /// False for a bank product: it is enquired about, never added to cart.
+  final bool addableToCart;
+
+  /// A service is never added straight from the reel: its dates, room and
+  /// guests (or a departure) are chosen on its item page.
+  bool get isService => serviceType != null;
+
+  /// What the tag says a service costs — its price label, or "Enquire" for
+  /// a bank. Null for a product (callers show [price]).
+  String? get serviceLabel {
+    if (!isService) return null;
+    final label = priceLabel?.trim();
+    if (label != null && label.isNotEmpty) return label;
+    return serviceType == ServiceItemType.bank || !addableToCart
+        ? 'Enquire'
+        : null;
+  }
 
   /// The pictures to show, in order: the full set when the server sent one,
   /// otherwise the lead image alone, otherwise empty.

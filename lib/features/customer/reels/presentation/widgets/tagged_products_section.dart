@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/platform_avatar_carousel.dart';
@@ -66,6 +68,12 @@ Future<void> addTaggedProductToCart(
   WidgetRef ref,
   TaggedProductEntity product,
 ) async {
+  // A stay or trip needs dates and guests, a bank product an enquiry: both
+  // are chosen on the item page, never added straight from the reel.
+  if (product.isService) {
+    openTaggedServiceItem(context, product);
+    return;
+  }
   if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
   if (!context.mounted) return;
   final succeeded = await ref
@@ -89,6 +97,19 @@ Future<void> addTaggedProductToCart(
       ),
     );
   }
+}
+
+/// Opens a tagged service's item page (service items contract v1 §5.1),
+/// carrying the reel tag so a booking credits the reel's creator.
+void openTaggedServiceItem(BuildContext context, TaggedProductEntity product) {
+  unawaited(
+    context.push(
+      RouteNames.serviceItemPath(
+        product.id,
+        reelTagId: product.taggedProductId,
+      ),
+    ),
+  );
 }
 
 /// The cart line holding [productId], or null. Watches the cart.
@@ -128,16 +149,22 @@ class _ProductTile extends ConsumerWidget {
   Future<void> _addToCart(BuildContext context, WidgetRef ref) =>
       addTaggedProductToCart(context, ref, product);
 
-  void _openProduct(BuildContext context) =>
-      context.push('/product/${product.id}');
+  void _openProduct(BuildContext context) => product.isService
+      ? openTaggedServiceItem(context, product)
+      : unawaited(context.push('/product/${product.id}'));
 
   void _changeQuantity(WidgetRef ref, CartItem item, int delta) =>
       changeCartItemQuantity(ref, item, delta);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cartItem = watchCartItemForProduct(ref, product.id);
+    // A service is never stepped from the reel: each booking is its own
+    // cart line, chosen on the item page.
+    final cartItem = product.isService
+        ? null
+        : watchCartItemForProduct(ref, product.id);
     final inCart = cartItem != null;
+    final serviceLabel = product.serviceLabel;
     // The blur lives in its own IgnorePointer'd layer, separate from the
     // interactive Row below — a GestureDetector/InkWell *nested inside* a
     // BackdropFilter can fail to receive touches (unlike the rail buttons
@@ -192,16 +219,33 @@ class _ProductTile extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          MoneyText(
-                            product.price,
-                            style: const TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              height: 1.3,
-                              color: DesignTokens.primaryGreen,
+                          if (serviceLabel != null)
+                            // "from Rs 4,500/night", "Rs 45,000 per person",
+                            // "Enquire".
+                            Text(
+                              serviceLabel,
+                              key: Key('tag-service-price-${product.id}'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                height: 1.3,
+                                color: DesignTokens.primaryGreen,
+                              ),
+                            )
+                          else
+                            MoneyText(
+                              product.price,
+                              style: const TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                height: 1.3,
+                                color: DesignTokens.primaryGreen,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -228,7 +272,9 @@ class _ProductTile extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(
                           DesignTokens.buttonRadius,
                         ),
-                        onTap: () => _addToCart(context, ref),
+                        onTap: product.isService
+                            ? () => _openProduct(context)
+                            : () => _addToCart(context, ref),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: DesignTokens.s12,
@@ -248,8 +294,17 @@ class _ProductTile extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.add_shopping_cart_rounded,
+                          child: Icon(
+                            // A service opens its page: dates for a stay or
+                            // trip, Enquire for a bank.
+                            product.isService
+                                ? (product.addableToCart
+                                      ? Icons.event_available_rounded
+                                      : Icons.chevron_right_rounded)
+                                : Icons.add_shopping_cart_rounded,
+                            key: product.isService
+                                ? Key('tag-service-open-${product.id}')
+                                : null,
                             size: 18,
                             color: DesignTokens.buttonPrimaryText,
                           ),

@@ -75,6 +75,25 @@ abstract class RouteNames {
   static const reelComments = '/reels/:reelId/comments';
   static const discoverCreators = '/discover/creators';
   static const productDetail = '/product/:productId';
+  static String productDetailPath(String productId) =>
+      productDetail.replaceFirst(':productId', Uri.encodeComponent(productId));
+
+  /// `?replaceLine=` on [productDetail]: a stay or trip opened from its cart
+  /// line to change dates, rooms or guests. Adding the new choice removes
+  /// that line (a service line's options are fixed once added).
+  static const productReplaceLineParam = 'replaceLine';
+  /// `?tag=` on [productDetail]: the reel tag a stay or trip was opened
+  /// from, so adding it to the cart credits the reel's creator as a product
+  /// added from the reel would (service items contract v1 §6).
+  static const productReelTagParam = 'tag';
+  static String serviceItemPath(String productId, {String? reelTagId}) =>
+      reelTagId == null || reelTagId.isEmpty
+      ? productDetailPath(productId)
+      : '${productDetailPath(productId)}?$productReelTagParam='
+            '${Uri.encodeComponent(reelTagId)}';
+  static String serviceItemEditPath(String productId, String cartLineId) =>
+      '${productDetailPath(productId)}?$productReplaceLineParam='
+      '${Uri.encodeComponent(cartLineId)}';
 
   /// Mall product listing. Query = the `GET v1/public/products` filters
   /// (sort, categoryId, categorySlug, vendorAccountId, minPrice, maxPrice,

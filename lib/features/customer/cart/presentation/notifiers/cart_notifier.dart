@@ -35,6 +35,11 @@ class CartNotifier extends StateNotifier<CartState> {
     unawaited(fetchCart());
   }
 
+  /// Shows [cart] as the server returned it from a write made elsewhere —
+  /// a stay or trip added on its item page goes through the services'
+  /// own repository (service cart contract v1), which answers with the cart.
+  void showCart(Cart cart) => state = CartState.loadSuccess(cart);
+
   Future<void> fetchCart() async {
     state = const CartState.loadInProgress();
     final either = await _repository.getCart();

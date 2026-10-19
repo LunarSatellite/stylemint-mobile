@@ -157,6 +157,17 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                   .read(cartNotifierProvider.notifier)
                                   .saveForLater(cart.items[i].id);
                             },
+                            // A stay or trip: back to its item page with
+                            // these options, to add the new choice in place
+                            // of this line.
+                            onEditService: cart.items[i].isService
+                                ? () => context.push(
+                                    RouteNames.serviceItemEditPath(
+                                      cart.items[i].productId,
+                                      cart.items[i].id,
+                                    ),
+                                  )
+                                : null,
                           ),
                         );
                       }),
@@ -326,15 +337,18 @@ class _TicketCard extends StatelessWidget {
                   label: 'Sub Total (${cart.items.length} items)',
                   value: formatMoney(cart.subtotal),
                 ),
-                const SizedBox(height: 12),
-                _BillRow(
-                  icon: Icons.local_shipping_outlined,
-                  label: 'Shipping',
-                  valueBadge: isFreeShipping ? 'Free' : null,
-                  value: isFreeShipping
-                      ? null
-                      : formatMoney(cart.shippingTotal),
-                ),
+                // A cart of stays and trips only ships nothing.
+                if (cart.requiresShippingAddress) ...[
+                  const SizedBox(height: 12),
+                  _BillRow(
+                    icon: Icons.local_shipping_outlined,
+                    label: 'Shipping',
+                    valueBadge: isFreeShipping ? 'Free' : null,
+                    value: isFreeShipping
+                        ? null
+                        : formatMoney(cart.shippingTotal),
+                  ),
+                ],
                 // VAT is INSIDE the prices above, not added to them, so it is
                 // shown as what the subtotal already contains rather than as
                 // another bill line. Rendered as an addition — which is how
@@ -385,9 +399,11 @@ class _TicketCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    const Flexible(
+                    Flexible(
                       child: Text(
-                        'Grand Total',
+                        // With stays or trips in the cart the total is the
+                        // whole price; what is paid now follows below.
+                        cart.hasServiceLines ? 'Total price' : 'Grand Total',
                         style: DesignTokens.mediumSemibold,
                       ),
                     ),
@@ -408,6 +424,31 @@ class _TicketCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                // Service cart contract v1 §2.3: stays and trips may be paid
+                // partly or wholly at the venue, never through StyleMint.
+                if (cart.hasServiceLines) ...[
+                  if (cart.payNowTotal case final payNow?) ...[
+                    const SizedBox(height: 12),
+                    _BillRow(
+                      key: const Key('cart-pay-now'),
+                      icon: Icons.payments_outlined,
+                      label: 'Pay now',
+                      value: formatMoney(payNow),
+                      valueColor: DesignTokens.primaryGreen,
+                    ),
+                  ],
+                  if (cart.payAtVenueTotal case final atVenue?
+                      when atVenue.amount > 0) ...[
+                    const SizedBox(height: 12),
+                    _BillRow(
+                      key: const Key('cart-pay-at-venue'),
+                      icon: Icons.storefront_outlined,
+                      label: 'Pay at the venue',
+                      value: formatMoney(atVenue),
+                      valueColor: DesignTokens.textLight,
+                    ),
+                  ],
+                ],
               ],
             ),
           ),
@@ -497,6 +538,7 @@ class _BillRow extends StatelessWidget {
     this.value,
     this.valueBadge,
     this.valueColor,
+    super.key,
   }) : assert(
          icon != null || iconWidget != null,
          '_BillRow requires icon or iconWidget',
@@ -794,20 +836,22 @@ class _CheckoutBar extends StatelessWidget {
               spacing: DesignTokens.s8,
               runSpacing: DesignTokens.s4,
               children: [
-                const Row(
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.shopping_cart_outlined,
                       size: DesignTokens.iconSmall,
                       color: DesignTokens.textMuted,
                     ),
-                    SizedBox(width: DesignTokens.s8),
+                    const SizedBox(width: DesignTokens.s8),
                     // Flexible so a scaled-up label wraps inside the run
                     // rather than pushing past the bar's edge.
                     Flexible(
                       child: Text(
-                        'Total Order',
+                        cart.payNowTotal != null && cart.hasServiceLines
+                            ? 'Pay now'
+                            : 'Total Order',
                         // A quiet label so the amount beside it is what the
                         // eye lands on.
                         style: DesignTokens.smallRegular,
@@ -816,7 +860,10 @@ class _CheckoutBar extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  formatMoney(cart.total),
+                  formatMoney(
+                    cart.hasServiceLines ? cart.payNowTotal ?? cart.total : cart.total,
+                  ),
+                  key: const Key('cart-checkout-amount'),
                   style: DesignTokens.moneyLarge,
                 ),
               ],

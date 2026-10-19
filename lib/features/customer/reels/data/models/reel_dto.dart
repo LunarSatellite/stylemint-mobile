@@ -1,6 +1,8 @@
 ﻿import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/data/models/service_item_json.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_item.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'reel_dto.freezed.dart';
@@ -70,6 +72,11 @@ abstract class TaggedProductDto with _$TaggedProductDto {
     required double amount,
     @Default('NPR') String currency,
     @Default(1) int quantity,
+    // Service items contract v1 §5.1 — read by hand in toDomain; absent on
+    // an older server.
+    Object? serviceType,
+    Object? displayPrice,
+    bool? addableToCart,
   }) = _TaggedProductDto;
 
   const TaggedProductDto._();
@@ -83,6 +90,9 @@ abstract class TaggedProductDto with _$TaggedProductDto {
     imageUrl: imageUrl,
     price: Money(amount: amount, currency: currency),
     quantity: quantity,
+    serviceType: ServiceItemType.fromWire(serviceType),
+    priceLabel: readDisplayPrice(displayPrice)?.label,
+    addableToCart: addableToCart ?? true,
   );
 }
 

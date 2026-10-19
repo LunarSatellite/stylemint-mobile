@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/widgets/service_line_widgets.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -11,14 +12,25 @@ class CartItemTile extends StatelessWidget {
     required this.onDecrement,
     required this.onDelete,
     required this.onSaveForLater,
+    this.onEditService,
     super.key,
   });
+
+  static Key editServiceKey(String lineId) => Key('cart-service-edit-$lineId');
+  static Key removeServiceKey(String lineId) =>
+      Key('cart-service-remove-$lineId');
 
   final CartItem item;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
   final VoidCallback onDelete;
   final VoidCallback onSaveForLater;
+
+  /// A stay or trip: opens its item page to choose other dates, rooms or
+  /// guests. A service line's options are fixed once added (service cart
+  /// contract v1 §2.1), so changing them adds a new line and removes this
+  /// one.
+  final VoidCallback? onEditService;
 
   @override
   Widget build(BuildContext context) {
@@ -95,10 +107,13 @@ class CartItemTile extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: DesignTokens.s4),
-                        Text(
-                          item.variantName,
-                          style: DesignTokens.smallRegular,
-                        ),
+                        if (item.service case final service?)
+                          ServiceLineSummary(line: service, compact: true)
+                        else
+                          Text(
+                            item.variantName,
+                            style: DesignTokens.smallRegular,
+                          ),
                         if (item.creatorHandle != null) ...[
                           const SizedBox(height: DesignTokens.s4),
                           Text(
@@ -128,14 +143,31 @@ class CartItemTile extends StatelessWidget {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           spacing: DesignTokens.s8,
                           runSpacing: DesignTokens.s8,
-                          children: [
-                            _QuantityStepper(
-                              quantity: item.quantity,
-                              onIncrement: item.isInStock ? onIncrement : null,
-                              onDecrement: onDecrement,
-                            ),
-                            _SaveForLaterButton(onTap: onSaveForLater),
-                          ],
+                          children: item.isService
+                              ? [
+                                  // No quantity: one booking per line.
+                                  if (onEditService != null)
+                                    _TextAction(
+                                      key: editServiceKey(item.id),
+                                      label: 'Change',
+                                      onTap: onEditService!,
+                                    ),
+                                  _TextAction(
+                                    key: removeServiceKey(item.id),
+                                    label: 'Remove',
+                                    onTap: onDelete,
+                                  ),
+                                ]
+                              : [
+                                  _QuantityStepper(
+                                    quantity: item.quantity,
+                                    onIncrement: item.isInStock
+                                        ? onIncrement
+                                        : null,
+                                    onDecrement: onDecrement,
+                                  ),
+                                  _SaveForLaterButton(onTap: onSaveForLater),
+                                ],
                         ),
                       ],
                     ),
@@ -163,6 +195,17 @@ class _SaveForLaterButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  Widget build(BuildContext context) =>
+      _TextAction(label: 'Save for later', onTap: onTap);
+}
+
+class _TextAction extends StatelessWidget {
+  const _TextAction({required this.label, required this.onTap, super.key});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
@@ -175,7 +218,7 @@ class _SaveForLaterButton extends StatelessWidget {
             horizontal: DesignTokens.s6,
           ),
           child: Text(
-            'Save for later',
+            label,
             style: DesignTokens.smallRegular.copyWith(
               color: DesignTokens.primaryGreen,
               fontWeight: FontWeight.w600,

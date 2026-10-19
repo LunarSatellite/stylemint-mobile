@@ -255,6 +255,18 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'My returns',
               onTap: () => context.push(RouteNames.myReturns),
             ),
+            // Stays, trips and bank requests: services are bought like
+            // items (no Services tab), so they sit with orders.
+            ProfileMenuItem(
+              icon: Icons.event_available_outlined,
+              label: 'Bookings',
+              onTap: () => context.push(RouteNames.myBookings),
+            ),
+            ProfileMenuItem(
+              icon: Icons.account_balance_outlined,
+              label: 'Bank enquiries & appointments',
+              onTap: () => context.push(RouteNames.myBankRequests),
+            ),
             ProfileMenuItem(
               icon: Icons.workspace_premium_outlined,
               label: 'Outcome promises',

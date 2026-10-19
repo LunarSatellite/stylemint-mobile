@@ -51,6 +51,17 @@ ServiceFailure mapServiceFailure(Object error) {
     code: _string(body, 'errorCode'),
     message: _string(body, 'detail') ?? _string(body, 'title'),
     statusCode: status,
+    field: _string(body, 'field'),
+    errors: List.unmodifiable([
+      if (body is Map && body['errors'] is List)
+        for (final e in body['errors'] as List)
+          if (e is Map && _string(e, 'field') != null)
+            ServiceFieldError(
+              field: _string(e, 'field')!,
+              code: _string(e, 'code') ?? '',
+              message: _string(e, 'message'),
+            ),
+    ]),
   );
 }
 

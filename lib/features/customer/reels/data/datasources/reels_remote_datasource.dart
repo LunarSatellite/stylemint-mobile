@@ -5,6 +5,8 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/feed_provenance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_like_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/data/models/service_item_json.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_item.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_like_result.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -79,6 +81,12 @@ class ReelsRemoteDataSource {
               currency: (p['priceCurrency'] as String?) ?? 'NPR',
             ),
             quantity: 1,
+            // Service items contract v1 §5.1.
+            serviceType: ServiceItemType.fromWire(p['serviceType']),
+            priceLabel: readDisplayPrice(p['displayPrice'])?.label,
+            addableToCart: p['addableToCart'] is bool
+                ? p['addableToCart'] as bool
+                : true,
           ),
         )
         .toList(growable: false);
@@ -190,6 +198,12 @@ class ReelsRemoteDataSource {
               currency: currency is String ? currency : 'NPR',
             ),
             quantity: 1,
+            // Service items contract v1 §5.1.
+            serviceType: ServiceItemType.fromWire(p['serviceType']),
+            priceLabel: readDisplayPrice(p['displayPrice'])?.label,
+            addableToCart: p['addableToCart'] is bool
+                ? p['addableToCart'] as bool
+                : true,
           );
         })
         .toList(growable: false);

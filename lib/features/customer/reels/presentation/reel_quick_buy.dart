@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -105,6 +107,19 @@ Future<bool> reelQuickBuy(
   WidgetRef ref,
   TaggedProductEntity product,
 ) async {
+  // A stay, trip or bank product is chosen on its item page (dates and
+  // guests, or an enquiry), never added from the rail.
+  if (product.isService) {
+    unawaited(
+      context.push(
+        RouteNames.serviceItemPath(
+          product.id,
+          reelTagId: product.taggedProductId,
+        ),
+      ),
+    );
+    return false;
+  }
   if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) {
     return false;
   }
