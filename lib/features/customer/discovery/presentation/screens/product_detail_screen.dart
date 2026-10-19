@@ -500,12 +500,16 @@ class _ProductBody extends StatelessWidget {
                       productId: product.id,
                       padding: const EdgeInsets.only(top: DesignTokens.s24),
                     ),
-                    const SizedBox(height: DesignTokens.s12),
-                    _PassportSection(productId: product.id),
-                    const SizedBox(height: DesignTokens.s12),
-                    ProductComparisonCard(productId: product.id),
-                    const SizedBox(height: DesignTokens.s12),
-                    ReturnRecordCard(productId: product.id),
+                    // Provenance, comparisons and return records are about
+                    // goods; a stay, trip or bank product has none.
+                    if (!isService) ...[
+                      const SizedBox(height: DesignTokens.s12),
+                      _PassportSection(productId: product.id),
+                      const SizedBox(height: DesignTokens.s12),
+                      ProductComparisonCard(productId: product.id),
+                      const SizedBox(height: DesignTokens.s12),
+                      ReturnRecordCard(productId: product.id),
+                    ],
                     const SizedBox(height: DesignTokens.s12),
                     _FaqSection(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
