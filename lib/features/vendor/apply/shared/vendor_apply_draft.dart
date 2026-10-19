@@ -72,6 +72,12 @@ class VendorApplyDraft {
     this.commissionMinRate,
     this.commissionMaxRate,
     this.brandStory,
+    this.serviceCategory = 0,
+    this.licenceNumber,
+    this.licenceIssuer,
+    this.licenceExpiresOn,
+    this.licenceDocumentRef,
+    this.licenceDocumentName,
   });
 
   final String accountId;
@@ -122,6 +128,35 @@ class VendorApplyDraft {
   final String? commissionMaxRate;
   final String? brandStory;
 
+  // Service step (service-banks contract v1) — set only through
+  // [withService], so switching back to products clears the licence.
+  final int serviceCategory;
+  final String? licenceNumber;
+  final String? licenceIssuer;
+  final DateTime? licenceExpiresOn;
+  final String? licenceDocumentRef;
+  final String? licenceDocumentName;
+
+  /// This draft with the service step replaced as a whole.
+  VendorApplyDraft withService({
+    required int serviceCategory,
+    String? licenceNumber,
+    String? licenceIssuer,
+    DateTime? licenceExpiresOn,
+    String? licenceDocumentRef,
+    String? licenceDocumentName,
+  }) {
+    final product = serviceCategory == 0;
+    return _copy(
+      serviceCategory: serviceCategory,
+      licenceNumber: product ? null : licenceNumber,
+      licenceIssuer: product ? null : licenceIssuer,
+      licenceExpiresOn: product ? null : licenceExpiresOn,
+      licenceDocumentRef: product ? null : licenceDocumentRef,
+      licenceDocumentName: product ? null : licenceDocumentName,
+    );
+  }
+
   VendorApplicationForm toForm() => VendorApplicationForm(
     brandName: brandName,
     legalBusinessName: legalBusinessName,
@@ -143,6 +178,11 @@ class VendorApplyDraft {
     priceRangeCurrency: (minPrice != null || maxPrice != null) ? 'NPR' : null,
     brandStory: brandStory,
     bankAccount: _buildBankAccount(),
+    serviceCategory: serviceCategory,
+    licenceNumber: serviceCategory == 0 ? null : licenceNumber,
+    licenceIssuer: serviceCategory == 0 ? null : licenceIssuer,
+    licenceExpiresOn: serviceCategory == 0 ? null : licenceExpiresOn,
+    licenceDocumentRef: serviceCategory == 0 ? null : licenceDocumentRef,
   );
 
   VendorBankAccountForm? _buildBankAccount() {
@@ -242,6 +282,65 @@ class VendorApplyDraft {
       commissionMinRate: commissionMinRate ?? this.commissionMinRate,
       commissionMaxRate: commissionMaxRate ?? this.commissionMaxRate,
       brandStory: brandStory ?? this.brandStory,
+      serviceCategory: serviceCategory,
+      licenceNumber: licenceNumber,
+      licenceIssuer: licenceIssuer,
+      licenceExpiresOn: licenceExpiresOn,
+      licenceDocumentRef: licenceDocumentRef,
+      licenceDocumentName: licenceDocumentName,
     );
   }
+
+  VendorApplyDraft _copy({
+    required int serviceCategory,
+    required String? licenceNumber,
+    required String? licenceIssuer,
+    required DateTime? licenceExpiresOn,
+    required String? licenceDocumentRef,
+    required String? licenceDocumentName,
+  }) => VendorApplyDraft(
+    accountId: accountId,
+    brandName: brandName,
+    legalBusinessName: legalBusinessName,
+    businessType: businessType,
+    taxId: taxId,
+    businessRegistrationNumber: businessRegistrationNumber,
+    website: website,
+    countryRegion: countryRegion,
+    streetAddress: streetAddress,
+    addressLine2: addressLine2,
+    city: city,
+    country: country,
+    zipCode: zipCode,
+    state: state,
+    supportEmail: supportEmail,
+    supportPhone: supportPhone,
+    returnPolicyUrl: returnPolicyUrl,
+    contactFullName: contactFullName,
+    contactPosition: contactPosition,
+    contactEmail: contactEmail,
+    contactPhone: contactPhone,
+    businessHours: businessHours,
+    uploadedDocCategories: uploadedDocCategories,
+    accountHolder: accountHolder,
+    bankName: bankName,
+    accountType: accountType,
+    routingNumber: routingNumber,
+    accountNumber: accountNumber,
+    w9FileName: w9FileName,
+    taxCertified: taxCertified,
+    productCategories: productCategories,
+    catalogSize: catalogSize,
+    minPrice: minPrice,
+    maxPrice: maxPrice,
+    commissionMinRate: commissionMinRate,
+    commissionMaxRate: commissionMaxRate,
+    brandStory: brandStory,
+    serviceCategory: serviceCategory,
+    licenceNumber: licenceNumber,
+    licenceIssuer: licenceIssuer,
+    licenceExpiresOn: licenceExpiresOn,
+    licenceDocumentRef: licenceDocumentRef,
+    licenceDocumentName: licenceDocumentName,
+  );
 }

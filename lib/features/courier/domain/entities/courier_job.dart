@@ -1,3 +1,4 @@
+import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_fare.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// Where a rider's job stands. Mirrors the delivery-complete contract's
@@ -112,6 +113,7 @@ class CourierJob {
     this.declaredValue,
     this.notes,
     this.distanceKm,
+    this.fare,
   });
 
   final String hopId;
@@ -135,6 +137,9 @@ class CourierJob {
   final CourierJobStop pickup;
   final CourierJobStop dropoff;
   final double? distanceKm;
+
+  /// How [payout] is made up; null for jobs from before the breakdown.
+  final FareBreakdown? fare;
 }
 
 /// Mirrors `DeliveryProofDto.status`. Unknown reads as [pending]: the screen

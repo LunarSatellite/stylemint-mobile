@@ -97,6 +97,19 @@ class VendorRepositoryImpl implements VendorRepository {
           commissionMaxPercent: form.commissionMaxPercent,
           idempotencyKey: _uuid.v4(),
         );
+        if (form.isServiceVendor) {
+          await remoteDataSource.patchServiceStep(
+            form: form,
+            idempotencyKey: _uuid.v4(),
+          );
+          final licence = form.licenceDocumentRef;
+          if (licence != null) {
+            await remoteDataSource.patchStep4Documents(
+              documents: [(kind: 5, storageUri: licence)],
+              idempotencyKey: _uuid.v4(),
+            );
+          }
+        }
         await remoteDataSource.submitDraft(idempotencyKey: _uuid.v4());
       } catch (_) {
         // Best-effort only — the legacy call above already submitted the

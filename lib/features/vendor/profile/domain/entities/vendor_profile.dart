@@ -10,6 +10,8 @@ class VendorProfile {
     this.logoUrl,
     this.description,
     this.websiteUrl,
+    this.serviceCategory = 0,
+    this.serviceLicenceNumber,
   });
 
   final String id;
@@ -22,4 +24,11 @@ class VendorProfile {
   final String? logoUrl;
   final String? description;
   final String? websiteUrl;
+
+  /// service-banks contract v1: 0 product seller, 1 Hotel, 2 TravelAgency,
+  /// 3 Bank. Read it through `ServiceCategory.fromWire`.
+  final int serviceCategory;
+
+  /// The NRB / tourism licence number the admin approved, if any.
+  final String? serviceLicenceNumber;
 }

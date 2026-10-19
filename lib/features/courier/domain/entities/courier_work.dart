@@ -1,3 +1,4 @@
+import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_fare.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_profile.dart';
 
 /// Mirrors `HopOfferState`.
@@ -134,6 +135,7 @@ class HopOffer {
     this.pickup,
     this.dropoff,
     this.distanceToPickupKm,
+    this.fare,
   });
 
   final String id;
@@ -141,6 +143,10 @@ class HopOffer {
   final DeliveryTier tier;
   final int hopIndex;
   final OfferMode mode;
+
+  /// How [proposedPayoutAmount] is made up; null for offers issued before
+  /// the fare breakdown shipped.
+  final FareBreakdown? fare;
   final OfferInterestState interestState;
   final DeliveryPlace? pickup;
   final DeliveryPlace? dropoff;
@@ -294,6 +300,7 @@ class DeliveryHop {
     this.failureNote,
     this.pickup,
     this.dropoff,
+    this.fare,
   });
 
   final String id;
@@ -301,6 +308,9 @@ class DeliveryHop {
   final int hopIndex;
   final DeliveryTier tier;
   final String courierProfileId;
+
+  /// How [payoutAmount] is made up; null for older hops.
+  final FareBreakdown? fare;
   final HopState state;
 
   /// Exact ends of the hop, when the server sends them. The map falls back to
@@ -380,9 +390,13 @@ class CourierEarningRow {
     required this.fromGeohash,
     required this.toGeohash,
     this.handedOffUtc,
+    this.fare,
   });
 
   final String hopId;
+
+  /// How [amount] was made up; null for deliveries before the breakdown.
+  final FareBreakdown? fare;
   final String packageId;
   final int hopIndex;
   final double amount;

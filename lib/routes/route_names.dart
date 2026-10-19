@@ -172,6 +172,77 @@ abstract class RouteNames {
         ':agreementId',
         Uri.encodeComponent(agreementId),
       );
+  // ─── Services: stays, travel, banks (buyer) ──────────────────────────────
+
+  /// The Services tab (a shell branch): Stays · Travel · Banks. Browsing
+  /// under `/services` is public; the paths in [servicesSignedInOnly] are
+  /// not (the router asks a guest to sign in for them).
+  static const services = '/services';
+  static const serviceStayResults = '/services/stays/results';
+  static const serviceStayDetail = '/services/stays/:listingId';
+  static String serviceStayDetailPath(String listingId) => serviceStayDetail
+      .replaceFirst(':listingId', Uri.encodeComponent(listingId));
+  static const serviceTravelResults = '/services/travel/results';
+  static const serviceTravelDetail = '/services/travel/:listingId';
+  static String serviceTravelDetailPath(String listingId) => serviceTravelDetail
+      .replaceFirst(':listingId', Uri.encodeComponent(listingId));
+  static const serviceBankDetail = '/services/banks/:bankId';
+  static String serviceBankDetailPath(String bankId) =>
+      serviceBankDetail.replaceFirst(':bankId', Uri.encodeComponent(bankId));
+  static const serviceBankProduct = '/services/bank-products/:productId';
+  static String serviceBankProductPath(String productId) => serviceBankProduct
+      .replaceFirst(':productId', Uri.encodeComponent(productId));
+
+  /// The buyer's bookings, and one booking — `/services/bookings/{id}` is
+  /// the deep link of every buyer `booking.*` notification (bookings
+  /// contract v1 §7). [bookingCheckout] (quote → payment mode → guests →
+  /// pay; its quote rides in `extra`) is registered before [bookingDetail].
+  static const myBookings = '/services/bookings';
+  static const bookingCheckout = '/services/bookings/checkout';
+  static const bookingDetail = '/services/bookings/:bookingId';
+  static String bookingDetailPath(String bookingId) =>
+      bookingDetail.replaceFirst(':bookingId', Uri.encodeComponent(bookingId));
+  static const bookingConfirmed = '/services/bookings/:bookingId/confirmed';
+  static String bookingConfirmedPath(String bookingId) => bookingConfirmed
+      .replaceFirst(':bookingId', Uri.encodeComponent(bookingId));
+
+  /// One enquiry and one appointment — the deep links of the buyer's bank
+  /// notifications (banks contract v1 §7). Registered before
+  /// [serviceBankDetail] so `appointments` is never read as a bank id.
+  static const bankEnquiryDetail = '/services/banks/enquiries/:leadId';
+  static String bankEnquiryDetailPath(String leadId) =>
+      bankEnquiryDetail.replaceFirst(':leadId', Uri.encodeComponent(leadId));
+  static const bankAppointmentDetail =
+      '/services/banks/appointments/:appointmentId';
+  static String bankAppointmentDetailPath(String appointmentId) =>
+      bankAppointmentDetail.replaceFirst(
+        ':appointmentId',
+        Uri.encodeComponent(appointmentId),
+      );
+
+  /// Signed-in forms: an enquiry about one product, an appointment at one
+  /// of a bank's branches (`?productId=` optional).
+  static const bankEnquiryForm = '/bank-requests/enquire/:productId';
+  static String bankEnquiryFormPath(String productId) =>
+      bankEnquiryForm.replaceFirst(':productId', Uri.encodeComponent(productId));
+  static const bankAppointmentForm = '/bank-requests/appointment/:bankId';
+  static String bankAppointmentFormPath(String bankId, {String? productId}) {
+    final path = bankAppointmentForm.replaceFirst(
+      ':bankId',
+      Uri.encodeComponent(bankId),
+    );
+    return productId == null
+        ? path
+        : '$path?productId=${Uri.encodeComponent(productId)}';
+  }
+
+  /// Under the public `/services` prefix, but only for a signed-in buyer.
+  static const servicesSignedInOnly = {
+    myBookings,
+    bankEnquiryDetail,
+    bankAppointmentDetail,
+  };
+
   static const paymentMethods = '/payment-methods';
   static const paymentAddCard = '/payment/add-card';
   static const paymentEditCard = '/payment/edit-card';

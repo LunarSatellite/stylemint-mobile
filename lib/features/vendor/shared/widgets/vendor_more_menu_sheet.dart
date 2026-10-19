@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/services/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_category.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_routes.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -78,6 +81,9 @@ class _VendorMoreMenu extends StatelessWidget {
                 },
               ),
               const _MoreDivider(),
+              // Hotels, travel agencies and banks: their day-to-day screens
+              // first. Draws nothing for a product seller.
+              _ServiceVendorItems(onGo: (route) => _go(context, route)),
               // The other end of Brand Studio: a campaign reel does not
               // publish until the brand answers here. Without an entry point
               // the gate would hold every submission indefinitely, until the
@@ -295,6 +301,50 @@ class _MoreDivider extends StatelessWidget {
       height: 1,
       thickness: 1,
       color: DesignTokens.borderDefault,
+    );
+  }
+}
+
+/// The service vendor's own entries (bookings and availability for hotels
+/// and travel agencies; leads and branch appointments for banks), shown
+/// only once the vendor profile says the vendor is one.
+class _ServiceVendorItems extends ConsumerWidget {
+  const _ServiceVendorItems({required this.onGo});
+
+  final ValueChanged<String> onGo;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final category = ref.watch(vendorServiceCategoryNowProvider);
+    final items = <(IconData, String, String)>[
+      if (category.takesBookings) ...[
+        (Icons.luggage_outlined, 'Bookings', ServiceRoutes.bookings),
+        (
+          Icons.event_note_rounded,
+          category == ServiceCategory.hotel
+              ? 'Rooms available'
+              : 'Seats available',
+          ServiceRoutes.availability,
+        ),
+      ],
+      if (category == ServiceCategory.bank) ...[
+        (Icons.inbox_outlined, 'Leads', ServiceRoutes.bankLeads),
+        (
+          Icons.event_available_rounded,
+          'Branch appointments',
+          ServiceRoutes.bankAppointments,
+        ),
+      ],
+    ];
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final (icon, title, route) in items) ...[
+          _MoreItem(icon: icon, title: title, onTap: () => onGo(route)),
+          const _MoreDivider(),
+        ],
+      ],
     );
   }
 }
