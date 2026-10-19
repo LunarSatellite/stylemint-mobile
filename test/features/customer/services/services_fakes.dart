@@ -9,23 +9,11 @@ import 'package:stylemint_mobile_frontend/features/customer/services/domain/enti
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_search.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/repositories/banks_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/repositories/bookings_repository.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/bank_forms_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/bank_pages_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/bank_requests_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/booking_checkout_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/booking_confirmed_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/booking_detail_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/my_bookings_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/package_detail_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/services_home_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/stay_detail_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/stay_results_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/travel_results_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/widgets/service_map.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/shared/banks_providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/shared/bookings_providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/services_routes.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/shared/services_providers.dart';
-import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 // ── Ids and money ────────────────────────────────────────────────────────────
@@ -787,96 +775,11 @@ void phoneSize(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
-/// The app's Services routes, as the router registers them.
-List<RouteBase> servicesRoutes() => [
-  GoRoute(
-    path: RouteNames.services,
-    builder: (_, _) => const ServicesHomeScreen(),
-  ),
-  GoRoute(
-    path: RouteNames.serviceStayResults,
-    builder: (_, state) => StayResultsScreen(
-      search: StaySearch.fromQuery(state.uri.queryParameters),
-    ),
-  ),
-  GoRoute(
-    path: RouteNames.serviceStayDetail,
-    builder: (_, state) => StayDetailScreen(
-      listingId: state.pathParameters['listingId']!,
-      search: StaySearch.fromQuery(state.uri.queryParameters),
-    ),
-  ),
-  GoRoute(
-    path: RouteNames.serviceTravelResults,
-    builder: (_, state) => TravelResultsScreen(
-      search: TravelSearch.fromQuery(state.uri.queryParameters),
-    ),
-  ),
-  GoRoute(
-    path: RouteNames.serviceTravelDetail,
-    builder: (_, state) => PackageDetailScreen(
-      listingId: state.pathParameters['listingId']!,
-      travellers: TravelSearch.fromQuery(state.uri.queryParameters).travellers,
-    ),
-  ),
-  GoRoute(
-    path: RouteNames.bankEnquiryDetail,
-    builder: (_, state) => EnquiryDetailScreen(
-      leadId: state.pathParameters['leadId']!,
-      justSent: state.uri.queryParameters['sent'] == '1',
-    ),
-  ),
-  GoRoute(
-    path: RouteNames.bankAppointmentDetail,
-    builder: (_, state) => AppointmentDetailScreen(
-      appointmentId: state.pathParameters['appointmentId']!,
-      justSent: state.uri.queryParameters['sent'] == '1',
-    ),
-  ),
-  GoRoute(
-    path: RouteNames.serviceBankDetail,
-    builder: (_, state) =>
-        BankDetailScreen(bankId: state.pathParameters['bankId']!),
-  ),
-  GoRoute(
-    path: RouteNames.serviceBankProduct,
-    builder: (_, state) =>
-        BankProductScreen(productId: state.pathParameters['productId']!),
-  ),
-  GoRoute(
-    path: RouteNames.bankEnquiryForm,
-    builder: (_, state) =>
-        BankEnquiryScreen(productId: state.pathParameters['productId']!),
-  ),
-  GoRoute(
-    path: RouteNames.bankAppointmentForm,
-    builder: (_, state) => BankAppointmentScreen(
-      bankId: state.pathParameters['bankId']!,
-      productId: state.uri.queryParameters['productId'],
-    ),
-  ),
-  GoRoute(
-    path: RouteNames.myBookings,
-    builder: (_, _) => const MyBookingsScreen(),
-  ),
-  GoRoute(
-    path: RouteNames.bookingCheckout,
-    builder: (_, state) => BookingCheckoutScreen(
-      args: state.extra is BookingCheckoutArgs
-          ? state.extra! as BookingCheckoutArgs
-          : null,
-    ),
-  ),
-  GoRoute(
-    path: RouteNames.bookingConfirmed,
-    builder: (_, state) =>
-        BookingConfirmedScreen(bookingId: state.pathParameters['bookingId']!),
-  ),
-  GoRoute(
-    path: RouteNames.bookingDetail,
-    builder: (_, state) =>
-        BookingDetailScreen(bookingId: state.pathParameters['bookingId']!),
-  ),
+/// The app's buyer service routes, as the router registers them, plus
+/// [extra] (a test's stand-in pages, e.g. the product page).
+List<RouteBase> servicesRoutes([List<RouteBase> extra = const []]) => [
+  ...buyerServiceRoutes,
+  ...extra,
 ];
 
 /// Pumps the Services routes at [location] with fake repositories, a fixed

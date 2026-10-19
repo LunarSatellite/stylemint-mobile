@@ -30,14 +30,6 @@ Duration? _noRetry(int retryCount, Object error) => null;
 Future<T> _orThrow<T>(Future<Either<ServiceFailure, T>> call) async =>
     (await call).fold((f) => throw ServiceLoadException(f), (v) => v);
 
-final FutureProviderFamily<List<StaySearchItem>, StaySearch>
-staySearchProvider = FutureProvider.autoDispose
-    .family<List<StaySearchItem>, StaySearch>(
-      (ref, search) =>
-          _orThrow(ref.watch(bookingsRepositoryProvider).searchStays(search)),
-      retry: _noRetry,
-    );
-
 /// A stay, priced for the buyer's dates when [StayKey.search] is set.
 typedef StayKey = ({String listingId, StaySearch? search});
 
@@ -47,15 +39,6 @@ final FutureProviderFamily<StayDetail, StayKey> stayDetailProvider =
         ref
             .watch(bookingsRepositoryProvider)
             .getStay(key.listingId, search: key.search),
-      ),
-      retry: _noRetry,
-    );
-
-final FutureProviderFamily<List<PackageSearchItem>, TravelSearch>
-packageSearchProvider = FutureProvider.autoDispose
-    .family<List<PackageSearchItem>, TravelSearch>(
-      (ref, search) => _orThrow(
-        ref.watch(bookingsRepositoryProvider).searchPackages(search),
       ),
       retry: _noRetry,
     );

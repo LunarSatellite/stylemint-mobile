@@ -28,22 +28,6 @@ Duration? _noRetry(int retryCount, Object error) => null;
 Future<T> _orThrow<T>(Future<Either<ServiceFailure, T>> call) async =>
     (await call).fold((f) => throw ServiceLoadException(f), (v) => v);
 
-/// Approved banks.
-final FutureProvider<List<BankSummary>> banksListProvider =
-    FutureProvider.autoDispose<List<BankSummary>>(
-      (ref) => _orThrow(ref.watch(banksRepositoryProvider).listBanks()),
-      retry: _noRetry,
-    );
-
-/// Published products across banks, for comparing; null type for all.
-final FutureProviderFamily<List<BankProduct>, BankProductType?>
-bankProductsProvider = FutureProvider.autoDispose
-    .family<List<BankProduct>, BankProductType?>(
-      (ref, type) =>
-          _orThrow(ref.watch(banksRepositoryProvider).listProducts(type: type)),
-      retry: _noRetry,
-    );
-
 final FutureProviderFamily<BankDetail, String> bankDetailProvider =
     FutureProvider.autoDispose.family<BankDetail, String>(
       (ref, id) => _orThrow(ref.watch(banksRepositoryProvider).getBank(id)),

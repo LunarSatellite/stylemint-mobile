@@ -3,13 +3,12 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_bottom_
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_nav_icons.dart';
 
 /// The customer shell's bottom navigation bar — Home · Discover · (Scan) ·
-/// Services · Cart · Profile — in the shared [SmBottomNavBar] look.
+/// Cart · Profile — in the shared [SmBottomNavBar] look.
 ///
-/// Scan is the large mint QR action after Discover, not a tab. Services
-/// (stays, travel, banks) is its own tab, apart from the shopping Mall
-/// (owner decision, 2026-10-18). Orders is not in the bar: it opens from
-/// Profile's "My Orders" (owner choice, 2026-09-15). Purely presentational:
-/// the host owns navigation via [onTap] and [onScan].
+/// Scan is the large mint QR action in the true centre, not a tab. Orders is
+/// not in the bar: it opens from Profile's "My Orders" (owner choice,
+/// 2026-09-15). Purely presentational: the host owns navigation via [onTap]
+/// and [onScan].
 class CustomerBottomNavBar extends StatelessWidget {
   const CustomerBottomNavBar({
     required this.currentIndex,
@@ -22,17 +21,16 @@ class CustomerBottomNavBar extends StatelessWidget {
 
   static const int homeIndex = 0;
   static const int discoverIndex = 1;
-  static const int servicesIndex = 2;
 
   /// Cart opens the cart page over the shell rather than switching tabs.
-  static const int cartIndex = 3;
-  static const int profileIndex = 4;
+  static const int cartIndex = 2;
+  static const int profileIndex = 3;
 
   /// The Scan circle: larger than the creator bar's 44dp create button.
   static const double scanDiameter = 54;
   static const double scanIconSize = 28;
 
-  /// 0 = Home, 1 = Discover, 2 = Services, 3 = Cart, 4 = Profile.
+  /// 0 = Home, 1 = Discover, 2 = Cart, 3 = Profile.
   final int currentIndex;
   final ValueChanged<int> onTap;
 
@@ -64,7 +62,6 @@ class CustomerBottomNavBar extends StatelessWidget {
       items: [
         SmBottomNavItem.glyph(SmNavIcons.home, label: 'Home'),
         SmBottomNavItem.glyph(SmNavIcons.compass, label: 'Discover'),
-        SmBottomNavItem.glyph(SmNavIcons.suitcase, label: 'Services'),
         SmBottomNavItem.glyph(SmNavIcons.bag, label: 'Cart', badge: cartBadge),
         SmBottomNavItem.glyph(
           SmNavIcons.person,

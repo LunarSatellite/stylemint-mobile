@@ -76,19 +76,7 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/presen
 import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_gate_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_job_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_search.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/bank_forms_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/bank_pages_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/bank_requests_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/booking_checkout_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/booking_confirmed_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/booking_detail_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/my_bookings_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/package_detail_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/services_home_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/stay_detail_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/stay_results_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/services/presentation/screens/travel_results_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/services_routes.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/emi_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plan_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_checkout_screen.dart';
@@ -360,9 +348,6 @@ const _publicPaths = {
   RouteNames.collectionRoot,
   // Scanning is open to guests; login and drop party codes ask to sign in.
   RouteNames.scan,
-  // The Services tab browses signed out (stays, trips, banks); bookings,
-  // enquiries and appointments are in RouteNames.servicesSignedInOnly.
-  RouteNames.services,
   // StyleMint codes (printed QR, NFC tags, /c/ links) and the in-store pages
   // they open work signed out.
   RouteNames.styleMintCodeRoot,
@@ -473,8 +458,8 @@ GoRouter appRouter(Ref ref) {
       // Patterns with :parameters (e.g. /product/:productId) match real
       // locations segment by segment; a plain startsWith never matched them,
       // so guests were sent to sign in from product and creator pages.
-      // `/services` is public as a prefix; the buyer's own bookings and
-      // bank requests under it are not.
+      // `/orders` is public (an order opens from a tracking link); the
+      // buyer's bookings and bank requests under it are not.
       final isPublic =
           _publicPaths.any((p) => routePathMatches(path, p)) &&
           !RouteNames.servicesSignedInOnly.any(
@@ -749,6 +734,12 @@ GoRouter appRouter(Ref ref) {
           vendorAccountId: state.pathParameters['vendorAccountId']!,
         ),
       ),
+
+      // The buyer's bookings, bank enquiries and appointments (services are
+      // sold like items since 2026-10-19), and the v1 /services links
+      // forwarding to them. Keep above Order Detail, or `/orders/:orderId`
+      // reads "bookings" as an order number.
+      ...buyerServiceRoutes,
 
       // Orders list: opened from Profile's "My Orders" (not a bar tab since
       // 2026-09-15).
@@ -1113,98 +1104,6 @@ GoRouter appRouter(Ref ref) {
               ? state.extra! as PlanDetailArgs
               : const PlanDetailArgs(),
         ),
-      ),
-      // Services (stays, travel, banks). The tab itself is a shell branch
-      // below; these pages open over it. `results` before `:listingId`.
-      GoRoute(
-        path: RouteNames.serviceStayResults,
-        builder: (ctx, state) => StayResultsScreen(
-          search: StaySearch.fromQuery(state.uri.queryParameters),
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.serviceStayDetail,
-        builder: (ctx, state) => StayDetailScreen(
-          listingId: state.pathParameters['listingId']!,
-          search: StaySearch.fromQuery(state.uri.queryParameters),
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.serviceTravelResults,
-        builder: (ctx, state) => TravelResultsScreen(
-          search: TravelSearch.fromQuery(state.uri.queryParameters),
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.serviceTravelDetail,
-        builder: (ctx, state) => PackageDetailScreen(
-          listingId: state.pathParameters['listingId']!,
-          travellers: TravelSearch.fromQuery(
-            state.uri.queryParameters,
-          ).travellers,
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.bankEnquiryDetail,
-        builder: (ctx, state) => EnquiryDetailScreen(
-          leadId: state.pathParameters['leadId']!,
-          justSent: state.uri.queryParameters['sent'] == '1',
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.bankAppointmentDetail,
-        builder: (ctx, state) => AppointmentDetailScreen(
-          appointmentId: state.pathParameters['appointmentId']!,
-          justSent: state.uri.queryParameters['sent'] == '1',
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.serviceBankDetail,
-        builder: (ctx, state) =>
-            BankDetailScreen(bankId: state.pathParameters['bankId']!),
-      ),
-      GoRoute(
-        path: RouteNames.serviceBankProduct,
-        builder: (ctx, state) =>
-            BankProductScreen(productId: state.pathParameters['productId']!),
-      ),
-      GoRoute(
-        path: RouteNames.bankEnquiryForm,
-        builder: (ctx, state) =>
-            BankEnquiryScreen(productId: state.pathParameters['productId']!),
-      ),
-      GoRoute(
-        path: RouteNames.bankAppointmentForm,
-        builder: (ctx, state) => BankAppointmentScreen(
-          bankId: state.pathParameters['bankId']!,
-          productId: state.uri.queryParameters['productId'],
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.myBookings,
-        builder: (ctx, state) => const MyBookingsScreen(),
-      ),
-      GoRoute(
-        path: RouteNames.bookingCheckout,
-        // Only reachable with a fresh quote; a restored link has none.
-        redirect: (ctx, state) =>
-            state.extra is BookingCheckoutArgs ? null : RouteNames.services,
-        builder: (ctx, state) => BookingCheckoutScreen(
-          args: state.extra is BookingCheckoutArgs
-              ? state.extra! as BookingCheckoutArgs
-              : null,
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.bookingConfirmed,
-        builder: (ctx, state) => BookingConfirmedScreen(
-          bookingId: state.pathParameters['bookingId']!,
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.bookingDetail,
-        builder: (ctx, state) =>
-            BookingDetailScreen(bookingId: state.pathParameters['bookingId']!),
       ),
       GoRoute(
         path: RouteNames.shippingView,
@@ -2293,15 +2192,6 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: RouteNames.search,
                 builder: (ctx, state) => const SearchScreen(),
-              ),
-            ],
-          ),
-          // Services: stays, travel, banks — apart from the shopping Mall.
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: RouteNames.services,
-                builder: (ctx, state) => const ServicesHomeScreen(),
               ),
             ],
           ),

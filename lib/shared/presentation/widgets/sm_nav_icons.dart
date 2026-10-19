@@ -182,28 +182,6 @@ abstract final class SmNavIcons {
     knockout: '$_open$_tagHole$_close',
   );
 
-  static const _suitcaseBody =
-      '<rect x="3.5" y="7.5" width="17" height="12.5" rx="2.5"';
-  static const suitcaseHandlePath = 'M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5';
-  static const suitcaseBeltPath = 'M3.5 12.8h17';
-
-  /// Suitcase for the buyer's Services tab (stays, travel, banks); the belt
-  /// is the cut-out.
-  static const suitcase = SmNavGlyph(
-    outline:
-        '$_open$_suitcaseBody $_line stroke-width="2"/> '
-        '<path d="$suitcaseHandlePath" $_line stroke-width="2" $_round/> '
-        '<path d="$suitcaseBeltPath" $_line stroke-width="2" $_round/>'
-        '$_close',
-    solid:
-        '$_open$_suitcaseBody $_solid stroke-width="2"/> '
-        '<path d="$suitcaseHandlePath" $_line stroke-width="2" $_round/>'
-        '$_close',
-    knockout:
-        '$_open<path d="$suitcaseBeltPath" $_line stroke-width="2" '
-        '$_round/>$_close',
-  );
-
   /// Plus on the centre create action, drawn dark on the mint circle.
   static const plus =
       '$_open<path d="${ReelRailIcons.plusPath}" $_line stroke-width="2.4" '
