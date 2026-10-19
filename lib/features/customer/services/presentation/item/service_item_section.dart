@@ -486,8 +486,8 @@ class _PackageOptions extends StatelessWidget {
     final departure = pkg.departures
         .where((d) => d.id == choice.departureId)
         .firstOrNull;
-    final tooMany =
-        departure != null && choice.guests > departure.seatsAvailable;
+    final seatsLeft = departure?.seatsAvailable;
+    final tooMany = seatsLeft != null && choice.guests > seatsLeft;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -549,9 +549,9 @@ class _PackageOptions extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: DesignTokens.s8),
             child: Text(
-              departure.seatsAvailable == 1
+              seatsLeft == 1
                   ? 'This departure has 1 seat left.'
-                  : 'This departure has ${departure.seatsAvailable} seats '
+                  : 'This departure has $seatsLeft seats '
                         'left.',
               style: DesignTokens.tiny.copyWith(
                 color: DesignTokens.colorWarning,

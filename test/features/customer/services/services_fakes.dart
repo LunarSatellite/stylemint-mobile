@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/banks.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/bookings.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_failure.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_item.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_line.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_search.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/repositories/banks_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/repositories/bookings_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/repositories/service_cart_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/widgets/service_map.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/shared/banks_providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/shared/bookings_providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/shared/service_cart_providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/services_routes.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/shared/services_providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
@@ -235,7 +241,9 @@ Booking booking({
   bool canCancel = true,
   bool canPay = false,
   ListingKind kind = ListingKind.stay,
+  String? orderNumber,
 }) => Booking(
+  orderNumber: orderNumber,
   id: id,
   number: 'BK-7F3A9C21',
   kind: kind,
@@ -789,44 +797,29 @@ Future<GoRouter> pumpServices(
   required String location,
   FakeBookingsRepository? bookings,
   FakeBanksRepository? banks,
+  FakeServiceCartRepository? serviceCart,
   List<Uri>? launched,
   bool signedIn = true,
+  List<RouteBase> extraRoutes = const [],
+  List<Override> extraOverrides = const [],
 }) async {
   phoneSize(tester);
-  final router = GoRouter(initialLocation: location, routes: servicesRoutes());
+  final router = GoRouter(
+    initialLocation: location,
+    routes: servicesRoutes(extraRoutes),
+  );
+  addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        bookingsRepositoryProvider.overrideWithValue(
-          bookings ?? FakeBookingsRepository(),
+        ...servicesOverrides(
+          bookings: bookings,
+          banks: banks,
+          serviceCart: serviceCart,
+          launched: launched,
+          signedIn: signedIn,
         ),
-        banksRepositoryProvider.overrideWithValue(
-          banks ?? FakeBanksRepository(),
-        ),
-        servicesSignedInProvider.overrideWithValue(signedIn),
-        servicesBuyerNameProvider.overrideWithValue(
-          signedIn ? 'Sita Sharma' : null,
-        ),
-        servicesClockProvider.overrideWithValue(() => testNow),
-        serviceMapBuilderProvider.overrideWithValue(
-          (context, pins, onTap) => Container(
-            key: const Key('test-map'),
-            color: Colors.blueGrey,
-            child: Column(
-              children: [
-                for (final p in pins)
-                  TextButton(
-                    key: Key('test-pin-${p.id}'),
-                    onPressed: onTap == null ? null : () => onTap(p.id),
-                    child: Text(p.label ?? p.id),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        servicePaymentLauncherProvider.overrideWithValue(
-          (uri) async => launched?.add(uri),
-        ),
+        ...extraOverrides,
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -834,6 +827,46 @@ Future<GoRouter> pumpServices(
   await settle(tester);
   return router;
 }
+
+/// Fake repositories, a fixed clock, a stand-in map and a recording payment
+/// launcher, for any screen that shows services.
+List<Override> servicesOverrides({
+  FakeBookingsRepository? bookings,
+  FakeBanksRepository? banks,
+  FakeServiceCartRepository? serviceCart,
+  List<Uri>? launched,
+  bool signedIn = true,
+}) => [
+  bookingsRepositoryProvider.overrideWithValue(
+    bookings ?? FakeBookingsRepository(),
+  ),
+  banksRepositoryProvider.overrideWithValue(banks ?? FakeBanksRepository()),
+  serviceCartRepositoryProvider.overrideWithValue(
+    serviceCart ?? FakeServiceCartRepository(),
+  ),
+  servicesSignedInProvider.overrideWithValue(signedIn),
+  servicesBuyerNameProvider.overrideWithValue(signedIn ? 'Sita Sharma' : null),
+  servicesClockProvider.overrideWithValue(() => testNow),
+  serviceMapBuilderProvider.overrideWithValue(
+    (context, pins, onTap) => Container(
+      key: const Key('test-map'),
+      color: Colors.blueGrey,
+      child: Column(
+        children: [
+          for (final p in pins)
+            TextButton(
+              key: Key('test-pin-${p.id}'),
+              onPressed: onTap == null ? null : () => onTap(p.id),
+              child: Text(p.label ?? p.id),
+            ),
+        ],
+      ),
+    ),
+  ),
+  servicePaymentLauncherProvider.overrideWithValue(
+    (uri) async => launched?.add(uri),
+  ),
+];
 
 /// Pumps a few frames: loaders animate forever, so never pumpAndSettle.
 Future<void> settle(WidgetTester tester) async {
@@ -865,4 +898,168 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   await reveal(tester, finder);
   await tester.tap(finder);
   await settle(tester);
+}
+
+// ── Services sold as items (service items + service cart contracts v1) ────
+
+/// A stay item's `service` block, its rooms from [stayDetail].
+ServiceItem stayItemBlock() => ServiceItem(
+  type: ServiceItemType.stay,
+  listingId: stayId,
+  addableToCart: true,
+  priceUnit: 'night',
+  stay: stayDetail(),
+);
+
+ServiceItem packageItemBlock() => ServiceItem(
+  type: ServiceItemType.package,
+  listingId: packageId,
+  addableToCart: true,
+  priceUnit: 'person',
+  package: packageDetail(),
+);
+
+ServiceItem bankItemBlock() => ServiceItem(
+  type: ServiceItemType.bank,
+  listingId: loanId,
+  bank: BankItem(
+    bankId: bankId,
+    bankName: 'Himalayan Bank',
+    product: loanProduct(),
+    branches: [branch()],
+    enquiryForm: loanForm(),
+  ),
+);
+
+/// A stay booked in the cart: 2 nights, deposit 30%.
+ServiceLine stayLine({
+  String lineId = 'line-stay',
+  PaymentMode mode = PaymentMode.deposit,
+  String? bookingId,
+  BookingState? state,
+  bool canCancel = false,
+  bool guestsComplete = false,
+}) => ServiceLine(
+  lineId: lineId,
+  kind: ListingKind.stay,
+  listingId: stayId,
+  listingTitle: 'Hotel Barahi',
+  itemName: 'Deluxe Double',
+  roomTypeId: roomId,
+  startDate: DateTime(2026, 10, 21),
+  endDate: DateTime(2026, 10, 23),
+  nights: 2,
+  rooms: 1,
+  adults: 2,
+  paymentMode: mode,
+  depositPercent: 30,
+  paymentModes: const [PaymentMode.fullPrepay, PaymentMode.deposit],
+  totalPrice: npr(9000),
+  payNow: npr(2700),
+  payAtVenue: npr(6300),
+  cancellationPolicySummary: 'Free cancellation until 18 Oct 2026.',
+  bookingId: bookingId,
+  bookingNumber: bookingId == null ? null : 'BK-7F3A9C21',
+  bookingState: state,
+  canCancel: canCancel,
+  guestsComplete: guestsComplete,
+);
+
+/// A trip for two adults and a child.
+ServiceLine packageLine({String lineId = 'line-trip'}) => ServiceLine(
+  lineId: lineId,
+  kind: ListingKind.package,
+  listingId: packageId,
+  listingTitle: 'Annapurna Base Camp 7D',
+  departureId: departureId,
+  startDate: DateTime(2026, 11, 2),
+  endDate: DateTime(2026, 11, 8),
+  adults: 2,
+  children: 1,
+  paymentMode: PaymentMode.fullPrepay,
+  totalPrice: npr(120000),
+  payNow: npr(120000),
+  payAtVenue: npr(0),
+);
+
+/// A cart holding one stay line, priced per the service cart contract.
+Cart serviceCart({List<CartItem>? items}) => Cart(
+  id: 'cart-1',
+  items:
+      items ??
+      [
+        CartItem(
+          id: 'line-stay',
+          productId: stayId,
+          productName: 'Hotel Barahi',
+          productImageUrl: '',
+          variantName: 'Deluxe Double · 21 Oct – 23 Oct',
+          quantity: 1,
+          unitPrice: npr(9000),
+          isInStock: true,
+          service: stayLine(),
+        ),
+      ],
+  subtotal: npr(9000),
+  shippingTotal: npr(0),
+  taxTotal: npr(0),
+  total: npr(9000),
+  payNowTotal: npr(2700),
+  payAtVenueTotal: npr(6300),
+  hasServiceLines: true,
+  requiresShippingAddress: false,
+);
+
+class FakeServiceCartRepository implements ServiceCartRepository {
+  ServiceFailure? addFailure;
+  ServiceFailure? guestsFailure;
+  Cart cart = serviceCart();
+  final added = <Map<String, Object?>>[];
+  final guests = <Map<String, Object?>>[];
+
+  @override
+  Future<Either<ServiceFailure, Cart>> addToCart({
+    required String productId,
+    required ServiceOptions options,
+    required String idempotencyKey,
+    String? variantId,
+    String? reelTagContextId,
+  }) async {
+    added.add({
+      'productId': productId,
+      'options': options,
+      'variantId': variantId,
+      'reelTagContextId': reelTagContextId,
+      'key': idempotencyKey,
+    });
+    final f = addFailure;
+    return f == null ? right(cart) : left(f);
+  }
+
+  @override
+  Future<Either<ServiceFailure, List<ServiceLine>>> setGuests({
+    required String sessionId,
+    required List<ServiceGuests> lines,
+    required String idempotencyKey,
+  }) async {
+    guests.add({'sessionId': sessionId, 'lines': lines});
+    final f = guestsFailure;
+    if (f != null) return left(f);
+    return right([
+      for (final l in lines)
+        ServiceLine(
+          lineId: l.lineId,
+          kind: l.travellers.isEmpty ? ListingKind.stay : ListingKind.package,
+          listingId: stayId,
+          listingTitle: 'Saved',
+          startDate: DateTime(2026, 10, 21),
+          totalPrice: npr(0),
+          payNow: npr(0),
+          payAtVenue: npr(0),
+          guestName: l.guestName,
+          travellers: l.travellers,
+          guestsComplete: true,
+        ),
+    ]);
+  }
 }

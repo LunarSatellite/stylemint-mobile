@@ -16,9 +16,8 @@ Map<String, dynamic>? _map(Object? raw) =>
 T? _try<T>(T Function() read) {
   try {
     return read();
-  } on FormatException {
-    return null;
-  } on TypeError {
+  } on Object {
+    // A part this build cannot read is left out, never shown half-read.
     return null;
   }
 }

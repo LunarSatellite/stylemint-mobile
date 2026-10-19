@@ -146,7 +146,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         item != null &&
         ((item.type == ServiceItemType.stay && item.stay != null) ||
             (item.type == ServiceItemType.package && item.package != null));
-    if (!bookable) return null;
+    if (item == null || !bookable) return null;
     final existing = _serviceChoice;
     if (existing != null && _serviceChoiceProductId == product.id) {
       return existing;
