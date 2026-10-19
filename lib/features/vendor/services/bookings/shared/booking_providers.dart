@@ -78,7 +78,13 @@ final FutureProviderFamily<List<RoomNight>, String> roomTypeNightsProvider =
           .getCalendar(
             roomTypeId,
             from: today,
-            to: today.add(const Duration(days: 13)),
+            // Calendar arithmetic, not Duration: `today` is a local midnight,
+            // and adding 13 x 24h across a DST change lands an hour short —
+            // 2026-10-21 + Duration(days: 13) is 2026-11-02 23:00 in a zone
+            // whose clocks go back on 1 November, so the window loses its last
+            // night. DateTime normalises an overflowing day, so this is a
+            // calendar day either way.
+            to: DateTime(today.year, today.month, today.day + 13),
           );
       return result.fold((f) => throw ServiceLoadException(f), (n) => n);
     }, retry: (_, _) => null);
