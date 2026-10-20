@@ -14,6 +14,8 @@ import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/prov
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/checkout/checkout_service_guests.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/checkout/checkout_service_messages.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
@@ -33,6 +35,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   PaymentMethod? _selectedPayment;
   ShippingAddress? _selectedAddress;
+
+  /// The stays and trips section, so Place order can send their guest
+  /// names first.
+  final _serviceGuestsKey = GlobalKey<CheckoutServiceGuestsState>();
+
+  /// Per cart line: why the server could not place a stay or trip.
+  Map<String, String> _serviceLineErrors = const {};
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +109,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           );
         },
         failure: (failure) {
+          // A stay or trip the server could not hold or place says which,
+          // on its own line above.
+          final lineErrors = checkoutServiceLineErrors(failure);
+          if (lineErrors.isNotEmpty) {
+            setState(() => _serviceLineErrors = lineErrors);
+          }
+          final serviceMessage = checkoutServiceMessage(failure);
+          if (serviceMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(serviceMessage),
+                backgroundColor: DesignTokens.colorError,
+                duration: const Duration(seconds: 6),
+              ),
+            );
+            return;
+          }
           // `failure.runtimeType` is the freezed union's Dart class name, so
           // a rejected checkout used to read "Order failed: _Validation" —
           // which names neither the field nor the rule that rejected it.
@@ -143,10 +169,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             processing: () => true,
             orElse: () => false,
           );
-          final selectedPayment = _selectedPayment ?? summary.paymentMethod;
+          final methods = _buildPaymentMethods(summary);
+          var selectedPayment = _selectedPayment ?? summary.paymentMethod;
+          // A stay or trip with something to pay now cannot be paid in cash
+          // on delivery (service cart contract v1 §3.4).
+          if (summary.requiresOnlinePayment &&
+              selectedPayment.type == PaymentMethodType.cod &&
+              methods.isNotEmpty) {
+            selectedPayment = methods.first;
+          }
           final deliveryChoice = summary.selectedDeliveryChoice;
           final isPickup =
               deliveryChoice?.kind == DeliveryChoiceKind.pickupFromSeller;
+          // A checkout of stays and trips only delivers nothing: no address,
+          // no delivery choice.
+          final needsAddress = summary.requiresShippingAddress;
 
           return Column(
             children: [
@@ -154,6 +191,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(DesignTokens.s16),
                   children: [
+                    if (needsAddress) ...[
                     _DeliveryChoiceCard(
                       choices: summary.deliveryChoices,
                       selected: deliveryChoice,
@@ -191,6 +229,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                       const SizedBox(height: DesignTokens.s16),
                     ],
+                    ],
+                    // Stays and trips: their dates and money, and the guest
+                    // and traveller names the hotel or agency needs.
+                    if (summary.hasServiceLines) ...[
+                      CheckoutServiceGuests(
+                        key: _serviceGuestsKey,
+                        sessionId: summary.sessionId,
+                        lines: summary.serviceLines,
+                        lineErrors: _serviceLineErrors,
+                        onSaved: (lines) => ref
+                            .read(checkoutNotifierProvider.notifier)
+                            .updateServiceLines(lines),
+                      ),
+                      const SizedBox(height: DesignTokens.s16),
+                    ],
                     // ── Bill details ticket card ───────────────────────
                     _BillTicketCard(
                       summary: summary,
@@ -209,7 +262,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     // sheet (down payment now, the rest monthly).
                     CheckoutEmiOption(items: _cartItemsForEmi()),
                     _PaymentMethodList(
-                      availableMethods: _buildPaymentMethods(summary),
+                      availableMethods: methods,
                       selectedMethod: selectedPayment,
                       onSelect: (method) =>
                           setState(() => _selectedPayment = method),
@@ -219,30 +272,54 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
               ),
               _BottomBar(
-                hasAddress: hasAddress || isPickup,
+                hasAddress: hasAddress || isPickup || !needsAddress,
                 isProcessing: isProcessing,
                 emiApproved: hasApprovedEmiAwaitingCheckout(
                   ref,
                   _cartItemsForEmi(),
                 ),
                 onAddAddress: () => unawaited(_openAddAddress(context)),
-                onPlaceOrder: () {
-                  ref
-                      .read(checkoutNotifierProvider.notifier)
-                      .placeOrder(
-                        addressId: isPickup ? null : effectiveAddress.id,
-                        paymentMethod: selectedPayment.type,
-                        idempotencyKey: _uuid.v4(),
-                      );
+                onPlaceOrder: () async {
+                  // The server will not place a stay or trip without its
+                  // guest names: send them first.
+                  if (summary.hasServiceLines) {
+                    final saved =
+                        await _serviceGuestsKey.currentState?.save() ?? false;
+                    if (!saved || !mounted) return;
+                  }
+                  setState(() => _serviceLineErrors = const {});
+                  unawaited(
+                    ref
+                        .read(checkoutNotifierProvider.notifier)
+                        .placeOrder(
+                          addressId: isPickup || !needsAddress
+                              ? null
+                              : effectiveAddress.id,
+                          paymentMethod: selectedPayment.type,
+                          idempotencyKey: _uuid.v4(),
+                        ),
+                  );
                 },
               ),
             ],
           );
         },
-        loadFailure: (failure, _) => SmErrorView(
-          message: 'Failed to load checkout details.',
-          onRetry: () => ref.read(checkoutNotifierProvider.notifier).load(),
-        ),
+        loadFailure: (failure, _) =>
+            // A stay or trip in the cart could not be held: say which, and
+            // send the buyer back to the cart to remove it.
+            checkoutServiceLineErrors(failure).isNotEmpty ||
+                checkoutServiceMessage(failure) != null
+            ? CheckoutServiceUnavailable(
+                failure: failure,
+                onBackToCart: () => context.popOrHome(),
+                onRetry: () =>
+                    ref.read(checkoutNotifierProvider.notifier).load(),
+              )
+            : SmErrorView(
+                message: 'Failed to load checkout details.',
+                onRetry: () =>
+                    ref.read(checkoutNotifierProvider.notifier).load(),
+              ),
       ),
     );
   }
@@ -254,7 +331,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   List<CartItem> _cartItemsForEmi() {
     final cart = ref.watch(cartNotifierProvider);
     return cart.maybeWhen(
-      loadSuccess: (c) => c.items,
+      // Stays and trips have no instalment plan.
+      loadSuccess: (c) => [
+        for (final i in c.items)
+          if (!i.isService) i,
+      ],
       initial: () {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) ref.read(cartNotifierProvider.notifier).fetchCart();
@@ -273,7 +354,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         break;
       }
     }
-    return checkoutPaymentMethods(savedCard: savedCard);
+    final all = checkoutPaymentMethods(savedCard: savedCard);
+    // Cash on delivery cannot pay a stay or trip's pay-now part.
+    return summary.requiresOnlinePayment
+        ? [
+            for (final m in all)
+              if (m.type != PaymentMethodType.cod) m,
+          ]
+        : all;
   }
 
   // ── CART ITEMS SHEET ──────────────────────────────────────────────────────
@@ -593,13 +681,17 @@ class _BillTicketCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                _BillRow(
-                  icon: Icons.local_shipping_outlined,
-                  label: 'Shipping',
-                  valueBadge: isFreeShipping ? 'Free' : null,
-                  value: isFreeShipping ? null : formatMoney(summary.shipping),
-                ),
-                const SizedBox(height: 12),
+                if (summary.requiresShippingAddress) ...[
+                  _BillRow(
+                    icon: Icons.local_shipping_outlined,
+                    label: 'Shipping',
+                    valueBadge: isFreeShipping ? 'Free' : null,
+                    value: isFreeShipping
+                        ? null
+                        : formatMoney(summary.shipping),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // Same as the cart: VAT is contained in the prices, so this
                 // reports what the subtotal already includes instead of adding
@@ -654,6 +746,31 @@ class _BillTicketCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                // Stays and trips: what is charged now, and what is paid to
+                // the hotel or agency at the venue (never through StyleMint).
+                if (summary.hasServiceLines) ...[
+                  if (summary.payNow case final payNow?) ...[
+                    const SizedBox(height: 12),
+                    _BillRow(
+                      key: const Key('checkout-pay-now'),
+                      icon: Icons.payments_outlined,
+                      label: 'Paid now',
+                      value: formatMoney(payNow),
+                      valueColor: DesignTokens.primaryGreen,
+                    ),
+                  ],
+                  if (summary.payAtVenue case final atVenue?
+                      when atVenue.amount > 0) ...[
+                    const SizedBox(height: 12),
+                    _BillRow(
+                      key: const Key('checkout-pay-at-venue'),
+                      icon: Icons.storefront_outlined,
+                      label: 'Pay at the venue',
+                      value: formatMoney(atVenue),
+                      valueColor: DesignTokens.textLight,
+                    ),
+                  ],
+                ],
               ],
             ),
           ),
@@ -737,6 +854,7 @@ class _BillRow extends StatelessWidget {
     this.valueBadge,
     this.valueColor,
     this.labelUnderline = false,
+    super.key,
   });
 
   final IconData icon;

@@ -14,8 +14,8 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/customer_bottom_nav_bar.dart';
 
 /// Persistent shell for the customer tabs. Uses [StatefulNavigationShell] so
-/// each branch (Home, Discover, Services, Profile) keeps its own navigation
-/// stack and scroll position across tab switches.
+/// each branch (Home, Discover, Profile) keeps its own navigation stack and
+/// scroll position across tab switches.
 ///
 /// The bar also carries Cart, between the centre Scan action and Profile.
 /// Cart is not a branch: it opens the cart page (with checkout) over the
@@ -29,8 +29,8 @@ class CustomerShellScreen extends ConsumerWidget {
   /// Branch index of the Home (reels) tab.
   static const _homeBranch = 0;
 
-  /// Branch index of the Profile tab (after Home, Discover and Services).
-  static const _profileBranch = 3;
+  /// Branch index of the Profile tab.
+  static const _profileBranch = 2;
 
   static int _barIndexFor(int branch) =>
       branch < CustomerBottomNavBar.cartIndex ? branch : branch + 1;

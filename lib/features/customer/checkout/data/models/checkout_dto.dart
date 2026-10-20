@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/data/models/service_line_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'checkout_dto.freezed.dart';
@@ -113,6 +114,10 @@ abstract class CheckoutItemDto with _$CheckoutItemDto {
     @Default('') String productTitleSnapshot,
     String? variantLabelSnapshot,
     String? thumbnailUrlSnapshot,
+    // Service cart contract v1 §3.2: a stay or trip line. Read by hand.
+    String? lineId,
+    Object? lineKind,
+    Object? service,
   }) = _CheckoutItemDto;
 
   const CheckoutItemDto._();
@@ -127,6 +132,9 @@ abstract class CheckoutItemDto with _$CheckoutItemDto {
     variantName: variantLabelSnapshot ?? '',
     quantity: quantity,
     unitPrice: Money(amount: unitPriceAmount, currency: unitPriceCurrency),
+    service: isServiceLineKind(lineKind) || service != null
+        ? readServiceLine(service, lineId: lineId)
+        : null,
   );
 }
 
@@ -154,6 +162,11 @@ abstract class CheckoutSummaryDto with _$CheckoutSummaryDto {
     @Default('NPR') String discountCurrency,
     double? totalAmount,
     @Default('NPR') String totalCurrency,
+    // Service cart contract v1 §3.2. Absent before the contract.
+    bool? requiresShippingAddress,
+    double? payNowAmount,
+    double? payAtVenueAmount,
+    Object? serviceLines,
   }) = _CheckoutSummaryDto;
 
   const CheckoutSummaryDto._();
@@ -164,6 +177,16 @@ abstract class CheckoutSummaryDto with _$CheckoutSummaryDto {
   /// [fallback] supplies subtotal/shipping/tax/total from the cart while the
   /// session's own totals are still null (Draft state).
   CheckoutSummary toDomain({required Cart fallback}) => CheckoutSummary(
+    sessionId: id,
+    requiresShippingAddress:
+        requiresShippingAddress ?? fallback.requiresShippingAddress,
+    payNow: payNowAmount != null
+        ? Money(amount: payNowAmount!, currency: totalCurrency)
+        : fallback.payNowTotal,
+    payAtVenue: payAtVenueAmount != null
+        ? Money(amount: payAtVenueAmount!, currency: totalCurrency)
+        : fallback.payAtVenueTotal,
+    serviceLines: readServiceLines(serviceLines),
     shippingAddress: const ShippingAddress.empty(),
     paymentMethod: const PaymentMethod.empty(),
     items: items.map((dto) => dto.toDomain()).toList(growable: false),

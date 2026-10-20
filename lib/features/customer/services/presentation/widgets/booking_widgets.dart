@@ -42,7 +42,7 @@ String bookingGuests(Booking b) {
       : base;
 }
 
-/// One booking in a list: title, dates, state.
+/// One booking in a list: title, booking reference, dates, state.
 class BookingTile extends StatelessWidget {
   const BookingTile({required this.booking, required this.onTap, super.key});
 
@@ -77,6 +77,13 @@ class BookingTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
+                    'Booking ${b.number}',
+                    key: Key('booking-tile-ref-${b.id}'),
+                    style: DesignTokens.tiny.copyWith(
+                      color: DesignTokens.textLight,
+                    ),
+                  ),
+                  Text(
                     '${bookingDates(b)} · ${bookingGuests(b)}',
                     style: DesignTokens.tiny.copyWith(
                       color: DesignTokens.textMuted,
@@ -99,4 +106,18 @@ class BookingTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The ways to pay a listing allows, as short labels.
+String paymentModesLine(List<PaymentMode> modes, double depositPercent) {
+  String pct(double v) =>
+      v == v.roundToDouble() ? '${v.toInt()}%' : '${v.toStringAsFixed(1)}%';
+  return [
+    for (final m in modes)
+      switch (m) {
+        PaymentMode.fullPrepay => 'Pay online',
+        PaymentMode.deposit => '${pct(depositPercent)} deposit',
+        PaymentMode.payAtVenue => 'Pay at venue',
+      },
+  ].join(' · ');
 }

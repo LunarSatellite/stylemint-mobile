@@ -65,6 +65,8 @@ abstract class TaggedProductForImportDto with _$TaggedProductForImportDto {
     required double amount,
     @Default('NPR') String currency,
     required String vendorName,
+    @Default(false) bool isService,
+    String? priceLabel,
   }) = _TaggedProductForImportDto;
 
   const TaggedProductForImportDto._();
@@ -78,6 +80,8 @@ abstract class TaggedProductForImportDto with _$TaggedProductForImportDto {
     imageUrl: absoluteMediaUrl(imageUrl),
     price: Money(amount: amount, currency: currency),
     vendorName: vendorName,
+    isService: isService,
+    priceLabel: priceLabel,
   );
 }
 

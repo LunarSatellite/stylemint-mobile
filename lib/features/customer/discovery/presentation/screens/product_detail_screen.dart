@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/commerce_intelligence/presentation/widgets/evidence_answer_panel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
@@ -36,6 +37,14 @@ import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/reel_review_thumbnail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/review_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_item.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_line.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_search.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/item/service_choice.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/item/service_item_bar.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/item/service_item_section.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/widgets/service_widgets.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/shared/services_providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/try_on/presentation/widgets/try_on_entry_button.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -47,9 +56,24 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
-  const ProductDetailScreen({required this.productId, super.key});
+  const ProductDetailScreen({
+    required this.productId,
+    this.replaceLineId,
+    this.reelTagContextId,
+    super.key,
+  });
 
   final String productId;
+
+  /// The reel tag a stay or trip was opened from: its cart line is credited
+  /// to the reel's creator.
+  final String? reelTagContextId;
+
+  /// A stay or trip opened from its cart line to change it: the page starts
+  /// from that line's choice, and adding replaces the line.
+  final String? replaceLineId;
+
+  static const Key displayPriceKey = Key('product-display-price');
 
   @override
   ConsumerState<ProductDetailScreen> createState() =>
@@ -62,6 +86,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   bool _descExpanded = false;
   ProductOptionChooser? _chooser;
   String? _chooserProductId;
+
+  /// Dates, room and guests (or departure and travellers) for a stay or trip
+  /// — what a service item has in place of size and colour.
+  ServiceChoice? _serviceChoice;
+  String? _serviceChoiceProductId;
 
   @override
   void initState() {
@@ -110,9 +139,49 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     if (mounted) setState(() {});
   }
 
+  /// The choice for a bookable stay or trip, kept across reloads of the same
+  /// item; null for a product, a bank, or an item still being set up.
+  ServiceChoice? _serviceChoiceFor(ProductDetail product) {
+    final item = product.service;
+    final bookable =
+        item != null &&
+        ((item.type == ServiceItemType.stay && item.stay != null) ||
+            (item.type == ServiceItemType.package && item.package != null));
+    if (item == null || !bookable) return null;
+    final existing = _serviceChoice;
+    if (existing != null && _serviceChoiceProductId == product.id) {
+      return existing;
+    }
+    existing?.dispose();
+    _serviceChoiceProductId = product.id;
+    return _serviceChoice = ServiceChoice(
+      item: item,
+      today: kathmanduDay(ref.read(servicesClockProvider)()),
+      from: _lineBeingReplaced(),
+    );
+  }
+
+  /// The cart line this page was opened to change, when it is a service.
+  ServiceLine? _lineBeingReplaced() {
+    final lineId = widget.replaceLineId;
+    if (lineId == null) return null;
+    return ref
+        .read(cartNotifierProvider)
+        .maybeWhen(
+          loadSuccess: (cart) {
+            for (final i in cart.items) {
+              if (i.id == lineId) return i.service;
+            }
+            return null;
+          },
+          orElse: () => null,
+        );
+  }
+
   @override
   void dispose() {
     _chooser?.dispose();
+    _serviceChoice?.dispose();
     super.dispose();
   }
 
@@ -131,6 +200,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           final chosen = chooser.value.applyTo(product);
           return _ProductBody(
             product: chosen,
+            serviceChoice: _serviceChoiceFor(product),
+            replaceLineId: widget.replaceLineId,
+            reelTagContextId: widget.reelTagContextId,
             chooser: product.options.isEmpty ? null : chooser,
             quantity: _quantity,
             selectedVariants: _selectedVariants,
@@ -264,9 +336,17 @@ class _ProductBody extends StatelessWidget {
     required this.onBuyNow,
     this.chooser,
     this.emiVariantId,
+    this.serviceChoice,
+    this.replaceLineId,
+    this.reelTagContextId,
   });
 
   final ProductDetail product;
+
+  /// A stay or trip's choice; null for a product or a bank.
+  final ServiceChoice? serviceChoice;
+  final String? replaceLineId;
+  final String? reelTagContextId;
 
   /// The variant on screen, for the "EMI from" line under the price.
   final String? emiVariantId;
@@ -284,6 +364,7 @@ class _ProductBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isService = product.isServiceItem;
     return Stack(
       children: [
         CustomScrollView(
@@ -351,24 +432,28 @@ class _ProductBody extends StatelessWidget {
                     ProductBadgesRow(product: product),
                     const SizedBox(height: DesignTokens.s12),
                     _NamePriceRow(product: product),
-                    // Draws nothing unless the vendor offers EMI on this
-                    // variant — and nothing at all on a pre-EMI server.
-                    EmiFromLine(
-                      offer: product.emi,
-                      productId: product.id,
-                      productName: product.name,
-                      variantId: emiVariantId,
-                      padding: const EdgeInsets.only(top: DesignTokens.s4),
-                    ),
-                    DeliveryEstimateLine(
-                      delivery: product.delivery,
-                      padding: const EdgeInsets.only(top: DesignTokens.s8),
-                    ),
-                    // Where the old random-number urgency banner sat. What
-                    // stands here now is measured or it is not drawn at all
-                    // — see the note below the build methods.
-                    ProductSignalsSection(productId: product.id),
-                    GroupBuyBanner(productId: product.id),
+                    // A stay, trip or bank product has no instalments, no
+                    // delivery and no group buy: it is booked or enquired.
+                    if (!isService) ...[
+                      // Draws nothing unless the vendor offers EMI on this
+                      // variant — and nothing at all on a pre-EMI server.
+                      EmiFromLine(
+                        offer: product.emi,
+                        productId: product.id,
+                        productName: product.name,
+                        variantId: emiVariantId,
+                        padding: const EdgeInsets.only(top: DesignTokens.s4),
+                      ),
+                      DeliveryEstimateLine(
+                        delivery: product.delivery,
+                        padding: const EdgeInsets.only(top: DesignTokens.s8),
+                      ),
+                      // Where the old random-number urgency banner sat. What
+                      // stands here now is measured or it is not drawn at all
+                      // — see the note below the build methods.
+                      ProductSignalsSection(productId: product.id),
+                      GroupBuyBanner(productId: product.id),
+                    ],
                     const SizedBox(height: DesignTokens.s12),
                     _ExpandableBlock(
                       description: product.description,
@@ -377,7 +462,16 @@ class _ProductBody extends StatelessWidget {
                       onToggle: onToggleDesc,
                     ),
                     const SizedBox(height: DesignTokens.s24),
-                    if (chooser case final ProductOptionChooser picker) ...[
+                    // In place of size and colour: dates, rooms and guests,
+                    // a departure and travellers, or a bank's rates and
+                    // branches (service items contract v1 §4).
+                    if (isService) ...[
+                      ServiceItemSection(
+                        item: product.service,
+                        choice: serviceChoice,
+                      ),
+                      const SizedBox(height: DesignTokens.s24),
+                    ] else if (chooser case final ProductOptionChooser picker) ...[
                       ProductOptionChoosers(chooser: picker),
                       const SizedBox(height: DesignTokens.s16),
                     ] else if (product.variants.isNotEmpty) ...[
@@ -390,10 +484,13 @@ class _ProductBody extends StatelessWidget {
                     ],
                     // Premium AR try-on. Draws nothing unless the service is
                     // on and this product is set up for it.
-                    TryOnEntryButton(
-                      productId: product.id,
-                      padding: const EdgeInsets.only(bottom: DesignTokens.s16),
-                    ),
+                    if (!isService)
+                      TryOnEntryButton(
+                        productId: product.id,
+                        padding: const EdgeInsets.only(
+                          bottom: DesignTokens.s16,
+                        ),
+                      ),
                     _SoldByRow(
                       vendorName: product.vendorName,
                       vendorAvatarUrl: product.vendorAvatarUrl,
@@ -404,12 +501,16 @@ class _ProductBody extends StatelessWidget {
                       productId: product.id,
                       padding: const EdgeInsets.only(top: DesignTokens.s24),
                     ),
-                    const SizedBox(height: DesignTokens.s12),
-                    _PassportSection(productId: product.id),
-                    const SizedBox(height: DesignTokens.s12),
-                    ProductComparisonCard(productId: product.id),
-                    const SizedBox(height: DesignTokens.s12),
-                    ReturnRecordCard(productId: product.id),
+                    // Provenance, comparisons and return records are about
+                    // goods; a stay, trip or bank product has none.
+                    if (!isService) ...[
+                      const SizedBox(height: DesignTokens.s12),
+                      _PassportSection(productId: product.id),
+                      const SizedBox(height: DesignTokens.s12),
+                      ProductComparisonCard(productId: product.id),
+                      const SizedBox(height: DesignTokens.s12),
+                      ReturnRecordCard(productId: product.id),
+                    ],
                     const SizedBox(height: DesignTokens.s12),
                     _FaqSection(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
@@ -459,10 +560,11 @@ class _ProductBody extends StatelessWidget {
           // all — not a disabled one. The page still loads, because a deep
           // link or a share can land here, and says why there is nothing to
           // press. See DigitalGoodsPolicy.
-          child:
-              DigitalGoodsPolicy.of(context).blocksPurchaseOf(
-                product.productKind,
-              )
+          child: isService
+              ? _serviceBar(product)
+              : DigitalGoodsPolicy.of(context).blocksPurchaseOf(
+                  product.productKind,
+                )
               ? const _UnavailableBar()
               : _BottomBar(
                   product: product,
@@ -473,6 +575,29 @@ class _ProductBody extends StatelessWidget {
                 ),
         ),
       ],
+    );
+  }
+}
+
+extension on _ProductBody {
+  /// A stay or trip books through [ServiceItemBar]; a bank enquires through
+  /// [BankItemBar]; an item still being set up has no bar.
+  Widget _serviceBar(ProductDetail product) {
+    final item = product.service;
+    final bank = item?.bank;
+    if (item?.type == ServiceItemType.bank && bank != null) {
+      return BankItemBar(productId: product.id, bank: bank);
+    }
+    final choice = serviceChoice;
+    if (choice == null || item == null || !item.addableToCart) {
+      return const SizedBox.shrink();
+    }
+    return ServiceItemBar(
+      productId: product.id,
+      variantId: product.defaultVariantId,
+      choice: choice,
+      replaceLineId: replaceLineId,
+      reelTagContextId: reelTagContextId,
     );
   }
 }
@@ -536,6 +661,7 @@ class _NamePriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (product.isServiceItem) return _servicePriceRow();
     final unitLabel = product.variants.isNotEmpty
         ? '/${product.variants.first.name}'
         : '';
@@ -580,6 +706,37 @@ class _NamePriceRow extends StatelessWidget {
             ],
           ],
         ),
+      ],
+    );
+  }
+}
+
+extension on _NamePriceRow {
+  /// "from Rs 4,500/night", "Rs 45,000 per person", "Dates coming soon"; a
+  /// bank shows no price (its rates are below). An older server without
+  /// `displayPrice` shows the item's price as products do.
+  Widget _servicePriceRow() {
+    final label =
+        product.displayPrice?.describe(serviceMoney) ??
+        (product.serviceType == ServiceItemType.bank
+            ? null
+            : formatMoney(product.price));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(product.name, style: DesignTokens.titleMedium),
+        if (label != null) ...[
+          const SizedBox(height: DesignTokens.s8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label,
+              key: ProductDetailScreen.displayPriceKey,
+              style: DesignTokens.moneyLarge,
+            ),
+          ),
+        ],
       ],
     );
   }

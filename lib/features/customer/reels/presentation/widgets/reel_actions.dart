@@ -394,10 +394,15 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
                   monogram: productName.trim().isEmpty
                       ? null
                       : productName.trim()[0].toUpperCase(),
-                  priceLabel: formatMoneyCompact(product.price),
-                  label:
-                      'Shop $productName, '
-                      '${formatMoney(product.price, decimalDigits: 0)}',
+                  // A service's own label is too long for the tile: its
+                  // compact price, or "Enquire" for a bank.
+                  priceLabel: product.isService && product.price.amount <= 0
+                      ? (product.serviceLabel ?? '')
+                      : formatMoneyCompact(product.price),
+                  label: product.serviceLabel != null
+                      ? 'Book $productName, ${product.serviceLabel}'
+                      : 'Shop $productName, '
+                            '${formatMoney(product.price, decimalDigits: 0)}',
                   inCart: cart.inCart,
                   cartCount: cart.count,
                   onTap: () => _quickBuy(product),

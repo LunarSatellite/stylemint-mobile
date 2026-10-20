@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/repositories/checkout_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_line.dart';
 
 part 'checkout_notifier.freezed.dart';
 
@@ -120,6 +121,19 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
         pickupLocations: delivery.pickupLocations,
         pickupLocationsNote: delivery.pickupLocationsNote,
       ),
+    );
+  }
+
+  /// The session's stays and trips as the server saved them after their
+  /// guest names were sent (service cart contract v1 §3.3).
+  void updateServiceLines(List<ServiceLine> lines) {
+    state.maybeWhen(
+      loadSuccess: (summary, placeOrderState) => state =
+          CheckoutState.loadSuccess(
+            summary.copyWith(serviceLines: lines),
+            placeOrderState: placeOrderState,
+          ),
+      orElse: () {},
     );
   }
 

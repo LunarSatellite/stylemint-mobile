@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_return_record.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/data/models/service_item_json.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/data/models/emi_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
@@ -85,6 +86,11 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
             emi: readProductEmiOffer(json),
             // Real options replace the synthetic "pick a SKU" chip row.
             variants: options.isEmpty ? null : const <ProductVariant>[],
+            // Stays, trips and bank products (service items contract v1);
+            // all null for a product and on an older server.
+            serviceType: readServiceItemType(json),
+            displayPrice: readDisplayPrice(json['displayPrice']),
+            service: readServiceItem(json['service']),
           ),
         );
       } catch (e) {

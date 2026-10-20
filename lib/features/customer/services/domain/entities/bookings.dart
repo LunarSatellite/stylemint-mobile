@@ -565,10 +565,18 @@ class Booking {
     this.createdAt,
     this.canPay = false,
     this.canCancel = false,
+    this.orderId,
+    this.orderNumber,
   });
 
   final String id;
   final String number;
+
+  /// The order this booking was bought in (service cart contract v1 §5);
+  /// null for a booking made directly. Its pay-now part is paid, and
+  /// refunded, through that order's payment.
+  final String? orderId;
+  final String? orderNumber;
   final ListingKind kind;
   final BookingState state;
   final String listingId;

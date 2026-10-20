@@ -1,6 +1,7 @@
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_delivery.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/product_emi_offer.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_item.dart';
 import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
@@ -33,6 +34,9 @@ class ProductDetail {
     this.optionVariants = const <ProductVariantOption>[],
     this.productKind,
     this.emi,
+    this.serviceType,
+    this.displayPrice,
+    this.service,
   });
 
   final String id;
@@ -85,6 +89,22 @@ class ProductDetail {
   /// shows nothing about instalments.
   final ProductEmiOffer? emi;
 
+  /// A hotel stay, travel package or bank product sold as an item (service
+  /// items contract v1). Null for a normal product, and on a server before
+  /// that contract.
+  final ServiceItemType? serviceType;
+
+  /// "from Rs 4,500/night", "Rs 45,000 per person"; null on an older server.
+  final DisplayPrice? displayPrice;
+
+  /// Room types, departures or the bank's forms. Null while [serviceType]
+  /// is set means the listing could not be read just now ("being set up").
+  final ServiceItem? service;
+
+  /// A service item: no size or colour, no quantity — dates and guests, or
+  /// Enquire and Book appointment for a bank.
+  bool get isServiceItem => serviceType != null;
+
   ProductDetail copyWith({
     String? id,
     String? name,
@@ -111,6 +131,9 @@ class ProductDetail {
     List<ProductVariantOption>? optionVariants,
     int? productKind,
     ProductEmiOffer? emi,
+    ServiceItemType? serviceType,
+    DisplayPrice? displayPrice,
+    ServiceItem? service,
     bool clearCompareAtPrice = false,
     bool clearStockCount = false,
   }) {
@@ -142,6 +165,9 @@ class ProductDetail {
       optionVariants: optionVariants ?? this.optionVariants,
       productKind: productKind ?? this.productKind,
       emi: emi ?? this.emi,
+      serviceType: serviceType ?? this.serviceType,
+      displayPrice: displayPrice ?? this.displayPrice,
+      service: service ?? this.service,
     );
   }
 }

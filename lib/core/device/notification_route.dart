@@ -317,7 +317,7 @@ String vendorEmiPlanLocation(NotificationPayload payload) {
 ///
 ///  * bookings contract v1 §7: buyer `booking.confirmed|reminder|cancelled|
 ///    refunded` (push `type` is `service_booking`), by `bookingId`, else the
-///    buyer's bookings. `booking.vendor.*` is the seller's and is left alone.
+///    buyer's bookings (under Orders). `booking.vendor.*` is the seller's.
 ///  * banks contract v1 §7: `service.appointment.*` by `appointmentId`,
 ///    `service.enquiry.*` by `leadId`; `service.bank.*` is the bank's.
 String? servicesNotificationLocation(
@@ -342,7 +342,7 @@ String? servicesNotificationLocation(
     final id = payload.id('appointmentId');
     return id != null && _isGuid(id)
         ? RouteNames.bankAppointmentDetailPath(id)
-        : RouteNames.myBookings;
+        : RouteNames.myBankRequests;
   }
 
   if (type.startsWith('service.enquiry.') ||
@@ -350,7 +350,7 @@ String? servicesNotificationLocation(
     final id = payload.id('leadId');
     return id != null && _isGuid(id)
         ? RouteNames.bankEnquiryDetailPath(id)
-        : RouteNames.myBookings;
+        : RouteNames.myBankRequests;
   }
   return null;
 }

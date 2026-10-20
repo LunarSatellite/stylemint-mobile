@@ -14,19 +14,26 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
+/// Which list [MyBookingsScreen] opens on.
+enum MyBookingsTab { upcoming, past, banks }
+
 /// The buyer's stays and trips — upcoming and past — and their bank
-/// enquiries and appointments with their status.
+/// enquiries and appointments with their status. Reached from Orders and
+/// Profile (there is no Services tab since 2026-10-19).
 class MyBookingsScreen extends ConsumerWidget {
-  const MyBookingsScreen({super.key});
+  const MyBookingsScreen({this.initialTab = MyBookingsTab.upcoming, super.key});
+
+  final MyBookingsTab initialTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => DefaultTabController(
     length: 3,
+    initialIndex: initialTab.index,
     child: Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('My bookings'),
+        title: const Text('Bookings & bank requests'),
         bottom: const TabBar(
           labelColor: DesignTokens.primaryGreen,
           unselectedLabelColor: DesignTokens.textMuted,

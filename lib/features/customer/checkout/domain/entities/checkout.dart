@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show immutable;
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_line.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// A shipping address as checkout sees it.
@@ -649,7 +650,11 @@ class CheckoutItem {
     required this.variantName,
     required this.quantity,
     required this.unitPrice,
+    this.service,
   });
+
+  /// A stay or trip line (service cart contract v1 §3.2 `items[].service`).
+  final ServiceLine? service;
 
   final String productId;
   final String productName;
@@ -667,6 +672,7 @@ class CheckoutItem {
     Money? unitPrice,
   }) {
     return CheckoutItem(
+      service: service,
       productId: productId ?? this.productId,
       productName: productName ?? this.productName,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -716,9 +722,43 @@ class CheckoutSummary {
     this.deliveryConsolidation,
     this.pickupLocations = const [],
     this.pickupLocationsNote,
+    this.sessionId,
+    this.requiresShippingAddress = true,
+    this.payNow,
+    this.payAtVenue,
+    this.serviceLines = const [],
   });
 
   final ShippingAddress shippingAddress;
+
+  /// The checkout session's id: service guests are saved against it
+  /// (service cart contract v1 §3.3).
+  final String? sessionId;
+
+  /// False for a checkout of stays and trips only: no address, no delivery.
+  final bool requiresShippingAddress;
+
+  /// What is paid online when the order is placed (products plus each
+  /// service line's pay-now part); null from a server before the contract.
+  final Money? payNow;
+
+  /// Paid to hotels and agencies at the venue, never through StyleMint.
+  final Money? payAtVenue;
+
+  /// The stays and trips being checked out, each with its held booking and
+  /// the guest names saved so far.
+  final List<ServiceLine> serviceLines;
+
+  bool get hasServiceLines => serviceLines.isNotEmpty;
+
+  /// A stay or trip has something to pay now: cash on delivery cannot pay
+  /// it (`checkout.service_requires_online_payment`).
+  bool get requiresOnlinePayment =>
+      serviceLines.any((l) => l.payNow.amount > 0);
+
+  /// Every service line has its guest (and every traveller) named.
+  bool get serviceGuestsComplete => serviceLines.every((l) => l.guestsComplete);
+
   final PaymentMethod paymentMethod;
   final List<CheckoutItem> items;
   final Money subtotal;
@@ -778,8 +818,14 @@ class CheckoutSummary {
     DeliveryConsolidationPlan? deliveryConsolidation,
     List<PickupLocation>? pickupLocations,
     String? pickupLocationsNote,
+    List<ServiceLine>? serviceLines,
   }) {
     return CheckoutSummary(
+      sessionId: sessionId,
+      requiresShippingAddress: requiresShippingAddress,
+      payNow: payNow,
+      payAtVenue: payAtVenue,
+      serviceLines: serviceLines ?? this.serviceLines,
       shippingAddress: shippingAddress ?? this.shippingAddress,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       items: items ?? this.items,

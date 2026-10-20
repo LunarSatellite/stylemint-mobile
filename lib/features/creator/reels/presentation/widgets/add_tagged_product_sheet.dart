@@ -222,7 +222,7 @@ class _AddTaggedProductSheetState extends ConsumerState<AddTaggedProductSheet> {
                               style: DesignTokens.bodyText,
                             ),
                             subtitle: Text(
-                              '${formatMoney(p.price, decimalDigits: 0)}'
+                              '${p.serviceLabel ?? formatMoney(p.price, decimalDigits: 0)}'
                               '  ·  ${p.vendorName}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

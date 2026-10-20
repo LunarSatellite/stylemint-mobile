@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stylemint_mobile_frontend/core/device/notification_route.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/services_routes.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
 /// Bookings contract v1 §7 and banks contract v1 §7: buyer booking,
@@ -128,18 +129,56 @@ void main() {
     });
   });
 
-  test('the routes the deep links name are the app\'s own', () {
+  test('the v1 deep links forward to where the pages live now', () {
+    // A v1 server, and notices already delivered, still send /services/...;
+    // the router forwards each one (services_routes.dart).
+    expect(
+      legacyServiceLocation(Uri.parse('/services/bookings/$_bookingId')),
+      RouteNames.bookingDetailPath(_bookingId),
+    );
+    expect(
+      legacyServiceLocation(
+        Uri.parse('/services/banks/appointments/$_appointmentId'),
+      ),
+      RouteNames.bankAppointmentDetailPath(_appointmentId),
+    );
+    expect(
+      legacyServiceLocation(Uri.parse('/services/banks/enquiries/$_leadId')),
+      RouteNames.bankEnquiryDetailPath(_leadId),
+    );
+    expect(
+      legacyServiceLocation(Uri.parse('/services/bookings')),
+      RouteNames.myBookings,
+    );
     expect(
       RouteNames.bookingDetailPath(_bookingId),
-      '/services/bookings/$_bookingId',
+      '/orders/bookings/$_bookingId',
+    );
+  });
+
+  test('the v1 browse pages forward to Home', () {
+    for (final path in [
+      '/services',
+      '/services/stays/results?q=Pokhara',
+      '/services/stays/$_bookingId',
+      '/services/travel/$_bookingId',
+      '/services/banks/$_bookingId',
+      '/services/bank-products/$_bookingId',
+      '/services/bookings/checkout',
+    ]) {
+      expect(legacyServiceLocation(Uri.parse(path)), RouteNames.home);
+    }
+    expect(legacyServiceLocation(Uri.parse('/orders')), isNull);
+  });
+
+  test('bank notices without an id open the bank requests list', () {
+    expect(
+      _push({'type': 'service.appointment.booked'}),
+      RouteNames.myBankRequests,
     );
     expect(
-      RouteNames.bankAppointmentDetailPath(_appointmentId),
-      '/services/banks/appointments/$_appointmentId',
-    );
-    expect(
-      RouteNames.bankEnquiryDetailPath(_leadId),
-      '/services/banks/enquiries/$_leadId',
+      _push({'type': 'service.enquiry.contacted'}),
+      RouteNames.myBankRequests,
     );
   });
 }

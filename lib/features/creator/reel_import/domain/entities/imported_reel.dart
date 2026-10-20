@@ -97,6 +97,8 @@ class TaggedProductForImport {
     required this.imageUrl,
     required this.price,
     required this.vendorName,
+    this.isService = false,
+    this.priceLabel,
   });
 
   final String productId;
@@ -104,6 +106,18 @@ class TaggedProductForImport {
   final String imageUrl;
   final Money price;
   final String vendorName;
+
+  /// A hotel stay, travel package or bank product (service items contract
+  /// v1 §5.3): tagged exactly like a product.
+  final bool isService;
+
+  /// The picker's `displayPrice.label` ("from Rs 4,500/night"); null for a
+  /// bank and on an older server.
+  final String? priceLabel;
+
+  /// What a service costs, in the picker's words — its label, or "Enquire"
+  /// for a bank. Null for a product (callers show [price]).
+  String? get serviceLabel => isService ? (priceLabel ?? 'Enquire') : null;
 }
 
 class BulkImportResult {

@@ -69,10 +69,15 @@ NetworkExceptions _buildConflict(dynamic body) {
   final code = _extractErrorCode(body) ?? 'validation.conflict';
   final message = _extractProblemMessage(body);
   final field = _extractField(body);
+  // A 409 can name several things at once — checkout's
+  // `checkout.service_unavailable` lists each stay or trip it could not hold
+  // (field = the cart line id).
+  final errors = _extractErrors(body);
   return NetworkExceptions.validation(
     code: code,
     message: message,
     field: field,
+    errors: errors,
   );
 }
 

@@ -52,6 +52,32 @@ const _codeMessages = <String, String>{
       'We could not start the payment. Nothing was charged. Try again.',
   'booking.not_cancellable': 'This booking can no longer be cancelled here.',
   'booking.invalid_transition': 'This booking has already changed. Refresh.',
+  // Stays and trips in the cart and at checkout (service cart contract v1 §6).
+  'cart.service_options_required':
+      'Choose your dates, room and guests, then add to cart.',
+  'cart.service_options_invalid':
+      'Those dates or guests are not allowed here. Check them and try again.',
+  'cart.service_not_found':
+      'That room or departure is no longer offered. Pick another.',
+  'cart.service_not_purchasable': 'This cannot be booked through the cart.',
+  'cart.service_unavailable':
+      'Not available for that choice any more. Try other dates or another '
+      'option.',
+  'cart.service_quantity_fixed':
+      'A booking cannot change quantity. Remove it and add your new choice.',
+  'checkout.service_unavailable':
+      'Some rooms or seats in your cart were just taken. Remove them and try '
+      'again.',
+  'checkout.service_line_not_found':
+      'That booking is no longer in your checkout. Start checkout again.',
+  'checkout.service_guests_required':
+      'Add the guest name for every stay and trip before you pay.',
+  'checkout.service_requires_online_payment':
+      'Stays and trips with something to pay now need an online payment, not '
+      'cash on delivery.',
+  'booking.invalid': 'Check the guest and traveller names and try again.',
+  'booking.paid_through_order':
+      'This booking is paid through its order. Open the order to pay.',
   // Banks (banks contract v1 §6).
   'service_vendor.not_found': 'This bank is not on StyleMint any more.',
   'bank_product.not_found': 'This product is no longer offered.',

@@ -4,12 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/routes/route_path_match.dart';
 
-/// The Services tab browses signed out; the buyer's own bookings, enquiries
-/// and appointments under `/services` do not. Read as text, as the other
-/// reachability checks do, because building the GoRouter needs the whole
-/// auth stack.
+/// Services are sold like items (2026-10-19): no Services tab, no browse
+/// pages. The buyer's bookings and bank requests live under Orders, signed
+/// in only, and are registered before Order Detail. Read as text, as the
+/// other reachability checks do, because building the GoRouter needs the
+/// whole auth stack.
 void main() {
   late final router = File('lib/routes/app_router.dart').readAsStringSync();
+  late final serviceRoutes = File(
+    'lib/features/customer/services/services_routes.dart',
+  ).readAsStringSync();
 
   late final publicPaths = () {
     final start = router.indexOf('const _publicPaths = {');
@@ -20,88 +24,73 @@ void main() {
     ).allMatches(router.substring(start, end)).map((m) => m.group(1)!).toSet();
   }();
 
+  // `/orders` is public, and a plain pattern matches as a prefix, so every
+  // service page under it is public unless the signed-in-only list says not.
   bool isPublic(String location) =>
-      routePathMatches(location, RouteNames.services) &&
+      publicPaths.contains('orders') &&
+      routePathMatches(location, RouteNames.orders) &&
       !RouteNames.servicesSignedInOnly.any(
         (p) => routePathMatches(location, p),
       );
 
-  test('the Services tab is a public path', () {
-    expect(publicPaths, contains('services'));
+  test('there is no Services tab or browse page any more', () {
+    expect(router.contains('ServicesHomeScreen'), isFalse);
+    expect(router.contains('StayResultsScreen'), isFalse);
+    expect(router.contains('TravelResultsScreen'), isFalse);
+    expect(publicPaths, isNot(contains('services')));
   });
 
   test('the redirect honours the signed-in-only list', () {
     expect(router.contains('RouteNames.servicesSignedInOnly.any('), isTrue);
   });
 
-  test('browsing is public', () {
-    for (final location in [
-      RouteNames.services,
-      '${RouteNames.serviceStayResults}?q=Pokhara&checkIn=2026-10-21'
-          '&checkOut=2026-10-23',
-      RouteNames.serviceStayDetailPath('a'),
-      RouteNames.serviceTravelDetailPath('a'),
-      RouteNames.serviceBankDetailPath('a'),
-      RouteNames.serviceBankProductPath('a'),
-    ]) {
-      expect(isPublic(location), isTrue, reason: location);
-    }
-  });
-
-  test('bookings, enquiries and appointments are signed-in only', () {
+  test('bookings and bank requests are signed-in only', () {
     for (final location in [
       RouteNames.myBookings,
-      RouteNames.bookingCheckout,
+      RouteNames.myBankRequests,
       RouteNames.bookingDetailPath('a'),
-      RouteNames.bookingConfirmedPath('a'),
       RouteNames.bankEnquiryDetailPath('a'),
       RouteNames.bankAppointmentDetailPath('a'),
+      RouteNames.bankEnquiryFormPath('a'),
     ]) {
       expect(isPublic(location), isFalse, reason: location);
     }
-    // The forms live outside /services and are never public.
-    expect(
-      routePathMatches(
-        RouteNames.bankEnquiryFormPath('a'),
-        RouteNames.services,
-      ),
-      isFalse,
-    );
   });
 
-  test('every Services route is registered, Services as a shell branch', () {
+  test('the service routes come before Order Detail', () {
+    final spread = router.indexOf('...buyerServiceRoutes,');
+    expect(spread, greaterThan(-1));
+    expect(spread, lessThan(router.indexOf('path: RouteNames.orderDetail,')));
     for (final name in [
-      'services',
-      'serviceStayResults',
-      'serviceStayDetail',
-      'serviceTravelResults',
-      'serviceTravelDetail',
-      'serviceBankDetail',
-      'serviceBankProduct',
-      'bankEnquiryForm',
-      'bankAppointmentForm',
+      'myBookings',
+      'myBankRequests',
+      'bookingDetail',
       'bankEnquiryDetail',
       'bankAppointmentDetail',
-      'myBookings',
-      'bookingCheckout',
-      'bookingConfirmed',
-      'bookingDetail',
+      'bankEnquiryForm',
+      'bankAppointmentForm',
     ]) {
-      expect(router.contains('path: RouteNames.$name,'), isTrue, reason: name);
+      expect(
+        serviceRoutes.contains('path: RouteNames.$name,'),
+        isTrue,
+        reason: name,
+      );
     }
-    // Results before the id route, and the bank request pages before the
-    // bank page, so `results` / `appointments` is never read as an id.
+  });
+
+  test('the v1 /services links are still registered, as redirects', () {
+    for (final name in [
+      'legacyServices',
+      'legacyMyBookings',
+      'legacyBookingDetail',
+      'legacyBankEnquiryDetail',
+      'legacyBankAppointmentDetail',
+    ]) {
+      expect(serviceRoutes.contains('RouteNames.$name,'), isTrue, reason: name);
+    }
     expect(
-      router.indexOf('path: RouteNames.serviceStayResults,'),
-      lessThan(router.indexOf('path: RouteNames.serviceStayDetail,')),
-    );
-    expect(
-      router.indexOf('path: RouteNames.bankAppointmentDetail,'),
-      lessThan(router.indexOf('path: RouteNames.serviceBankDetail,')),
-    );
-    expect(
-      router.indexOf('path: RouteNames.bookingCheckout,'),
-      lessThan(router.indexOf('path: RouteNames.bookingDetail,')),
+      serviceRoutes.indexOf('RouteNames.legacyBankAppointmentDetail,'),
+      lessThan(serviceRoutes.indexOf('...RouteNames.legacyServiceBrowse')),
     );
   });
 }

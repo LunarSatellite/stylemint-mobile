@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/orders/orders_services_strip.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -203,6 +204,9 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
                 ),
                 // ── Buy It Again (predicted reorders) ─────────────
                 const BuyItAgainSection(),
+                // Stays, trips and bank requests: no Services tab, so they
+                // are reached from here.
+                const OrdersServicesStrip(),
 
                 // ── Filter chips ─────────────────────────────────
                 Padding(
@@ -329,7 +333,8 @@ class _OrderCard extends StatelessWidget {
     final date = DateFormat('HH:mm MMM d, yyyy').format(order.placedAt);
     final total = formatMoney(order.total);
     final meta =
-        '$total  •  $date  •  ${order.itemCount} item${order.itemCount == 1 ? '' : 's'}';
+        '$total  •  $date  •  ${order.itemCount} item${order.itemCount == 1 ? '' : 's'}'
+        '${order.hasServiceLines ? '  •  includes a booking' : ''}';
 
     return GestureDetector(
       onTap: onTap,

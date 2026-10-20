@@ -28,18 +28,33 @@ enum ServiceFailureKind {
   unknown,
 }
 
+/// One entry of an RFC 7807 `errors[]`: e.g. a cart line the server could
+/// not hold (`field` = the cart line id, `code` = `sold_out`), or a
+/// traveller name it refused (`field` = `travellers[1].fullName`).
+class ServiceFieldError {
+  const ServiceFieldError({required this.field, required this.code, this.message});
+
+  final String field;
+  final String code;
+  final String? message;
+}
+
 class ServiceFailure {
   const ServiceFailure(
     this.kind, {
     this.code,
     this.message,
     this.statusCode,
+    this.field,
+    this.errors = const [],
   });
 
   /// A rule the app checked itself before sending anything.
   const ServiceFailure.local(String this.code, {this.message})
     : kind = ServiceFailureKind.rejected,
-      statusCode = null;
+      statusCode = null,
+      field = null,
+      errors = const [];
 
   final ServiceFailureKind kind;
 
@@ -49,6 +64,12 @@ class ServiceFailure {
   /// The server's own sentence (`detail`, else `title`), when it sent one.
   final String? message;
   final int? statusCode;
+
+  /// The RFC 7807 top-level `field`, when the server named one.
+  final String? field;
+
+  /// The RFC 7807 `errors[]`, when the server sent any.
+  final List<ServiceFieldError> errors;
 
   bool get isNotFound => kind == ServiceFailureKind.notFound;
 

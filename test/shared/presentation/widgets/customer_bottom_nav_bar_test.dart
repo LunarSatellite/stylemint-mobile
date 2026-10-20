@@ -9,7 +9,7 @@ Widget _host(CustomerBottomNavBar bar) =>
     MaterialApp(home: Scaffold(bottomNavigationBar: bar));
 
 void main() {
-  testWidgets('the customer bar reads Home, Discover, Services, Cart, Profile', (
+  testWidgets('the customer bar reads Home, Discover, Cart, Profile', (
     tester,
   ) async {
     final taps = <int>[];
@@ -24,7 +24,7 @@ void main() {
     );
 
     expect(find.byType(SmBottomNavBar), findsOneWidget);
-    for (final label in ['Home', 'Discover', 'Services', 'Cart', 'Profile']) {
+    for (final label in ['Home', 'Discover', 'Cart', 'Profile']) {
       expect(find.text(label), findsOneWidget);
     }
     // Orders lives in the Profile menu now.
@@ -42,18 +42,16 @@ void main() {
     // No scan callback, no centre action.
     expect(find.byType(SmNavCenterAction), findsNothing);
 
-    await tester.tap(find.text('Services'));
     await tester.tap(find.text('Cart'));
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
     expect(taps, [
-      CustomerBottomNavBar.servicesIndex,
       CustomerBottomNavBar.cartIndex,
       CustomerBottomNavBar.profileIndex,
     ]);
   });
 
-  testWidgets('the QR scan action is large and sits after Discover', (
+  testWidgets('the QR scan action is large and in the true centre', (
     tester,
   ) async {
     final taps = <int>[];
@@ -73,6 +71,8 @@ void main() {
       tester.getSize(circle),
       const Size.square(CustomerBottomNavBar.scanDiameter),
     );
+    final bar = tester.getRect(find.byType(SmBottomNavBar));
+    expect(tester.getCenter(circle).dx, moreOrLessEquals(bar.center.dx));
     double tabX(int i) =>
         tester.getCenter(find.byKey(SmBottomNavBar.tabKey(i))).dx;
     expect(
@@ -81,7 +81,7 @@ void main() {
     );
     expect(
       tester.getCenter(circle).dx,
-      lessThan(tabX(CustomerBottomNavBar.servicesIndex)),
+      lessThan(tabX(CustomerBottomNavBar.cartIndex)),
     );
     final icon = tester.widget<ReelRailIcon>(
       find.descendant(of: circle, matching: find.byType(ReelRailIcon)),
@@ -109,24 +109,5 @@ void main() {
 
     expect(find.byKey(SmBottomNavBar.badgeKey), findsNothing);
     expect(find.bySemanticsLabel('Cart'), findsOneWidget);
-  });
-
-  testWidgets('the bar fits a 360dp phone with all five tabs and Scan', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(1080, 2340);
-    tester.view.devicePixelRatio = 3;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      _host(
-        CustomerBottomNavBar(
-          currentIndex: CustomerBottomNavBar.servicesIndex,
-          onTap: (_) {},
-          onScan: () {},
-        ),
-      ),
-    );
-    expect(tester.takeException(), isNull);
-    expect(find.text('Services'), findsOneWidget);
   });
 }

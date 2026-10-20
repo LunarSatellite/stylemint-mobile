@@ -33,6 +33,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/shared/provid
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/rider_ratings/domain/entities/rider_rating.dart';
 import 'package:stylemint_mobile_frontend/features/rider_ratings/presentation/widgets/rider_rating_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/presentation/orders/order_bookings_card.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -371,6 +372,8 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
     if (order.status == OrderTrackStatus.cancelled) {
       return _buildCancelledView(order);
     }
+    // Only stays and trips: nothing ships, so no tracking, care or return.
+    final bookingsOnly = order.items.isEmpty && order.bookingLines.isNotEmpty;
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(DesignTokens.s16),
@@ -412,6 +415,12 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             order: order,
             expanded: _expanded,
             onToggle: _toggleOtherDetails,
+          ),
+          // Stays and trips bought in this order: dates, booking reference,
+          // paid now and at the venue, and cancel per the booking's policy.
+          OrderBookingsCard(
+            lines: order.bookingLines,
+            payAtVenue: order.payAtVenue,
           ),
           // Bought on EMI: paid so far, what is left and the next
           // instalment. Draws nothing for an order paid outright.
@@ -481,6 +490,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
               ),
             const CarbonImpactCard(),
           ],
+          if (!bookingsOnly) ...[
           OrderCareCard(
             orderNumber: order.orderNumber,
             resolveAction: (item, action) =>
@@ -492,7 +502,9 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             ),
           ),
           OrderReturnLink(order: order),
+          ],
           const SizedBox(height: DesignTokens.s24),
+          if (!bookingsOnly)
           KeyedSubtree(
             key: _trackingSectionKey,
             // Backend timeline per sub-order; the derived stages below are
@@ -584,6 +596,8 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CancelledOrderSummary(order: order),
+          // A cancelled order's bookings, with their own state and refund.
+          OrderBookingsCard(lines: order.bookingLines),
           const SizedBox(height: DesignTokens.s16),
           CancelledPartsCard(parts: order.cancelledParts),
           // No `cancelledAt`: the card reads the recorded cancellation event.

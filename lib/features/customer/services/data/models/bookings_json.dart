@@ -346,6 +346,8 @@ Booking readBooking(Map<String, dynamic> json) {
     createdAt: readDate(json['createdUtc']),
     canPay: readBool(json['canPay']),
     canCancel: readBool(json['canCancel']),
+    orderId: readOptionalString(json['orderId']),
+    orderNumber: readOptionalString(json['orderNumber']),
   );
 }
 

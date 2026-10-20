@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/basket_finding.dart';
+import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_line.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// AI-generated, cart-grounded observations — backend
@@ -65,6 +66,7 @@ class CartItem {
     this.creatorHandle,
     this.commissionRate,
     this.variantId,
+    this.service,
   });
 
   final String id;
@@ -88,6 +90,14 @@ class CartItem {
   /// Payment plans (EMI) are offered per variant, so checkout needs it.
   final String? variantId;
 
+  /// A stay or trip (service cart contract v1 §2.2): its dates, room or
+  /// departure, guests, and what is paid now and at the venue. Null for a
+  /// product. A service line's quantity is always 1 and cannot be changed;
+  /// to change the options the buyer removes it and adds it again.
+  final ServiceLine? service;
+
+  bool get isService => service != null;
+
   CartItem copyWith({
     String? id,
     String? productId,
@@ -102,6 +112,7 @@ class CartItem {
     String? variantId,
   }) {
     return CartItem(
+      service: service,
       id: id ?? this.id,
       productId: productId ?? this.productId,
       productName: productName ?? this.productName,
@@ -129,7 +140,8 @@ class CartItem {
       other.isInStock == isInStock &&
       other.creatorHandle == creatorHandle &&
       other.commissionRate == commissionRate &&
-      other.variantId == variantId;
+      other.variantId == variantId &&
+      identical(other.service, service);
 
   @override
   int get hashCode => Object.hash(
@@ -159,6 +171,10 @@ class Cart {
     this.supportedCreatorsCount = 0,
     this.appliedPromoCode,
     this.savedForLater = const <SavedForLaterItem>[],
+    this.payNowTotal,
+    this.payAtVenueTotal,
+    this.hasServiceLines = false,
+    this.requiresShippingAddress = true,
   });
 
   final String id;
@@ -174,6 +190,22 @@ class Cart {
   final int supportedCreatorsCount;
   final AppliedPromoCode? appliedPromoCode;
   final List<SavedForLaterItem> savedForLater;
+
+  /// What checkout will charge online: products after discount plus each
+  /// service line's pay-now part (service cart contract v1 §2.3). Null from
+  /// a server before that contract — [total] is then what is paid.
+  final Money? payNowTotal;
+
+  /// Paid to hotels and agencies at the venue, never through StyleMint.
+  final Money? payAtVenueTotal;
+  final bool hasServiceLines;
+
+  /// False for a cart of services only: no address, no delivery.
+  final bool requiresShippingAddress;
+
+  /// The cart's service lines.
+  List<CartItem> get serviceItems =>
+      [for (final i in items) if (i.isService) i];
 
   Cart copyWith({
     String? id,
@@ -199,6 +231,10 @@ class Cart {
           supportedCreatorsCount ?? this.supportedCreatorsCount,
       appliedPromoCode: appliedPromoCode ?? this.appliedPromoCode,
       savedForLater: savedForLater ?? this.savedForLater,
+      payNowTotal: payNowTotal,
+      payAtVenueTotal: payAtVenueTotal,
+      hasServiceLines: hasServiceLines,
+      requiresShippingAddress: requiresShippingAddress,
     );
   }
 

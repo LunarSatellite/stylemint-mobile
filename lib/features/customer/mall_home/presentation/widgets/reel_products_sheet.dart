@@ -302,14 +302,21 @@ class ReelProductRow extends ConsumerWidget {
                             style: _nameStyle,
                           ),
                           const SizedBox(height: DesignTokens.s4),
-                          MoneyText(
-                            product.price,
-                            decimalDigits: MallMetrics.priceDigits(
+                          if (product.serviceLabel != null)
+                            Text(
+                              product.serviceLabel!,
+                              maxLines: 1,
+                              style: _priceStyle,
+                            )
+                          else
+                            MoneyText(
                               product.price,
+                              decimalDigits: MallMetrics.priceDigits(
+                                product.price,
+                              ),
+                              maxLines: 1,
+                              style: _priceStyle,
                             ),
-                            maxLines: 1,
-                            style: _priceStyle,
-                          ),
                         ],
                       ),
                     ),
@@ -320,7 +327,13 @@ class ReelProductRow extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: DesignTokens.s8),
-        if (cartItem == null)
+        if (product.isService)
+          // Dates and guests (or an enquiry) are chosen on the item page.
+          MallPrimaryCta(
+            label: product.addableToCart ? 'Book' : 'Enquire',
+            onPressed: () => openTaggedServiceItem(context, product),
+          )
+        else if (cartItem == null)
           MallPrimaryCta(
             label: 'Add',
             onPressed: () =>
