@@ -30,12 +30,7 @@ typedef JourneyStepKey = ({String journeyId, String reelId});
 /// Null when neither can be read — the step says it is unavailable.
 final FutureProviderFamily<Reel?, JourneyStepKey> journeyStepReelProvider =
     FutureProvider.autoDispose.family<Reel?, JourneyStepKey>((ref, key) async {
-      PublicJourney? journey;
-      try {
-        journey = await ref.watch(publicJourneyProvider(key.journeyId).future);
-      } on Object {
-        journey = null;
-      }
+      final journey = await _journeyOrNull(ref, key.journeyId);
       final fromJourney = journey?.reels[key.reelId];
       if (fromJourney != null) return fromJourney;
 
@@ -49,6 +44,14 @@ final FutureProviderFamily<Reel?, JourneyStepKey> journeyStepReelProvider =
         return reel;
       });
     }, retry: (_, _) => null);
+
+Future<PublicJourney?> _journeyOrNull(Ref ref, String journeyId) async {
+  try {
+    return await ref.watch(publicJourneyProvider(journeyId).future);
+  } on Object {
+    return null;
+  }
+}
 
 /// Whether the journey indicator still shows its "swipe →" hint.
 class JourneyHintState {
