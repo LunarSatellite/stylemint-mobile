@@ -287,7 +287,7 @@ void main() {
       ]);
       await pump(tester, JourneyRoutes.list);
 
-      expect(find.text('Invites for you'), findsOneWidget);
+      expect(find.text('Invitations'), findsOneWidget);
       expect(find.text('Your journeys'), findsOneWidget);
       expect(find.text("Journeys you're in"), findsOneWidget);
       expect(find.text('Invited'), findsOneWidget);

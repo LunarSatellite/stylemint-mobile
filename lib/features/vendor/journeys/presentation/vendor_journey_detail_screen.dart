@@ -55,7 +55,13 @@ class _VendorJourneyDetailScreenState
   Future<void> _reload() async {
     setState(() => _latest = null);
     ref.invalidate(vendorJourneysProvider);
-    await ref.refresh(vendorJourneyProvider(widget.journeyId).future);
+    final journey = vendorJourneyProvider(widget.journeyId);
+    ref.invalidate(journey);
+    try {
+      await ref.read(journey.future);
+    } on Object {
+      // The screen watches the provider and shows the failure itself.
+    }
   }
 
   /// Runs a change that answers with the journey, and shows the answer.

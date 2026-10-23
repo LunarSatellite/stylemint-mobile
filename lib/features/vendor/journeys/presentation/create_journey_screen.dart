@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -48,7 +46,7 @@ class _CreateJourneyScreenState extends ConsumerState<CreateJourneyScreen> {
       (failure) => showJourneySnack(context, journeyFailureMessage(failure)),
       (journey) {
         ref.invalidate(vendorJourneysProvider);
-        unawaited(context.pushReplacement(JourneyRoutes.detailPath(journey.id)));
+        context.pushReplacement(JourneyRoutes.detailPath(journey.id));
       },
     );
   }

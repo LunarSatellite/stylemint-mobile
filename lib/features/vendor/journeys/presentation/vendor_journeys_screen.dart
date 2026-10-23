@@ -132,7 +132,7 @@ class _JourneyList extends ConsumerWidget {
             ),
           ),
         if (invites.isNotEmpty) ...[
-          const ServiceSectionTitle('Invites for you'),
+          const ServiceSectionTitle('Invitations'),
           for (final j in invites) _JourneyTile(journey: j, onTap: () => open(j)),
         ],
         if (owned.isNotEmpty) ...[
