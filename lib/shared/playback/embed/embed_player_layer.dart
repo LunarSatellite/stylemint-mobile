@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_pool.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_slot.dart';
@@ -18,12 +19,18 @@ class EmbedPlayerLayer extends StatelessWidget {
     required this.indexOfKey,
     required this.playerRectAt,
     this.layoutChanges,
+    this.horizontalShift,
     super.key,
   });
 
   /// Notifies when a player rectangle may have changed shape, e.g. when a
   /// reel's video turns out to be wider than a Short.
   final Listenable? layoutChanges;
+
+  /// How far, sideways, the page on stage has been dragged: a journey page
+  /// moving between steps. The player on stage moves with it. Null (no
+  /// journeys) is no shift.
+  final ValueListenable<double>? horizontalShift;
 
   final EmbedPlayerPool pool;
   final PageController controller;
@@ -43,7 +50,12 @@ class EmbedPlayerLayer extends StatelessWidget {
       builder: (context, constraints) {
         final page = constraints.biggest;
         return ListenableBuilder(
-          listenable: Listenable.merge([controller, pool, layoutChanges]),
+          listenable: Listenable.merge([
+            controller,
+            pool,
+            layoutChanges,
+            horizontalShift,
+          ]),
           builder: (context, _) {
             final scroll =
                 controller.hasClients && controller.position.haveDimensions
@@ -80,7 +92,12 @@ class EmbedPlayerLayer extends StatelessWidget {
     return Positioned.fromRect(
       key: ValueKey('embed-slot-${slot.index}-${slot.generation}'),
       rect: onStage
-          ? rect.shift(Offset(0, (settledIndex - scroll) * page.height))
+          ? rect.shift(
+              Offset(
+                horizontalShift?.value ?? 0,
+                (settledIndex - scroll) * page.height,
+              ),
+            )
           : rect,
       child: Offstage(
         offstage: !onStage && !waiting,

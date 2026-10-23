@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/journey/journey_providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_landing_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/reel_view_recorder.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reels_pager.dart';
@@ -19,9 +21,14 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// keeps scrolling. A back button floats top-left over the reel, beside the
 /// rail and overlays every feed page already draws over its player.
 class ReelDetailScreen extends ConsumerStatefulWidget {
-  const ReelDetailScreen({required this.reelId, super.key});
+  const ReelDetailScreen({required this.reelId, this.journeyId, super.key});
 
   final String reelId;
+
+  /// `?journey=` on the link (journey reels contract v1 §3): open the reel
+  /// as that journey's step, even when its own `journeys[0]` names another
+  /// (or none). Null: the reel's own journey, if any, as in the feed.
+  final String? journeyId;
 
   @override
   ConsumerState<ReelDetailScreen> createState() => _ReelDetailScreenState();
@@ -64,18 +71,59 @@ class _ReelDetailScreenState extends ConsumerState<ReelDetailScreen> {
                   : "Couldn't load this reel.",
               onRetry: () => unawaited(ref.read(landing.notifier).load()),
             ),
-            ReelLandingReady(:final reels) => ReelsPager(
-              controller: _pager,
-              reels: reels,
-              onNearEnd: () =>
-                  unawaited(ref.read(landing.notifier).fetchNextPage()),
-              onReelDwell: _views.recordDwell,
-            ),
+            ReelLandingReady(:final reels) => _ready(reels),
           },
           const _BackButton(),
         ],
       ),
     );
+  }
+
+  Widget _ready(List<Reel> reels) {
+    final landing = reelLandingNotifierProvider(widget.reelId);
+    final shown = _withLinkedJourney(reels);
+    if (shown == null) return const SmPageLoader();
+    return ReelsPager(
+      controller: _pager,
+      reels: shown,
+      onNearEnd: () => unawaited(ref.read(landing.notifier).fetchNextPage()),
+      onReelDwell: _views.recordDwell,
+    );
+  }
+
+  List<Reel>? _adoptedFrom;
+  List<Reel>? _adopted;
+
+  /// [reels] with the landed reel set up as a step of the linked journey.
+  ///
+  /// Unchanged without `?journey=`, when the reel already carries that
+  /// journey, or when the journey cannot be loaded (ended, unknown, no
+  /// journeys on the server yet) or does not include the reel — the reel
+  /// then plays as an ordinary reel. Null while the journey is still
+  /// loading: the page waits rather than playing the reel plain and then
+  /// rebuilding it as a journey a moment later.
+  ///
+  /// The adopted list is kept while [reels] is the same list, so the pager
+  /// is not handed a new list on every build.
+  List<Reel>? _withLinkedJourney(List<Reel> reels) {
+    final journeyId = widget.journeyId;
+    if (journeyId == null || journeyId.isEmpty || reels.isEmpty) return reels;
+    final landed = reels.first;
+    if (landed.journey?.journeyId == journeyId) return reels;
+    final journey = ref.watch(publicJourneyProvider(journeyId));
+    if (journey.isLoading && !journey.hasValue) return null;
+    final loaded = journey.value;
+    if (loaded == null ||
+        !loaded.journey.isSwipeable ||
+        loaded.journey.indexOfReel(landed.id) < 0) {
+      return reels;
+    }
+    if (identical(_adoptedFrom, reels) && _adopted != null) return _adopted;
+    _adoptedFrom = reels;
+    return _adopted = [
+      landed.copyWith(journey: loaded.journeyFor(landed.id)),
+      ...reels.skip(1),
+    ];
   }
 }
 

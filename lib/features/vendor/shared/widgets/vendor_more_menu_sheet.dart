@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/journeys/shared/journey_routes.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_category.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_routes.dart';
@@ -92,6 +93,14 @@ class _VendorMoreMenu extends StatelessWidget {
                 icon: Icons.inbox_outlined,
                 title: 'Reel Approvals',
                 onTap: () => _go(context, RouteNames.vendorReelApprovals),
+              ),
+              const _MoreDivider(),
+              // Collaborative journeys: this business's reel linked with
+              // other businesses' reels, swiped through sideways by buyers.
+              _MoreItem(
+                icon: Icons.route_rounded,
+                title: 'Journeys',
+                onTap: () => _go(context, JourneyRoutes.list),
               ),
               const _MoreDivider(),
               _MoreItem(

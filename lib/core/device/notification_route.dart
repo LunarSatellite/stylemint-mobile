@@ -29,6 +29,7 @@ import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
 import 'package:stylemint_mobile_frontend/core/device/push_destination.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/customer/kyc/domain/kyc_push.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/journeys/shared/journey_routes.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_notification_route.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
@@ -182,6 +183,15 @@ String? notificationLocation(
     link: pushLink == null ? null : deepLinkLocation(pushLink),
   );
   if (serviceVendor != null) return serviceVendor;
+
+  // 0c. A journey notice (journey reels contract v1 §6: invites, accepted,
+  //     declined, left, removed, ended) opens the seller's journey screen.
+  final journey = journeyNotificationLocation(
+    payload.type,
+    payload.data,
+    link: pushLink == null ? null : deepLinkLocation(pushLink),
+  );
+  if (journey != null) return journey;
 
   // 1. An explicit link always wins.
   final link = pushDestinationUri(payload.data);
