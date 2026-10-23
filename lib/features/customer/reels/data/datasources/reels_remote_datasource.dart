@@ -3,8 +3,10 @@ import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/feed_provenance.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_journey_json.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_like_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_journey.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/data/models/service_item_json.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_item.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_like_result.dart';
@@ -122,6 +124,8 @@ class ReelsRemoteDataSource {
       isSavedByMe: _bool(r['isSavedByMe']),
       saveCount: _int(r['saveCount']),
       durationSeconds: _intOrNull(r['durationSeconds']),
+      // Journey reels contract v1 §2. Absent or empty: an ordinary reel.
+      journey: readFirstReelJourney(r['journeys']),
     );
   }
 
@@ -163,6 +167,46 @@ class ReelsRemoteDataSource {
       reels: reels,
       nextCursor: data['nextCursor'] as String?,
     );
+  }
+
+  /// GET `/v1/journeys/{journeyId}` — a journey's visible steps, each with
+  /// its full reel (journey reels contract v1 §3). 404 `journey.not_found`
+  /// when it is unknown, ended or has nothing visible.
+  ///
+  /// Each step's reel comes back carrying the journey as seen from that step;
+  /// a step whose `reel` is missing keeps only its step row, and the pager
+  /// fetches that reel by id.
+  Future<PublicJourney> getJourney(String journeyId) async {
+    final response = await apiClient.get(
+      '/v1/journeys/${Uri.encodeComponent(journeyId)}',
+    );
+    final data = response as Map<String, dynamic>;
+    final steps = readJourneySteps(data['steps']);
+    final count = data['stepCount'];
+    final journey = ReelJourney(
+      journeyId: (data['id'] as String?) ?? journeyId,
+      title: (data['title'] as String?)?.trim(),
+      city: (data['city'] as String?)?.trim(),
+      stepIndex: 0,
+      stepCount: count is num ? count.toInt() : null,
+      steps: steps,
+    );
+    final reels = <String, Reel>{};
+    final rows = data['steps'];
+    if (rows is List) {
+      for (final row in rows.whereType<Map<String, dynamic>>()) {
+        final reelJson = row['reel'];
+        final reelId = row['reelId'];
+        if (reelJson is! Map<String, dynamic> || reelId is! String) continue;
+        final index = journey.indexOfReel(reelId);
+        if (index < 0) continue;
+        reels[reelId] = _detailJsonToReel(
+          reelJson,
+          reelId,
+        ).copyWith(journey: journey.atStep(index));
+      }
+    }
+    return PublicJourney(journey: journey, reels: reels);
   }
 
   Reel _detailJsonToReel(Map<String, dynamic> r, String requestedId) {
@@ -245,6 +289,8 @@ class ReelsRemoteDataSource {
       isSavedByMe: _bool(r['isSavedByMe']),
       saveCount: _int(r['saveCount']),
       durationSeconds: _intOrNull(r['durationSeconds']),
+      // Journey reels contract v1 §2. Absent or empty: an ordinary reel.
+      journey: readFirstReelJourney(r['journeys']),
     );
   }
 

@@ -1,5 +1,6 @@
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/feed_provenance.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_journey.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_item.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/platform_video_id.dart';
@@ -44,9 +45,16 @@ class Reel implements ReelMedia {
     this.saveCount = 0,
     this.provenance,
     this.durationSeconds,
+    this.journey,
   });
 
   final String id;
+
+  /// The journey this reel is a step of (journey reels contract v1 §2,
+  /// `journeys[0]`). Null for an ordinary reel — a reel whose `journeys` is
+  /// empty or absent (a server without journeys) — which then behaves
+  /// exactly as it always has.
+  final ReelJourney? journey;
 
   /// How long the reel runs, as the source platform reported it. Null when
   /// the payload did not carry one. Only used to judge whether a watch ran
@@ -130,6 +138,7 @@ class Reel implements ReelMedia {
     int? saveCount,
     FeedProvenance? provenance,
     int? durationSeconds,
+    ReelJourney? journey,
   }) {
     return Reel(
       id: id ?? this.id,
@@ -157,6 +166,7 @@ class Reel implements ReelMedia {
       saveCount: saveCount ?? this.saveCount,
       provenance: provenance ?? this.provenance,
       durationSeconds: durationSeconds ?? this.durationSeconds,
+      journey: journey ?? this.journey,
     );
   }
 

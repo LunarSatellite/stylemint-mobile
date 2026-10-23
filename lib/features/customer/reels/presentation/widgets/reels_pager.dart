@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/journey/journey_step_pager.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_card.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/device_memory_tier.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_layer.dart';
@@ -172,6 +173,23 @@ class _ReelsPagerState extends State<ReelsPager> {
   List<Reel> _reels = const [];
   Map<String, int> _embedIndex = const {};
 
+  /// Journey pages the viewer swiped to another step on: the feed reel's id
+  /// to the step reel now on that page. Keyed by reel id rather than page so
+  /// it survives more reels being paged in. Empty for a feed without
+  /// journeys, which then works exactly as before.
+  final Map<String, Reel> _stepShown = {};
+
+  /// How far the journey page the feed rests on has been dragged sideways,
+  /// so the embedded player on stage follows its step.
+  final ValueNotifier<double> _journeyShift = ValueNotifier<double>(0);
+
+  /// The reel on page [index]: the feed's own, or the journey step the
+  /// viewer swiped to there.
+  Reel _shownAt(int index) {
+    final reel = _reels[index];
+    return _stepShown[reel.id] ?? reel;
+  }
+
   /// When the reel now on screen arrived.
   DateTime? _dwellSince;
   int _dwellIndex = 0;
@@ -207,6 +225,13 @@ class _ReelsPagerState extends State<ReelsPager> {
   /// above it that listens for them.
   bool _onScroll(ScrollNotification notification) {
     if (widget.onRefresh == null) return false;
+    // Only the feed's own vertical scroll. A journey's sideways pager (and a
+    // reel's product strip) overscroll at their start too, and pulling the
+    // first step back must not reload the feed.
+    if (notification.depth != 0 ||
+        notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
 
     if (notification is ScrollEndNotification) {
       _pullDown = 0;
@@ -272,7 +297,61 @@ class _ReelsPagerState extends State<ReelsPager> {
     // that never counts.
     _reportDwell(_dwellIndex);
     if (identical(_controller._pager, this)) _controller._pager = null;
+    _journeyShift.dispose();
     super.dispose();
+  }
+
+  /// A journey page came to rest on another step: that step's reel is now
+  /// the one on page [index] — its watch time starts, and its embedded
+  /// player takes the stage.
+  void _onStepSettled(int index, Reel shown) {
+    if (!mounted || index < 0 || index >= _reels.length) return;
+    if (_shownAt(index).id == shown.id) return;
+    // The step left counts like a reel scrolled past.
+    if (index == _dwellIndex) _reportDwell(index, next: index);
+    final feedReel = _reels[index];
+    setState(() {
+      if (shown.id == feedReel.id) {
+        _stepShown.remove(feedReel.id);
+      } else {
+        _stepShown[feedReel.id] = shown;
+      }
+      _indexEmbeds();
+    });
+    _journeyShift.value = 0;
+    _syncEmbeds();
+  }
+
+  /// Page [index]: a [JourneyStepPager] for a journey reel, otherwise the
+  /// plain [ReelCard] every reel has always had.
+  Widget _page(int index) {
+    final reel = _reels[index];
+    final isActive = index == _controller._currentIndex;
+    final journey = reel.journey;
+    if (journey == null || !journey.isSwipeable) {
+      return ReelCard(reel: reel, isActive: isActive);
+    }
+    final shown = _stepShown[reel.id];
+    final step = shown == null ? -1 : journey.indexOfReel(shown.id);
+    return JourneyStepPager(
+      key: ValueKey('journey-page-${reel.id}'),
+      reel: reel,
+      isActive: isActive,
+      initialStep: step < 0 ? null : step,
+      onStepSettled: (stepReel) => _onStepSettled(index, stepReel),
+      onShift: (dx) {
+        if (index == _controller._settledIndex) _journeyShift.value = dx;
+      },
+    );
+  }
+
+  /// Which page each embedded reel is on. Built back to front so the first
+  /// page holding a video wins.
+  void _indexEmbeds() {
+    _embedIndex = {
+      for (var i = _reels.length - 1; i >= 0; i--)
+        if (_embedAt(i) case final request?) request.key: i,
+    };
   }
 
   /// Reports how long [index] was on screen, then starts the next reel's
@@ -282,7 +361,7 @@ class _ReelsPagerState extends State<ReelsPager> {
     final since = _dwellSince;
     _dwellSince = null;
     if (since != null && index >= 0 && index < _reels.length) {
-      widget.onReelDwell?.call(_reels[index], widget.clock().difference(since));
+      widget.onReelDwell?.call(_shownAt(index), widget.clock().difference(since));
     }
     if (next != null) {
       _dwellIndex = next;
@@ -301,7 +380,7 @@ class _ReelsPagerState extends State<ReelsPager> {
 
   EmbedRequest? _embedAt(int index) {
     if (index < 0 || index >= _reels.length) return null;
-    final source = resolveReelPlayback(_reels[index]);
+    final source = resolveReelPlayback(_shownAt(index));
     return source is EmbedSource ? EmbedRequest(source) : null;
   }
 
@@ -325,10 +404,10 @@ class _ReelsPagerState extends State<ReelsPager> {
     final last = (settled + 3).clamp(0, _reels.length - 1);
     // Learn video shapes ahead of the swipe so wide videos are already sized.
     for (var i = settled; i <= last; i++) {
-      unawaited(ReelShapes.instance.learnReel(_reels[i]));
+      unawaited(ReelShapes.instance.learnReel(_shownAt(i)));
     }
     for (var i = settled + 1; i <= last; i++) {
-      final url = ReelPoster.urlFor(_reels[i]);
+      final url = ReelPoster.urlFor(_shownAt(i));
       if (url != null) {
         unawaited(precacheImage(CachedNetworkImageProvider(url), context));
       }
@@ -350,11 +429,7 @@ class _ReelsPagerState extends State<ReelsPager> {
   void _adoptReels(List<Reel> reels) {
     if (identical(reels, _reels)) return;
     _reels = reels;
-    // Built back to front so the first page holding a video wins.
-    _embedIndex = {
-      for (var i = reels.length - 1; i >= 0; i--)
-        if (_embedAt(i) case final request?) request.key: i,
-    };
+    _indexEmbeds();
     if (_controller._settledIndex >= reels.length) {
       _controller._settledIndex = 0;
     }
@@ -385,8 +460,9 @@ class _ReelsPagerState extends State<ReelsPager> {
                   settledIndex: _controller._settledIndex,
                   indexOfKey: (key) => _embedIndex[key],
                   playerRectAt: (index, page) =>
-                      reelPlayerRect(reels[index], page, topInset: topInset),
+                      reelPlayerRect(_shownAt(index), page, topInset: topInset),
                   layoutChanges: ReelShapes.instance,
+                  horizontalShift: _journeyShift,
                 ),
               ),
             NotificationListener<ScrollNotification>(
@@ -419,10 +495,7 @@ class _ReelsPagerState extends State<ReelsPager> {
                   widget.onNearEnd?.call();
                 }
               },
-              itemBuilder: (_, index) => ReelCard(
-                reel: reels[index],
-                isActive: index == _controller._currentIndex,
-              ),
+              itemBuilder: (_, index) => _page(index),
               ),
             ),
             // Shown over the reel rather than replacing it, so a pull that

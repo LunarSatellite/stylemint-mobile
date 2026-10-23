@@ -987,6 +987,7 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.reelDetail,
         builder: (ctx, state) => ReelDetailScreen(
           reelId: state.pathParameters['reelId']!,
+          journeyId: state.uri.queryParameters['journey'],
         ),
       ),
 
