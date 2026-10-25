@@ -237,8 +237,9 @@ class CustomerSearchRemoteDataSource {
             sponsoredLabel: _nonBlank(p['sponsoredLabel']),
             organicPosition: _position(p['organicPosition']),
             matchReason: reasonFor(p, p['productId']?.toString()),
-            // A meaning label only counts when meaning retrieval ran.
-            matchType: aiApplied
+            // A meaning label only counts when a hybrid server says meaning
+            // retrieval ran; an older server never promised one.
+            matchType: hybrid && aiApplied
                 ? SearchMatchType.parse(p['matchType'])
                 : SearchMatchType.unknown,
           ),

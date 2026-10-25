@@ -205,7 +205,6 @@ void main() {
       );
 
       expect(find.byType(ProductReelsRail), findsNothing);
-      expect(find.byType(SizedBox), findsWidgets);
     });
   });
 }

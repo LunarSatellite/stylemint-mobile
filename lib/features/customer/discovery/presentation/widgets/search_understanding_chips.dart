@@ -50,7 +50,7 @@ class SearchUnderstandingChips extends StatelessWidget {
   static Key chipKey(int index) => Key('search-understanding-chip-$index');
   static Key removeKey(int index) => Key('search-understanding-remove-$index');
 
-  /// "2 left out — they do not record what you asked about." Null for none.
+  /// "2 results set aside: they do not record it." Null for none.
   static String? setAsideLine(SearchUnderstanding understanding) {
     final total = understanding.setAsideTotal;
     if (total <= 0) return null;
@@ -62,7 +62,7 @@ class SearchUnderstandingChips extends StatelessWidget {
       (true, false) => 'they do not record it',
       _ => 'what they record does not match',
     };
-    return '$total $noun left out: $why';
+    return '$total $noun set aside: $why';
   }
 
   @override

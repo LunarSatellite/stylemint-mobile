@@ -268,7 +268,7 @@ void main() {
       expect(find.text('x'), findsNothing);
       expect(
         find.text(
-          '4 results left out: they do not record it, or record something '
+          '4 results set aside: they do not record it, or record something '
           'else',
         ),
         findsOneWidget,
