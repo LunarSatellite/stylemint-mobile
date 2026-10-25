@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/commerce_intelligence/presentation/widgets/evidence_answer_panel.dart';
@@ -118,7 +119,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       ref.read(recentlyViewedRecorderProvider).record(widget.productId);
       // Opening a product page is the clearest statement of intent the app
       // has, and the one the feed reads as "researching".
-      ref.read(feedSignalRecorderProvider).productViewed(widget.productId);
+      // One id for the batch event and the per-signal call (AI features
+      // contract §2.1), attributed to the reel of a recent tag tap.
+      final eventId = ref
+          .read(engagementTrackerProvider)
+          .productViewed(widget.productId);
+      ref
+          .read(feedSignalRecorderProvider)
+          .productViewed(widget.productId, clientEventId: eventId);
     } on Object catch (_) {
       // Best effort only.
     }
@@ -255,6 +263,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           variantId: selectedSkuId ?? product.defaultVariantId,
         );
     if (success) {
+      if (mounted) {
+        ref.read(engagementTrackerProvider).addedToCart(widget.productId);
+      }
       // productDetailNotifierProvider.addToCart() writes through its own
       // Discovery-module repository, not the Cart module's — cartNotifierProvider
       // is a keepAlive singleton that only fetches once at construction, so
@@ -304,6 +315,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       );
       return;
     }
+    ref.read(engagementTrackerProvider).addedToCart(widget.productId);
 
     // Same stale-cart issue as _handleAddToCart: refresh before navigating to
     // Checkout so it doesn't render off cartNotifierProvider's pre-add state.

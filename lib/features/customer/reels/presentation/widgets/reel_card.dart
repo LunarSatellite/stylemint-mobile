@@ -234,6 +234,7 @@ class _ReelCardState extends State<ReelCard> {
                       const SizedBox(height: DesignTokens.s12),
                       TaggedProductsSection(
                         products: widget.reel.taggedProducts,
+                        reelId: widget.reel.id,
                         // Only the reel being watched cycles its product
                         // photos; neighbours the pager keeps alive hold still.
                         isActive: widget.isActive,

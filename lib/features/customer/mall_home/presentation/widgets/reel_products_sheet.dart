@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/reel_products_notifier.dart';
@@ -97,10 +98,16 @@ class ReelProductsSheet extends ConsumerWidget {
                       const SizedBox(height: DesignTokens.s12),
                   itemBuilder: (context, index) => ReelProductRow(
                     product: products[index],
-                    onOpen: () => _leaveTo(
-                      context,
-                      MallRoutes.product(products[index].id),
-                    ),
+                    reelId: reel.id,
+                    onOpen: () {
+                      ref
+                          .read(engagementTrackerProvider)
+                          .tagTapped(
+                            reelId: reel.id,
+                            productId: products[index].id,
+                          );
+                      _leaveTo(context, MallRoutes.product(products[index].id));
+                    },
                   ),
                 );
               },
@@ -239,11 +246,15 @@ class ReelProductRow extends ConsumerWidget {
   const ReelProductRow({
     required this.product,
     required this.onOpen,
+    this.reelId,
     super.key,
   });
 
   final TaggedProductEntity product;
   final VoidCallback onOpen;
+
+  /// The reel the product is tagged on, for cart-add attribution.
+  final String? reelId;
 
   static const TextStyle _nameStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
@@ -337,7 +348,9 @@ class ReelProductRow extends ConsumerWidget {
           MallPrimaryCta(
             label: 'Add',
             onPressed: () =>
-                unawaited(addTaggedProductToCart(context, ref, product)),
+                unawaited(
+              addTaggedProductToCart(context, ref, product, reelId: reelId),
+            ),
           )
         else
           _QuantityStepper(

@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/domain/entities/engagement_event.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/presentation/engagement_tracker.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/feed_signal_recorder.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/home_mode_switch.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
@@ -69,6 +72,10 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
   /// during dispose, and that is exactly the watch worth counting.
   late final ReelViewRecorder _views;
 
+  /// Held for the same reason as [_signals]. Batches the dwell, skip and
+  /// completion events the personal feed is ranked from.
+  late final EngagementTracker _engagement;
+
   /// Whether anyone has an active story, as of the last answer the stories
   /// feed gave. Held through a reload rather than dropped, so a refresh does
   /// not snap the strip shut and open again, resizing the first reel twice.
@@ -79,6 +86,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
     super.initState();
     _signals = ref.read(feedSignalRecorderProvider);
     _views = ref.read(reelViewRecorderProvider);
+    _engagement = ref.read(engagementTrackerProvider);
   }
 
   @override
@@ -161,7 +169,14 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
               // ever called the views endpoint, so every reel sat at zero
               // views forever.
               onReelDwell: (reel, dwell) {
-                _signals.reelDwell(reel.id, dwell);
+                // The batch event and the older per-signal call share one
+                // id, so the server counts this exposure once.
+                final eventId = _engagement.reelLeft(
+                  reel,
+                  dwell,
+                  surface: EngagementSurface.feed,
+                );
+                _signals.reelDwell(reel.id, dwell, clientEventId: eventId);
                 _views.recordDwell(reel, dwell);
               },
             ),

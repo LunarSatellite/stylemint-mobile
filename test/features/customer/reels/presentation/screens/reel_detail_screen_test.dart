@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/ai_rails/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
@@ -139,6 +140,8 @@ void main() {
           followApiProvider.overrideWithValue(_FakeFollowApi()),
           reelsRepositoryProvider.overrideWithValue(reelsRepository),
           aiRailsRepositoryProvider.overrideWithValue(FakeAiRailsRepository()),
+          // A guest: nothing is queued, so no flush timer outlives the test.
+          engagementOwnerProvider.overrideWithValue(() => null),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),

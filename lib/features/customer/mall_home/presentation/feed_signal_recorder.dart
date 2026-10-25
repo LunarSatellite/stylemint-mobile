@@ -41,15 +41,28 @@ class FeedSignalRecorder {
 
   /// A reel left the screen after [dwell]. Sends watched, skipped or — for
   /// the ordinary middle of a swipe — nothing at all.
-  void reelDwell(String reelId, Duration dwell) {
+  ///
+  /// [clientEventId] is the engagement batch's id for the same exposure
+  /// (AI features contract v1.0 §2.1), so the server counts it once.
+  void reelDwell(String reelId, Duration dwell, {String? clientEventId}) {
     final action = reelDwellSignal(dwell);
     if (action == null) return;
-    _send(reelId, FeedSignalEntity.reel, action);
+    _send(
+      reelId,
+      FeedSignalEntity.reel,
+      action,
+      clientEventId: clientEventId,
+      dwellMs: dwell.inMilliseconds,
+    );
   }
 
-  /// A product details page was opened.
-  void productViewed(String productId) =>
-      _send(productId, FeedSignalEntity.product, FeedSignalAction.viewedDetail);
+  /// A product details page was opened. [clientEventId] as for [reelDwell].
+  void productViewed(String productId, {String? clientEventId}) => _send(
+    productId,
+    FeedSignalEntity.product,
+    FeedSignalAction.viewedDetail,
+    clientEventId: clientEventId,
+  );
 
   /// A search was submitted against a known category.
   void searched(String categoryId) =>
@@ -69,7 +82,13 @@ class FeedSignalRecorder {
   void bought(String productId) =>
       _send(productId, FeedSignalEntity.product, FeedSignalAction.bought);
 
-  void _send(String id, FeedSignalEntity entity, FeedSignalAction action) {
+  void _send(
+    String id,
+    FeedSignalEntity entity,
+    FeedSignalAction action, {
+    String? clientEventId,
+    int? dwellMs,
+  }) {
     final entityId = id.trim();
     // No id means no id-shaped signal. The backend refuses a blank or zero
     // GUID, and a search with nothing to point at belongs in
@@ -77,7 +96,13 @@ class FeedSignalRecorder {
     if (entityId.isEmpty || isEmptyGuid(entityId)) return;
     if (!_sent.add('${entity.wire}:${action.wire}:$entityId')) return;
     _track(
-      FeedSignal.forEntity(entityId: entityId, entity: entity, action: action),
+      FeedSignal.forEntity(
+        entityId: entityId,
+        entity: entity,
+        action: action,
+        clientEventId: clientEventId,
+        dwellMs: dwellMs,
+      ),
     );
   }
 

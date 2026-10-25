@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
@@ -105,8 +106,9 @@ ReelQuickBuyPlan planReelQuickBuy(
 Future<bool> reelQuickBuy(
   BuildContext context,
   WidgetRef ref,
-  TaggedProductEntity product,
-) async {
+  TaggedProductEntity product, {
+  String? reelId,
+}) async {
   // A stay, trip or bank product is chosen on its item page (dates and
   // guests, or an enquiry), never added from the rail.
   if (product.isService) {
@@ -163,6 +165,12 @@ Future<bool> reelQuickBuy(
     idempotencyKey: _uuid.v4(),
   );
   if (!context.mounted) return false;
+  if (added) {
+    // Attributed to the reel it was bought from (AI features contract §2.1).
+    ref
+        .read(engagementTrackerProvider)
+        .addedToCart(product.id, viaReelId: reelId);
+  }
   if (!added) {
     final message = ref
         .read(cartNotifierProvider)

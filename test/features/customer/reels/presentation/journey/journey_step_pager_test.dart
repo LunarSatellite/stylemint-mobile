@@ -7,6 +7,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/ai_rails/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -124,6 +125,8 @@ List<Override> _railOverrides() {
     cartRepositoryProvider.overrideWithValue(cart),
     followApiProvider.overrideWithValue(_FakeFollowApi()),
     aiRailsRepositoryProvider.overrideWithValue(FakeAiRailsRepository()),
+    // A guest: nothing is queued, so no flush timer outlives the test.
+    engagementOwnerProvider.overrideWithValue(() => null),
   ];
 }
 
