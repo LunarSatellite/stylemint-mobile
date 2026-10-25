@@ -21,7 +21,8 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_badges_row.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_comparison_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_image_carousel.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_reels_rail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/ai_rails/presentation/widgets/collab_product_rail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/ai_rails/presentation/widgets/product_matched_reels_rail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_save_button.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_signals_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/related_products_rail.dart';
@@ -497,7 +498,10 @@ class _ProductBody extends StatelessWidget {
                       vendorId: product.vendorId,
                       productId: product.id,
                     ),
-                    ProductReelsRail(
+                    // Reels featuring, then like, this product (AI features
+                    // contract §4.2); the tagged-reels rail on a server
+                    // without it.
+                    ProductMatchedReelsRail(
                       productId: product.id,
                       padding: const EdgeInsets.only(top: DesignTokens.s24),
                     ),
@@ -533,6 +537,20 @@ class _ProductBody extends StatelessWidget {
                     _FromTheReelSection(
                       vendorName: product.vendorName,
                       vendorAvatarUrl: product.vendorAvatarUrl,
+                    ),
+                    // Collaborative filtering (AI features contract §3).
+                    // Each draws nothing until other shoppers' aggregate
+                    // behaviour produced neighbours.
+                    if (!isService)
+                      CollabProductRail(
+                        productId: product.id,
+                        relation: CollabProductRelation.boughtTogether,
+                        padding: const EdgeInsets.only(top: DesignTokens.s24),
+                      ),
+                    CollabProductRail(
+                      productId: product.id,
+                      relation: CollabProductRelation.alsoViewed,
+                      padding: const EdgeInsets.only(top: DesignTokens.s24),
                     ),
                     RelatedProductsRail(
                       productId: product.id,
