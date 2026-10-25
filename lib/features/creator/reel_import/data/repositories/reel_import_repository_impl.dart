@@ -120,6 +120,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
   getSuggestedProducts({
     required SocialPlatform platform,
     required String externalId,
+    String? caption,
   }) async {
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
@@ -128,6 +129,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       final dtos = await remoteDataSource.getSuggestedProducts(
         platform: platform,
         externalId: externalId,
+        caption: caption,
       );
       return right(dtos.map((d) => d.toDomain()).toList(growable: false));
     } on DioException catch (e) {
