@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/ai_rails/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/repositories/cart_repository.dart';
@@ -21,6 +22,7 @@ import 'package:stylemint_mobile_frontend/features/social/stories/presentation/w
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+import '../../../ai_rails/fake_ai_rails_repository.dart';
 
 class _MockCartRepository extends Mock implements CartRepository {}
 
@@ -136,6 +138,7 @@ void main() {
           cartRepositoryProvider.overrideWithValue(cartRepository),
           followApiProvider.overrideWithValue(_FakeFollowApi()),
           reelsRepositoryProvider.overrideWithValue(reelsRepository),
+          aiRailsRepositoryProvider.overrideWithValue(FakeAiRailsRepository()),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),

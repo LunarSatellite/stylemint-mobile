@@ -46,6 +46,7 @@ class Reel implements ReelMedia {
     this.provenance,
     this.durationSeconds,
     this.journey,
+    this.railLabel,
   });
 
   final String id;
@@ -67,6 +68,12 @@ class Reel implements ReelMedia {
   /// detail, related reels, a shared link. Null means "we were not told", and
   /// the card draws no label at all rather than guessing one.
   final FeedProvenance? provenance;
+
+  /// Which rail of the reel page placed this reel after a landed one —
+  /// "People also watched" (AI features contract v1.0 §3) or "Similar reels"
+  /// (§4.3). Null for every other reel, which then draws no label. Aggregate
+  /// or content wording only: never a claim about the viewer.
+  final String? railLabel;
 
   /// The platform's own post/video id (YouTube videoId, TikTok item id,
   /// Instagram media id, Facebook video id) as stored by the backend.
@@ -139,6 +146,7 @@ class Reel implements ReelMedia {
     FeedProvenance? provenance,
     int? durationSeconds,
     ReelJourney? journey,
+    String? railLabel,
   }) {
     return Reel(
       id: id ?? this.id,
@@ -167,6 +175,7 @@ class Reel implements ReelMedia {
       provenance: provenance ?? this.provenance,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       journey: journey ?? this.journey,
+      railLabel: railLabel ?? this.railLabel,
     );
   }
 

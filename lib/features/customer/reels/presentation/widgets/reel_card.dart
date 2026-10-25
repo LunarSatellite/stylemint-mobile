@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_layout_pol
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_scope.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_slot.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/reel_shapes.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_signal.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_sound_button.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
@@ -60,6 +61,9 @@ class ReelCard extends StatefulWidget {
 
   /// How far the right rail is anchored above the bottom of the card.
   static const double railBottom = 180;
+
+  /// The chip naming the reel-page rail a reel came from.
+  static const Key railLabelKey = Key('reel-card-rail-label');
 
   final Reel reel;
   final bool isActive;
@@ -205,6 +209,21 @@ class _ReelCardState extends State<ReelCard> {
                           bottom: DesignTokens.s8,
                         ),
                         child: FeedProvenanceBadge(provenance: provenance),
+                      )
+                    // Which AI rail of the reel page placed it here.
+                    else if (widget.reel.railLabel case final label?)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          right: 72,
+                          bottom: DesignTokens.s8,
+                        ),
+                        child: MallSignalChip(
+                          key: ReelCard.railLabelKey,
+                          signal: MallSignal(
+                            label: label,
+                            icon: Icons.auto_awesome_outlined,
+                          ),
+                        ),
                       ),
                     Padding(
                       padding: const EdgeInsets.only(right: 72),
