@@ -36,22 +36,61 @@ class FeedProvenanceBadge extends StatelessWidget {
   static MallSignalTone toneFor(FeedSlotKind kind) =>
       kind.isPersonal ? MallSignalTone.accent : MallSignalTone.neutral;
 
+  static const Key explanationKey = Key('feed-provenance-explanation');
+
+  /// The glyph for a server explanation, falling back to the slot's own.
+  static IconData explanationIconFor(
+    FeedExplanationKind? about,
+    FeedSlotKind kind,
+  ) => switch (about) {
+    FeedExplanationKind.followedCreator => Icons.person_outline_rounded,
+    FeedExplanationKind.becauseYouWatched ||
+    FeedExplanationKind.similarTaste => Icons.history_rounded,
+    FeedExplanationKind.creatorAffinity ||
+    FeedExplanationKind.categoryAffinity ||
+    FeedExplanationKind.brandAffinity ||
+    FeedExplanationKind.declaredInterest => Icons.interests_outlined,
+    FeedExplanationKind.peopleAlsoWatched => Icons.groups_outlined,
+    FeedExplanationKind.popularNearYou => Icons.place_outlined,
+    FeedExplanationKind.trending => Icons.local_fire_department_outlined,
+    FeedExplanationKind.newIn => Icons.auto_awesome_outlined,
+    FeedExplanationKind.exploration => Icons.explore_outlined,
+    null => iconFor(kind),
+  };
+
   @override
   Widget build(BuildContext context) {
     final rankLabel = provenance.rankLabel;
+    // The server's own sentence replaces the generic slot label when the
+    // slot backs it (AI features contract v1.0 §2.2); otherwise the slot
+    // label stands exactly as before.
+    final explanation = provenance.shownExplanation;
     return Wrap(
       key: badgeKey,
       spacing: DesignTokens.s6,
       runSpacing: DesignTokens.s6,
       children: [
-        MallSignalChip(
-          signal: MallSignal(
-            label: provenance.kind.label,
-            tone: toneFor(provenance.kind),
-            icon: iconFor(provenance.kind),
-            semanticLabel: provenance.kind.spokenLabel,
+        if (explanation != null)
+          MallSignalChip(
+            key: explanationKey,
+            signal: MallSignal(
+              label: explanation,
+              tone: toneFor(provenance.kind),
+              icon: explanationIconFor(
+                provenance.explanationKind,
+                provenance.kind,
+              ),
+            ),
+          )
+        else
+          MallSignalChip(
+            signal: MallSignal(
+              label: provenance.kind.label,
+              tone: toneFor(provenance.kind),
+              icon: iconFor(provenance.kind),
+              semanticLabel: provenance.kind.spokenLabel,
+            ),
           ),
-        ),
         // Nothing ranked this item: no chip at all.
         if (rankLabel != null)
           MallSignalChip(

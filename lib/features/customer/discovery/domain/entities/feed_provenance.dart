@@ -99,6 +99,38 @@ enum FeedSlotKind {
   };
 }
 
+/// The stable key behind a feed item's server-sent explanation (AI features
+/// contract v1.0 §2.2 `explanationKind`). Used for the icon and for one
+/// rule: whether the sentence is about the viewer.
+enum FeedExplanationKind {
+  followedCreator,
+  becauseYouWatched,
+  creatorAffinity,
+  categoryAffinity,
+  brandAffinity,
+  similarTaste,
+  peopleAlsoWatched,
+  popularNearYou,
+  declaredInterest,
+  trending,
+  newIn,
+  exploration;
+
+  /// The wire value, or null when absent or unknown — an unknown key gets
+  /// no icon and is treated as being about the viewer (the strict case).
+  static FeedExplanationKind? parse(Object? raw) {
+    if (raw is! String) return null;
+    for (final value in values) {
+      if (value.name.toLowerCase() == raw.trim().toLowerCase()) return value;
+    }
+    return null;
+  }
+
+  /// Whether the sentence says something about the viewer's own behaviour or
+  /// place. Only [trending] and [newIn] describe the content alone.
+  bool get isAboutViewer => this != trending && this != newIn;
+}
+
 /// Why one feed item is here, and whether anything ranked it.
 ///
 /// [score] is nullable on the wire and nullable here, and the two states mean
@@ -107,19 +139,55 @@ enum FeedSlotKind {
 /// Nothing in this class will turn it into either.
 @immutable
 class FeedProvenance {
-  const FeedProvenance({required this.kind, this.score, this.rank});
+  const FeedProvenance({
+    required this.kind,
+    this.score,
+    this.rank,
+    this.explanation,
+    this.explanationKind,
+  });
 
   /// Reads one `FeedItemVm`. A missing `slotKind` degrades to
-  /// [FeedSlotKind.unknown]; a missing or non-numeric `score` stays null.
+  /// [FeedSlotKind.unknown]; a missing or non-numeric `score` stays null; a
+  /// missing or blank `explanation` stays null (AI features contract v1.0
+  /// §2.2: null when the personal ranker did not place the item).
   factory FeedProvenance.fromJson(Map<String, dynamic> json) {
     final score = json['score'];
+    final explanation = json['explanation'];
     return FeedProvenance(
       kind: FeedSlotKind.parse(json['slotKind']),
       score: score is num ? score.toDouble() : null,
+      explanation: explanation is String && explanation.trim().isNotEmpty
+          ? explanation.trim()
+          : null,
+      explanationKind: FeedExplanationKind.parse(json['explanationKind']),
     );
   }
 
   final FeedSlotKind kind;
+
+  /// The server's one line on why this reel is here ("Because you watched
+  /// @mira", "Trending now"), as sent. Content, never written by the client.
+  /// Read [shownExplanation], not this, to decide what to draw.
+  final String? explanation;
+
+  /// The stable key behind [explanation]; null when absent or unknown.
+  final FeedExplanationKind? explanationKind;
+
+  /// The explanation the card may draw, or null.
+  ///
+  /// The server's line is shown only where the slot backs it: a line about
+  /// the viewer ("Because you watched …") needs a [FeedSlotKind.isPersonal]
+  /// slot, so a trending or unlabelled item can never wear a personal
+  /// sentence even if one arrived with it. A line about the content alone
+  /// ("Trending now", "New in") may sit on any slot.
+  String? get shownExplanation {
+    final text = explanation;
+    if (text == null) return null;
+    final about = explanationKind;
+    if (about != null && !about.isAboutViewer) return text;
+    return kind.isPersonal ? text : null;
+  }
 
   /// The scorer's figure, or null when nothing ranked this item.
   ///
@@ -148,8 +216,13 @@ class FeedProvenance {
   String? get spokenRank =>
       rank == null ? null : 'Ranked number $rank of the ranked items here';
 
-  FeedProvenance withRank(int? rank) =>
-      FeedProvenance(kind: kind, score: score, rank: rank);
+  FeedProvenance withRank(int? rank) => FeedProvenance(
+    kind: kind,
+    score: score,
+    rank: rank,
+    explanation: explanation,
+    explanationKind: explanationKind,
+  );
 
   /// Assigns ranks across one page, highest score first.
   ///
@@ -180,10 +253,13 @@ class FeedProvenance {
       other is FeedProvenance &&
       other.kind == kind &&
       other.score == score &&
-      other.rank == rank;
+      other.rank == rank &&
+      other.explanation == explanation &&
+      other.explanationKind == explanationKind;
 
   @override
-  int get hashCode => Object.hash(kind, score, rank);
+  int get hashCode =>
+      Object.hash(kind, score, rank, explanation, explanationKind);
 
   @override
   String toString() =>
