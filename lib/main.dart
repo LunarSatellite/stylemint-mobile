@@ -16,6 +16,7 @@ import 'package:stylemint_mobile_frontend/features/customer/kyc/domain/kyc_push.
 import 'package:stylemint_mobile_frontend/features/customer/kyc/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/device/notification_route.dart';
 import 'package:stylemint_mobile_frontend/theme/font_licenses.dart';
+import 'package:url_launcher/url_launcher.dart' show closeInAppWebView;
 import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
 import 'app.dart';
@@ -906,6 +907,19 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     // server-side; if one reaches us (App Links can over-match on the shared
     // domain), ignore it rather than navigating GoRouter to a dead path.
     if (uri.path.startsWith('/v1/')) return;
+
+    // Payment hand-off pages (/payments/esewa/checkout, the connectIPS pages)
+    // are web pages the in-app browser must show, never app routes: on iOS the
+    // domain's universal links can hand them to the app, which had no route
+    // and threw "no routes for location". The provider's return to the site
+    // (`/?payment=success|failed`) means the buyer is done there: close the
+    // in-app browser and stay on the screen that opened it.
+    if (uri.path.startsWith('/payments/')) return;
+    if ((uri.path.isEmpty || uri.path == '/') &&
+        uri.queryParameters.containsKey('payment')) {
+      unawaited(closeInAppWebView().catchError((Object _) {}));
+      return;
+    }
 
     // OAuth return from a social-provider connect flow. The backend exchanges
     // the code server-side, then redirects to
