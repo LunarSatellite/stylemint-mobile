@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
@@ -125,6 +126,7 @@ Future<void> pumpCheckout(
   double textScale = 1,
   double height = fullPageHeight,
   String initialLocation = RouteNames.checkout,
+  List<Override> overrides = const [],
 }) async {
   tester.view
     ..physicalSize = Size(width, height)
@@ -157,7 +159,10 @@ Future<void> pumpCheckout(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [checkoutRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        checkoutRepositoryProvider.overrideWithValue(repository),
+        ...overrides,
+      ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark,

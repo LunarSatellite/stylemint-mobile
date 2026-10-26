@@ -668,8 +668,8 @@ void main() {
       expect(find.byKey(CheckoutEmiOption.documentsKey), findsNothing);
     });
 
-    testWidgets('approved by the seller: pay the down payment, which opens '
-        'the plan checkout', (tester) async {
+    testWidgets('approved by the seller: the down payment is paid on this '
+        'page, with no button to another one', (tester) async {
       await _pump(
         tester,
         [_item(variantId: variant)],
@@ -680,11 +680,12 @@ void main() {
         options: sellerOptions,
       );
       expect(find.byKey(CheckoutEmiOption.approvedKey), findsOneWidget);
-      expect(find.textContaining('Pay down payment'), findsOneWidget);
+      expect(find.byKey(CheckoutEmiOption.payHereKey), findsOneWidget);
+      expect(find.textContaining('tap Place Order'), findsOneWidget);
       expect(find.textContaining('12,000'), findsWidgets);
-      await tester.tap(find.byKey(CheckoutEmiOption.payKey));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Plan checkout'), findsOneWidget);
+      expect(find.textContaining('Pay down payment'), findsNothing);
+      expect(find.byType(FilledButton), findsNothing);
+      expect(find.byType(OutlinedButton), findsNothing);
     });
 
     testWidgets('an approval given without documents is not reused: the buyer '
@@ -712,16 +713,12 @@ void main() {
         }),
         options: sellerOptions,
       );
-      expect(find.byKey(CheckoutEmiOption.payKey), findsOneWidget);
-      expect(find.textContaining('online'), findsOneWidget);
-      expect(find.byKey(CheckoutEmiOption.payCashKey), findsOneWidget);
+      expect(find.byKey(CheckoutEmiOption.payHereKey), findsOneWidget);
+      expect(find.byKey(CheckoutEmiOption.cashNoteKey), findsOneWidget);
       expect(
-        find.textContaining('Pay down payment on delivery (cash)'),
+        find.textContaining('rider collects only the down payment'),
         findsOneWidget,
       );
-      await tester.tap(find.byKey(CheckoutEmiOption.payCashKey));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Plan checkout'), findsOneWidget);
     });
 
     testWidgets('approved, seller does not allow cash: online only', (
@@ -733,7 +730,7 @@ void main() {
         credit: repoWith(agreementWire(checkedOut: false)),
         options: sellerOptions,
       );
-      expect(find.byKey(CheckoutEmiOption.payCashKey), findsNothing);
+      expect(find.byKey(CheckoutEmiOption.cashNoteKey), findsNothing);
     });
 
     testWidgets('ordered with the down payment in cash: shows the order and '
@@ -760,7 +757,7 @@ void main() {
       expect(find.byKey(CheckoutEmiOption.documentsKey), findsNothing);
       expect(find.byKey(CheckoutEmiOption.sendKey), findsNothing);
       expect(find.byKey(CheckoutEmiOption.payKey), findsNothing);
-      expect(find.byKey(CheckoutEmiOption.payCashKey), findsNothing);
+      expect(find.byKey(CheckoutEmiOption.cashNoteKey), findsNothing);
       await tester.tap(find.byKey(CheckoutEmiOption.viewPlanKey));
       await tester.pumpAndSettle();
       expect(find.textContaining('Plan detail'), findsOneWidget);

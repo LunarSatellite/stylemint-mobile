@@ -114,26 +114,43 @@ Future<PickedCreditDocument?> _chooseDocument(BuildContext context) async {
   }
 }
 
-/// Whether a cart item has a seller-approved EMI plan still waiting to be
-/// checked out. While it does, checkout offers only the EMI path for it: the
-/// ordinary "Place Order" would buy the item outright at full price.
-bool hasApprovedEmiAwaitingCheckout(WidgetRef ref, List<CartItem> items) {
-  if (!ref.watch(emiSignedInProvider)) return false;
+/// The seller-approved EMI plan for a cart item that is still waiting to be
+/// checked out, if any. While there is one, checkout's own "Place Order"
+/// places the order on that plan — the down payment, paid with the method
+/// chosen on checkout — rather than buying the item outright at full price.
+CreditAgreement? approvedEmiAwaitingCheckout(
+  WidgetRef ref,
+  List<CartItem> items,
+) {
+  if (!ref.watch(emiSignedInProvider)) return null;
   final variants = {
     for (final i in items)
       if (i.variantId != null && i.variantId!.isNotEmpty) i.variantId!,
   };
-  if (variants.isEmpty) return false;
+  if (variants.isEmpty) return null;
   final plans = ref.watch(myPaymentPlansProvider).asData?.value ?? const [];
-  return plans.any(
-    (a) =>
-        variants.contains(a.variantId) &&
-        a.guarantor == PlanGuarantor.vendor &&
-        a.status == AgreementStatus.approved &&
-        a.needsCheckout &&
-        a.documentsSubmittedAt != null,
-  );
+  return plans
+      .where(
+        (a) =>
+            variants.contains(a.variantId) &&
+            a.guarantor == PlanGuarantor.vendor &&
+            a.status == AgreementStatus.approved &&
+            a.needsCheckout &&
+            a.documentsSubmittedAt != null,
+      )
+      .firstOrNull;
 }
+
+/// Whether a cart item has a seller-approved EMI plan still waiting to be
+/// checked out.
+bool hasApprovedEmiAwaitingCheckout(WidgetRef ref, List<CartItem> items) =>
+    approvedEmiAwaitingCheckout(ref, items) != null;
+
+/// EMI whose seller lets the down payment be paid in cash on delivery.
+bool emiCashDownPaymentAllowed(CreditAgreement plan) =>
+    plan.kind == PlanKind.instalment &&
+    plan.cashOnDeliveryDownPaymentAllowed &&
+    plan.needsActivationPayment;
 
 /// Picks one document from the device. Overridden in tests.
 final creditDocumentPickerProvider = Provider<CreditDocumentPicker>(
@@ -176,7 +193,11 @@ class CheckoutEmiOption extends ConsumerWidget {
   static const Key sendKey = Key('checkout-emi-send');
   static const Key waitingKey = Key('checkout-emi-waiting');
   static const Key approvedKey = Key('checkout-emi-approved');
-  static const Key payCashKey = Key('checkout-emi-pay-cash');
+
+  /// Approved: the down payment is paid with checkout's own methods and
+  /// Place Order (and, where the seller allows it, in cash on delivery).
+  static const Key payHereKey = Key('checkout-emi-pay-here');
+  static const Key cashNoteKey = Key('checkout-emi-cash-note');
   static const Key cashPendingKey = Key('checkout-emi-cash-pending');
 
   /// Ordered on an approved plan, the down payment to be paid online.
@@ -750,17 +771,16 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     _error = null;
   });
 
-  void _payDownPayment(CreditAgreement agreement, {bool cash = false}) {
+  /// An order already placed on the plan: its down payment (online) or its
+  /// standing (cash on delivery) lives on the plan's own page.
+  void _openPlan(CreditAgreement agreement) {
     final args = PlanDetailArgs(
       productName: widget.item.productName,
       justApplied: true,
-      cashOnDelivery: cash,
     );
     unawaited(
       context.push(
-        agreement.needsCheckout
-            ? RouteNames.paymentPlanCheckoutPath(agreement.id)
-            : RouteNames.paymentPlanDetailPath(agreement.id),
+        RouteNames.paymentPlanDetailPath(agreement.id),
         extra: args,
       ),
     );
@@ -870,7 +890,7 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
               key: CheckoutEmiOption.viewPlanKey,
               label: 'View plan',
               outlined: true,
-              onPressed: () => _payDownPayment(a),
+              onPressed: () => _openPlan(a),
             ),
           ],
         ),
@@ -892,7 +912,7 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
           _Button(
             key: CheckoutEmiOption.orderedPayKey,
             label: 'Pay down payment ${_money(a.downPayment)}',
-            onPressed: () => _payDownPayment(a),
+            onPressed: () => _openPlan(a),
           ),
         ],
       ),
@@ -902,28 +922,21 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
         children: [
           const _Label('Approved by the seller'),
           Text(plan, style: muted()),
-          const SizedBox(height: DesignTokens.s8),
-          _Button(
-            key: CheckoutEmiOption.payKey,
-            label: a.cashOnDeliveryDownPaymentAllowed
-                ? 'Pay down payment ${_money(a.downPayment)} online'
-                : 'Pay down payment ${_money(a.downPayment)}',
-            onPressed: () => _payDownPayment(a),
+          const SizedBox(height: DesignTokens.s4),
+          // Paid right here: checkout's own payment methods and Place Order
+          // pay the down payment — no separate page.
+          Text(
+            'Choose how to pay the ${_money(a.downPayment)} down payment '
+            'below, then tap Place Order.',
+            key: CheckoutEmiOption.payHereKey,
+            style: muted(),
           ),
-          if (a.cashOnDeliveryDownPaymentAllowed && a.needsCheckout) ...[
-            const SizedBox(height: DesignTokens.s8),
-            _Button(
-              key: CheckoutEmiOption.payCashKey,
-              label:
-                  'Pay down payment on delivery (cash) · '
-                  '${_money(a.downPayment)}',
-              outlined: true,
-              onPressed: () => _payDownPayment(a, cash: true),
-            ),
+          if (emiCashDownPaymentAllowed(a)) ...[
             const SizedBox(height: DesignTokens.s4),
             Text(
-              'With cash, the rider collects only the down payment. Your '
-              'plan starts the day the item is delivered.',
+              'With cash on delivery, the rider collects only the down '
+              'payment. Your plan starts the day the item is delivered.',
+              key: CheckoutEmiOption.cashNoteKey,
               style: muted(),
             ),
           ],

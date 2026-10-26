@@ -14,6 +14,14 @@ import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/prov
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/domain/credit_messages.dart'
+    show creditFailureMessage;
+import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart'
+    show CreditAgreement, PlanPaymentRail;
+import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_widgets.dart'
+    show planMoney, planPaymentLauncherProvider;
+import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart'
+    show creditRepositoryProvider, refreshPaymentPlans;
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/checkout/checkout_service_guests.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/presentation/checkout/checkout_service_messages.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -42,6 +50,78 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   /// Per cart line: why the server could not place a stay or trip.
   Map<String, String> _serviceLineErrors = const {};
+
+  /// Placing the order on an approved EMI plan (its own server call, not the
+  /// cart's).
+  bool _placingEmi = false;
+
+  /// One key per EMI order the buyer means to place: a retry after the
+  /// network dropped reuses it, so the server answers with the same order.
+  String _emiKey = _uuid.v4();
+
+  /// Places the order on the seller-approved [plan] from this page: the
+  /// plan's item at the plan's price, its down payment paid with the method
+  /// chosen here (cash only where the seller allows it). The rest of the cart
+  /// stays. Then, as an ordinary order, the payment page and order-placed.
+  Future<void> _placeEmiOrder(
+    CreditAgreement plan, {
+    required String addressId,
+    required PaymentMethodType method,
+  }) async {
+    if (_placingEmi) return;
+    setState(() => _placingEmi = true);
+    final messenger = ScaffoldMessenger.of(context);
+    void fail(String message) {
+      if (!mounted) return;
+      setState(() => _placingEmi = false);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: DesignTokens.colorError,
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    }
+
+    final repo = ref.read(creditRepositoryProvider);
+    final started = await repo.startCheckout(plan.id);
+    if (!mounted) return;
+    final session = started.fold((f) {
+      fail(creditFailureMessage(f));
+      return null;
+    }, (s) => s);
+    if (session == null) return;
+
+    final placed = await repo.placeCheckout(
+      sessionId: session.sessionId,
+      addressId: addressId,
+      rail: switch (method) {
+        PaymentMethodType.card => PlanPaymentRail.card,
+        PaymentMethodType.paypal => PlanPaymentRail.payPal,
+        PaymentMethodType.eSewa => PlanPaymentRail.eSewa,
+        PaymentMethodType.cod => PlanPaymentRail.cashOnDelivery,
+      },
+      idempotencyKey: _emiKey,
+    );
+    if (!mounted) return;
+    await placed.fold((f) async => fail(creditFailureMessage(f)), (
+      order,
+    ) async {
+      _emiKey = _uuid.v4();
+      refreshPaymentPlans(ref, agreementId: plan.id);
+      // The server took the bought item out of the cart.
+      unawaited(ref.read(cartNotifierProvider.notifier).fetchCart());
+      final uri = order.redirectUrl == null
+          ? null
+          : Uri.tryParse(order.redirectUrl!);
+      if (uri != null) await ref.read(planPaymentLauncherProvider)(uri);
+      if (!mounted) return;
+      context.pushReplacement(
+        '${RouteNames.orderSuccess.replaceAll(':orderId', order.orderNumber)}'
+        '${uri != null ? '?paymentPending=1' : ''}',
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -169,8 +249,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             processing: () => true,
             orElse: () => false,
           );
-          final methods = _buildPaymentMethods(summary);
+          // A seller-approved EMI waiting in the cart: Place Order places it,
+          // and the methods below pay its down payment.
+          final emiPlan = approvedEmiAwaitingCheckout(
+            ref,
+            _cartItemsForEmi(),
+          );
+          final methods = _buildPaymentMethods(summary, emiPlan: emiPlan);
           var selectedPayment = _selectedPayment ?? summary.paymentMethod;
+          if (emiPlan != null &&
+              !methods.any((m) => m.type == selectedPayment.type) &&
+              methods.isNotEmpty) {
+            selectedPayment = methods.first;
+          }
           // A stay or trip with something to pay now cannot be paid in cash
           // on delivery (service cart contract v1 §3.4).
           if (summary.requiresOnlinePayment &&
@@ -272,14 +363,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
               ),
               _BottomBar(
-                hasAddress: hasAddress || isPickup || !needsAddress,
-                isProcessing: isProcessing,
-                emiApproved: hasApprovedEmiAwaitingCheckout(
-                  ref,
-                  _cartItemsForEmi(),
-                ),
+                // The plan's item is always delivered to an address.
+                hasAddress: emiPlan != null
+                    ? hasAddress
+                    : hasAddress || isPickup || !needsAddress,
+                isProcessing: isProcessing || _placingEmi,
+                emiDueToday: emiPlan == null
+                    ? null
+                    : planMoney(emiPlan.downPayment),
                 onAddAddress: () => unawaited(_openAddAddress(context)),
                 onPlaceOrder: () async {
+                  if (emiPlan != null) {
+                    await _placeEmiOrder(
+                      emiPlan,
+                      addressId: effectiveAddress.id,
+                      method: selectedPayment.type,
+                    );
+                    return;
+                  }
                   // The server will not place a stay or trip without its
                   // guest names: send them first.
                   if (summary.hasServiceLines) {
@@ -346,7 +447,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  List<PaymentMethod> _buildPaymentMethods(CheckoutSummary summary) {
+  List<PaymentMethod> _buildPaymentMethods(
+    CheckoutSummary summary, {
+    CreditAgreement? emiPlan,
+  }) {
     PaymentMethod? savedCard;
     for (final method in summary.availablePaymentMethods) {
       if (method.type == PaymentMethodType.card) {
@@ -355,6 +459,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     }
     final all = checkoutPaymentMethods(savedCard: savedCard);
+    // An EMI down payment is paid in cash only where its seller allows it.
+    if (emiPlan != null) {
+      final cash = emiCashDownPaymentAllowed(emiPlan);
+      return [
+        for (final m in all)
+          if (m.type != PaymentMethodType.cod || cash) m,
+      ];
+    }
     // Cash on delivery cannot pay a stay or trip's pay-now part.
     return summary.requiresOnlinePayment
         ? [
@@ -1559,7 +1671,7 @@ class _BottomBar extends StatelessWidget {
     required this.isProcessing,
     required this.onAddAddress,
     required this.onPlaceOrder,
-    this.emiApproved = false,
+    this.emiDueToday,
   });
 
   final bool hasAddress;
@@ -1567,9 +1679,9 @@ class _BottomBar extends StatelessWidget {
   final VoidCallback onAddAddress;
   final VoidCallback onPlaceOrder;
 
-  /// The seller approved EMI for an item in the cart: no "Place Order",
-  /// which would buy it outright — the EMI card above is the way to pay.
-  final bool emiApproved;
+  /// The seller approved EMI for an item in the cart: Place Order places it,
+  /// paying only this down payment now — never the full price.
+  final String? emiDueToday;
 
   static const Key emiNoteKey = Key('checkout-emi-approved-note');
 
@@ -1589,17 +1701,24 @@ class _BottomBar extends StatelessWidget {
         ),
       ),
       child: SafeArea(
-        child: emiApproved
-            ? const Text(
-                'Your EMI is approved. Complete it with the EMI button above '
-                '— no other payment is needed.',
-                key: emiNoteKey,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 13,
-                  color: DesignTokens.textMuted,
-                ),
+        child: hasAddress && emiDueToday != null
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'EMI approved: pay the $emiDueToday down payment now, '
+                    'the rest monthly.',
+                    key: emiNoteKey,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 13,
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  _placeOrderRow(),
+                ],
               )
             : hasAddress
             ? _placeOrderRow()

@@ -34,7 +34,7 @@ CreditAgreement _plan({
 });
 
 /// Pumps a probe that reads [hasApprovedEmiAwaitingCheckout] the way the
-/// checkout screen's bottom bar does.
+/// checkout screen does to decide what Place Order places.
 Future<bool> _probe(
   WidgetTester tester, {
   required List<CreditAgreement> plans,
@@ -63,19 +63,19 @@ Future<bool> _probe(
 }
 
 void main() {
-  testWidgets('an approved EMI not yet checked out hides Place Order', (
+  testWidgets('an approved EMI not yet checked out turns Place Order into the EMI order', (
     tester,
   ) async {
     expect(await _probe(tester, plans: [_plan()]), isTrue);
   });
 
-  testWidgets('once the EMI is ordered, Place Order is not hidden by it', (
+  testWidgets('once the EMI is ordered, Place Order is an ordinary order again', (
     tester,
   ) async {
     expect(await _probe(tester, plans: [_plan(checkedOut: true)]), isFalse);
   });
 
-  testWidgets('a pending or declined application does not hide Place Order', (
+  testWidgets('a pending or declined application leaves Place Order ordinary', (
     tester,
   ) async {
     expect(await _probe(tester, plans: [_plan(state: 1)]), isFalse);
@@ -86,7 +86,7 @@ void main() {
     expect(await _probe(tester, plans: [_plan(documents: false)]), isFalse);
   });
 
-  testWidgets('an approval for another item does not hide Place Order', (
+  testWidgets('an approval for another item leaves Place Order ordinary', (
     tester,
   ) async {
     expect(
@@ -95,7 +95,7 @@ void main() {
     );
   });
 
-  testWidgets('signed out: nothing is hidden', (tester) async {
+  testWidgets('signed out: no EMI order', (tester) async {
     expect(await _probe(tester, plans: [_plan()], signedIn: false), isFalse);
   });
 }
