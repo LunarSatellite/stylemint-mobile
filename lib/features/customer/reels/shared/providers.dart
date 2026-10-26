@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/ai_rails/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/datasources/reels_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/repositories/reels_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
@@ -42,6 +43,7 @@ final reelLandingNotifierProvider = StateNotifierProvider.autoDispose
       (ref, reelId) => ReelLandingNotifier(
         ref.watch(reelsRepositoryProvider),
         reelId: reelId,
+        rails: ref.watch(aiRailsRepositoryProvider),
       ),
     );
 

@@ -139,6 +139,7 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
             .loadSuggestions(
               platform: reel.platform,
               externalId: reel.platformPostId,
+              caption: reel.caption,
             );
       }
     });
@@ -385,6 +386,9 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
                     onTagTap: _toggleProduct,
                     originalCount: products.length,
                     hasAnyTagged: _taggedProducts.isNotEmpty,
+                    matchedByMeaning:
+                        products.isEmpty ||
+                        products.any((p) => p.isMeaningMatch),
                   );
                 }(),
                 SuggestedProductsLoadFailure() => _SuggestedProductsBody(
@@ -552,6 +556,7 @@ class _SuggestedProductsBody extends ConsumerWidget {
     required this.hasAnyTagged,
     this.isLoading = false,
     this.hasFailure = false,
+    this.matchedByMeaning = true,
   });
 
   final List<TaggedProductForImport> products;
@@ -560,6 +565,11 @@ class _SuggestedProductsBody extends ConsumerWidget {
   final bool hasAnyTagged;
   final bool isLoading;
   final bool hasFailure;
+
+  /// Whether the server matched these by meaning (AI features contract
+  /// v1.0 §4.1). False for its fallback — the creator's taggable products,
+  /// own first — which must not be presented as picked from the reel.
+  final bool matchedByMeaning;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -582,7 +592,9 @@ class _SuggestedProductsBody extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: DesignTokens.s12),
           child: Text(
-            'Suggested Products (Based on your reel)',
+            matchedByMeaning
+                ? 'Suggested Products (Based on your reel)'
+                : 'Products you can tag',
             style: DesignTokens.smallRegular.copyWith(
               color: DesignTokens.textLight,
             ),
@@ -1117,6 +1129,22 @@ class _ProductCard extends StatelessWidget {
                   color: DesignTokens.textMuted,
                 ),
               ),
+              if (product.matchPercent case final percent?) ...[
+                const SizedBox(height: DesignTokens.s8),
+                _MatchChip(percent: percent),
+              ],
+              if (product.matchReason case final reason?) ...[
+                const SizedBox(height: DesignTokens.s4),
+                Text(
+                  reason,
+                  key: ValueKey('suggested-reason-${product.productId}'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                  ),
+                ),
+              ],
               const SizedBox(height: DesignTokens.s8),
               _CommissionChip(commission: commission),
             ],
@@ -1137,6 +1165,53 @@ class _ProductCard extends StatelessWidget {
       size: 32,
     ),
   );
+}
+
+/// How close in meaning a suggested product is to the reel (AI features
+/// contract v1.0 §4.1 `score`). Drawn only for a meaning match — a fallback
+/// suggestion is unscored and draws nothing.
+class _MatchChip extends StatelessWidget {
+  const _MatchChip({required this.percent});
+
+  final int percent;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = '$percent% match';
+    return Semantics(
+      label: '$label with this reel, by meaning',
+      excludeSemantics: true,
+      child: Container(
+        key: const ValueKey('suggested-match-chip'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s8,
+          vertical: DesignTokens.s4,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: DesignTokens.primaryGreen),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.auto_awesome_outlined,
+              size: 12,
+              color: DesignTokens.primaryGreen,
+            ),
+            const SizedBox(width: DesignTokens.s4),
+            Text(
+              label,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.primaryGreen,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Tagged products bottom sheet ──────────────────────────────────────────────

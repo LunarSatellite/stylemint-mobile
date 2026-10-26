@@ -3,11 +3,18 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_feedback.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/discover_providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/domain/entities/engagement_event.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/presentation/engagement_tracker.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/feed_signal_recorder.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/home_mode_switch.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/reel_view_recorder.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_more_button.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reels_pager.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/stories/presentation/notifiers/stories_notifier.dart';
@@ -69,6 +76,10 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
   /// during dispose, and that is exactly the watch worth counting.
   late final ReelViewRecorder _views;
 
+  /// Held for the same reason as [_signals]. Batches the dwell, skip and
+  /// completion events the personal feed is ranked from.
+  late final EngagementTracker _engagement;
+
   /// Whether anyone has an active story, as of the last answer the stories
   /// feed gave. Held through a reload rather than dropped, so a refresh does
   /// not snap the strip shut and open again, resizing the first reel twice.
@@ -79,6 +90,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
     super.initState();
     _signals = ref.read(feedSignalRecorderProvider);
     _views = ref.read(reelViewRecorderProvider);
+    _engagement = ref.read(engagementTrackerProvider);
   }
 
   @override
@@ -120,13 +132,17 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
         );
 
     final state = ref.watch(reelsFeedNotifierProvider);
+    // Reels and creators the viewer marked "Not interested" leave the feed
+    // at once; the server stops serving them too.
+    final hidden = ref.watch(notInterestedNotifierProvider);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       body: state.when(
         initial: _loader,
         loadInProgress: _loader,
-        loadSuccess: (reels) {
+        loadSuccess: (loaded) {
+          final reels = _visible(loaded, hidden);
           if (reels.isEmpty) {
             // No reels is no reason to hide who has a story: the strip still
             // sits above the message, and stays open — there is no reel to
@@ -161,7 +177,14 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
               // ever called the views endpoint, so every reel sat at zero
               // views forever.
               onReelDwell: (reel, dwell) {
-                _signals.reelDwell(reel.id, dwell);
+                // The batch event and the older per-signal call share one
+                // id, so the server counts this exposure once.
+                final eventId = _engagement.reelLeft(
+                  reel,
+                  dwell,
+                  surface: EngagementSurface.feed,
+                );
+                _signals.reelDwell(reel.id, dwell, clientEventId: eventId);
                 _views.recordDwell(reel, dwell);
               },
             ),
@@ -223,6 +246,25 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
         content: child!,
       ),
     );
+  }
+
+  List<Reel>? _visibleFrom;
+  Set<NotInterestedTarget>? _visibleHidden;
+  List<Reel> _visibleReels = const [];
+
+  /// [loaded] minus what the viewer hid — the same list object until either
+  /// changes, so the pager is not handed a "new" feed on every rebuild.
+  List<Reel> _visible(List<Reel> loaded, Set<NotInterestedTarget> hidden) {
+    if (hidden.isEmpty) return loaded;
+    if (identical(loaded, _visibleFrom) && identical(hidden, _visibleHidden)) {
+      return _visibleReels;
+    }
+    _visibleFrom = loaded;
+    _visibleHidden = hidden;
+    return _visibleReels = [
+      for (final reel in loaded)
+        if (!hidden.hidesFeedReel(reel)) reel,
+    ];
   }
 
   Widget _loader() => const SmPageLoader();

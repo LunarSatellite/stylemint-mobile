@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart' show DioException, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/models/imported_reel_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/models/suggested_product_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/models/tag_product_commission_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/content_freshness.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
@@ -258,8 +259,8 @@ class ReelImportRemoteDataSource {
       },
       options: Options(headers: {'requiresToken': true}),
     );
-    final m = response is Map ? response : const {};
-    final items = m['items'] is List ? m['items'] as List : const [];
+    final m = response is Map ? response : const <dynamic, dynamic>{};
+    final items = m['items'] is List ? m['items'] as List : const <dynamic>[];
     return [
       for (final e in items)
         if (e is Map && (e['productId'] as String? ?? '').isNotEmpty)
@@ -313,29 +314,33 @@ class ReelImportRemoteDataSource {
   // Returns backend-suggested products for a reel that hasn't been imported yet.
   // Falls back to an empty list on 404 so the UI can show no suggestions
   // without surfacing an error.
-  Future<List<TaggedProductForImportDto>> getSuggestedProducts({
+  //
+  // AI features contract v1.0 §4.1: rows also carry `score`, `matchType`
+  // (`meaning` | `fallback`) and `reason`; `caption` is sent so a reel whose
+  // post is not synced can still be matched by its words.
+  Future<List<SuggestedProductDto>> getSuggestedProducts({
     required SocialPlatform platform,
     required String externalId,
+    String? caption,
+    int limit = 10,
   }) async {
     try {
+      final trimmed = caption?.trim();
       final response = await apiClient.get(
-        '/v1/creator/reels/$externalId/suggested-products',
-        queryParameters: {'platform': _platformInt(platform)},
+        '/v1/creator/reels/${Uri.encodeComponent(externalId)}'
+        '/suggested-products',
+        queryParameters: {
+          'platform': _platformInt(platform),
+          'limit': limit,
+          if (trimmed != null && trimmed.isNotEmpty) 'caption': trimmed,
+        },
       );
       final m = response as Map<String, dynamic>;
       final products = m['items'] as List<dynamic>? ?? const <dynamic>[];
       return products
-          .map((e) {
-            final p = e as Map<String, dynamic>;
-            return TaggedProductForImportDto(
-              productId: p['productId'] as String? ?? '',
-              productName: p['name'] as String? ?? '',
-              imageUrl: p['heroImageUrl'] as String? ?? '',
-              amount: (p['price'] as num?)?.toDouble() ?? 0.0,
-              currency: p['currency'] as String? ?? 'NPR',
-              vendorName: p['brandName'] as String? ?? '',
-            );
-          })
+          .whereType<Map<String, dynamic>>()
+          .map(SuggestedProductDto.fromJson)
+          .where((p) => p.productId.isNotEmpty)
           .toList(growable: false);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return const [];

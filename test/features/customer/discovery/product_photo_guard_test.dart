@@ -75,6 +75,10 @@ const Set<String> _photoCardAllowlist = {
   // Product detail, and the "You may also like" rail that belongs to it.
   'lib/features/customer/discovery/presentation/screens/product_detail_screen.dart',
   'lib/features/customer/discovery/presentation/widgets/related_products_rail.dart',
+  // "Frequently bought together" and "People also viewed" (AI features
+  // contract §3): the same card as "You may also like", built only by
+  // product_detail_screen.dart, below the product it is about.
+  'lib/features/customer/ai_rails/presentation/widgets/collab_product_rail.dart',
 };
 
 /// One carve-out from the product-photo rule, with the reason it exists.

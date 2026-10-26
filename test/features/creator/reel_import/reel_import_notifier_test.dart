@@ -58,6 +58,7 @@ class _FakeRepository implements ReelImportRepository {
   Future<NetworkEither<List<TaggedProductForImport>>> getSuggestedProducts({
     required SocialPlatform platform,
     required String externalId,
+    String? caption,
   }) async => networkRight(const []);
 
   @override

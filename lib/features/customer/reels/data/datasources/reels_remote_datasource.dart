@@ -209,6 +209,11 @@ class ReelsRemoteDataSource {
     return PublicJourney(journey: journey, reels: reels);
   }
 
+  /// Maps one `ReelDto` (the detail projection) — for reads outside this
+  /// data source that return the same shape, such as the AI reel rails.
+  Reel reelFromDetailJson(Map<String, dynamic> json) =>
+      _detailJsonToReel(json, '');
+
   Reel _detailJsonToReel(Map<String, dynamic> r, String requestedId) {
     String str(List<String> keys) {
       for (final key in keys) {

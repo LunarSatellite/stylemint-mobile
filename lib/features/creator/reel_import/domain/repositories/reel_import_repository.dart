@@ -56,6 +56,7 @@ abstract interface class ReelImportRepository {
   getSuggestedProducts({
     required SocialPlatform platform,
     required String externalId,
+    String? caption,
   });
 
   Future<Either<NetworkExceptions, Unit>> publishReel({

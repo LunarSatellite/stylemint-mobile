@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/discover_creator_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/search_understanding_chips.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/sponsored_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/product_listing_query.dart';
@@ -40,10 +41,20 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
+  /// The query on screen. Starts as the one searched for, and changes when
+  /// the customer takes an understanding chip off.
+  late String _query = widget.query;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void didUpdateWidget(SearchResultsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.query != widget.query) _query = widget.query;
   }
 
   @override
@@ -55,7 +66,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
   @override
   Widget build(BuildContext context) {
     final async = widget.initialResults == null
-        ? ref.watch(customerSearchResultsProvider(widget.query))
+        ? ref.watch(customerSearchResultsProvider(_query))
         : AsyncValue<CustomerSearchResults>.data(widget.initialResults!);
 
     return Scaffold(
@@ -85,7 +96,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
           body: 'Check your connection and try again.',
           onRetry: widget.initialResults == null
               ? () => ref.invalidate(
-                  customerSearchResultsProvider(widget.query),
+                  customerSearchResultsProvider(_query),
                 )
               : null,
         ),
@@ -101,7 +112,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
               ),
               child: Text(
                 widget.initialResults == null
-                    ? 'Showing ${results.totalHits} results for "${widget.query}"'
+                    ? 'Showing ${results.totalHits} results for "$_query"'
                     : '${results.totalHits} visual matches from your photo',
                 style: DesignTokens.smallRegular,
               ),
@@ -128,7 +139,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
                     const SizedBox(width: DesignTokens.s8),
                     Expanded(
                       child: Text(
-                        'Understood as: $understanding',
+                        searchUnderstoodAsLine(understanding),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: DesignTokens.smallDescription.copyWith(
@@ -138,6 +149,16 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
                     ),
                   ],
                 ),
+              ),
+            // What the words were read as. Deterministic, so shown with or
+            // without AI, and worded to claim nothing about a model. A photo
+            // search has no words to read.
+            if (results.understanding case final understanding?
+                when widget.initialResults == null)
+              SearchUnderstandingChips(
+                understanding: understanding,
+                query: _query,
+                onRemove: (next) => setState(() => _query = next),
               ),
             TabBar(
               controller: _tabController,
@@ -165,12 +186,15 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
                     showReasons: results.aiApplied,
                     // A photo search has no text query to list.
                     seeAllLocation: widget.initialResults == null
-                        ? searchSeeAllProductsLocation(widget.query)
+                        ? searchSeeAllProductsLocation(_query)
                         : null,
                     productTotal: results.productTotal,
                   ),
                   _CreatorsTab(creators: results.creators),
-                  _ReelsTab(reels: results.reels),
+                  _ReelsTab(
+                    reels: results.reels,
+                    showMeaning: results.aiApplied,
+                  ),
                   _BrandsTab(brands: results.brands),
                 ],
               ),
@@ -181,6 +205,14 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
     );
   }
 }
+
+/// The AI line above the tabs. A hybrid server sends a whole sentence
+/// ("Showing results for …"), which is shown as sent; an older server sends
+/// the reading alone, which gets the "Understood as" frame.
+String searchUnderstoodAsLine(String understanding) =>
+    understanding.toLowerCase().startsWith('showing ')
+    ? understanding
+    : 'Understood as: $understanding';
 
 // ─── EMPTY STATE ──────────────────────────────────────────────────────────────
 
@@ -346,6 +378,8 @@ class _ProductResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final disclosure = product.sponsoredDisclosure;
     final reason = showReason ? product.matchReason : null;
+    // Only when AI shaped the response, and only for a hit no word matched.
+    final byMeaning = showReason && product.matchType.isMeaningOnly;
     return KeyedSubtree(
       key: ValueKey('search-product-${product.productId}'),
       child: MallResultRow(
@@ -359,13 +393,21 @@ class _ProductResultTile extends StatelessWidget {
         // The disclosure is spoken first, before the product: a buyer hears
         // that a result is paid for before they hear what it sells.
         semanticPrefix: disclosure,
-        semanticExtras: [?reason],
-        footer: (disclosure == null && reason == null)
+        semanticExtras: [
+          if (byMeaning) MatchedByMeaningChip.label,
+          ?reason,
+        ],
+        footer: (disclosure == null && reason == null && !byMeaning)
             ? null
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (byMeaning)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: DesignTokens.s4),
+                      child: ExcludeSemantics(child: MatchedByMeaningChip()),
+                    ),
                   if (reason != null)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,8 +502,11 @@ class _CreatorsTab extends StatelessWidget {
 
 // ─── REELS TAB ────────────────────────────────────────────────────────────────
 class _ReelsTab extends StatelessWidget {
-  const _ReelsTab({required this.reels});
+  const _ReelsTab({required this.reels, required this.showMeaning});
   final List<SearchResultReel> reels;
+
+  /// Whether AI shaped the response, so a meaning-only reel may say so.
+  final bool showMeaning;
 
   @override
   Widget build(BuildContext context) {
@@ -483,15 +528,19 @@ class _ReelsTab extends StatelessWidget {
         childAspectRatio: 0.85,
       ),
       itemCount: reels.length,
-      itemBuilder: (_, i) => _ReelThumbnail(reel: reels[i]),
+      itemBuilder: (_, i) => _ReelThumbnail(
+        reel: reels[i],
+        byMeaning: showMeaning && reels[i].matchType.isMeaningOnly,
+      ),
     );
   }
 }
 
 class _ReelThumbnail extends StatelessWidget {
-  const _ReelThumbnail({required this.reel});
+  const _ReelThumbnail({required this.reel, required this.byMeaning});
 
   final SearchResultReel reel;
+  final bool byMeaning;
 
   @override
   Widget build(BuildContext context) {
@@ -501,6 +550,7 @@ class _ReelThumbnail extends StatelessWidget {
       label: [
         'Reel',
         if (views != null) '$views views',
+        if (byMeaning) MatchedByMeaningChip.label,
       ].join(', '),
       excludeSemantics: true,
       child: InkWell(
@@ -517,6 +567,12 @@ class _ReelThumbnail extends StatelessWidget {
               decoration: BoxDecoration(gradient: DesignTokens.imageScrim),
             ),
             const Center(child: MallPlayMark()),
+            if (byMeaning)
+              const PositionedDirectional(
+                top: DesignTokens.s8,
+                start: DesignTokens.s8,
+                child: MatchedByMeaningChip(),
+              ),
             // Views are drawn only when the search really returned a count.
             if (views != null)
               PositionedDirectional(

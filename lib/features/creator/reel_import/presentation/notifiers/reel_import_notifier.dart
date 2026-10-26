@@ -322,11 +322,13 @@ class SuggestedProductsNotifier extends StateNotifier<SuggestedProductsState> {
   Future<void> loadSuggestions({
     required SocialPlatform platform,
     required String externalId,
+    String? caption,
   }) async {
     state = const SuggestedProductsLoadInProgress();
     final either = await _repository.getSuggestedProducts(
       platform: platform,
       externalId: externalId,
+      caption: caption,
     );
     state = either.fold(
       SuggestedProductsLoadFailure.new,

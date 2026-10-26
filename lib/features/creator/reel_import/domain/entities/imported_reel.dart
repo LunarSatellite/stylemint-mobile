@@ -99,6 +99,10 @@ class TaggedProductForImport {
     required this.vendorName,
     this.isService = false,
     this.priceLabel,
+    this.matchScore,
+    this.matchReason,
+    this.isMeaningMatch = false,
+    this.isOwnProduct,
   });
 
   final String productId;
@@ -106,6 +110,30 @@ class TaggedProductForImport {
   final String imageUrl;
   final Money price;
   final String vendorName;
+
+  /// How close in meaning this product is to the reel (AI features contract
+  /// v1.0 §4.1 `score`, cosine 0..1). Null unless [isMeaningMatch]: a
+  /// fallback suggestion's `0` is "not scored", not "no match".
+  final double? matchScore;
+
+  /// The server's one-line reason ("Close in meaning to this reel's caption
+  /// and #summer #linen"); null on a fallback suggestion.
+  final String? matchReason;
+
+  /// Suggested because it is close in meaning to the reel (`matchType =
+  /// meaning`), rather than listed as one of the creator's taggable products.
+  final bool isMeaningMatch;
+
+  /// The creator sells it themselves (vs a partner brand's product).
+  final bool? isOwnProduct;
+
+  /// The score as a whole percentage for the "match" chip, or null when the
+  /// product was not matched by meaning.
+  int? get matchPercent {
+    final score = matchScore;
+    if (!isMeaningMatch || score == null || score <= 0) return null;
+    return (score.clamp(0, 1) * 100).round();
+  }
 
   /// A hotel stay, travel package or bank product (service items contract
   /// v1 §5.3): tagged exactly like a product.

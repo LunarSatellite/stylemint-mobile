@@ -262,6 +262,11 @@ class DiscoveryRemoteDataSource {
 
   // The backend returns the full nested ProductDto (variants + images),
   // not a flat card shape — pick the primary image and default variant.
+  /// Maps one public `ProductDto` card, as `/related` returns it — for other
+  /// reads of the same shape, such as the collaborative-filtering rails.
+  RelatedProductDto relatedProductFromJson(Map<String, dynamic> json) =>
+      _relatedProductFromApi(json);
+
   RelatedProductDto _relatedProductFromApi(Map<String, dynamic> json) {
     final images = (json['images'] as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>();

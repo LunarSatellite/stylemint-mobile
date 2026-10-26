@@ -5,11 +5,13 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/creator_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_actions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_more_button.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/tagged_products_section.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_layout_policy.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_scope.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_slot.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/reel_shapes.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_signal.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_sound_button.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
@@ -60,6 +62,9 @@ class ReelCard extends StatefulWidget {
 
   /// How far the right rail is anchored above the bottom of the card.
   static const double railBottom = 180;
+
+  /// The chip naming the reel-page rail a reel came from.
+  static const Key railLabelKey = Key('reel-card-rail-label');
 
   final Reel reel;
   final bool isActive;
@@ -196,16 +201,27 @@ class _ReelCardState extends State<ReelCard> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Why this reel is here, said plainly. Absent when the
-                    // feed did not tell us, rather than guessed at.
-                    if (widget.reel.provenance case final provenance?)
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          right: 72,
-                          bottom: DesignTokens.s8,
-                        ),
-                        child: FeedProvenanceBadge(provenance: provenance),
+                    // Why this reel is here, said plainly — absent when the
+                    // feed did not tell us, rather than guessed at — and the
+                    // reel's "More" actions (Not interested, Report).
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        right: 72,
+                        bottom: DesignTokens.s8,
                       ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: _ReelWhy(reel: widget.reel),
+                            ),
+                          ),
+                          ReelMoreButton(reel: widget.reel),
+                        ],
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.only(right: 72),
                       // The rail carries follow; this row keeps name + track.
@@ -215,6 +231,7 @@ class _ReelCardState extends State<ReelCard> {
                       const SizedBox(height: DesignTokens.s12),
                       TaggedProductsSection(
                         products: widget.reel.taggedProducts,
+                        reelId: widget.reel.id,
                         // Only the reel being watched cycles its product
                         // photos; neighbours the pager keeps alive hold still.
                         isActive: widget.isActive,
@@ -259,5 +276,28 @@ class _SoundOffButton extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+/// The feed's provenance badge, or the reel-page rail a reel came from, or
+/// nothing.
+class _ReelWhy extends StatelessWidget {
+  const _ReelWhy({required this.reel});
+
+  final Reel reel;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reel.provenance case final provenance?) {
+      return FeedProvenanceBadge(provenance: provenance);
+    }
+    // Which AI rail of the reel page placed it here.
+    if (reel.railLabel case final label?) {
+      return MallSignalChip(
+        key: ReelCard.railLabelKey,
+        signal: MallSignal(label: label, icon: Icons.auto_awesome_outlined),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }

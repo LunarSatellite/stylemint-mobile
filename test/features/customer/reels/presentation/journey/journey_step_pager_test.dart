@@ -7,6 +7,8 @@ import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/ai_rails/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
@@ -27,6 +29,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/shared/provide
 import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import '../../../ai_rails/fake_ai_rails_repository.dart';
 
 /// An Instagram reel with no media URL: it shows its poster, so no video or
 /// WebView platform is needed.
@@ -121,6 +124,9 @@ List<Override> _railOverrides() {
   return [
     cartRepositoryProvider.overrideWithValue(cart),
     followApiProvider.overrideWithValue(_FakeFollowApi()),
+    aiRailsRepositoryProvider.overrideWithValue(FakeAiRailsRepository()),
+    // A guest: nothing is queued, so no flush timer outlives the test.
+    engagementOwnerProvider.overrideWithValue(() => null),
   ];
 }
 

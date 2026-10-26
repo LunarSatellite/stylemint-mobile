@@ -59,6 +59,8 @@ class FeedSignal {
     required this.action,
     this.entityId,
     this.query,
+    this.clientEventId,
+    this.dwellMs,
   });
 
   /// A signal about a specific entity — a reel, a product, or a search
@@ -71,6 +73,8 @@ class FeedSignal {
     required String entityId,
     required FeedSignalEntity entity,
     required FeedSignalAction action,
+    String? clientEventId,
+    int? dwellMs,
   }) {
     final id = entityId.trim();
     if (id.isEmpty) {
@@ -88,7 +92,14 @@ class FeedSignal {
             'free-text search (FeedSignal.searchedQuery).',
       );
     }
-    return FeedSignal._(entityId: id, entity: entity, action: action);
+    final eventId = clientEventId?.trim();
+    return FeedSignal._(
+      entityId: id,
+      entity: entity,
+      action: action,
+      clientEventId: (eventId == null || eventId.isEmpty) ? null : eventId,
+      dwellMs: dwellMs == null || dwellMs < 0 ? null : dwellMs,
+    );
   }
 
   /// A free-text search the customer submitted, which has no id at all.
@@ -122,6 +133,15 @@ class FeedSignal {
   final FeedSignalEntity entity;
   final FeedSignalAction action;
 
+  /// The id of the same exposure in the engagement batch (AI features
+  /// contract v1.0 §2.1). The server stores events idempotently by it, so
+  /// this per-signal call and the batch event count once, not twice. Null
+  /// when the batch did not record it; older servers ignore it.
+  final String? clientEventId;
+
+  /// How long a reel was on screen, for a reel signal; null otherwise.
+  final int? dwellMs;
+
   /// Whether this is the query-shaped free-text search signal.
   bool get isQueryShaped => query != null;
 
@@ -130,6 +150,8 @@ class FeedSignal {
     'entityType': entity.wire,
     'action': action.wire,
     if (query != null) 'query': query,
+    if (clientEventId != null) 'clientEventId': clientEventId,
+    if (dwellMs != null) 'dwellMs': dwellMs,
   };
 }
 

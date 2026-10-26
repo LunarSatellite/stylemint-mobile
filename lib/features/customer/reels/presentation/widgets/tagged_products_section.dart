@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
@@ -30,10 +31,15 @@ class TaggedProductsSection extends ConsumerWidget {
   const TaggedProductsSection({
     required this.products,
     this.isActive = true,
+    this.reelId,
     super.key,
   });
 
   final List<TaggedProductEntity> products;
+
+  /// The reel these products are tagged on, so a tap and a cart add are
+  /// attributed to it (AI features contract v1.0 §2.1). Null where unknown.
+  final String? reelId;
 
   /// Whether this reel is the one on screen. Only the visible reel's tiles
   /// cycle their photos — the pager keeps neighbours alive, so without this
@@ -52,7 +58,11 @@ class TaggedProductsSection extends ConsumerWidget {
         itemCount: products.length,
         separatorBuilder: (_, _) => const SizedBox(width: DesignTokens.s12),
         itemBuilder: (_, index) =>
-            _ProductTile(product: products[index], isActive: isActive),
+            _ProductTile(
+              product: products[index],
+              isActive: isActive,
+              reelId: reelId,
+            ),
       ),
     );
   }
@@ -66,8 +76,9 @@ class TaggedProductsSection extends ConsumerWidget {
 Future<void> addTaggedProductToCart(
   BuildContext context,
   WidgetRef ref,
-  TaggedProductEntity product,
-) async {
+  TaggedProductEntity product, {
+  String? reelId,
+}) async {
   // A stay or trip needs dates and guests, a bank product an enquiry: both
   // are chosen on the item page, never added straight from the reel.
   if (product.isService) {
@@ -86,6 +97,11 @@ Future<void> addTaggedProductToCart(
             'reel-atc-${product.id}-${DateTime.now().millisecondsSinceEpoch}',
       );
   if (!context.mounted) return;
+  if (succeeded) {
+    ref
+        .read(engagementTrackerProvider)
+        .addedToCart(product.id, viaReelId: reelId);
+  }
   // A successful add shows on the rail's product tile (cart count badge)
   // instead of a pop-up; only failures are reported here.
   if (!succeeded) {
@@ -141,17 +157,32 @@ void changeCartItemQuantity(WidgetRef ref, CartItem item, int delta) {
 }
 
 class _ProductTile extends ConsumerWidget {
-  const _ProductTile({required this.product, required this.isActive});
+  const _ProductTile({
+    required this.product,
+    required this.isActive,
+    this.reelId,
+  });
+
+  final String? reelId;
 
   final TaggedProductEntity product;
   final bool isActive;
 
   Future<void> _addToCart(BuildContext context, WidgetRef ref) =>
-      addTaggedProductToCart(context, ref, product);
+      addTaggedProductToCart(context, ref, product, reelId: reelId);
 
-  void _openProduct(BuildContext context) => product.isService
-      ? openTaggedServiceItem(context, product)
-      : unawaited(context.push('/product/${product.id}'));
+  void _openProduct(BuildContext context, WidgetRef ref) {
+    if (reelId case final reel?) {
+      ref
+          .read(engagementTrackerProvider)
+          .tagTapped(reelId: reel, productId: product.id);
+    }
+    if (product.isService) {
+      openTaggedServiceItem(context, product);
+    } else {
+      unawaited(context.push('/product/${product.id}'));
+    }
+  }
 
   void _changeQuantity(WidgetRef ref, CartItem item, int delta) =>
       changeCartItemQuantity(ref, item, delta);
@@ -194,7 +225,7 @@ class _ProductTile extends ConsumerWidget {
                 children: [
                   // Tapping the image opens the product detail page.
                   GestureDetector(
-                    onTap: () => _openProduct(context),
+                    onTap: () => _openProduct(context, ref),
                     child: _ProductPhotos(
                       product: product,
                       isActive: isActive,
@@ -204,7 +235,7 @@ class _ProductTile extends ConsumerWidget {
                   // Tapping the name/price row also opens the product detail page.
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => _openProduct(context),
+                      onTap: () => _openProduct(context, ref),
                       behavior: HitTestBehavior.opaque,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -273,7 +304,7 @@ class _ProductTile extends ConsumerWidget {
                           DesignTokens.buttonRadius,
                         ),
                         onTap: product.isService
-                            ? () => _openProduct(context)
+                            ? () => _openProduct(context, ref)
                             : () => _addToCart(context, ref),
                         child: Container(
                           padding: const EdgeInsets.symmetric(

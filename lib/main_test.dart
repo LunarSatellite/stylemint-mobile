@@ -504,6 +504,7 @@ class _MockReelImportRepository implements ReelImportRepository {
   getSuggestedProducts({
     required SocialPlatform platform,
     required String externalId,
+    String? caption,
   }) async {
     return right(_allProducts);
   }

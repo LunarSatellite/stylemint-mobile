@@ -162,13 +162,26 @@ class CustomerSearchRemoteDataSource {
     }
   }
 
+  /// Whether this server answers the unified search with the hybrid fields
+  /// itself (AI features contract v1.0 §1: a top-level `aiApplied`). Learnt
+  /// from the first response that carries it; until then — and for good on
+  /// an older server — the separate AI endpoint is asked as before.
+  bool _unifiedIsHybrid = false;
+
   Future<CustomerSearchResults> search(String query, {int limit = 20}) async {
-    // Unified search remains the source of truth. AI contributes ordering and
-    // explanations, but is optional so local-model outages never break search.
+    // Unified search remains the source of truth. On an older server the AI
+    // endpoint contributes ordering and explanations, and is optional so
+    // local-model outages never break search. A hybrid server already fused
+    // keyword and meaning hits, so the extra round-trip is skipped.
     final unifiedFuture = _unifiedSearch(query, limit);
-    final aiFuture = apiClient
-        .authGet(aiSearchPath, queryParameters: {'q': query, 'limit': limit})
-        .catchError((_) => null);
+    final aiFuture = _unifiedIsHybrid
+        ? Future<dynamic>.value()
+        : apiClient
+              .authGet(
+                aiSearchPath,
+                queryParameters: {'q': query, 'limit': limit},
+              )
+              .catchError((_) => null);
 
     final response = await unifiedFuture;
     final aiResponse = await aiFuture;
@@ -177,12 +190,18 @@ class CustomerSearchRemoteDataSource {
     final data = response is Map<String, dynamic>
         ? response
         : const <String, dynamic>{};
-    final aiData = aiResponse is Map<String, dynamic> ? aiResponse : null;
+    final hybrid = data['aiApplied'] is bool;
+    if (hybrid) _unifiedIsHybrid = true;
+    final aiData = !hybrid && aiResponse is Map<String, dynamic>
+        ? aiResponse
+        : null;
     // Only an answer that says AI really contributed may reorder the hits or
     // explain them; a missing `aiApplied` (older server) counts as false, so
     // a plain keyword fallback never wears AI wording.
-    final aiApplied = aiData?['aiApplied'] == true;
-    final aiItems = !aiApplied
+    final aiApplied = hybrid
+        ? data['aiApplied'] == true
+        : aiData?['aiApplied'] == true;
+    final aiItems = hybrid || !aiApplied
         ? const <Map<String, dynamic>>[]
         : (aiData?['items'] as List<dynamic>? ?? const <dynamic>[])
               .whereType<Map<String, dynamic>>()
@@ -198,6 +217,12 @@ class CustomerSearchRemoteDataSource {
       if (reason != null) aiReasons[id] = reason;
     }
 
+    // On a hybrid server the reason travels on the tile itself, and only
+    // counts while AI shaped the response.
+    String? reasonFor(Map<String, dynamic> row, String? id) => hybrid
+        ? (aiApplied ? _nonBlank(row['matchReason']) : null)
+        : aiReasons[id];
+
     final products = (data['products'] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
         .map(
@@ -211,22 +236,29 @@ class CustomerSearchRemoteDataSource {
             isSponsored: p['isSponsored'] == true || p['isSponsored'] == 'true',
             sponsoredLabel: _nonBlank(p['sponsoredLabel']),
             organicPosition: _position(p['organicPosition']),
-            matchReason: aiReasons[p['productId']?.toString()],
+            matchReason: reasonFor(p, p['productId']?.toString()),
+            // A meaning label only counts when a hybrid server says meaning
+            // retrieval ran; an older server never promised one.
+            matchType: hybrid && aiApplied
+                ? SearchMatchType.parse(p['matchType'])
+                : SearchMatchType.unknown,
           ),
         )
         .toList();
-    final organicRank = <String, int>{
-      for (var index = 0; index < products.length; index++)
-        products[index].productId: index,
-    };
-    products.sort((a, b) {
-      final aiComparison = (aiRank[a.productId] ?? 1 << 30).compareTo(
-        aiRank[b.productId] ?? 1 << 30,
-      );
-      return aiComparison != 0
-          ? aiComparison
-          : organicRank[a.productId]!.compareTo(organicRank[b.productId]!);
-    });
+    if (!hybrid) {
+      final organicRank = <String, int>{
+        for (var index = 0; index < products.length; index++)
+          products[index].productId: index,
+      };
+      products.sort((a, b) {
+        final aiComparison = (aiRank[a.productId] ?? 1 << 30).compareTo(
+          aiRank[b.productId] ?? 1 << 30,
+        );
+        return aiComparison != 0
+            ? aiComparison
+            : organicRank[a.productId]!.compareTo(organicRank[b.productId]!);
+      });
+    }
 
     final brands = (data['brands'] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
@@ -254,6 +286,12 @@ class CustomerSearchRemoteDataSource {
             reelId: r['reelId'] as String? ?? '',
             thumbnailUrl: r['thumbnailUrl'] as String? ?? '',
             viewCount: (r['viewCount'] as num?)?.toInt() ?? 0,
+            matchType: hybrid && aiApplied
+                ? SearchMatchType.parse(r['matchType'])
+                : SearchMatchType.unknown,
+            matchReason: hybrid && aiApplied
+                ? _nonBlank(r['matchReason'])
+                : null,
           ),
         )
         .toList(growable: false);
@@ -278,15 +316,46 @@ class CustomerSearchRemoteDataSource {
       creators: creators,
       totalHits: (data['totalHits'] as num?)?.toInt() ?? 0,
       queryUnderstanding: aiApplied
-          ? _nonBlank(aiData?['queryUnderstanding'])
+          ? _nonBlank((hybrid ? data : aiData)?['queryUnderstanding'])
           : null,
       aiApplied: aiApplied,
       productTotal: switch (data['productTotal']) {
         final num total when total >= 0 => total.toInt(),
         _ => null,
       },
+      understanding: readSearchUnderstanding(data['understanding']),
     );
   }
+}
+
+/// `understanding` (AI features contract v1.0 §1), or null when absent or
+/// not an object. Chips of a kind this build does not know are kept as
+/// [SearchChipKind.unknown] and never drawn.
+SearchUnderstanding? readSearchUnderstanding(Object? raw) {
+  if (raw is! Map<String, dynamic>) return null;
+  int count(Object? value) =>
+      value is num && value > 0 ? value.toInt() : 0;
+  String text(Object? value) => value is String ? value : '';
+  final chips = [
+    for (final chip
+        in (raw['chips'] is List ? raw['chips'] as List : const <dynamic>[])
+            .whereType<Map<String, dynamic>>())
+      SearchUnderstandingChip(
+        kind: SearchChipKind.parse(chip['kind']),
+        attributeKey: text(chip['attributeKey']),
+        label: text(chip['label']),
+        statement: text(chip['statement']),
+        sourceText: text(chip['sourceText']),
+      ),
+  ];
+  return SearchUnderstanding(
+    searchedText: _nonBlank(raw['searchedText']),
+    retrievalMode: _nonBlank(raw['retrievalMode']),
+    chips: chips,
+    setAsideUnverifiable: count(raw['setAsideUnverifiable']),
+    setAsideConflicting: count(raw['setAsideConflicting']),
+    degradedReason: _nonBlank(raw['degradedReason']),
+  );
 }
 
 String? _nonBlank(Object? raw) =>

@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/domain/entities/engagement_event.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/presentation/engagement_tracker.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/journey/journey_providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_landing_notifier.dart';
@@ -40,7 +43,18 @@ class _ReelDetailScreenState extends ConsumerState<ReelDetailScreen> {
   /// Reels watched here count the same as reels watched in the feed. Read
   /// once and held: the last reel's dwell arrives during dispose, when a
   /// provider can no longer be looked up.
-  late final ReelViewRecorder _views = ref.read(reelViewRecorderProvider);
+  late final ReelViewRecorder _views;
+
+  /// Read up front for the same reason: the last dwell arrives on dispose.
+  late final EngagementTracker _engagement;
+
+  @override
+  void initState() {
+    super.initState();
+    // Resolved now, while providers can still be looked up.
+    _views = ref.read(reelViewRecorderProvider);
+    _engagement = ref.read(engagementTrackerProvider);
+  }
 
   @override
   void didUpdateWidget(ReelDetailScreen oldWidget) {
@@ -87,7 +101,14 @@ class _ReelDetailScreenState extends ConsumerState<ReelDetailScreen> {
       controller: _pager,
       reels: shown,
       onNearEnd: () => unawaited(ref.read(landing.notifier).fetchNextPage()),
-      onReelDwell: _views.recordDwell,
+      onReelDwell: (reel, dwell) {
+        _views.recordDwell(reel, dwell);
+        _engagement.reelLeft(
+          reel,
+          dwell,
+          surface: EngagementSurface.reelDetail,
+        );
+      },
     );
   }
 
