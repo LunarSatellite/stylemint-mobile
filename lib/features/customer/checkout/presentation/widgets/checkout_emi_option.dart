@@ -198,15 +198,6 @@ class CheckoutEmiOption extends ConsumerWidget {
   /// Place Order (and, where the seller allows it, in cash on delivery).
   static const Key payHereKey = Key('checkout-emi-pay-here');
   static const Key cashNoteKey = Key('checkout-emi-cash-note');
-  static const Key cashPendingKey = Key('checkout-emi-cash-pending');
-
-  /// Ordered on an approved plan, the down payment to be paid online.
-  static const Key orderedKey = Key('checkout-emi-ordered');
-  static const Key orderedPayKey = Key('checkout-emi-ordered-pay');
-  static const Key viewPlanKey = Key('checkout-emi-view-plan');
-
-  /// Shown under an earlier EMI order for the same item: EMI is offered again.
-  static const Key againKey = Key('checkout-emi-again');
   static const Key declinedKey = Key('checkout-emi-declined');
 
   /// Whether a plan-options failure just means "no plan on this item"
@@ -574,23 +565,6 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     ];
   }
 
-  /// The latest order already placed on a plan for this item and not yet
-  /// started (down payment still due online, or in cash on delivery). It is
-  /// shown as a note on the card — it does not stop the buyer from asking
-  /// for EMI on the same item again: an approval buys one order, and a
-  /// second order is a second application for the seller to decide.
-  CreditAgreement? _earlierOrder() {
-    final ordered = [
-      for (final a in _mine())
-        if (_isOrdered(a)) a,
-    ]..sort(
-        (x, y) => (y.appliedAt ?? DateTime(0)).compareTo(
-          x.appliedAt ?? DateTime(0),
-        ),
-      );
-    return ordered.firstOrNull;
-  }
-
   /// The buyer's latest application for this item, while it is still the
   /// purchase in progress: waiting on the seller, approved and not yet used
   /// for an order, or just declined. Once an approval is used for an order
@@ -628,8 +602,8 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
 
   bool _isLive(CreditAgreement a) => switch (a.status) {
     AgreementStatus.pendingApproval => true,
-    // Ordered on this approval: spent. That order shows as a note (see
-    // [_earlierOrder]); the card offers EMI afresh.
+    // Ordered on this approval: spent. That order lives under Payment plans;
+    // the card offers EMI afresh for the next one.
     AgreementStatus.approved when _isOrdered(a) => false,
     // An approval only counts when the seller decided it from documents the
     // buyer sent with that application. One approved before documents were
@@ -779,21 +753,6 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     _error = null;
   });
 
-  /// An order already placed on the plan: its down payment (online) or its
-  /// standing (cash on delivery) lives on the plan's own page.
-  void _openPlan(CreditAgreement agreement) {
-    final args = PlanDetailArgs(
-      productName: widget.item.productName,
-      justApplied: true,
-    );
-    unawaited(
-      context.push(
-        RouteNames.paymentPlanDetailPath(agreement.id),
-        extra: args,
-      ),
-    );
-  }
-
   Widget _documentsSection(Money down, {String? resumeAgreementId}) {
     if (!ref.watch(emiSignedInProvider)) {
       return _Button(label: 'Sign in to apply for EMI', onPressed: _signIn);
@@ -874,56 +833,6 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
           ),
         ],
       ),
-      // Ordered with the down payment in cash: nothing to apply for or pay
-      // here — the rider collects the down payment, and the plan starts then.
-      AgreementStatus.approved when _isOrdered(a) && a.downPaymentOnDelivery =>
-        Column(
-          key: CheckoutEmiOption.cashPendingKey,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Label(
-              'Ordered — pay ${_money(a.downPayment)} down payment in cash '
-              'on delivery',
-            ),
-            Text(plan, style: muted()),
-            const SizedBox(height: DesignTokens.s4),
-            Text(
-              'Pay the rider ${_money(a.downPayment)} in cash when the item '
-              'arrives — only the down payment, not the full price. Your plan '
-              'starts that day.',
-              style: muted(),
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            _Button(
-              key: CheckoutEmiOption.viewPlanKey,
-              label: 'View plan',
-              outlined: true,
-              onPressed: () => _openPlan(a),
-            ),
-          ],
-        ),
-      // Ordered, the down payment to be paid online: finish that payment from
-      // the plan — never a new application.
-      AgreementStatus.approved when _isOrdered(a) => Column(
-        key: CheckoutEmiOption.orderedKey,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _Label('Ordered — down payment due'),
-          Text(plan, style: muted()),
-          const SizedBox(height: DesignTokens.s4),
-          Text(
-            'Your order is placed. Pay the down payment of '
-            '${_money(a.downPayment)} to start the plan.',
-            style: muted(),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          _Button(
-            key: CheckoutEmiOption.orderedPayKey,
-            label: 'Pay down payment ${_money(a.downPayment)}',
-            onPressed: () => _openPlan(a),
-          ),
-        ],
-      ),
       AgreementStatus.approved => Column(
         key: CheckoutEmiOption.approvedKey,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -994,7 +903,6 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     final total = confirmed ? quote.totalPayable : local.totalPayable;
 
     final live = _liveAgreement();
-    final earlier = _earlierOrder();
     const base = 'Pay with EMI';
     final title = widget.named ? '$base · ${widget.item.productName}' : base;
 
@@ -1032,24 +940,6 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
                 ),
               ],
             ),
-            // An earlier EMI order for this item, still to start: shown, with
-            // its plan a tap away — and EMI is offered again below it.
-            if (earlier != null) ...[
-              const SizedBox(height: DesignTokens.s12),
-              _status(earlier),
-              const SizedBox(height: DesignTokens.s12),
-              const Divider(color: DesignTokens.borderDefault, height: 1),
-              const SizedBox(height: DesignTokens.s12),
-              const Text(
-                'Buying another? Ask for EMI on this one too:',
-                key: CheckoutEmiOption.againKey,
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 13,
-                  color: DesignTokens.textWhite,
-                ),
-              ),
-            ],
             if (live != null) ...[
               const SizedBox(height: DesignTokens.s12),
               _status(live),

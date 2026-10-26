@@ -733,76 +733,30 @@ void main() {
       expect(find.byKey(CheckoutEmiOption.cashNoteKey), findsNothing);
     });
 
-    testWidgets('ordered with the down payment in cash: shows the order and '
-        'the cash to pay on delivery, and offers EMI again for another', (tester) async {
-      await _pump(
-        tester,
-        [_item(variantId: variant)],
-        credit: repoWith({
-          ...agreementWire(),
-          'cashOnDeliveryDownPaymentAllowed': true,
-          'downPaymentOnDelivery': true,
-          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
-        }),
-        options: sellerOptions,
-      );
-      expect(find.byKey(CheckoutEmiOption.cashPendingKey), findsOneWidget);
-      expect(
-        find.textContaining('Ordered — pay Rs 12,000 down payment in cash'),
-        findsOneWidget,
-        reason: 'the down payment, in cash on delivery',
-      );
-      expect(find.textContaining('12,000'), findsWidgets);
-      expect(find.textContaining('in cash on delivery'), findsWidgets);
-      expect(find.byKey(CheckoutEmiOption.payKey), findsNothing);
-      expect(find.byKey(CheckoutEmiOption.cashNoteKey), findsNothing);
-      // Ordering it again before delivery is a new request for the seller.
-      expect(find.byKey(CheckoutEmiOption.againKey), findsOneWidget);
-      expect(find.byKey(CheckoutEmiOption.addDocumentsKey), findsOneWidget);
-      await tester.tap(find.byKey(CheckoutEmiOption.viewPlanKey));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Plan detail'), findsOneWidget);
-    });
-
-    testWidgets('the card offers EMI, with the earlier EMI order noted', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        [_item(variantId: variant)],
-        credit: repoWith({
-          ...agreementWire(),
-          'downPaymentOnDelivery': true,
-          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
-        }),
-        options: sellerOptions,
-      );
-      expect(find.text('EMI ordered'), findsNothing);
-      expect(find.text('Pay with EMI'), findsOneWidget);
-      expect(
-        find.textContaining('down payment in cash on delivery'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('ordered, down payment online still due: finish paying it '
-        'from the plan, and a new application is offered too', (tester) async {
-      await _pump(
-        tester,
-        [_item(variantId: variant)],
-        credit: repoWith({
-          ...agreementWire(),
-          'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
-        }),
-        options: sellerOptions,
-      );
-      expect(find.byKey(CheckoutEmiOption.orderedKey), findsOneWidget);
-      expect(find.byKey(CheckoutEmiOption.againKey), findsOneWidget);
-      expect(find.byKey(CheckoutEmiOption.addDocumentsKey), findsOneWidget);
-      await tester.tap(find.byKey(CheckoutEmiOption.orderedPayKey));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Plan detail'), findsOneWidget);
-    });
+    for (final cash in [true, false]) {
+      testWidgets('an earlier EMI order for this item (down payment '
+          '${cash ? 'in cash' : 'online'}) is not shown: the card is a fresh '
+          'EMI request', (tester) async {
+        await _pump(
+          tester,
+          [_item(variantId: variant)],
+          credit: repoWith({
+            ...agreementWire(),
+            'cashOnDeliveryDownPaymentAllowed': cash,
+            'downPaymentOnDelivery': cash,
+            'documentsSubmittedUtc': '2026-03-02T06:20:00+00:00',
+          }),
+          options: sellerOptions,
+        );
+        expect(find.text('Pay with EMI'), findsOneWidget);
+        expect(find.textContaining('Ordered'), findsNothing);
+        expect(find.text('View plan'), findsNothing);
+        expect(find.byKey(CheckoutEmiOption.approvedKey), findsNothing);
+        expect(find.byKey(CheckoutEmiOption.payKey), findsNothing);
+        // A new request for the seller, with documents, as for a first one.
+        expect(find.byKey(CheckoutEmiOption.addDocumentsKey), findsOneWidget);
+      });
+    }
 
     testWidgets('a plan that started or closed is not reused: the next '
         'purchase is a new application for the seller', (tester) async {
