@@ -17,6 +17,7 @@ import 'package:stylemint_mobile_frontend/features/customer/kyc/shared/providers
 import 'package:stylemint_mobile_frontend/core/device/notification_route.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_fullscreen.dart';
 import 'package:stylemint_mobile_frontend/theme/font_licenses.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart' show closeInAppWebView;
 import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
@@ -424,6 +425,9 @@ final _previewRouter = GoRouter(
   ],
 );
 // ────────────────────────────────────────────────────────────────────────────
+
+/// The in-app banner for a push that arrives while the app is open.
+const pushBannerKey = Key('push-banner');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -888,9 +892,32 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
+          key: pushBannerKey,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 6),
-          content: Text(text),
+          // Styled by the app theme's snackBarTheme (the StyleMint card); the
+          // bell marks it as a notification rather than a confirmation.
+          content: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.notifications_active_rounded,
+                  size: 18,
+                  color: DesignTokens.primaryGreen,
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Text(text, maxLines: 3, overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
           action: SnackBarAction(
             label: 'View',
             onPressed: () =>

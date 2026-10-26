@@ -145,6 +145,40 @@ abstract class AppTheme {
         color: scheme.primary,
       ),
       iconTheme: IconThemeData(color: scheme.onSurface),
+      // In-app banners and confirmations. Material's default paints them in
+      // the scheme's inverse surface — white in the dark theme — so a rider's
+      // "new delivery request" and every other notice arrived as a plain
+      // white strip. A raised StyleMint card instead: near-black, white
+      // Poppins, a green action and a faint green edge. Snack bars that pick
+      // their own colour (green success, red error) keep it.
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: isLight
+            ? DesignTokens.bgAppBody
+            : DesignTokens.surfaceRaised,
+        elevation: 6,
+        insetPadding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          0,
+          DesignTokens.s16,
+          DesignTokens.s16,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: DesignTokens.primaryGreen.withValues(alpha: 0.35),
+          ),
+        ),
+        contentTextStyle: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: DesignTokens.textWhite,
+          height: 1.35,
+        ),
+        actionTextColor: DesignTokens.primaryGreen,
+        closeIconColor: DesignTokens.textMuted,
+      ),
     );
   }
 
