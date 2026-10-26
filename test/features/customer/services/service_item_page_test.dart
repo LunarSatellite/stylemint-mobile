@@ -309,6 +309,11 @@ void main() {
       container
           .read(cartNotifierProvider.notifier)
           .showCart(serviceCart(items: [_lineFor(options)]));
+      // The first add's "Added to cart" bar sits over Buy now; a buyer waits
+      // it out, the test dismisses it so the tap lands on the button.
+      ScaffoldMessenger.of(
+        tester.element(find.byType(ProductDetailScreen)),
+      ).removeCurrentSnackBar();
       await _frames(tester);
 
       await _tap(tester, find.byKey(ServiceItemBar.buyKey));
