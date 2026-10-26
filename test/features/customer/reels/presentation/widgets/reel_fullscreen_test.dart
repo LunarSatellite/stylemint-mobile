@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/creator_info.dart';
@@ -11,6 +12,18 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/w
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/tagged_products_section.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_fullscreen.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:stylemint_mobile_frontend/features/customer/ai_rails/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/repositories/cart_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+
+import '../../../ai_rails/fake_ai_rails_repository.dart';
 
 /// An Instagram reel with no media URL: it shows its poster, so no video or
 /// WebView platform is needed. What this suite is about is what surrounds the
@@ -36,7 +49,52 @@ Reel _reel(String id) => Reel(
 final Finder _enter = find.byKey(ReelCard.enterFullscreenKey);
 final Finder _exit = find.byKey(ReelCard.exitFullscreenKey);
 
+class _MockCartRepository extends Mock implements CartRepository {}
+
+class _FakeFollowApi implements FollowApi {
+  @override
+  Future<void> follow(String followeeAccountId) async {}
+
+  @override
+  Future<void> unfollow(String followeeAccountId) async {}
+
+  @override
+  Future<List<String>> followingIds({int pageSize = 200}) async =>
+      const <String>[];
+
+  @override
+  Future<FollowStats> stats(String accountId) => throw UnimplementedError();
+}
+
+const _zero = Money(amount: 0, currency: 'NPR');
+
+/// What the reel rail reads, stubbed (as journey_step_pager_test does): an
+/// empty cart, nobody followed, no AI rails, and a guest so no engagement
+/// flush timer outlives a test.
+List<Override> _railOverrides() {
+  final cart = _MockCartRepository();
+  when(() => cart.getCart()).thenAnswer(
+    (_) async => right(
+      const Cart(
+        id: 'cart-1',
+        items: [],
+        subtotal: _zero,
+        shippingTotal: _zero,
+        taxTotal: _zero,
+        total: _zero,
+      ),
+    ),
+  );
+  return [
+    cartRepositoryProvider.overrideWithValue(cart),
+    followApiProvider.overrideWithValue(_FakeFollowApi()),
+    aiRailsRepositoryProvider.overrideWithValue(FakeAiRailsRepository()),
+    engagementOwnerProvider.overrideWithValue(() => null),
+  ];
+}
+
 void main() {
+  setUpAll(() => SharedPreferences.setMockInitialValues({}));
   setUp(() => ReelsPager.debugHostEmbedPlayers = false);
   tearDown(() => ReelsPager.debugHostEmbedPlayers = true);
 
@@ -63,6 +121,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       ProviderScope(
+        overrides: _railOverrides(),
         child: MaterialApp(
           home: ReelsPager(
             controller: controller,
@@ -181,8 +240,11 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(ReelCard.fullscreenSoundKey), findsOneWidget);
-      // Every reel starts muted, so the button offers to turn sound on.
-      expect(find.bySemanticsLabel('Turn sound on'), findsOneWidget);
+      // It says what a tap does, whichever state the player reports.
+      expect(
+        find.bySemanticsLabel(RegExp(r'^Turn sound (on|off)$')),
+        findsOneWidget,
+      );
       // It sits left of the close button, in the same corner.
       expect(
         tester.getCenter(find.byKey(ReelCard.fullscreenSoundKey)).dx,

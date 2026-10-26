@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 
 /// Recognises a two-finger pinch on a reel, and nothing else.
