@@ -191,7 +191,12 @@ void main() {
         const ProductMatchedReelsRail(productId: 'p-1'),
       );
 
-      expect(find.byType(ProductReelsRail), findsOneWidget);
+      // It draws nothing itself here (its own reads 404 too), so it is a
+      // zero-height child the default finder treats as offstage.
+      expect(
+        find.byType(ProductReelsRail, skipOffstage: false),
+        findsOneWidget,
+      );
       expect(find.text(ProductMatchedReelsRail.featuredTitle), findsNothing);
     });
 
@@ -204,7 +209,10 @@ void main() {
         const ProductMatchedReelsRail(productId: 'p-1'),
       );
 
-      expect(find.byType(ProductReelsRail), findsNothing);
+      expect(
+        find.byType(ProductReelsRail, skipOffstage: false),
+        findsNothing,
+      );
     });
   });
 }

@@ -111,7 +111,8 @@ Future<_Repo> _pumpScreen(
   List<Map<String, dynamic>> rows,
 ) async {
   tester.view
-    ..physicalSize = const Size(390, 1400)
+    // Wide enough for the test font in the screen's own Continue button.
+    ..physicalSize = const Size(800, 1400)
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final repo = _Repo([
