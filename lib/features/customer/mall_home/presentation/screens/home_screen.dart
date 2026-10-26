@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/home_mode_switch.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reels_feed_screen.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/reel_fullscreen.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -32,6 +33,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final mode = ref.watch(homeModeProvider);
     final showReels = mode == HomeMode.reels;
     if (showReels) _reelsBuilt = true;
+    // A reel watched full screen is the video alone: no Mall | Reels switch.
+    final reelFullscreen = ref.watch(reelFullscreenProvider);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -51,16 +54,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _HomeTopBar(
-              mode: mode,
-              onChanged: (value) =>
-                  ref.read(homeModeProvider.notifier).state = value,
+          if (!(showReels && reelFullscreen))
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _HomeTopBar(
+                mode: mode,
+                onChanged: (value) =>
+                    ref.read(homeModeProvider.notifier).state = value,
+              ),
             ),
-          ),
           // A payment-plan instalment due within three days, or overdue —
           // over the Mall only, never over a playing reel.
           if (!showReels && ref.watch(mallViewerSignedInProvider))

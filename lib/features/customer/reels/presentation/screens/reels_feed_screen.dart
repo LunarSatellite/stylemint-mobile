@@ -20,6 +20,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/shared/provide
 import 'package:stylemint_mobile_frontend/features/social/stories/presentation/notifiers/stories_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/stories/presentation/widgets/stories_tray.dart';
 import 'package:stylemint_mobile_frontend/features/social/stories/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/reel_fullscreen.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -135,6 +136,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
     // Reels and creators the viewer marked "Not interested" leave the feed
     // at once; the server stops serving them too.
     final hidden = ref.watch(notInterestedNotifierProvider);
+    final fullscreen = ref.watch(reelFullscreenProvider);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -189,6 +191,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
               },
             ),
             settledPage: _pager.settledPage,
+            fullscreen: fullscreen,
           );
         },
         loadFailure: (failure) {
@@ -228,6 +231,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
   Widget _withStoriesStrip(
     Widget content, {
     ValueListenable<int>? settledPage,
+    bool fullscreen = false,
   }) {
     final hasStories = _hasStories;
     if (settledPage == null) {
@@ -242,7 +246,10 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
       child: content,
       builder: (context, page, child) => _ReelsStoriesStrip(
         hasStories: hasStories,
-        open: hasStories && page == 0,
+        // A reel watched full screen has the whole screen: the strip closes
+        // while it lasts and opens again after, if this is still the first
+        // reel.
+        open: hasStories && page == 0 && !fullscreen,
         content: child!,
       ),
     );

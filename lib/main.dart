@@ -15,6 +15,7 @@ import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers
 import 'package:stylemint_mobile_frontend/features/customer/kyc/domain/kyc_push.dart';
 import 'package:stylemint_mobile_frontend/features/customer/kyc/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/device/notification_route.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/reel_fullscreen.dart';
 import 'package:stylemint_mobile_frontend/theme/font_licenses.dart';
 import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
@@ -429,8 +430,11 @@ void main() async {
   registerFontLicenses();
   // Portrait only: the reel feed, its right-hand rail and the bottom bar are
   // laid out for a tall screen (owner decision, 2026-09-15). The Android
-  // manifest and iOS Info.plist lock it before Flutter starts too.
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // manifest locks it before Flutter starts too. A reel watched full screen
+  // may turn sideways for a landscape video and puts these back on its way
+  // out (see ReelFullscreenNotifier) — which is why iOS's Info.plist lists
+  // the landscape orientations: iOS refuses any the plist does not.
+  await SystemChrome.setPreferredOrientations(appOrientations);
   initTimezone();
   await PushNotificationService.initialise();
 

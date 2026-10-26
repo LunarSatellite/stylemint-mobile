@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entitie
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/journey/journey_indicator.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/journey/journey_providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_card.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/reel_fullscreen.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// One feed page that is a journey: the businesses' reels side by side.
@@ -157,6 +158,9 @@ class _JourneyStepPagerState extends ConsumerState<JourneyStepPager> {
     _maybeReportSettled(_reelAt(_settled));
     final showHint = (_hint ?? false) && !hint.dismissed;
     final topInset = MediaQuery.paddingOf(context).top;
+    // Full screen is the video alone: no indicator, and no swiping off to
+    // another step until the viewer leaves it.
+    final fullscreen = ref.watch(reelFullscreenProvider);
 
     return NotificationListener<ScrollEndNotification>(
       onNotification: _onScrollEnd,
@@ -170,6 +174,7 @@ class _JourneyStepPagerState extends ConsumerState<JourneyStepPager> {
             // pager sits inside a vertical one (and, on Home, the tab pager),
             // so it tracks the drag from touch-down.
             dragStartBehavior: DragStartBehavior.down,
+            physics: fullscreen ? const NeverScrollableScrollPhysics() : null,
             allowImplicitScrolling: true,
             itemCount: _journey.steps.length,
             onPageChanged: (step) => setState(() => _current = step),
@@ -179,20 +184,21 @@ class _JourneyStepPagerState extends ConsumerState<JourneyStepPager> {
               isActive: widget.isActive && step == _current,
             ),
           ),
-          Positioned(
-            top: topInset + 68,
-            left: DesignTokens.s16,
-            right: DesignTokens.s16,
-            child: Center(
-              child: JourneyIndicator(
-                journey: _journey.atStep(_current),
-                showHint: showHint,
-                onNext: _goNext,
-                onDismissHint: () =>
-                    ref.read(journeyHintProvider.notifier).dismiss(),
+          if (!fullscreen)
+            Positioned(
+              top: topInset + 68,
+              left: DesignTokens.s16,
+              right: DesignTokens.s16,
+              child: Center(
+                child: JourneyIndicator(
+                  journey: _journey.atStep(_current),
+                  showHint: showHint,
+                  onNext: _goNext,
+                  onDismissHint: () =>
+                      ref.read(journeyHintProvider.notifier).dismiss(),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

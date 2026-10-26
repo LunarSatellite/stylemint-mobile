@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/reel_fullscreen.dart';
 
 /// Lays the shell's branch navigators in a horizontal [PageView] so the user
 /// can swipe left/right between the bottom-bar tabs, in addition to tapping.
@@ -11,7 +13,7 @@ import 'package:go_router/go_router.dart';
 /// kept alive (preserving its navigation stack + scroll position) and stays in
 /// sync with [StatefulNavigationShell.currentIndex] — bottom-bar taps and deep
 /// links animate the page, and swipes drive `goBranch`.
-class SwipeableBranchView extends StatefulWidget {
+class SwipeableBranchView extends ConsumerStatefulWidget {
   const SwipeableBranchView({
     required this.navigationShell,
     required this.branches,
@@ -24,10 +26,11 @@ class SwipeableBranchView extends StatefulWidget {
   final List<Widget> branches;
 
   @override
-  State<SwipeableBranchView> createState() => _SwipeableBranchViewState();
+  ConsumerState<SwipeableBranchView> createState() =>
+      _SwipeableBranchViewState();
 }
 
-class _SwipeableBranchViewState extends State<SwipeableBranchView> {
+class _SwipeableBranchViewState extends ConsumerState<SwipeableBranchView> {
   late final PageController _controller = PageController(
     initialPage: widget.navigationShell.currentIndex,
   );
@@ -63,6 +66,10 @@ class _SwipeableBranchViewState extends State<SwipeableBranchView> {
       // this horizontal one is the outer half of the same nested-PageView
       // pair, so it gets the same fix for the same reason.
       dragStartBehavior: DragStartBehavior.down,
+      // No swiping off to another tab from a reel watched full screen.
+      physics: ref.watch(reelFullscreenProvider)
+          ? const NeverScrollableScrollPhysics()
+          : null,
       itemCount: widget.branches.length,
       onPageChanged: (index) {
         if (index != widget.navigationShell.currentIndex) {

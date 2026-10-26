@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/n
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/reel_view_recorder.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reels_pager.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/reel_fullscreen.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -87,7 +88,9 @@ class _ReelDetailScreenState extends ConsumerState<ReelDetailScreen> {
             ),
             ReelLandingReady(:final reels) => _ready(reels),
           },
-          const _BackButton(),
+          // Full screen is the video alone; the reel's own close button is
+          // the way back from there.
+          if (!ref.watch(reelFullscreenProvider)) const _BackButton(),
         ],
       ),
     );

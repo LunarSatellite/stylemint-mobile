@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/pro
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/providers/current_user_avatar_provider.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/reel_fullscreen.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/customer_bottom_nav_bar.dart';
 
 /// Persistent shell for the customer tabs. Uses [StatefulNavigationShell] so
@@ -46,6 +47,11 @@ class CustomerShellScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // A reel watched full screen is the video alone: the bar steps aside and
+    // comes back, unchanged, when the viewer leaves full screen.
+    if (ref.watch(reelFullscreenProvider)) {
+      return Scaffold(body: navigationShell);
+    }
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: CustomerBottomNavBar(

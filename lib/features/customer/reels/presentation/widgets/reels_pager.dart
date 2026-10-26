@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/journey/journey_step_pager.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_card.dart';
@@ -13,6 +14,7 @@ import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_poo
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_scope.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_slot.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/reel_shapes.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/reel_fullscreen.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_poster.dart';
@@ -117,7 +119,7 @@ class ReelsPagerController with WidgetsBindingObserver {
 /// and the next one is loaded (and pre-rolled) the moment the pager settles,
 /// so a swipe only tells an already-loaded player to play. A TikTok reel up to
 /// two pages ahead also warms TikTok's connections.
-class ReelsPager extends StatefulWidget {
+class ReelsPager extends ConsumerStatefulWidget {
   const ReelsPager({
     required this.controller,
     required this.reels,
@@ -166,10 +168,10 @@ class ReelsPager extends StatefulWidget {
   final DateTime Function() clock;
 
   @override
-  State<ReelsPager> createState() => _ReelsPagerState();
+  ConsumerState<ReelsPager> createState() => _ReelsPagerState();
 }
 
-class _ReelsPagerState extends State<ReelsPager> {
+class _ReelsPagerState extends ConsumerState<ReelsPager> {
   List<Reel> _reels = const [];
   Map<String, int> _embedIndex = const {};
 
@@ -446,6 +448,9 @@ class _ReelsPagerState extends State<ReelsPager> {
   Widget build(BuildContext context) {
     final reels = _reels;
     final topInset = MediaQuery.paddingOf(context).top;
+    // A reel watched full screen stays on its page: no paging away from it
+    // (and no pull to refresh) until the viewer leaves full screen.
+    final fullscreen = ref.watch(reelFullscreenProvider);
     return EmbedPlayerScope(
       pool: _embedPool,
       child: NotificationListener<ScrollEndNotification>(
@@ -459,8 +464,12 @@ class _ReelsPagerState extends State<ReelsPager> {
                   controller: _controller.pageController,
                   settledIndex: _controller._settledIndex,
                   indexOfKey: (key) => _embedIndex[key],
-                  playerRectAt: (index, page) =>
-                      reelPlayerRect(_shownAt(index), page, topInset: topInset),
+                  playerRectAt: (index, page) => reelPlayerRect(
+                    _shownAt(index),
+                    page,
+                    topInset: topInset,
+                    fitWhole: fullscreen,
+                  ),
                   layoutChanges: ReelShapes.instance,
                   horizontalShift: _journeyShift,
                 ),
@@ -478,6 +487,9 @@ class _ReelsPagerState extends State<ReelsPager> {
               // only what's left after the two axes finish resolving which one
               // owns the pointer.
               dragStartBehavior: DragStartBehavior.down,
+              physics: fullscreen
+                  ? const NeverScrollableScrollPhysics()
+                  : null,
               itemCount: reels.length,
               // Build the adjacent reels offscreen so a native reel's next
               // video has already initialised by the time it's swiped into

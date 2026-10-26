@@ -25,6 +25,7 @@ class ReelPlaybackController {
   VoidCallback? _onToggle;
   VoidCallback? _onToggleMuted;
   final ValueNotifier<bool> _muted = ValueNotifier<bool>(true);
+  double? _videoAspectRatio;
 
   /// Toggle play/pause on the attached [ReelPlayer]; no-op if none attached.
   void toggle() => _onToggle?.call();
@@ -45,6 +46,11 @@ class ReelPlaybackController {
   /// Starts true because every reel starts muted — the platforms refuse to
   /// autoplay with sound.
   ValueListenable<bool> get muted => _muted;
+
+  /// The attached native video's shape (width / height) once it has loaded;
+  /// null for an embedded reel, or before the video is ready. A full-screen
+  /// reel reads it to decide whether the phone may turn sideways.
+  double? get videoAspectRatio => _videoAspectRatio;
 }
 
 /// Inline player for a reel, shared by the customer feed, the creator's reel
@@ -71,6 +77,7 @@ class ReelPlayer extends StatefulWidget {
     required this.isActive,
     this.playbackController,
     this.showSoundControl = true,
+    this.fitWhole = false,
     super.key,
   });
 
@@ -93,6 +100,11 @@ class ReelPlayer extends StatefulWidget {
   /// player — the customer feed does, and a control drawn here would sit
   /// underneath it and never receive a tap. That surface draws its own.
   final bool showSoundControl;
+
+  /// Shows the whole video, letterboxed, instead of letting a vertical reel
+  /// fill the page: a reel watched full screen shows the picture exactly as
+  /// it was made. A square or landscape video always shows whole.
+  final bool fitWhole;
 
   @override
   State<ReelPlayer> createState() => _ReelPlayerState();
@@ -475,6 +487,8 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     _ownPool?.setHostActive(_shouldPlay);
     final controller = _controller;
     if (controller == null || !_initialized) return;
+    widget.playbackController?._videoAspectRatio =
+        controller.value.aspectRatio;
     if (_shouldPlay && !controller.value.isPlaying) {
       unawaited(controller.play());
     } else if (!_shouldPlay && controller.value.isPlaying) {
@@ -488,6 +502,7 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     _initialized = false;
     _playingFromCache = false;
     _hasError = false;
+    widget.playbackController?._videoAspectRatio = null;
     unawaited(controller?.dispose() ?? Future<void>.value());
 
     final preload = _preloadController;
@@ -626,9 +641,10 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
             // A vertical reel (up to 3:4) fills the whole page with no bars;
             // a square or landscape video shows whole, the way it was made
             // (owner decision, 2026-09-13; same rule as
-            // EmbedLayoutPolicy.fillsScreen).
+            // EmbedLayoutPolicy.fillsScreen). Full screen always shows it
+            // whole.
             FittedBox(
-              fit: controller.value.aspectRatio <= 3 / 4
+              fit: !widget.fitWhole && controller.value.aspectRatio <= 3 / 4
                   ? BoxFit.cover
                   : BoxFit.contain,
               clipBehavior: Clip.hardEdge,
