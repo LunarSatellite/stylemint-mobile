@@ -204,6 +204,9 @@ class CheckoutEmiOption extends ConsumerWidget {
   static const Key orderedKey = Key('checkout-emi-ordered');
   static const Key orderedPayKey = Key('checkout-emi-ordered-pay');
   static const Key viewPlanKey = Key('checkout-emi-view-plan');
+
+  /// Shown under an earlier EMI order for the same item: EMI is offered again.
+  static const Key againKey = Key('checkout-emi-again');
   static const Key declinedKey = Key('checkout-emi-declined');
 
   /// Whether a plan-options failure just means "no plan on this item"
@@ -561,36 +564,41 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     );
   }
 
-  /// The buyer's latest application for this item, while it is still the
-  /// purchase in progress: waiting on the seller, approved and not yet used
-  /// for an order, approved and ordered but not yet started (its down payment
-  /// still to be paid online, or collected in cash on delivery), or just
-  /// declined. An approval buys exactly one order: once the plan starts (or
-  /// it is cancelled or lapses) the next attempt is a new application the
-  /// seller must approve again.
-  CreditAgreement? _liveAgreement() {
-    if (!ref.watch(emiSignedInProvider)) return null;
+  /// The buyer's vendor-funded plans for this item.
+  List<CreditAgreement> _mine() {
+    if (!ref.watch(emiSignedInProvider)) return const [];
     final plans = ref.watch(myPaymentPlansProvider).asData?.value ?? const [];
-    final mine = [
+    return [
       for (final a in plans)
         if (a.variantId == _variantId && a.guarantor == PlanGuarantor.vendor) a,
     ];
+  }
 
-    // An order already placed on a plan for this item is the purchase in
-    // progress, whatever else was applied for since: the buyer is shown that
-    // order, never offered the plan again.
+  /// The latest order already placed on a plan for this item and not yet
+  /// started (down payment still due online, or in cash on delivery). It is
+  /// shown as a note on the card — it does not stop the buyer from asking
+  /// for EMI on the same item again: an approval buys one order, and a
+  /// second order is a second application for the seller to decide.
+  CreditAgreement? _earlierOrder() {
     final ordered = [
-      for (final a in mine)
+      for (final a in _mine())
         if (_isOrdered(a)) a,
-    ];
-    if (ordered.isNotEmpty) {
-      ordered.sort(
+    ]..sort(
         (x, y) => (y.appliedAt ?? DateTime(0)).compareTo(
           x.appliedAt ?? DateTime(0),
         ),
       );
-      return ordered.first;
-    }
+    return ordered.firstOrNull;
+  }
+
+  /// The buyer's latest application for this item, while it is still the
+  /// purchase in progress: waiting on the seller, approved and not yet used
+  /// for an order, or just declined. Once an approval is used for an order
+  /// (or the plan starts, is cancelled or lapses) the next attempt is a new
+  /// application the seller must approve again.
+  CreditAgreement? _liveAgreement() {
+    if (!ref.watch(emiSignedInProvider)) return null;
+    final mine = _mine();
 
     // What the server says about an application this card started wins over
     // the copy the card kept: it may have been used for an order since.
@@ -620,9 +628,9 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
 
   bool _isLive(CreditAgreement a) => switch (a.status) {
     AgreementStatus.pendingApproval => true,
-    // Ordered on this approval: the order is what the buyer sees until the
-    // plan starts.
-    AgreementStatus.approved when _isOrdered(a) => true,
+    // Ordered on this approval: spent. That order shows as a note (see
+    // [_earlierOrder]); the card offers EMI afresh.
+    AgreementStatus.approved when _isOrdered(a) => false,
     // An approval only counts when the seller decided it from documents the
     // buyer sent with that application. One approved before documents were
     // required (no documentsSubmittedAt) is not carried over: the buyer
@@ -986,10 +994,8 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
     final total = confirmed ? quote.totalPayable : local.totalPayable;
 
     final live = _liveAgreement();
-    // Already ordered on a plan: the card names the order, not the offer.
-    final base = live != null && _isOrdered(live)
-        ? 'EMI ordered'
-        : 'Pay with EMI';
+    final earlier = _earlierOrder();
+    const base = 'Pay with EMI';
     final title = widget.named ? '$base · ${widget.item.productName}' : base;
 
     return Padding(
@@ -1026,6 +1032,24 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
                 ),
               ],
             ),
+            // An earlier EMI order for this item, still to start: shown, with
+            // its plan a tap away — and EMI is offered again below it.
+            if (earlier != null) ...[
+              const SizedBox(height: DesignTokens.s12),
+              _status(earlier),
+              const SizedBox(height: DesignTokens.s12),
+              const Divider(color: DesignTokens.borderDefault, height: 1),
+              const SizedBox(height: DesignTokens.s12),
+              const Text(
+                'Buying another? Ask for EMI on this one too:',
+                key: CheckoutEmiOption.againKey,
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 13,
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+            ],
             if (live != null) ...[
               const SizedBox(height: DesignTokens.s12),
               _status(live),

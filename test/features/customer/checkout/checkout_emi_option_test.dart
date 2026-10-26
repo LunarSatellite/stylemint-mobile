@@ -734,7 +734,7 @@ void main() {
     });
 
     testWidgets('ordered with the down payment in cash: shows the order and '
-        'the cash to pay on delivery, never EMI again', (tester) async {
+        'the cash to pay on delivery, and offers EMI again for another', (tester) async {
       await _pump(
         tester,
         [_item(variantId: variant)],
@@ -754,16 +754,17 @@ void main() {
       );
       expect(find.textContaining('12,000'), findsWidgets);
       expect(find.textContaining('in cash on delivery'), findsWidgets);
-      expect(find.byKey(CheckoutEmiOption.documentsKey), findsNothing);
-      expect(find.byKey(CheckoutEmiOption.sendKey), findsNothing);
       expect(find.byKey(CheckoutEmiOption.payKey), findsNothing);
       expect(find.byKey(CheckoutEmiOption.cashNoteKey), findsNothing);
+      // Ordering it again before delivery is a new request for the seller.
+      expect(find.byKey(CheckoutEmiOption.againKey), findsOneWidget);
+      expect(find.byKey(CheckoutEmiOption.addDocumentsKey), findsOneWidget);
       await tester.tap(find.byKey(CheckoutEmiOption.viewPlanKey));
       await tester.pumpAndSettle();
       expect(find.textContaining('Plan detail'), findsOneWidget);
     });
 
-    testWidgets('the checkout card says the item is ordered on EMI', (
+    testWidgets('the card offers EMI, with the earlier EMI order noted', (
       tester,
     ) async {
       await _pump(
@@ -776,8 +777,8 @@ void main() {
         }),
         options: sellerOptions,
       );
-      expect(find.text('EMI ordered'), findsOneWidget);
-      expect(find.text('Pay with EMI'), findsNothing);
+      expect(find.text('EMI ordered'), findsNothing);
+      expect(find.text('Pay with EMI'), findsOneWidget);
       expect(
         find.textContaining('down payment in cash on delivery'),
         findsOneWidget,
@@ -785,7 +786,7 @@ void main() {
     });
 
     testWidgets('ordered, down payment online still due: finish paying it '
-        'from the plan, no new application', (tester) async {
+        'from the plan, and a new application is offered too', (tester) async {
       await _pump(
         tester,
         [_item(variantId: variant)],
@@ -796,7 +797,8 @@ void main() {
         options: sellerOptions,
       );
       expect(find.byKey(CheckoutEmiOption.orderedKey), findsOneWidget);
-      expect(find.byKey(CheckoutEmiOption.documentsKey), findsNothing);
+      expect(find.byKey(CheckoutEmiOption.againKey), findsOneWidget);
+      expect(find.byKey(CheckoutEmiOption.addDocumentsKey), findsOneWidget);
       await tester.tap(find.byKey(CheckoutEmiOption.orderedPayKey));
       await tester.pumpAndSettle();
       expect(find.textContaining('Plan detail'), findsOneWidget);
