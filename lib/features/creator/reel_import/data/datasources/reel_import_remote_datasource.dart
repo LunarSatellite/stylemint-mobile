@@ -259,8 +259,8 @@ class ReelImportRemoteDataSource {
       },
       options: Options(headers: {'requiresToken': true}),
     );
-    final m = response is Map ? response : const {};
-    final items = m['items'] is List ? m['items'] as List : const [];
+    final m = response is Map ? response : const <dynamic, dynamic>{};
+    final items = m['items'] is List ? m['items'] as List : const <dynamic>[];
     return [
       for (final e in items)
         if (e is Map && (e['productId'] as String? ?? '').isNotEmpty)

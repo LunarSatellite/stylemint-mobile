@@ -50,7 +50,6 @@ import 'package:stylemint_mobile_frontend/features/customer/services/shared/serv
 import 'package:stylemint_mobile_frontend/features/customer/try_on/presentation/widgets/try_on_entry_button.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
