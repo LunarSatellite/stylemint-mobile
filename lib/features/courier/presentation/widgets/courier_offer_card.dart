@@ -4,6 +4,7 @@ import 'package:stylemint_mobile_frontend/features/courier/domain/entities/couri
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_fare_breakdown.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_place_names.dart';
 
 /// One offer on the rider's offers screen.
 ///
@@ -311,7 +312,7 @@ class _Route extends StatelessWidget {
     final to = offer.dropoff?.label;
     if (from == null && to == null) {
       return Text(
-        '${offer.fromGeohash} → ${offer.toGeohash} · ${offer.tier.label}',
+        '$pickupFallbackName → $dropoffFallbackName · ${offer.tier.label}',
         style: DesignTokens.tiny,
       );
     }
@@ -321,10 +322,10 @@ class _Route extends StatelessWidget {
         _place(
           Icons.store_mall_directory_rounded,
           'Pick up',
-          from ?? offer.fromGeohash,
+          pickupName(offer.pickup),
         ),
         const SizedBox(height: 2),
-        _place(Icons.location_on_rounded, 'Drop off', to ?? offer.toGeohash),
+        _place(Icons.location_on_rounded, 'Drop off', dropoffName(offer.dropoff)),
         const SizedBox(height: 2),
         Text(
           offer.tier.label,

@@ -14,6 +14,7 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_place_names.dart';
 
 /// One parcel, and the single thing to do with it next.
 ///
@@ -208,7 +209,7 @@ class CourierHopScreen extends ConsumerWidget {
             Text(hop.state.label, style: DesignTokens.h2),
             const SizedBox(height: DesignTokens.s4),
             Text(
-              '${hop.fromGeohash} → ${hop.toGeohash}',
+              '${pickupName(hop.pickup)} → ${dropoffName(hop.dropoff)}',
               style: DesignTokens.smallRegular,
             ),
             const SizedBox(height: DesignTokens.s16),
