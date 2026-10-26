@@ -170,6 +170,31 @@ void main() {
       );
     });
 
+    testWidgets('full screen keeps a sound button beside the close button', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester);
+      expect(find.byKey(ReelCard.fullscreenSoundKey), findsNothing);
+
+      await tester.tap(_enter);
+      await tester.pump();
+
+      expect(find.byKey(ReelCard.fullscreenSoundKey), findsOneWidget);
+      // Every reel starts muted, so the button offers to turn sound on.
+      expect(find.bySemanticsLabel('Turn sound on'), findsOneWidget);
+      // It sits left of the close button, in the same corner.
+      expect(
+        tester.getCenter(find.byKey(ReelCard.fullscreenSoundKey)).dx,
+        lessThan(tester.getCenter(_exit).dx),
+      );
+
+      await tester.tap(_exit);
+      await tester.pump();
+      expect(find.byKey(ReelCard.fullscreenSoundKey), findsNothing);
+      semantics.dispose();
+    });
+
     testWidgets('hides the system bars and keeps the app portrait', (
       tester,
     ) async {

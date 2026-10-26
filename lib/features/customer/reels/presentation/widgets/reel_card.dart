@@ -99,6 +99,9 @@ class ReelCard extends ConsumerStatefulWidget {
   /// The close button shown while the reel is full screen.
   static const Key exitFullscreenKey = Key('reel-card-exit-fullscreen');
 
+  /// Sound on/off beside [exitFullscreenKey] while the reel is full screen.
+  static const Key fullscreenSoundKey = Key('reel-card-fullscreen-sound');
+
   /// Spoken label of [enterFullscreenKey]'s button.
   static const String enterFullscreenLabel = 'Watch full screen';
 
@@ -290,17 +293,35 @@ class _ReelCardState extends ConsumerState<ReelCard> {
                 ),
 
                 if (fullscreen)
-                  // Only the video, and a way out.
+                  // Only the video, sound on/off, and a way out.
                   SafeArea(
                     child: Align(
                       alignment: Alignment.topRight,
                       child: Padding(
                         padding: const EdgeInsets.all(DesignTokens.s12),
-                        child: _FullscreenButton(
-                          buttonKey: ReelCard.exitFullscreenKey,
-                          label: ReelCard.exitFullscreenLabel,
-                          icon: Icons.close_rounded,
-                          onTap: _exitFullscreen,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // The player's own state, native or embedded: the
+                            // same mute the feed's sound button sets.
+                            ValueListenableBuilder<bool>(
+                              valueListenable: _playback.muted,
+                              builder: (context, muted, _) => KeyedSubtree(
+                                key: ReelCard.fullscreenSoundKey,
+                                child: ReelSoundButton(
+                                  muted: muted,
+                                  onTap: _playback.toggleMuted,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: DesignTokens.s8),
+                            _FullscreenButton(
+                              buttonKey: ReelCard.exitFullscreenKey,
+                              label: ReelCard.exitFullscreenLabel,
+                              icon: Icons.close_rounded,
+                              onTap: _exitFullscreen,
+                            ),
+                          ],
                         ),
                       ),
                     ),
