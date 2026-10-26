@@ -477,6 +477,33 @@ void main() {
       expect(find.text('Product page prod-1'), findsNothing);
     });
 
+    testWidgets('a product already in the cart is not added again; the cart '
+        'opens as it is', (tester) async {
+      when(
+        () => cartRepository.getCart(),
+      ).thenAnswer((_) async => right(_cart(2, productId: 'prod-1')));
+      stubDetail(_detail());
+      await pumpRail(
+        tester,
+        _reel(products: const [_taggedTote]),
+        signedIn: true,
+      );
+
+      await tester.tap(find.byType(ReelRailProductTile));
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => cartRepository.addToCart(
+          productId: any(named: 'productId'),
+          quantity: any(named: 'quantity'),
+          variantId: any(named: 'variantId'),
+          reelTagContextId: any(named: 'reelTagContextId'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      );
+      expect(find.text('Cart'), findsOneWidget);
+    });
+
     testWidgets('a product with sizes asks for one first, then adds that '
         'size and opens the cart', (tester) async {
       stubDetail(_detail(withSizes: true));

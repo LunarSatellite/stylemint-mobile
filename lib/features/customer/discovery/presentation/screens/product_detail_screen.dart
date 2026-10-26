@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/commerce_intelligence/presentation/widgets/evidence_answer_panel.dart';
@@ -50,6 +51,7 @@ import 'package:stylemint_mobile_frontend/features/customer/services/shared/serv
 import 'package:stylemint_mobile_frontend/features/customer/try_on/presentation/widgets/try_on_entry_button.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -76,13 +78,22 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 
   static const Key displayPriceKey = Key('product-display-price');
 
+  /// The in-cart counter's number and its two steppers.
+  static const Key cartCountKey = Key('product-cart-count');
+  static const Key cartDecrementKey = Key('product-cart-decrement');
+  static const Key cartIncrementKey = Key('product-cart-increment');
+  static const Key addToCartKey = Key('product-add-to-cart');
+  static const Key buyNowKey = Key('product-buy-now');
+
   @override
   ConsumerState<ProductDetailScreen> createState() =>
       _ProductDetailScreenState();
 }
 
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
-  int _quantity = 1;
+  /// A cart write from this page is in flight: Add to cart, Buy now and the
+  /// counter's steppers all wait for it, so a double tap cannot add twice.
+  bool _cartBusy = false;
   final Map<String, String> _selectedVariants = {};
   bool _descExpanded = false;
   ProductOptionChooser? _chooser;
@@ -206,17 +217,35 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           final chooser = _chooserFor(product);
           // Price, stock and the add-to-cart bar follow the picked variant.
           final chosen = chooser.value.applyTo(product);
+          // What of this variant is in the cart, read from the cart itself
+          // so it is right after a change made anywhere (the cart screen, a
+          // reel, another visit) and after a restart once the cart loads.
+          // The detail payload's `isInCart` is never sent (always false).
+          final lines = _cartLinesFor(
+            chosen,
+            choiceResolved:
+                chooser.value.isEmpty || chooser.value.resolvedVariant != null,
+          );
+          final inCart = lines.fold<int>(0, (sum, i) => sum + i.quantity);
           return _ProductBody(
             product: chosen,
             serviceChoice: _serviceChoiceFor(product),
             replaceLineId: widget.replaceLineId,
             reelTagContextId: widget.reelTagContextId,
             chooser: product.options.isEmpty ? null : chooser,
-            quantity: _quantity,
+            cartQuantity: inCart,
+            cartBusy: _cartBusy,
+            // Several lines only when the page knows no variant: the total
+            // shows, + adds the page's choice, and - is left to the cart.
+            onCartDecrement: lines.length == 1
+                ? () => unawaited(_changeCartQuantity(lines.single, -1))
+                : null,
+            onCartIncrement: lines.length == 1
+                ? () => unawaited(_changeCartQuantity(lines.single, 1))
+                : () => unawaited(_handleAddToCart(chosen)),
             selectedVariants: _selectedVariants,
             emiVariantId: _selectedSkuId(chosen) ?? chosen.defaultVariantId,
             descExpanded: _descExpanded,
-            onQuantityChanged: (v) => setState(() => _quantity = v),
             onVariantSelected: (k, v) =>
                 setState(() => _selectedVariants[k] = v),
             onToggleDesc: () => setState(() => _descExpanded = !_descExpanded),
@@ -244,83 +273,139 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return null;
   }
 
-  Future<void> _handleAddToCart(ProductDetail product) async {
-    if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
-    if (!mounted) return;
-    String? selectedSkuId;
-    for (final group in product.variants) {
-      if (group.type != 'sku' || group.values.isEmpty) continue;
-      final selectedValue = _selectedVariants[group.id] ?? group.values.first;
-      selectedSkuId = group.optionVariantIds[selectedValue];
-      break;
-    }
+  /// The variant an add from this page sends: the legacy SKU chip's pick,
+  /// else the chosen (or default) variant.
+  String? _variantIdFor(ProductDetail product) =>
+      _selectedSkuId(product) ?? product.defaultVariantId;
+
+  /// The cart lines of the variant on screen. None while the size/colour
+  /// choice names no variant yet: the counter would otherwise count the
+  /// default variant under a choice that is not it.
+  List<CartItem> _cartLinesFor(
+    ProductDetail product, {
+    required bool choiceResolved,
+  }) {
+    final cart = ref.watch(settledCartProvider);
+    if (!choiceResolved || cart == null) return const <CartItem>[];
+    return cart.productLines(product.id, variantId: _variantIdFor(product));
+  }
+
+  void _showCartError(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: DesignTokens.colorError,
+        ),
+      );
+  }
+
+  /// Adds one unit of the variant on screen and brings the cart up to date.
+  /// Returns whether it landed; a refusal says so here.
+  Future<bool> _addOne(ProductDetail product) async {
     final success = await ref
         .read(productDetailNotifierProvider(widget.productId).notifier)
         .addToCart(
           productId: widget.productId,
-          qty: _quantity,
-          variantId: selectedSkuId ?? product.defaultVariantId,
+          qty: 1,
+          variantId: _variantIdFor(product),
         );
-    if (success) {
-      if (mounted) {
-        ref.read(engagementTrackerProvider).addedToCart(widget.productId);
-      }
-      // productDetailNotifierProvider.addToCart() writes through its own
-      // Discovery-module repository, not the Cart module's — cartNotifierProvider
-      // is a keepAlive singleton that only fetches once at construction, so
-      // without this it keeps showing the cart as it was before this add (or
-      // empty) until some other screen happens to mutate it. Confirmed live:
-      // "Added to cart" showed, then Your Cart still said empty.
-      unawaited(ref.read(cartNotifierProvider.notifier).fetchCart());
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Added to cart'),
-            backgroundColor: DesignTokens.primaryGreen,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleBuyNow(ProductDetail product) async {
-    if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
-    if (!mounted) return;
-
-    String? selectedSkuId;
-    for (final group in product.variants) {
-      if (group.type != 'sku' || group.values.isEmpty) continue;
-      final selectedValue = _selectedVariants[group.id] ?? group.values.first;
-      selectedSkuId = group.optionVariantIds[selectedValue];
-      break;
-    }
-
-    final added = await ref
-        .read(productDetailNotifierProvider(widget.productId).notifier)
-        .addToCart(
-          productId: widget.productId,
-          qty: _quantity,
-          variantId: selectedSkuId ?? product.defaultVariantId,
-        );
-    if (!mounted) return;
-
-    if (!added) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Couldn't add this item. Please try again."),
-          backgroundColor: DesignTokens.colorError,
-        ),
-      );
-      return;
+    if (!mounted) return false;
+    if (!success) {
+      _showCartError("Couldn't add this item. Please try again.");
+      return false;
     }
     ref.read(engagementTrackerProvider).addedToCart(widget.productId);
-
-    // Same stale-cart issue as _handleAddToCart: refresh before navigating to
-    // Checkout so it doesn't render off cartNotifierProvider's pre-add state.
+    // productDetailNotifierProvider.addToCart() writes through its own
+    // Discovery-module repository, not the Cart module's. cartNotifierProvider
+    // is a keepAlive singleton that only fetches once at construction, so
+    // without this it keeps showing the cart as it was before this add (or
+    // empty) until some other screen happens to mutate it. Confirmed live:
+    // "Added to cart" showed, then Your Cart still said empty. Awaited, so
+    // the counter replaces Add to cart as the confirmation shows.
     await ref.read(cartNotifierProvider.notifier).fetchCart();
+    return mounted;
+  }
+
+  Future<void> _handleAddToCart(ProductDetail product) async {
+    if (_cartBusy) return;
+    if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
     if (!mounted) return;
-    await context.push(RouteNames.checkout);
+    setState(() => _cartBusy = true);
+    final added = await _addOne(product);
+    if (!mounted) return;
+    setState(() => _cartBusy = false);
+    if (!added) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Added to cart'),
+        backgroundColor: DesignTokens.primaryGreen,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// The counter's - and +: one unit less or more of [line]; down from 1
+  /// removes the line and the bar returns to Add to cart. The same cart
+  /// writes the cart screen's steppers make. A refused change puts the
+  /// previous number back, says so, and reloads the cart.
+  Future<void> _changeCartQuantity(CartItem line, int delta) async {
+    if (_cartBusy) return;
+    final next = line.quantity + delta;
+    final previous = ref.read(settledCartProvider);
+    final notifier = ref.read(cartNotifierProvider.notifier);
+    setState(() => _cartBusy = true);
+    if (next <= 0) {
+      await notifier.removeItem(line.id);
+    } else {
+      await notifier.updateItem(itemId: line.id, quantity: next);
+    }
+    if (!mounted) return;
+    final failed = ref
+        .read(cartNotifierProvider)
+        .maybeWhen(loadFailure: (_) => true, orElse: () => false);
+    if (failed) {
+      ref.read(settledCartProvider.notifier).restore(previous);
+      _showCartError("Couldn't update your cart. Please try again.");
+      unawaited(notifier.fetchCart());
+    }
+    setState(() => _cartBusy = false);
+  }
+
+  /// Buy now opens the cart, never checkout: the buyer sees the whole cart
+  /// before paying. The variant on screen is added (one unit) only when it
+  /// is not in the cart yet; one already there keeps its quantity.
+  Future<void> _handleBuyNow(ProductDetail product) async {
+    if (_cartBusy) return;
+    if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
+    if (!mounted) return;
+    setState(() => _cartBusy = true);
+    final notifier = ref.read(cartNotifierProvider.notifier);
+    // A cart that has not loaded yet (just after launch, or mid-request)
+    // cannot say whether the item is there: load it first rather than risk
+    // a second unit.
+    var cart = ref
+        .read(cartNotifierProvider)
+        .maybeWhen<Cart?>(loadSuccess: (c) => c, orElse: () => null);
+    if (cart == null) {
+      await notifier.fetchCart();
+      if (!mounted) return;
+      cart = ref
+          .read(cartNotifierProvider)
+          .maybeWhen<Cart?>(loadSuccess: (c) => c, orElse: () => null);
+    }
+    final alreadyInCart =
+        cart != null &&
+        cart.productQuantity(product.id, variantId: _variantIdFor(product)) >
+            0;
+    if (!alreadyInCart && !await _addOne(product)) {
+      if (mounted) setState(() => _cartBusy = false);
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _cartBusy = false);
+    await context.push(RouteNames.cart);
   }
 }
 
@@ -338,16 +423,18 @@ class _Loader extends StatelessWidget {
 class _ProductBody extends StatelessWidget {
   const _ProductBody({
     required this.product,
-    required this.quantity,
+    required this.cartQuantity,
+    required this.cartBusy,
+    required this.onCartIncrement,
     required this.selectedVariants,
     required this.descExpanded,
-    required this.onQuantityChanged,
     required this.onVariantSelected,
     required this.onToggleDesc,
     required this.onAddToCart,
     required this.onBuyNow,
     this.chooser,
     this.emiVariantId,
+    this.onCartDecrement,
     this.serviceChoice,
     this.replaceLineId,
     this.reelTagContextId,
@@ -365,10 +452,18 @@ class _ProductBody extends StatelessWidget {
 
   /// Null for a product with no options — the legacy SKU chips show instead.
   final ProductOptionChooser? chooser;
-  final int quantity;
+
+  /// Units of the variant on screen in the cart; 0 shows Add to cart.
+  final int cartQuantity;
+
+  /// A cart write from this page is in flight.
+  final bool cartBusy;
+
+  /// The counter's minus; null when it cannot step (several lines).
+  final VoidCallback? onCartDecrement;
+  final VoidCallback onCartIncrement;
   final Map<String, String> selectedVariants;
   final bool descExpanded;
-  final ValueChanged<int> onQuantityChanged;
   final void Function(String, String) onVariantSelected;
   final VoidCallback onToggleDesc;
   final VoidCallback onAddToCart;
@@ -597,8 +692,10 @@ class _ProductBody extends StatelessWidget {
               ? const _UnavailableBar()
               : _BottomBar(
                   product: product,
-                  quantity: quantity,
-                  onQuantityChanged: onQuantityChanged,
+                  cartQuantity: cartQuantity,
+                  busy: cartBusy,
+                  onCartDecrement: onCartDecrement,
+                  onCartIncrement: onCartIncrement,
                   onAddToCart: onAddToCart,
                   onBuyNow: onBuyNow,
                 ),
@@ -1768,21 +1865,30 @@ class _UnavailableBar extends StatelessWidget {
 class _BottomBar extends StatelessWidget {
   const _BottomBar({
     required this.product,
-    required this.quantity,
-    required this.onQuantityChanged,
+    required this.cartQuantity,
+    required this.busy,
+    required this.onCartIncrement,
     required this.onAddToCart,
     required this.onBuyNow,
+    this.onCartDecrement,
   });
 
   final ProductDetail product;
-  final int quantity;
-  final ValueChanged<int> onQuantityChanged;
+
+  /// Units of the variant on screen in the cart, from the cart itself.
+  final int cartQuantity;
+
+  /// A cart write is in flight: every control waits for it.
+  final bool busy;
+  final VoidCallback? onCartDecrement;
+  final VoidCallback onCartIncrement;
   final VoidCallback onAddToCart;
   final VoidCallback onBuyNow;
 
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
+    final price = product.price;
     return Container(
       padding: EdgeInsets.fromLTRB(
         DesignTokens.s16,
@@ -1796,17 +1902,27 @@ class _BottomBar extends StatelessWidget {
         border: Border.all(color: DesignTokens.glassStroke),
         boxShadow: DesignTokens.shadowLifted,
       ),
-      child: product.isInCart
+      // Once the variant is in the cart, Add to cart turns into the cart's
+      // own counter: - and + change the cart line, and down from 1 takes it
+      // out and brings Add to cart back.
+      child: cartQuantity > 0
           ? _InCartBar(
-              price: formatMoney(product.price),
-              quantity: quantity,
-              onQuantityChanged: onQuantityChanged,
-              onBuyNow: onBuyNow,
+              total: formatMoney(
+                Money(
+                  amount: price.amount * cartQuantity,
+                  currency: price.currency,
+                ),
+              ),
+              quantity: cartQuantity,
+              onDecrement: busy ? null : onCartDecrement,
+              // An item that went out of stock stays countable, not addable.
+              onIncrement: busy || !product.isInStock ? null : onCartIncrement,
+              onBuyNow: busy ? null : onBuyNow,
             )
           : _DefaultBar(
               isInStock: product.isInStock,
-              onAddToCart: onAddToCart,
-              onBuyNow: onBuyNow,
+              onAddToCart: busy ? null : onAddToCart,
+              onBuyNow: busy ? null : onBuyNow,
             ),
     );
   }
@@ -1820,8 +1936,10 @@ class _DefaultBar extends StatelessWidget {
   });
 
   final bool isInStock;
-  final VoidCallback onAddToCart;
-  final VoidCallback onBuyNow;
+
+  /// Null while a cart write is in flight.
+  final VoidCallback? onAddToCart;
+  final VoidCallback? onBuyNow;
 
   @override
   Widget build(BuildContext context) {
@@ -1829,10 +1947,13 @@ class _DefaultBar extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton(
+            key: ProductDetailScreen.addToCartKey,
             onPressed: isInStock ? onAddToCart : null,
             style: DesignTokens.outlinedButtonStyle(),
             child: Text(
               isInStock ? 'Add to Cart' : 'Out of Stock',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: DesignTokens.mediumSemibold,
             ),
           ),
@@ -1840,10 +1961,13 @@ class _DefaultBar extends StatelessWidget {
         const SizedBox(width: DesignTokens.s12),
         Expanded(
           child: ElevatedButton(
+            key: ProductDetailScreen.buyNowKey,
             onPressed: isInStock ? onBuyNow : null,
             style: DesignTokens.primaryButtonStyle(),
             child: Text(
               'Buy Now',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: DesignTokens.mediumSemibold.copyWith(
                 color: DesignTokens.buttonPrimaryText,
               ),
@@ -1857,16 +1981,21 @@ class _DefaultBar extends StatelessWidget {
 
 class _InCartBar extends StatelessWidget {
   const _InCartBar({
-    required this.price,
+    required this.total,
     required this.quantity,
-    required this.onQuantityChanged,
+    required this.onDecrement,
+    required this.onIncrement,
     required this.onBuyNow,
   });
 
-  final String price;
+  /// The unit price times [quantity], formatted.
+  final String total;
   final int quantity;
-  final ValueChanged<int> onQuantityChanged;
-  final VoidCallback onBuyNow;
+
+  /// Null while a change is in flight (or when the page cannot step).
+  final VoidCallback? onDecrement;
+  final VoidCallback? onIncrement;
+  final VoidCallback? onBuyNow;
 
   @override
   Widget build(BuildContext context) {
@@ -1886,7 +2015,7 @@ class _InCartBar extends StatelessWidget {
           children: [
             Text('Item Total', style: DesignTokens.smallRegular),
             Text(
-              price,
+              total,
               style: DesignTokens.moneyLarge.copyWith(
                 color: DesignTokens.primaryGreen,
               ),
@@ -1897,28 +2026,43 @@ class _InCartBar extends StatelessWidget {
         Row(
           children: [
             _StepperButton(
+              key: ProductDetailScreen.cartDecrementKey,
               icon: Icons.remove_rounded,
-              onTap: quantity > 1
-                  ? () => onQuantityChanged(quantity - 1)
-                  : null,
+              semanticLabel: quantity > 1
+                  ? 'One less in cart'
+                  : 'Remove from cart',
+              onTap: onDecrement,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: DesignTokens.s12,
               ),
-              child: Text('$quantity', style: DesignTokens.mediumSemibold),
+              child: Semantics(
+                label: '$quantity in cart',
+                excludeSemantics: true,
+                child: Text(
+                  '$quantity',
+                  key: ProductDetailScreen.cartCountKey,
+                  style: DesignTokens.mediumSemibold,
+                ),
+              ),
             ),
             _StepperButton(
+              key: ProductDetailScreen.cartIncrementKey,
               icon: Icons.add_rounded,
-              onTap: () => onQuantityChanged(quantity + 1),
+              semanticLabel: 'One more in cart',
+              onTap: onIncrement,
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
               child: ElevatedButton(
+                key: ProductDetailScreen.buyNowKey,
                 onPressed: onBuyNow,
                 style: DesignTokens.primaryButtonStyle(),
                 child: Text(
                   'Buy Now',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: DesignTokens.oneLinerSemibold.copyWith(
                     color: DesignTokens.buttonPrimaryText,
                   ),
@@ -1933,13 +2077,28 @@ class _InCartBar extends StatelessWidget {
 }
 
 class _StepperButton extends StatelessWidget {
-  const _StepperButton({required this.icon, this.onTap});
+  const _StepperButton({
+    required this.icon,
+    required this.semanticLabel,
+    this.onTap,
+    super.key,
+  });
 
   final IconData icon;
+  final String semanticLabel;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: semanticLabel,
+      child: _material(),
+    );
+  }
+
+  Widget _material() {
     return Material(
       color: onTap != null
           ? DesignTokens.bgAppBodyLight

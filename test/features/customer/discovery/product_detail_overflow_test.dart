@@ -5,6 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/repositories/cart_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
@@ -15,6 +18,8 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import '../../../smoke/fake_api_client.dart';
 
 class _MockDiscoveryRepository extends Mock implements DiscoveryRepository {}
+
+class _MockCartRepository extends Mock implements CartRepository {}
 
 /// A discounted product with a named variant, so the price row carries two
 /// prices and a unit suffix. Three rows on this screen overflowed at
@@ -49,13 +54,36 @@ const _product = ProductDetail(
   isInCart: false,
 );
 
-final _inCartProduct = _product.copyWith(isInCart: true);
+const _zero = Money(amount: 0, currency: 'NPR');
 
-Future<void> _pump(WidgetTester tester, ProductDetail product) async {
+/// The cart holding two of [_product]: the bar shows the in-cart counter.
+const _cartWithProduct = Cart(
+  id: 'cart-1',
+  items: [
+    CartItem(
+      id: 'line-1',
+      productId: 'p1',
+      productName: 'Hand-loomed pashmina overcoat',
+      productImageUrl: '',
+      variantName: 'Large',
+      quantity: 2,
+      unitPrice: Money(amount: 62250, currency: 'NPR'),
+      isInStock: true,
+    ),
+  ],
+  subtotal: _zero,
+  shippingTotal: _zero,
+  taxTotal: _zero,
+  total: _zero,
+);
+
+Future<void> _pumpInCart(WidgetTester tester, ProductDetail product) async {
   final repository = _MockDiscoveryRepository();
   when(
     () => repository.getProductDetail(any()),
   ).thenAnswer((_) async => right(product));
+  final cart = _MockCartRepository();
+  when(() => cart.getCart()).thenAnswer((_) async => right(_cartWithProduct));
 
   await tester.binding.setSurfaceSize(const Size(320, 3000));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -66,6 +94,7 @@ Future<void> _pump(WidgetTester tester, ProductDetail product) async {
         productDetailNotifierProvider.overrideWith(
           (ref, id) => ProductDetailNotifier(repository),
         ),
+        cartRepositoryProvider.overrideWithValue(cart),
       ],
       child: const MaterialApp(
         home: MediaQuery(
@@ -87,10 +116,11 @@ void main() {
   testWidgets(
     'the in-cart bar fits its 44dp steppers at 320dp with text at 1.3x',
     (tester) async {
-      await _pump(tester, _inCartProduct);
+      await _pumpInCart(tester, _product);
 
       expect(tester.takeException(), isNull);
       expect(find.text('Buy Now'), findsOneWidget);
+      expect(find.byKey(ProductDetailScreen.cartCountKey), findsOneWidget);
       // Both quantity controls clear the iOS HIG minimum.
       for (final icon in [Icons.remove_rounded, Icons.add_rounded]) {
         final box = tester.getSize(

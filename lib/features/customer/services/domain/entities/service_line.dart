@@ -100,6 +100,35 @@ class ServiceLine {
 
   bool get isStay => kind == ListingKind.stay;
   int get guests => adults + children;
+
+  /// Whether this line already books what [options] asks for: the same
+  /// listing, room and dates (or departure), rooms and guests, and the same
+  /// way to pay when both name one. Buy now uses it so a booking already in
+  /// the cart is not added a second time.
+  bool sameChoiceAs(ServiceOptions options) {
+    if (kind != options.kind || listingId != options.listingId) return false;
+    if (adults != options.adults || children != options.children) {
+      return false;
+    }
+    final mode = paymentMode;
+    final wanted = options.paymentMode;
+    if (mode != null && wanted != null && mode != wanted) return false;
+    if (kind == ListingKind.package) {
+      return departureId != null && departureId == options.departureId;
+    }
+    return roomTypeId != null &&
+        roomTypeId == options.roomTypeId &&
+        (rooms ?? 1) == (options.rooms ?? 1) &&
+        _sameDay(startDate, options.checkIn) &&
+        _sameDay(endDate, options.checkOut);
+  }
+
+  static bool _sameDay(DateTime? a, DateTime? b) =>
+      a != null &&
+      b != null &&
+      a.year == b.year &&
+      a.month == b.month &&
+      a.day == b.day;
 }
 
 /// What the buyer chose on a service item's page, sent with Add to cart

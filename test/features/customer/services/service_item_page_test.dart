@@ -5,6 +5,8 @@ import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
@@ -119,6 +121,7 @@ Future<GoRouter> _pump(
       for (final path in [
         RouteNames.bankEnquiryForm,
         RouteNames.bankAppointmentForm,
+        RouteNames.cart,
         RouteNames.checkout,
       ])
         GoRoute(
@@ -158,6 +161,35 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   // Past the pricing debounce, and the quote's reply.
   await _frames(tester, 12);
 }
+
+/// The cart line the server would hold for a stay booked with [o].
+CartItem _lineFor(ServiceOptions o) => CartItem(
+  id: 'line-new',
+  productId: stayId,
+  productName: 'Hotel Barahi',
+  productImageUrl: '',
+  variantName: 'Deluxe Double',
+  quantity: 1,
+  unitPrice: npr(9000),
+  isInStock: true,
+  service: ServiceLine(
+    lineId: 'line-new',
+    kind: o.kind,
+    listingId: o.listingId,
+    listingTitle: 'Hotel Barahi',
+    roomTypeId: o.roomTypeId,
+    departureId: o.departureId,
+    startDate: o.checkIn!,
+    endDate: o.checkOut,
+    rooms: o.rooms,
+    adults: o.adults,
+    children: o.children,
+    paymentMode: o.paymentMode,
+    totalPrice: npr(9000),
+    payNow: npr(9000),
+    payAtVenue: npr(0),
+  ),
+);
 
 bool _enabled(WidgetTester tester, Key key) {
   final button = tester.widget<ButtonStyleButton>(find.byKey(key));
@@ -256,8 +288,34 @@ void main() {
       await _tap(tester, find.byKey(ServiceItemKeys.room(roomId)));
       await _tap(tester, find.byKey(ServiceItemBar.buyKey));
       expect(cart.added.single['reelTagContextId'], 'tag-9');
-      // Buy now goes straight to checkout.
-      expect(find.byKey(const Key(RouteNames.checkout)), findsOneWidget);
+      // Buy now opens the cart, never checkout.
+      expect(find.byKey(const Key(RouteNames.cart)), findsOneWidget);
+      expect(find.byKey(const Key(RouteNames.checkout)), findsNothing);
+    });
+
+    testWidgets('Buy now with this booking already in the cart adds nothing '
+        'and opens the cart', (tester) async {
+      final cart = FakeServiceCartRepository();
+      await _pump(tester, _stay, serviceCart: cart);
+      await _tap(tester, find.byKey(ServiceItemKeys.room(roomId)));
+      await _tap(tester, find.byKey(ServiceItemBar.addKey));
+      expect(cart.added, hasLength(1));
+      // The fake answers every add with a cart holding one stay line; make
+      // that line the booking just chosen, as the server would.
+      final options = cart.added.single['options']! as ServiceOptions;
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ProductDetailScreen)),
+      );
+      container
+          .read(cartNotifierProvider.notifier)
+          .showCart(serviceCart(items: [_lineFor(options)]));
+      await _frames(tester);
+
+      await _tap(tester, find.byKey(ServiceItemBar.buyKey));
+
+      expect(cart.added, hasLength(1));
+      expect(find.byKey(const Key(RouteNames.cart)), findsOneWidget);
+      expect(find.byKey(const Key(RouteNames.checkout)), findsNothing);
     });
 
     testWidgets('a sold-out room cannot be picked', (tester) async {

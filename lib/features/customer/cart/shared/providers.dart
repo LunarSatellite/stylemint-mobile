@@ -55,6 +55,40 @@ class CartItemCountNotifier extends Notifier<int> {
   );
 }
 
+/// The cart as last loaded, for controls that show what is in it — the
+/// product page's in-cart counter. Like [cartItemCountProvider] it holds the
+/// last settled cart while a request is in flight or has failed, so a
+/// counter does not flash back to "Add to cart" mid-change. Null until the
+/// cart has loaded, and again after a sign-out resets it.
+final settledCartProvider = NotifierProvider<SettledCartNotifier, Cart?>(
+  SettledCartNotifier.new,
+);
+
+class SettledCartNotifier extends Notifier<Cart?> {
+  @override
+  Cart? build() {
+    ref.listen<CartState>(cartNotifierProvider, (_, next) {
+      next.maybeWhen<void>(
+        initial: () {
+          state = null;
+        },
+        loadSuccess: (cart) {
+          state = cart;
+        },
+        orElse: () {},
+      );
+    });
+    return ref
+        .read(cartNotifierProvider)
+        .maybeWhen(loadSuccess: (cart) => cart, orElse: () => null);
+  }
+
+  /// Puts back the cart from before a change the server refused. The cart
+  /// notifier showed that change optimistically, and the caller refetches
+  /// right after, which replaces this with the server's cart.
+  void restore(Cart? cart) => state = cart;
+}
+
 /// Best-effort basket insights card. A failure here should never block
 /// the cart screen — watch via `.asData?.value`.
 final basketOptimizationProvider =

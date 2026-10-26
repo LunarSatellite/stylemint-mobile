@@ -99,7 +99,8 @@ ReelQuickBuyPlan planReelQuickBuy(
 
 /// The reel rail's product tile: add the reel's [product] to the cart —
 /// attributed to the reel tag, after a size/colour pick when it has them —
-/// then open the cart. Guests sign in first; a product that cannot be added
+/// then open the cart. A variant already in the cart is not added again: the
+/// cart opens with its quantity as it is. Guests sign in first; a product that cannot be added
 /// says why and stays on the reel.
 ///
 /// Returns whether the cart was opened.
@@ -154,6 +155,20 @@ Future<bool> reelQuickBuy(
       final picked = await showReelVariantSheet(context, loaded);
       if (picked == null || !context.mounted) return false;
       variantId = picked;
+  }
+
+  // Already in the cart: open it with the quantity the buyer set, rather
+  // than adding the same item a second time.
+  final alreadyInCart = ref
+      .read(cartNotifierProvider)
+      .maybeWhen(
+        loadSuccess: (cart) =>
+            cart.productQuantity(product.id, variantId: variantId) > 0,
+        orElse: () => false,
+      );
+  if (alreadyInCart) {
+    await context.push(RouteNames.cart);
+    return true;
   }
 
   final notifier = ref.read(cartNotifierProvider.notifier);

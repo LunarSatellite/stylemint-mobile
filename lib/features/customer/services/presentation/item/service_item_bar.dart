@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_item.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/service_messages.dart';
@@ -76,10 +77,26 @@ class _ServiceItemBarState extends ConsumerState<ServiceItemBar> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _add({required bool thenCheckout}) async {
+  /// Add to cart ([thenCart] false) or Buy now ([thenCart] true). Buy now
+  /// opens the cart, never checkout, and adds the booking only when the
+  /// cart does not already hold exactly this choice.
+  Future<void> _add({required bool thenCart}) async {
     final options = widget.choice.toOptions();
     if (options == null) return;
     if (!await servicesEnsureAuth(context, ref) || !mounted) return;
+    if (thenCart && widget.replaceLineId == null) {
+      final inCart = ref
+          .read(cartNotifierProvider)
+          .maybeWhen(
+            loadSuccess: (cart) =>
+                cart.serviceLineFor(widget.productId, options) != null,
+            orElse: () => false,
+          );
+      if (inCart) {
+        unawaited(context.push(RouteNames.cart));
+        return;
+      }
+    }
     setState(() => _busy = true);
     final result = await ref
         .read(serviceCartRepositoryProvider)
@@ -111,8 +128,8 @@ class _ServiceItemBarState extends ConsumerState<ServiceItemBar> {
         }
         if (!mounted) return;
         setState(() => _busy = false);
-        if (thenCheckout) {
-          unawaited(context.push(RouteNames.checkout));
+        if (thenCart) {
+          unawaited(context.push(RouteNames.cart));
         } else if (replaced != null) {
           // Back to the cart the buyer came from, with the new choice.
           if (context.canPop()) context.pop();
@@ -178,7 +195,7 @@ class _ServiceItemBarState extends ConsumerState<ServiceItemBar> {
                 child: OutlinedButton(
                   key: ServiceItemBar.addKey,
                   onPressed: ready
-                      ? () => unawaited(_add(thenCheckout: false))
+                      ? () => unawaited(_add(thenCart: false))
                       : null,
                   style: DesignTokens.outlinedButtonStyle(),
                   child: Text(
@@ -192,7 +209,7 @@ class _ServiceItemBarState extends ConsumerState<ServiceItemBar> {
                 child: ElevatedButton(
                   key: ServiceItemBar.buyKey,
                   onPressed: ready
-                      ? () => unawaited(_add(thenCheckout: true))
+                      ? () => unawaited(_add(thenCart: true))
                       : null,
                   style: DesignTokens.primaryButtonStyle(),
                   child: _busy

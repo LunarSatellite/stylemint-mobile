@@ -207,6 +207,36 @@ class Cart {
   List<CartItem> get serviceItems =>
       [for (final i in items) if (i.isService) i];
 
+  /// The product lines (never a stay or trip) of [productId] — of
+  /// [variantId] only, when it is known. A line the server sent without a
+  /// variant counts for the product as a whole.
+  List<CartItem> productLines(String productId, {String? variantId}) => [
+    for (final i in items)
+      if (!i.isService &&
+          i.productId == productId &&
+          (variantId == null || i.variantId == null || i.variantId == variantId))
+        i,
+  ];
+
+  /// Units of [productId] (of [variantId] when known) in the cart.
+  int productQuantity(String productId, {String? variantId}) =>
+      productLines(productId, variantId: variantId)
+          .fold<int>(0, (sum, i) => sum + i.quantity);
+
+  /// The service line already holding exactly [options] for [productId],
+  /// or null.
+  CartItem? serviceLineFor(String productId, ServiceOptions options) {
+    for (final i in items) {
+      final line = i.service;
+      if (line != null &&
+          i.productId == productId &&
+          line.sameChoiceAs(options)) {
+        return i;
+      }
+    }
+    return null;
+  }
+
   Cart copyWith({
     String? id,
     List<CartItem>? items,
