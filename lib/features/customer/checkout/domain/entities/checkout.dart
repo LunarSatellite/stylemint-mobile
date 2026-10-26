@@ -175,7 +175,7 @@ class ShippingAddress {
   );
 }
 
-enum PaymentMethodType { card, eSewa, cod, paypal }
+enum PaymentMethodType { card, eSewa, cod, paypal, connectIps }
 
 enum DeliveryChoiceKind { homeDelivery, pickupFromSeller }
 
@@ -608,7 +608,7 @@ class PaymentMethod {
   int get hashCode => Object.hash(id, type, label, lastFour, isDefault);
 }
 
-/// The four v1 payment rails supported by Style Mint. A saved card only
+/// The five payment rails supported by Style Mint. A saved card only
 /// enriches the card row with its display data; it must never hide the other
 /// payment choices at checkout.
 List<PaymentMethod> checkoutPaymentMethods({PaymentMethod? savedCard}) {
@@ -631,6 +631,12 @@ List<PaymentMethod> checkoutPaymentMethods({PaymentMethod? savedCard}) {
       id: 'esewa',
       type: PaymentMethodType.eSewa,
       label: 'eSewa',
+      isDefault: false,
+    ),
+    const PaymentMethod(
+      id: 'connectips',
+      type: PaymentMethodType.connectIps,
+      label: 'connectIPS',
       isDefault: false,
     ),
     const PaymentMethod(

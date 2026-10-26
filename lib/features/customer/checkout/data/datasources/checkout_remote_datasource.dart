@@ -334,7 +334,7 @@ class CheckoutRemoteDataSource {
 
   // Backend CheckoutSession.PaymentMethod enum (StyleMint.Modules.CartCheckout
   // .Enums.PaymentMethod) — CardVisaMastercard=1, PayPal=2, Esewa=3,
-  // CashOnDelivery=4. Values are locked, never renumbered.
+  // CashOnDelivery=4, ConnectIps=5. Values are locked, never renumbered.
   static int _paymentMethodCode(PaymentMethodType type) {
     switch (type) {
       case PaymentMethodType.card:
@@ -345,6 +345,8 @@ class CheckoutRemoteDataSource {
         return 3;
       case PaymentMethodType.cod:
         return 4;
+      case PaymentMethodType.connectIps:
+        return 5;
     }
   }
 

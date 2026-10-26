@@ -396,6 +396,8 @@ abstract class OrderDetailDto with _$OrderDetailDto {
         return 'eSewa';
       case 4:
         return 'Cash on Delivery';
+      case 5:
+        return 'connectIPS';
       default:
         return 'Cash on Delivery';
     }

@@ -99,6 +99,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         PaymentMethodType.card => PlanPaymentRail.card,
         PaymentMethodType.paypal => PlanPaymentRail.payPal,
         PaymentMethodType.eSewa => PlanPaymentRail.eSewa,
+        PaymentMethodType.connectIps => PlanPaymentRail.connectIps,
         PaymentMethodType.cod => PlanPaymentRail.cashOnDelivery,
       },
       idempotencyKey: _emiKey,
@@ -1092,6 +1093,12 @@ class _PaymentIcon extends StatelessWidget {
           color: DesignTokens.brandESewa,
           size: 24,
         );
+      case PaymentMethodType.connectIps:
+        return const Icon(
+          Icons.account_balance_outlined,
+          color: DesignTokens.brandVisa,
+          size: 24,
+        );
     }
   }
 }
@@ -1118,6 +1125,8 @@ class _PaymentMethodList extends StatelessWidget {
         return m.lastFour != null ? 'PayPal (${m.lastFour})' : 'PayPal';
       case PaymentMethodType.eSewa:
         return 'eSewa wallet';
+      case PaymentMethodType.connectIps:
+        return 'Pay from your bank account';
       case PaymentMethodType.cod:
         return 'Pay on delivery';
     }

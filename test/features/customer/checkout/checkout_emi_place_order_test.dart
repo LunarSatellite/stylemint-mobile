@@ -100,6 +100,21 @@ void main() {
     expect(find.text('Order NK2026-00042'), findsOneWidget);
   });
 
+  testWidgets('connectIPS chosen on checkout pays the EMI down payment on the '
+      'connectIPS rail', (tester) async {
+    final (credit, opened) = await _pumpApproved(tester);
+
+    expect(find.text('connectIPS'), findsOneWidget);
+    await tester.tap(find.text('connectIPS'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Place Order'));
+    await tester.pumpAndSettle();
+
+    expect(credit.placements.single.rail, PlanPaymentRail.connectIps);
+    expect(opened, [Uri.parse('https://pay.example.test/first-payment')]);
+    expect(find.text('Order NK2026-00042'), findsOneWidget);
+  });
+
   testWidgets('seller allows cash: Place Order with cash on delivery orders '
       'the plan with nothing to pay online', (tester) async {
     final (credit, opened) = await _pumpApproved(tester, cashAllowed: true);

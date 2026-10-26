@@ -472,6 +472,22 @@ void main() {
       expect(find.byKey(const Key('plan-payment-started')), findsOneWidget);
     });
 
+    testWidgets('an instalment can be paid with connectIPS', (tester) async {
+      final repo = await openPlan(tester, activeAgreementWire());
+
+      await _tapVisible(tester, find.byKey(const Key('plan-pay-primary')));
+      final connectIps = find.byKey(const Key('plan-rail-connectIps'));
+      expect(connectIps, findsOneWidget);
+      await tester.tap(connectIps);
+      await tester.pump();
+      expect(find.text('Pay with connectIPS'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('plan-pay-confirm')));
+      await _settle(tester);
+
+      expect(repo.payments.single.rail, PlanPaymentRail.connectIps);
+      expect(launched.single.toString(), 'https://pay.example.test/redirect');
+    });
+
     testWidgets('a payment that cannot start keeps the sheet open', (
       tester,
     ) async {

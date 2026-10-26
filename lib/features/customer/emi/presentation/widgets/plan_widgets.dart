@@ -272,6 +272,9 @@ Future<bool> payOnPlan(
   final paid = await showModalBottomSheet<bool>(
     context: context,
     useSafeArea: true,
+    // Four online rails plus the note and button can outgrow the default
+    // 9/16-height sheet on a small phone; let it size to its content.
+    isScrollControlled: true,
     backgroundColor: DesignTokens.bgAppBodyLight,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -348,7 +351,7 @@ class _PaySheetState extends ConsumerState<_PaySheet> {
   @override
   Widget build(BuildContext context) => SafeArea(
     top: false,
-    child: Padding(
+    child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
         DesignTokens.s20,
         DesignTokens.s16,

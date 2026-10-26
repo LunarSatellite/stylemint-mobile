@@ -93,6 +93,10 @@ abstract class PaymentMethodDto with _$PaymentMethodDto {
         return PaymentMethodType.paypal;
       case 'esewa':
         return PaymentMethodType.eSewa;
+      // Backend PaymentMethod.ConnectIps = 5: accept the name or the number.
+      case 'connectips':
+      case '5':
+        return PaymentMethodType.connectIps;
       case 'cod':
         return PaymentMethodType.cod;
       default:

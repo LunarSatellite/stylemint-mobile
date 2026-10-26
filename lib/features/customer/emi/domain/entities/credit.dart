@@ -193,10 +193,13 @@ enum PlanPaymentRail {
   eSewa(3, 'eSewa'),
 
   /// EMI down payment only, collected by the rider at delivery.
-  cashOnDelivery(4, 'Cash on delivery');
+  cashOnDelivery(4, 'Cash on delivery'),
+
+  /// connectIPS (NCHL): paid straight from the buyer's bank account.
+  connectIps(5, 'connectIPS');
 
   /// The rails for paying online — every one but cash on delivery.
-  static const online = [card, payPal, eSewa];
+  static const online = [card, payPal, eSewa, connectIps];
 
   const PlanPaymentRail(this.wire, this.label);
   final int wire;

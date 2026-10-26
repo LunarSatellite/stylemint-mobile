@@ -197,6 +197,8 @@ class _MethodListState extends State<_MethodList> {
             : 'Credit / Debit card';
       case PaymentMethodType.eSewa:
         return 'eSewa wallet';
+      case PaymentMethodType.connectIps:
+        return 'Pay from your bank account';
       case PaymentMethodType.cod:
         return 'Pay on delivery';
       case PaymentMethodType.paypal:
@@ -266,6 +268,12 @@ class _PaymentIcon extends StatelessWidget {
         return const Icon(
           Icons.payment_rounded,
           color: Color(0xFF003087),
+          size: 24,
+        );
+      case PaymentMethodType.connectIps:
+        return const Icon(
+          Icons.account_balance_outlined,
+          color: Color(0xFF1A1F71),
           size: 24,
         );
     }

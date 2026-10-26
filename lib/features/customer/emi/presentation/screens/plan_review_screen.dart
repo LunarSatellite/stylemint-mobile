@@ -212,8 +212,9 @@ class _PlanReviewScreenState extends ConsumerState<PlanReviewScreen> {
                   const _Fact(
                     icon: Icons.credit_card_outlined,
                     text:
-                        'Payments are made online, by card, eSewa or '
-                        'PayPal, from Payment plans in your profile.',
+                        'Payments are made online, by card, eSewa, '
+                        'connectIPS or PayPal, from Payment plans in your '
+                        'profile.',
                   ),
                 ],
               ),

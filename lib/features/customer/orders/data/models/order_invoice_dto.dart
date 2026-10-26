@@ -96,6 +96,7 @@ class OrderInvoiceDto {
     2 => 'PayPal',
     3 => 'eSewa',
     4 => 'Cash on Delivery',
+    5 => 'connectIPS',
     _ => 'Unknown',
   };
 }
