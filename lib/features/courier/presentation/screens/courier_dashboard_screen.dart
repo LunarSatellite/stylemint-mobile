@@ -22,6 +22,7 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_place_names.dart';
 
 /// The courier's home screen: the map they work from, whether work can reach
 /// them, and the parcels they are carrying.
@@ -286,8 +287,8 @@ class _DetailSheet extends StatelessWidget {
                               style: DesignTokens.mediumSemibold,
                             ),
                             subtitle: Text(
-                              '${hop.pickup?.label ?? hop.fromGeohash} → '
-                              '${hop.dropoff?.label ?? hop.toGeohash}'
+                              '${pickupName(hop.pickup)} → '
+                              '${dropoffName(hop.dropoff)}'
                               '${hop.isLate ? ' · running late' : ''}',
                               style: DesignTokens.tiny,
                             ),

@@ -180,9 +180,15 @@ void main() {
       expect(calls, ['accept', 'decline']);
     });
 
-    testWidgets('no labels falls back to the geohash cells', (tester) async {
+    testWidgets('no labels reads as plain words, never the geohash cells', (
+      tester,
+    ) async {
       await pumpCard(tester, _offer(labels: false));
-      expect(find.text('tuutv → tuutw · Neighbour'), findsOneWidget);
+      expect(
+        find.text('Pickup point → Drop-off point · Neighbour'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('tuutv'), findsNothing);
     });
 
     testWidgets('no overflow at 320dp in any state', (tester) async {
