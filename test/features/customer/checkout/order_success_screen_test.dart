@@ -93,6 +93,9 @@ Future<_Server> _pump(
     ),
   );
   await tester.pumpAndSettle();
+  // The opening animation runs past one poll interval, so a read may already
+  // have happened: every test counts from here.
+  server.reads = 0;
   return server;
 }
 
