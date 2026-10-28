@@ -171,7 +171,12 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
       if (saved != null) {
         ref
             .read(engagementTrackerProvider)
-            .saveChanged(reel.id, saved: saved);
+            .saveChanged(
+              reel.id,
+              saved: saved,
+              requestId: reel.provenance?.requestId,
+              position: reel.provenance?.position,
+            );
       }
     }
     if (!ok && mounted) {
@@ -240,7 +245,12 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
     try {
       ref
           .read(engagementTrackerProvider)
-          .tagTapped(reelId: widget.reel.id, productId: product.id);
+          .tagTapped(
+            reelId: widget.reel.id,
+            productId: product.id,
+            requestId: widget.reel.provenance?.requestId,
+            position: widget.reel.provenance?.position,
+          );
       await reelQuickBuy(context, ref, product, reelId: widget.reel.id);
     } finally {
       _buying = false;
@@ -253,7 +263,12 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
   void _openProduct(TaggedProductEntity product) {
     ref
         .read(engagementTrackerProvider)
-        .tagTapped(reelId: widget.reel.id, productId: product.id);
+        .tagTapped(
+          reelId: widget.reel.id,
+          productId: product.id,
+          requestId: widget.reel.provenance?.requestId,
+          position: widget.reel.provenance?.position,
+        );
     unawaited(
       context.push(
         RouteNames.productDetail.replaceFirst(':productId', product.id),
@@ -288,12 +303,24 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
     if (!mounted) return;
     switch (outcome) {
       case ReelShareOutcome.copied:
-        ref.read(engagementTrackerProvider).shared(reel.id);
+        ref
+            .read(engagementTrackerProvider)
+            .shared(
+              reel.id,
+              requestId: reel.provenance?.requestId,
+              position: reel.provenance?.position,
+            );
         SmSnackbar.success(context, ReelShareSheet.copiedMessage);
       case ReelShareOutcome.failed:
         SmSnackbar.error(context, ReelShareSheet.failedMessage);
       case ReelShareOutcome.sent:
-        ref.read(engagementTrackerProvider).shared(reel.id);
+        ref
+            .read(engagementTrackerProvider)
+            .shared(
+              reel.id,
+              requestId: reel.provenance?.requestId,
+              position: reel.provenance?.position,
+            );
       case ReelShareOutcome.dismissed:
         break;
     }

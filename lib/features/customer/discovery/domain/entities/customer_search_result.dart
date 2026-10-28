@@ -276,6 +276,7 @@ class CustomerSearchResults {
     this.imageRecognition,
     this.recognizedFeatures = const [],
     this.understanding,
+    this.requestId,
   });
 
   static const empty = CustomerSearchResults(
@@ -292,6 +293,10 @@ class CustomerSearchResults {
   final List<SearchResultCreator> creators;
   final int totalHits;
   final String? queryUnderstanding;
+
+  /// The search response's ranking id (first page of the unified search
+  /// only), echoed on interaction events; null when the server sent none.
+  final String? requestId;
 
   /// Whether AI (an LLM reading of the query, semantic retrieval, or vision
   /// for a photo) really shaped these results. Only then may the screen say
