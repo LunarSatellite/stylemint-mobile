@@ -52,9 +52,12 @@ abstract interface class VendorOrdersRepository {
     String reason,
   );
 
+  /// Marks an approved return received and starts the refund. [restock]
+  /// puts the item back on hand; pass false when it can't be sold again.
   Future<Either<NetworkExceptions, VendorReturnRequest>> completeReturn(
-    String returnRequestId,
-  );
+    String returnRequestId, {
+    bool restock = true,
+  });
 
   /// Vendor §3B single-id "Mark as Shipped".
   Future<Either<NetworkExceptions, VendorOrder>> markReadyToShip(

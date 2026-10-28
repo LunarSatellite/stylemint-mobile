@@ -21,6 +21,7 @@ class VendorReturnRequest {
     this.resolvedUtc,
     this.rejectionNote,
     this.evidence,
+    this.restocked,
   });
 
   final String id;
@@ -41,6 +42,11 @@ class VendorReturnRequest {
   /// What the platform already knew at submission — byte-for-byte the same
   /// snapshot the buyer is shown. Null on older returns.
   final ReturnEvidence? evidence;
+
+  /// Set once the return is completed: true when the item went back in
+  /// stock, false when it was recorded as not resellable. Null before that,
+  /// or when the server does not send it.
+  final bool? restocked;
 
   bool get isPending => state == VendorReturnRequestState.submitted;
 }
