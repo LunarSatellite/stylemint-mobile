@@ -458,11 +458,58 @@ class CheckoutRemoteDataSource {
     // paymentRequiresAction=true and a paymentRedirectUrl the customer
     // must complete before the payment is actually captured (the provider's
     // webhook, not this response, is what marks the order paid).
+    //
+    // Since order-only-after-payment (contract v1.0), an online method's
+    // reply carries NO order number: the session is AwaitingPayment and the
+    // order is created only once the payment succeeds. The session id is
+    // kept so the app can follow it; a server from before the change still
+    // sends the number, and that reply reads exactly as it always did.
     return PlaceOrderResult(
-      orderNumber: data['orderNumber'] as String,
+      orderNumber: _blankToNull(data['orderNumber']),
       requiresPaymentAction: data['paymentRequiresAction'] as bool? ?? false,
       paymentRedirectUrl: data['paymentRedirectUrl'] as String?,
+      checkoutSessionId: _blankToNull(data['id']) ?? sessionId,
     );
+  }
+
+  // GET /v1/checkout/sessions/{id} — the session as the server holds it now.
+  // Read while an online payment is outstanding: `status`, and `orderNumber`
+  // once the order exists. Nothing else on the session is needed here.
+  Future<CheckoutSessionProgress> getCheckoutSession(String sessionId) async {
+    final response = await apiClient.get(
+      '/v1/checkout/sessions/$sessionId',
+      options: Options(headers: {'requiresToken': true}),
+    );
+    return readCheckoutSessionProgress(
+      response as Map<String, dynamic>,
+      fallbackSessionId: sessionId,
+    );
+  }
+
+  /// The parts of a `CheckoutSessionDto` that say whether the order exists.
+  static CheckoutSessionProgress readCheckoutSessionProgress(
+    Map<String, dynamic> data, {
+    required String fallbackSessionId,
+  }) => CheckoutSessionProgress(
+    sessionId: _blankToNull(data['id']) ?? fallbackSessionId,
+    status: parseCheckoutSessionStatus(data['status']),
+    orderNumber: _blankToNull(data['orderNumber']),
+  );
+
+  /// The server's `CheckoutSessionStatus`, as a number (the default
+  /// serialiser) or its name. An unrecognised value is [unknown], which the
+  /// app treats as not settled — never as placed or failed.
+  static CheckoutSessionStatus parseCheckoutSessionStatus(Object? raw) {
+    final token = raw?.toString().trim().toLowerCase();
+    return switch (token) {
+      '1' || 'draft' => CheckoutSessionStatus.draft,
+      '2' || 'placing' => CheckoutSessionStatus.placing,
+      '3' || 'placed' => CheckoutSessionStatus.placed,
+      '4' || 'failed' => CheckoutSessionStatus.failed,
+      '5' || 'expired' => CheckoutSessionStatus.expired,
+      '6' || 'awaitingpayment' => CheckoutSessionStatus.awaitingPayment,
+      _ => CheckoutSessionStatus.unknown,
+    };
   }
 
   Future<String> _createSession() async {

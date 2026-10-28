@@ -115,6 +115,12 @@ abstract class RouteNames {
   static const orders = '/orders';
   static const orderDetail = '/orders/:orderId';
   static const orderSuccess = '/order-success/:orderId';
+
+  /// "Waiting for your payment" after Place Order with an online method,
+  /// keyed by the checkout session: no order exists until the payment
+  /// succeeds (order only after payment, contract v1.0), so there is no
+  /// order number to key it by.
+  static const awaitingPayment = '/awaiting-payment/:sessionId';
   static const orderCancel = '/orders/:orderId/cancel';
   static const orderInvoice = '/orders/:orderId/invoice';
   static const orderFedEx = '/orders/:orderId/fedex';

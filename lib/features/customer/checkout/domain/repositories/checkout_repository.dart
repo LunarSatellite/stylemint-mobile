@@ -32,4 +32,12 @@ abstract interface class CheckoutRepository {
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   });
+
+  /// Where a placed checkout session stands — `GET /v1/checkout/sessions/{id}`.
+  /// Polled while an online payment is outstanding: the order exists only
+  /// once the session reads Placed with an order number.
+  Future<Either<NetworkExceptions, CheckoutSessionProgress>>
+  getCheckoutSession(
+    String sessionId,
+  );
 }

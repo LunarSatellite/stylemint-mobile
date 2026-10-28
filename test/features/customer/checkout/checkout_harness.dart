@@ -18,6 +18,10 @@ import 'package:stylemint_mobile_frontend/theme/app_theme.dart';
 export 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 export 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
+/// Shown by the harness's order-success stand-in when the route was opened
+/// with `?paymentPending=1`.
+const String orderSuccessPaymentPendingMarker = 'payment pending';
+
 /// A mocked [CheckoutRepository], stubbed by [stubCheckout].
 class MockCheckoutRepository extends Mock implements CheckoutRepository {}
 
@@ -150,8 +154,21 @@ Future<void> pumpCheckout(
       ),
       GoRoute(
         path: RouteNames.orderSuccess,
-        builder: (_, state) =>
-            Scaffold(body: Text('Order ${state.pathParameters['orderId']}')),
+        builder: (_, state) => Scaffold(
+          body: Column(
+            children: [
+              Text('Order ${state.pathParameters['orderId']}'),
+              if (state.uri.queryParameters['paymentPending'] == '1')
+                const Text(orderSuccessPaymentPendingMarker),
+            ],
+          ),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.awaitingPayment,
+        builder: (_, state) => Scaffold(
+          body: Text('Awaiting session ${state.pathParameters['sessionId']}'),
+        ),
       ),
     ],
   );

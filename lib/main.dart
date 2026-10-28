@@ -393,6 +393,16 @@ class _MockCheckoutRepository implements CheckoutRepository {
       requiresPaymentAction: false,
     ),
   );
+
+  @override
+  Future<Either<NetworkExceptions, CheckoutSessionProgress>>
+  getCheckoutSession(String sessionId) async => right(
+    CheckoutSessionProgress(
+      sessionId: sessionId,
+      status: CheckoutSessionStatus.placed,
+      orderNumber: 'mock-order-001',
+    ),
+  );
 }
 
 // GoRouter for the single-screen preview (cart → checkout flow only).
@@ -951,7 +961,11 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     // is where the server confirms the payment. When universal links hand it
     // to the app instead of the browser, the buyer is equally done paying:
     // close the browser and load that URL ourselves, unauthenticated, so the
-    // order is confirmed now and the order screen's polling sees it Paid.
+    // payment is confirmed now. The screen under the browser keeps polling:
+    // AwaitingPaymentScreen (no order until paid — it moves to the order once
+    // the session reads Placed) or, for a plan or an older server,
+    // OrderSuccessScreen's pending view (it sees the order Paid). Neither
+    // needs anything from here beyond closing the browser.
     switch (classifyPaymentLink(uri)) {
       case PaymentLinkKind.providerReturn:
         unawaited(closeInAppWebView().catchError((Object _) {}));

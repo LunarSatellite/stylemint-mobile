@@ -20,6 +20,12 @@ abstract class PlaceOrderState with _$PlaceOrderState {
   // "NK2026-00001") — every order route is keyed by that, not the internal
   // orderId GUID. See CheckoutRemoteDataSource.placeOrder's doc comment.
   const factory PlaceOrderState.success(String orderId) = _OrderSuccess;
+  // An online payment with no order yet (order only after payment, contract
+  // v1.0): the server holds the checkout session in AwaitingPayment and
+  // creates the order once the payment succeeds. Carries the session id the
+  // waiting screen polls.
+  const factory PlaceOrderState.awaitingPayment(String checkoutSessionId) =
+      _OrderAwaitingPayment;
   const factory PlaceOrderState.failure(NetworkExceptions failure) =
       _OrderFailure;
 }
@@ -253,11 +259,24 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
 
     state = CheckoutState.loadSuccess(
       summary,
-      placeOrderState: either.fold(
-        PlaceOrderState.failure,
-        (result) => PlaceOrderState.success(result.orderNumber),
-      ),
+      placeOrderState: either.fold(PlaceOrderState.failure, _placed),
     );
+  }
+
+  /// An order number means the order exists (Cash on Delivery, or a server
+  /// from before order-only-after-payment). No number but a session means
+  /// the server is waiting for the payment before it creates one. Neither is
+  /// not a placement at all.
+  static PlaceOrderState _placed(PlaceOrderResult result) {
+    final number = result.orderNumber;
+    if (number != null && number.isNotEmpty) {
+      return PlaceOrderState.success(number);
+    }
+    final session = result.checkoutSessionId;
+    if (result.awaitsPaymentBeforeOrder && session != null) {
+      return PlaceOrderState.awaitingPayment(session);
+    }
+    return const PlaceOrderState.failure(NetworkExceptions.emptyData());
   }
 
   /// Set alongside [PlaceOrderState.success] on every `placeOrder()` call

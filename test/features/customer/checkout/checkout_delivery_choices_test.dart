@@ -192,4 +192,14 @@ class _FakeCheckoutRepository implements CheckoutRepository {
       ),
     );
   }
+
+  @override
+  Future<Either<NetworkExceptions, CheckoutSessionProgress>>
+  getCheckoutSession(String sessionId) async => right(
+    CheckoutSessionProgress(
+      sessionId: sessionId,
+      status: CheckoutSessionStatus.placed,
+      orderNumber: 'NK2026-00001',
+    ),
+  );
 }

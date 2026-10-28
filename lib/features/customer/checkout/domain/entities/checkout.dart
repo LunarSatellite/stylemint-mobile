@@ -894,14 +894,82 @@ class CheckoutSummary {
 /// order paid. Showing an unconditional "Payment successful" screen for
 /// every payment method (as this app used to) falsely confirms purchases
 /// that were never actually charged.
+///
+/// Order only after payment (contract v1.0, 2026-10-28): for an online method
+/// the server creates **no order** at Place Order. Its reply is the checkout
+/// session itself, in AwaitingPayment, with no [orderNumber]; the order is
+/// created once the payment succeeds, and the app follows it by polling the
+/// session ([checkoutSessionId]). A server from before that change still
+/// answers with an order number, and that reply is handled exactly as before.
 class PlaceOrderResult {
   const PlaceOrderResult({
     required this.orderNumber,
     required this.requiresPaymentAction,
     this.paymentRedirectUrl,
+    this.checkoutSessionId,
   });
 
-  final String orderNumber;
+  /// The order's number (e.g. "NK2026-00001"), or null when no order exists
+  /// yet because the server is waiting for the payment.
+  final String? orderNumber;
   final bool requiresPaymentAction;
   final String? paymentRedirectUrl;
+
+  /// The checkout session that was placed.
+  final String? checkoutSessionId;
+
+  /// True when there is no order yet, only a session waiting for its
+  /// payment: the buyer waits on [checkoutSessionId] rather than an order.
+  bool get awaitsPaymentBeforeOrder {
+    final number = orderNumber;
+    final session = checkoutSessionId;
+    return (number == null || number.isEmpty) &&
+        session != null &&
+        session.isNotEmpty;
+  }
+}
+
+/// Where a checkout session stands, as the server's `CheckoutSessionStatus`
+/// numbers it (Draft = 1 … Expired = 5, AwaitingPayment = 6; the values are
+/// locked and never renumbered). [unknown] is anything this build cannot
+/// read, and is treated as not settled yet.
+enum CheckoutSessionStatus {
+  draft,
+  placing,
+  placed,
+  failed,
+  expired,
+  awaitingPayment,
+  unknown,
+}
+
+/// What the "Waiting for your payment" screen reads from
+/// `GET /v1/checkout/sessions/{id}`.
+@immutable
+class CheckoutSessionProgress {
+  const CheckoutSessionProgress({
+    required this.sessionId,
+    required this.status,
+    this.orderNumber,
+  });
+
+  final String sessionId;
+  final CheckoutSessionStatus status;
+
+  /// Set once the order exists (status [CheckoutSessionStatus.placed]).
+  final String? orderNumber;
+
+  /// The payment succeeded and the order now exists.
+  bool get isPlaced {
+    final number = orderNumber;
+    return status == CheckoutSessionStatus.placed &&
+        number != null &&
+        number.isNotEmpty;
+  }
+
+  /// The payment failed or was abandoned, or the hold lapsed: no order was
+  /// created.
+  bool get isFailed =>
+      status == CheckoutSessionStatus.failed ||
+      status == CheckoutSessionStatus.expired;
 }

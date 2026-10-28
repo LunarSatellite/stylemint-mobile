@@ -93,6 +93,7 @@ import 'package:stylemint_mobile_frontend/features/customer/assistant/presentati
 import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/screens/assistant_conversations_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_scenarios_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/awaiting_payment_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/checkout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/order_success_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/commerce_intelligence/presentation/screens/evidence_answer_screen.dart';
@@ -684,6 +685,14 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => OrderSuccessScreen(
           orderId: state.pathParameters['orderId']!,
           paymentPending: state.uri.queryParameters['paymentPending'] == '1',
+        ),
+      ),
+
+      // Online payment, no order yet: wait on the checkout session.
+      GoRoute(
+        path: RouteNames.awaitingPayment,
+        builder: (ctx, state) => AwaitingPaymentScreen(
+          checkoutSessionId: state.pathParameters['sessionId']!,
         ),
       ),
 

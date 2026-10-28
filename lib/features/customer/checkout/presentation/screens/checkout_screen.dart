@@ -28,7 +28,6 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -170,15 +169,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           final redirectUrl = placed?.paymentRedirectUrl;
           final paymentPending = placed?.requiresPaymentAction == true;
           if (paymentPending && redirectUrl != null && redirectUrl.isNotEmpty) {
-            try {
-              await launchUrl(
-                Uri.parse(redirectUrl),
-                mode: LaunchMode.inAppBrowserView,
-              );
-            } catch (_) {
-              // No browser available / malformed URL — fall through to the
-              // order screen anyway; the order exists and is visible in
-              // Order History showing its real (unpaid) status.
+            // No browser available / malformed URL — the launcher swallows
+            // it and we fall through to the order screen anyway; the order
+            // exists and is visible in Order History showing its real
+            // (unpaid) status.
+            final uri = Uri.tryParse(redirectUrl);
+            if (uri != null) {
+              await ref.read(checkoutPaymentLauncherProvider)(uri);
             }
           }
 
@@ -186,6 +183,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           context.pushReplacement(
             '${RouteNames.orderSuccess.replaceAll(':orderId', orderId)}'
             '${paymentPending ? '?paymentPending=1' : ''}',
+          );
+        },
+        awaitingPayment: (checkoutSessionId) async {
+          // Order only after payment: an online method creates no order
+          // until the payment succeeds, so there is no order number yet and
+          // the cart is untouched. Open the provider's page, then wait on
+          // the checkout session — that screen moves to the order once the
+          // server has created it, or says the payment didn't go through.
+          final redirectUrl = ref
+              .read(checkoutNotifierProvider.notifier)
+              .lastPlaceOrderResult
+              ?.paymentRedirectUrl;
+          final uri = redirectUrl == null || redirectUrl.isEmpty
+              ? null
+              : Uri.tryParse(redirectUrl);
+          if (uri != null) {
+            await ref.read(checkoutPaymentLauncherProvider)(uri);
+          }
+
+          if (!context.mounted) return;
+          context.pushReplacement(
+            RouteNames.awaitingPayment.replaceAll(
+              ':sessionId',
+              Uri.encodeComponent(checkoutSessionId),
+            ),
           );
         },
         failure: (failure) {

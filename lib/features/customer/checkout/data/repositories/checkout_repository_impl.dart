@@ -192,4 +192,21 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
       return left(NetworkExceptions.noInternetConnection());
     }
   }
+
+  @override
+  Future<Either<NetworkExceptions, CheckoutSessionProgress>>
+  getCheckoutSession(
+    String sessionId,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      return right(await remoteDataSource.getCheckoutSession(sessionId));
+    } on Object catch (e) {
+      if (e is DioException) return left(mapDioExceptionToNetworkException(e));
+      if (e is NetworkExceptions) return left(e);
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
 }

@@ -157,8 +157,15 @@ class CreditRepositoryImpl implements CreditRepository {
       },
       idempotencyKey: idempotencyKey,
     );
+    // A payment plan keeps its own flow: its order is created at Place, so
+    // the reply always names it (order-only-after-payment covers the cart's
+    // online methods, not plans). A reply without one is not an order.
+    final orderNumber = placed.orderNumber;
+    if (orderNumber == null || orderNumber.isEmpty) {
+      throw const FormatException('Payment-plan place returned no order');
+    }
     return PlanCheckoutPlaced(
-      orderNumber: placed.orderNumber,
+      orderNumber: orderNumber,
       redirectUrl: placed.paymentRedirectUrl,
     );
   });

@@ -43,6 +43,12 @@ enum OrderSuccessPhase {
 /// whenever the app comes back to the foreground (the buyer returning from
 /// the payment page), and moves to the confirmed view once the order is paid
 /// — or to "Payment didn't go through" once the server has cancelled it.
+///
+/// Since order-only-after-payment (contract v1.0, 2026-10-28) a cart checkout
+/// with an online method creates no order until it is paid, and waits on its
+/// checkout session in `AwaitingPaymentScreen` instead, arriving here only
+/// once the order exists (confirmed). The [paymentPending] view stays for a
+/// payment plan's down payment and for a server from before that change.
 class OrderSuccessScreen extends ConsumerStatefulWidget {
   const OrderSuccessScreen({
     required this.orderId,
@@ -331,7 +337,7 @@ class _OrderSuccessScreenState extends ConsumerState<OrderSuccessScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _SuccessMark(tone: _tone, progress: _controller),
+                    OrderOutcomeMark(tone: _tone, progress: _controller),
                     const SizedBox(height: DesignTokens.s32),
                     Semantics(
                       header: true,
@@ -486,8 +492,15 @@ class _OrderNumberPlate extends StatelessWidget {
 /// One mark, one accent. Concentric rings bloom outward once and settle; the
 /// glyph itself never moves, so the state is readable from the first frame
 /// whether or not animation ran.
-class _SuccessMark extends StatelessWidget {
-  const _SuccessMark({required this.tone, required this.progress});
+///
+/// Shared with `AwaitingPaymentScreen`'s waiting and failed views so both
+/// read the same as this screen's.
+class OrderOutcomeMark extends StatelessWidget {
+  const OrderOutcomeMark({
+    required this.tone,
+    required this.progress,
+    super.key,
+  });
 
   final MallStatusTone tone;
   final Animation<double> progress;
