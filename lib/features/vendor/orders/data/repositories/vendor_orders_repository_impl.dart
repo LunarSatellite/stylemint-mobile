@@ -255,8 +255,9 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
 
   @override
   Future<Either<NetworkExceptions, VendorReturnRequest>> completeReturn(
-    String returnRequestId,
-  ) async {
+    String returnRequestId, {
+    bool restock = true,
+  }) async {
     if (!await networkInfo.isConnected) {
       return left(NetworkExceptions.noInternetConnection());
     }
@@ -264,6 +265,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
       final data = await remoteDataSource.completeReturn(
         returnRequestId,
         _uuid.v4(),
+        restock: restock,
       );
       return right(VendorReturnRequestDto.fromJson(data).toDomain());
     } catch (error) {

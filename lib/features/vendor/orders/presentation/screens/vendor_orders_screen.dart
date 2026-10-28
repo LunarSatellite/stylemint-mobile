@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/wi
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_action_bar.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_return_card.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_step_sheets.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_menu_button.dart';
@@ -1229,36 +1230,17 @@ class _VendorReturnsWorkspaceState
   }
 
   Future<void> _complete(VendorReturnRequest request) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: DesignTokens.surfaceRaised,
-        icon: const Icon(
-          Icons.inventory_2_outlined,
-          color: DesignTokens.primaryGreen,
-        ),
-        title: const Text('Item received and checked?'),
-        content: const Text(
-          'Confirm only after the returned item is physically received. '
-          'This completes the return and starts the customer’s exact refund.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Not yet'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Confirm & refund'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
+    final restock = await showVendorReturnReceivedSheet(context);
+    if (restock == null || !mounted) return;
     await _mutate(
       request,
-      () => ref.read(vendorOrdersRepositoryProvider).completeReturn(request.id),
-      'Return completed. The refund has been started.',
+      () => ref
+          .read(vendorOrdersRepositoryProvider)
+          .completeReturn(request.id, restock: restock),
+      restock
+          ? 'Return completed and the item is back in stock. '
+                'The refund has been started.'
+          : 'Return completed. The refund has been started.',
     );
   }
 

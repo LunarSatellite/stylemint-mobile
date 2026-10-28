@@ -272,6 +272,79 @@ Future<VendorSealInput?> showVendorSealSheet(BuildContext context) =>
       builder: (_) => const VendorSealSheet(),
     );
 
+/// Asks the seller to confirm a returned item arrived, and whether it goes
+/// back in stock.
+///
+/// Resolves to the restock choice, or null when the seller backs out.
+Future<bool?> showVendorReturnReceivedSheet(BuildContext context) =>
+    showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: DesignTokens.bgAppBody,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.radiusLarge),
+        ),
+      ),
+      builder: (_) => const VendorReturnReceivedSheet(),
+    );
+
+/// "Item received?" — completes the return and starts the refund.
+///
+/// Restock is on by default: most returns can be sold again, and the server
+/// makes the same assumption when an older app sends no choice. Turning it
+/// off records the item as not resellable.
+class VendorReturnReceivedSheet extends StatefulWidget {
+  const VendorReturnReceivedSheet({super.key});
+
+  static const Key submitKey = ValueKey<String>('vendor-return-received');
+  static const Key restockSwitchKey = ValueKey<String>(
+    'vendor-return-restock',
+  );
+  static const title = 'Item received?';
+  static const restockLabel = 'Put the item back in stock';
+  static const restockHint =
+      "Turn off if it is damaged or can't be sold again.";
+
+  @override
+  State<VendorReturnReceivedSheet> createState() =>
+      _VendorReturnReceivedSheetState();
+}
+
+class _VendorReturnReceivedSheetState extends State<VendorReturnReceivedSheet> {
+  bool _restock = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SheetScaffold(
+      title: VendorReturnReceivedSheet.title,
+      body:
+          'Confirm only once the returned item is in your hands. This '
+          'completes the return and starts the customer’s refund.',
+      primaryLabel: 'Confirm & refund',
+      primaryKey: VendorReturnReceivedSheet.submitKey,
+      onPrimary: () => Navigator.of(context).pop(_restock),
+      children: [
+        SwitchListTile(
+          key: VendorReturnReceivedSheet.restockSwitchKey,
+          contentPadding: EdgeInsets.zero,
+          value: _restock,
+          onChanged: (value) => setState(() => _restock = value),
+          title: const Text(
+            VendorReturnReceivedSheet.restockLabel,
+            style: DesignTokens.mediumSemibold,
+          ),
+          subtitle: Text(
+            VendorReturnReceivedSheet.restockHint,
+            style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Seal the parcel: the number printed on the tamper-evident sticker, and a
 /// photo of it on the closed box.
 ///

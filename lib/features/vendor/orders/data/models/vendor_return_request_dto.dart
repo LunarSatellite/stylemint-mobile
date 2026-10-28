@@ -21,6 +21,7 @@ class VendorReturnRequestDto {
     this.resolvedUtc,
     this.rejectionNote,
     this.evidence,
+    this.restocked,
   });
 
   factory VendorReturnRequestDto.fromJson(Map<String, dynamic> json) =>
@@ -42,6 +43,7 @@ class VendorReturnRequestDto {
             : null,
         rejectionNote: json['rejectionNote'] as String?,
         evidence: ReturnEvidenceDto.maybeFromJson(json['evidence']),
+        restocked: json['restocked'] as bool?,
       );
 
   final String id;
@@ -61,6 +63,10 @@ class VendorReturnRequestDto {
 
   /// The same snapshot the buyer sees, parsed by the same code.
   final ReturnEvidenceDto? evidence;
+
+  /// Whether completing the return put the item back in stock. Absent on
+  /// open returns and from servers older than the restock change.
+  final bool? restocked;
 
   /// Backend `ReturnRequestState`: Submitted=1, Approved=2, Rejected=3, Completed=4.
   static VendorReturnRequestState _stateFromCode(int code) => switch (code) {
@@ -86,5 +92,6 @@ class VendorReturnRequestDto {
     resolvedUtc: resolvedUtc,
     rejectionNote: rejectionNote,
     evidence: evidence?.toDomain(),
+    restocked: restocked,
   );
 }

@@ -311,12 +311,17 @@ class VendorOrdersRemoteDataSource {
   }
 
   /// POST /v1/vendor/returns/{id}/complete — Approved -> Completed and refund.
+  ///
+  /// [restock] says whether the returned item goes back on hand. It is always
+  /// sent; the server reads a missing body as `true`, for older apps.
   Future<Map<String, dynamic>> completeReturn(
     String returnRequestId,
-    String idempotencyKey,
-  ) async {
+    String idempotencyKey, {
+    bool restock = true,
+  }) async {
     final response = await apiClient.post(
       '/v1/vendor/returns/$returnRequestId/complete',
+      data: {'restock': restock},
       options: _idempotent(idempotencyKey),
     );
     return response as Map<String, dynamic>;
