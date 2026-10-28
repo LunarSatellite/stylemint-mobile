@@ -67,7 +67,7 @@ class ReturnPickupSection extends ConsumerWidget {
     if (fare == null) return null;
     switch (fare.payer) {
       case ReturnFarePayer.seller:
-        return 'Pickup is free for you.';
+        return 'No pickup fee: the seller pays it.';
       case ReturnFarePayer.buyer:
         final amount = fare.amount;
         final upTo = fare.upTo;

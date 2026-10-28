@@ -312,7 +312,7 @@ void main() {
         ReturnPickupSection.fareLine(
           const ReturnPickupFare(payer: ReturnFarePayer.seller),
         ),
-        'Pickup is free for you.',
+        'No pickup fee: the seller pays it.',
       );
       expect(
         ReturnPickupSection.fareLine(

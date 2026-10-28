@@ -58,7 +58,7 @@ class ReturnPickupFeeNote extends StatelessWidget {
   final ReturnReasonCategory category;
   final ReturnPickupQuoteView quote;
 
-  static const freeText = 'Pickup is free for you.';
+  static const freeText = 'No pickup fee: the seller pays it.';
   static const noQuoteText =
       'The pickup fee comes off your refund. We could not work it out yet.';
 
