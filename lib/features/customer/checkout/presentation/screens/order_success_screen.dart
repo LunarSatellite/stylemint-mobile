@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -203,6 +204,11 @@ class _OrderSuccessScreenState extends ConsumerState<OrderSuccessScreen>
           if (method.isNotEmpty) _method = method;
         });
         _playBloom();
+        // The server keeps the cart until an online payment clears, then takes
+        // the bought items out (paid) or leaves them (failed): show it as it is.
+        if (ref.exists(cartNotifierProvider)) {
+          unawaited(ref.read(cartNotifierProvider.notifier).fetchCart());
+        }
       });
     } finally {
       _checking = false;
