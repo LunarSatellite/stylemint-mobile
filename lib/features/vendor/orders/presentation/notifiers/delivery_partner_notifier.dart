@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/repositories/vendor_orders_repository.dart';
@@ -66,6 +67,7 @@ class DeliveryPartnerNotifier extends StateNotifier<DeliveryPartnerState> {
     this.subOrderId, {
     this.pollInterval = const Duration(seconds: 5),
     bool autoLoad = true,
+    this.forReturn = false,
   }) : super(const DeliveryPartnerLoading()) {
     if (autoLoad) unawaited(load());
   }
@@ -73,6 +75,15 @@ class DeliveryPartnerNotifier extends StateNotifier<DeliveryPartnerState> {
   final VendorOrdersRepository _repository;
   final String subOrderId;
   final Duration pollInterval;
+
+  /// [subOrderId] is a return request id, and the request is for a rider to
+  /// collect that return from the buyer (return pickup contract §4). Same
+  /// states, same sheet; only the routes differ.
+  final bool forReturn;
+
+  Future<Either<NetworkExceptions, DeliveryRequest?>> _current() => forReturn
+      ? _repository.currentReturnPickupRequest(subOrderId)
+      : _repository.currentDeliveryRequest(subOrderId);
 
   Timer? _poll;
   bool _refreshing = false;
@@ -94,7 +105,7 @@ class DeliveryPartnerNotifier extends StateNotifier<DeliveryPartnerState> {
     _retry = load;
     final generation = ++_generation;
     state = const DeliveryPartnerLoading();
-    final either = await _repository.currentDeliveryRequest(subOrderId);
+    final either = await _current();
     if (!mounted || generation != _generation) return;
     either.fold(_fail, (request) {
       if (request == null) {
@@ -119,10 +130,15 @@ class DeliveryPartnerNotifier extends StateNotifier<DeliveryPartnerState> {
       finding: true,
       consenting: allowVerifiedNonPro,
     );
-    final either = await _repository.openDeliveryRequest(
-      subOrderId,
-      allowVerifiedNonPro: allowVerifiedNonPro,
-    );
+    final either = forReturn
+        ? await _repository.openReturnPickupRequest(
+            subOrderId,
+            allowVerifiedNonPro: allowVerifiedNonPro,
+          )
+        : await _repository.openDeliveryRequest(
+            subOrderId,
+            allowVerifiedNonPro: allowVerifiedNonPro,
+          );
     if (!mounted || generation != _generation) return;
     either.fold(_fail, _show);
   }
@@ -136,7 +152,7 @@ class DeliveryPartnerNotifier extends StateNotifier<DeliveryPartnerState> {
     _refreshing = true;
     final generation = _generation;
     try {
-      final either = await _repository.currentDeliveryRequest(subOrderId);
+      final either = await _current();
       if (!mounted || generation != _generation) return;
       final current = state;
       if (current is! DeliveryPartnerLive || current.choosing) return;
@@ -160,10 +176,9 @@ class DeliveryPartnerNotifier extends StateNotifier<DeliveryPartnerState> {
     if (current is! DeliveryPartnerLive || current.choosing) return null;
     final generation = ++_generation;
     state = DeliveryPartnerLive(current.request, choosingOfferId: offerId);
-    final either = await _repository.selectDeliveryPartner(
-      subOrderId,
-      offerId,
-    );
+    final either = forReturn
+        ? await _repository.selectReturnPickupRider(subOrderId, offerId)
+        : await _repository.selectDeliveryPartner(subOrderId, offerId);
     if (!mounted || generation != _generation) return null;
     return either.fold<NetworkExceptions?>(
       (failure) {

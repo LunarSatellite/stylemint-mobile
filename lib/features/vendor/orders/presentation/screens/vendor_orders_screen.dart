@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/wi
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_action_bar.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_return_card.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_return_pickup_panel.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_menu_button.dart';
@@ -1359,12 +1360,17 @@ class _VendorReturnsWorkspaceState
                   );
                 }
                 final request = page.items[index - 1];
-                return VendorReturnCard(
+                return VendorReturnPickupScope(
                   request: request,
-                  busy: _busyId == request.id,
-                  onApprove: () => _approve(request),
-                  onReject: () => _reject(request),
-                  onComplete: () => _complete(request),
+                  builder: (pickupPanel, completeLocked) => VendorReturnCard(
+                    request: request,
+                    busy: _busyId == request.id,
+                    onApprove: () => _approve(request),
+                    onReject: () => _reject(request),
+                    onComplete: () => _complete(request),
+                    pickup: pickupPanel,
+                    completeLocked: completeLocked,
+                  ),
                 );
               },
             );

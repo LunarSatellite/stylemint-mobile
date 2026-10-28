@@ -6,12 +6,10 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/plan_progress_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
-import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
@@ -26,6 +24,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/handover_delegation_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_care_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_return_link.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/return_request_dialog.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/unit_warranty_claims_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/warranty_claim_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_tracking_section.dart';
@@ -322,7 +321,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             : null;
       case CareAction.returnItem:
         if (line == null) return null;
-        return (_) => _startReturnRequest(
+        return (_) => startReturnRequest(
           context,
           order: order,
           notifier: widget.notifier,
@@ -1507,7 +1506,7 @@ class _OtherDetails extends StatelessWidget {
   );
 
   void _handleRequestReturn(BuildContext context) =>
-      _startReturnRequest(context, order: order, notifier: notifier);
+      startReturnRequest(context, order: order, notifier: notifier);
 }
 
 /// Whether a StyleMint parcel may have reached the buyer, so the "Got your
@@ -1537,36 +1536,6 @@ OrderDetailItem? _orderLineFor(OrderDetail order, CareItem care) {
     if (item.id.toLowerCase() == lineId) return item;
   }
   return null;
-}
-
-/// Opens the return request dialog (optionally preselecting [initialItem])
-/// and submits the collected return through the order detail notifier.
-void _startReturnRequest(
-  BuildContext context, {
-  required OrderDetail order,
-  required OrderDetailNotifier notifier,
-  OrderDetailItem? initialItem,
-}) {
-  showDialog<_ReturnRequestResult>(
-    context: context,
-    builder: (ctx) => _ReturnRequestDialog(
-      items: order.items,
-      notifier: notifier,
-      initialItem: initialItem,
-    ),
-  ).then((result) {
-    if (result != null) {
-      notifier.requestReturn(
-        subOrderId: result.item.subOrderId,
-        subOrderLineId: result.item.id,
-        quantity: result.quantity,
-        reason: result.reason,
-        photoUrls: result.photoUrls,
-        resolution: result.resolution,
-        replacementVariantId: result.replacementVariantId,
-      );
-    }
-  });
 }
 
 class _ActionRowCard extends StatelessWidget {
@@ -1656,349 +1625,6 @@ class _ActionRow extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// What [_ReturnRequestDialog] hands back to the caller on Submit.
-class _ReturnRequestResult {
-  const _ReturnRequestResult({
-    required this.item,
-    required this.quantity,
-    required this.reason,
-    required this.photoUrls,
-    required this.resolution,
-    this.replacementVariantId,
-  });
-
-  final OrderDetailItem item;
-  final int quantity;
-  final String reason;
-  final List<String> photoUrls;
-  final ReturnResolutionChoice resolution;
-  final String? replacementVariantId;
-}
-
-/// Collects everything the backend's `SubmitReturnVm` requires: which line
-/// item, how many units, why, and at least one photo (skill §13.7) — a
-/// bare reason string always 400s server-side.
-class _ReturnRequestDialog extends StatefulWidget {
-  const _ReturnRequestDialog({
-    required this.items,
-    required this.notifier,
-    this.initialItem,
-  });
-
-  final List<OrderDetailItem> items;
-  final OrderDetailNotifier notifier;
-
-  /// Preselected line (e.g. from the Care & returns card); first item if null.
-  final OrderDetailItem? initialItem;
-
-  @override
-  State<_ReturnRequestDialog> createState() => _ReturnRequestDialogState();
-}
-
-class _ReturnRequestDialogState extends State<_ReturnRequestDialog> {
-  final _controller = TextEditingController();
-  late OrderDetailItem _selectedItem;
-  int _quantity = 1;
-  final List<String> _photoUrls = [];
-  bool _uploading = false;
-  String? _error;
-  ReturnResolutionChoice _resolution = ReturnResolutionChoice.refund;
-  List<ReplacementOption> _replacementOptions = const [];
-  ReplacementOption? _selectedReplacement;
-  bool _loadingReplacements = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedItem = widget.initialItem ?? widget.items.first;
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickAndUploadPhoto() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 80,
-    );
-    if (picked == null) return;
-    setState(() {
-      _uploading = true;
-      _error = null;
-    });
-    final either = await widget.notifier.uploadReturnPhoto(picked.path);
-    if (!mounted) return;
-    either.fold(
-      (failure) => setState(() {
-        _uploading = false;
-        _error = 'Photo upload failed. Try again.';
-      }),
-      (url) => setState(() {
-        _uploading = false;
-        _photoUrls.add(url);
-      }),
-    );
-  }
-
-  Future<void> _setResolution(ReturnResolutionChoice choice) async {
-    setState(() {
-      _resolution = choice;
-      _error = null;
-      _selectedReplacement = null;
-      _replacementOptions = const [];
-      _loadingReplacements = choice == ReturnResolutionChoice.replacement;
-    });
-    if (choice == ReturnResolutionChoice.refund) return;
-
-    final result = await widget.notifier.getReplacementOptions(
-      _selectedItem.productId,
-    );
-    if (!mounted) return;
-    result.fold(
-      (_) => setState(() {
-        _loadingReplacements = false;
-        _error = 'Could not load replacement options. Try again.';
-      }),
-      (options) {
-        final eligible = options
-            .where(
-              (option) =>
-                  option.price.currency == _selectedItem.unitPrice.currency,
-            )
-            .toList(growable: false);
-        setState(() {
-          _loadingReplacements = false;
-          _replacementOptions = eligible;
-          _selectedReplacement = eligible.isEmpty ? null : eligible.first;
-          if (eligible.isEmpty) {
-            _error = 'No replacement variant is currently in stock.';
-          }
-        });
-      },
-    );
-  }
-
-  void _submit() {
-    if (_controller.text.trim().isEmpty) {
-      setState(() => _error = 'Please enter a reason for the return.');
-      return;
-    }
-    if (_photoUrls.isEmpty) {
-      setState(() => _error = 'Please add at least one photo.');
-      return;
-    }
-    if (_resolution == ReturnResolutionChoice.replacement &&
-        _selectedReplacement == null) {
-      setState(() => _error = 'Choose an available replacement variant.');
-      return;
-    }
-    Navigator.pop(
-      context,
-      _ReturnRequestResult(
-        item: _selectedItem,
-        quantity: _quantity,
-        reason: _controller.text.trim(),
-        photoUrls: _photoUrls,
-        resolution: _resolution,
-        replacementVariantId: _selectedReplacement?.variantId,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: DesignTokens.bgAppBody,
-      title: Text('Request Return', style: DesignTokens.sectionInnerTitle),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.items.length > 1) ...[
-              Text('Item', style: DesignTokens.smallDescription),
-              const SizedBox(height: DesignTokens.s8),
-              DropdownButton<OrderDetailItem>(
-                isExpanded: true,
-                value: _selectedItem,
-                dropdownColor: DesignTokens.bgAppBody,
-                items: widget.items
-                    .map(
-                      (i) => DropdownMenuItem(
-                        value: i,
-                        child: Text(
-                          i.productName,
-                          style: DesignTokens.bodyText,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                    .toList(growable: false),
-                onChanged: (item) => setState(() {
-                  _selectedItem = item ?? _selectedItem;
-                  _quantity = 1;
-                }),
-              ),
-              const SizedBox(height: DesignTokens.s12),
-            ],
-            Text(
-              'How should we resolve it?',
-              style: DesignTokens.smallDescription,
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            SegmentedButton<ReturnResolutionChoice>(
-              segments: const [
-                ButtonSegment(
-                  value: ReturnResolutionChoice.refund,
-                  icon: Icon(Icons.currency_rupee_rounded),
-                  label: Text('Refund'),
-                ),
-                ButtonSegment(
-                  value: ReturnResolutionChoice.replacement,
-                  icon: Icon(Icons.swap_horiz_rounded),
-                  label: Text('Replace'),
-                ),
-              ],
-              selected: {_resolution},
-              onSelectionChanged: (values) => _setResolution(values.first),
-            ),
-            if (_loadingReplacements) ...[
-              const SizedBox(height: DesignTokens.s12),
-              const LinearProgressIndicator(),
-            ] else if (_resolution == ReturnResolutionChoice.replacement &&
-                _replacementOptions.isNotEmpty) ...[
-              const SizedBox(height: DesignTokens.s12),
-              DropdownButtonFormField<ReplacementOption>(
-                initialValue: _selectedReplacement,
-                decoration: DesignTokens.inputDecoration(
-                  hintText: 'Replacement variant',
-                ),
-                dropdownColor: DesignTokens.bgAppBody,
-                items: _replacementOptions
-                    .map(
-                      (option) => DropdownMenuItem(
-                        value: option,
-                        child: Text(
-                          '${option.label} · ${formatMoney(option.price)}',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                    .toList(growable: false),
-                onChanged: (option) =>
-                    setState(() => _selectedReplacement = option),
-              ),
-              const SizedBox(height: DesignTokens.s4),
-              Text(
-                'Stock is held for 24 hours. Cheaper options refund the difference; higher-priced options collect only the balance.',
-                style: DesignTokens.smallDescription,
-              ),
-            ],
-            const SizedBox(height: DesignTokens.s12),
-            Row(
-              children: [
-                Text('Quantity', style: DesignTokens.smallDescription),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
-                  color: DesignTokens.iconLight,
-                  onPressed: _quantity > 1
-                      ? () => setState(() => _quantity--)
-                      : null,
-                ),
-                Text('$_quantity', style: DesignTokens.mediumSemibold),
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
-                  color: DesignTokens.iconLight,
-                  onPressed: _quantity < _selectedItem.qty
-                      ? () => setState(() => _quantity++)
-                      : null,
-                ),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            TextField(
-              controller: _controller,
-              maxLines: 3,
-              style: DesignTokens.bodyText,
-              decoration: DesignTokens.inputDecoration(
-                hintText: 'Reason for return',
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s12),
-            if (_photoUrls.isNotEmpty)
-              SizedBox(
-                height: 64,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _photoUrls.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(width: DesignTokens.s8),
-                  itemBuilder: (_, i) => ClipRRect(
-                    borderRadius: BorderRadius.circular(DesignTokens.s8),
-                    child: SizedBox(
-                      width: DesignTokens.thumbCompact,
-                      height: DesignTokens.thumbCompact,
-                      child: MallNetworkImage(url: _photoUrls[i]),
-                    ),
-                  ),
-                ),
-              ),
-            const SizedBox(height: DesignTokens.s8),
-            OutlinedButton.icon(
-              onPressed: _uploading ? null : _pickAndUploadPhoto,
-              style: DesignTokens.outlinedButtonStyle(),
-              icon: _uploading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.upload_outlined, size: 18),
-              label: Text(
-                _photoUrls.isEmpty ? 'Add Photo' : 'Add Another Photo',
-                style: DesignTokens.mediumSemibold,
-              ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: DesignTokens.s8),
-              Text(
-                _error!,
-                style: DesignTokens.smallRegular.copyWith(color: Colors.red),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            'Cancel',
-            style: DesignTokens.mediumRegular.copyWith(
-              color: DesignTokens.textMuted,
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: _uploading ? null : _submit,
-          child: Text(
-            'Submit',
-            style: DesignTokens.mediumSemibold.copyWith(
-              color: DesignTokens.primaryGreen,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

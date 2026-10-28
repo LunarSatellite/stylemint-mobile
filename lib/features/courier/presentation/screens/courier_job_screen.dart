@@ -9,9 +9,12 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_job.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_work.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_delivery_qr_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/notifiers/courier_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_hop_screen.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_action_feedback.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_fare_breakdown.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_job_map.dart';
+import 'package:stylemint_mobile_frontend/features/courier/presentation/widgets/courier_return_collect_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/courier/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
@@ -47,6 +50,7 @@ class CourierJobScreen extends ConsumerWidget {
 
   static const primaryActionKey = ValueKey<String>('courier-job-primary');
   static const copyPackageKey = ValueKey<String>('courier-job-copy-package');
+  static const cantCollectKey = ValueKey<String>('courier-job-cant-collect');
 
   /// How much of the screen the sheet covers at rest — enough for the
   /// package number, the status and the action, with the map above.
@@ -83,7 +87,7 @@ class CourierJobScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Delivery'),
+        title: Text(current?.isReturn == true ? 'Return pickup' : 'Delivery'),
         actions: [
           if (hop != null && profileId != null)
             PopupMenuButton<String>(
@@ -225,17 +229,23 @@ class _JobSheet extends ConsumerWidget {
             ],
             _PrimaryAction(job: job),
             const SizedBox(height: DesignTokens.s20),
+            // A return runs the other way: from the buyer's door back to the
+            // seller's shop.
             _StopCard(
-              title: 'Pick-up',
-              icon: Icons.storefront_rounded,
-              color: DesignTokens.primaryGreen,
+              title: job.isReturn ? 'Collect from the buyer' : 'Pick-up',
+              icon: job.isReturn ? Icons.home_rounded : Icons.storefront_rounded,
+              color: job.isReturn
+                  ? DesignTokens.colorError
+                  : DesignTokens.primaryGreen,
               stop: job.pickup,
             ),
             const SizedBox(height: DesignTokens.s12),
             _StopCard(
-              title: 'Drop-off',
-              icon: Icons.home_rounded,
-              color: DesignTokens.colorError,
+              title: job.isReturn ? 'Bring to the seller' : 'Drop-off',
+              icon: job.isReturn ? Icons.storefront_rounded : Icons.home_rounded,
+              color: job.isReturn
+                  ? DesignTokens.primaryGreen
+                  : DesignTokens.colorError,
               stop: job.dropoff,
             ),
             const SizedBox(height: DesignTokens.s20),
@@ -436,6 +446,10 @@ class _PrimaryAction extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final busy = ref.watch(courierJobActionsNotifierProvider);
 
+    // A return is collected with photos and the buyer's scan, never with
+    // "Picked up" (the server refuses it: return_pickup.buyer_confirmation_required).
+    if (job.awaitingReturnCollection) return _ReturnCollectAction(job: job);
+
     switch (job.status) {
       case CourierJobStatus.assigned:
         return _ActionButton(
@@ -488,7 +502,10 @@ class _PrimaryAction extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Delivered ✓', style: DesignTokens.mediumSemibold),
+                    Text(
+                      job.isReturn ? 'Returned to the seller ✓' : 'Delivered ✓',
+                      style: DesignTokens.mediumSemibold,
+                    ),
                     if (at != null)
                       Text(
                         DateFormat('d MMM, h:mm a').format(at.toLocal()),
@@ -503,7 +520,9 @@ class _PrimaryAction extends ConsumerWidget {
       case CourierJobStatus.cancelled:
         return Text(
           key: CourierJobScreen.primaryActionKey,
-          'This delivery was cancelled. Nothing more to do.',
+          job.isReturn
+              ? 'This pickup was cancelled. Nothing more to do.'
+              : 'This delivery was cancelled. Nothing more to do.',
           style: DesignTokens.smallRegular,
         );
     }
@@ -584,6 +603,111 @@ class _PrimaryAction extends ConsumerWidget {
         }
       },
     );
+  }
+}
+
+/// A return pickup at the buyer's door: "Collect" (photos, then the QR the
+/// buyer scans) and "Can't collect" (return pickup contract §4).
+class _ReturnCollectAction extends ConsumerWidget {
+  const _ReturnCollectAction({required this.job});
+
+  final CourierJob job;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final busy = ref.watch(courierJobActionsNotifierProvider);
+    final reporting = ref.watch(courierActionsNotifierProvider);
+    final codeOut = job.status == CourierJobStatus.awaitingConfirmation;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          codeOut
+              ? 'The buyer has not scanned your code yet.'
+              : 'Photograph the item, then the buyer scans your code.',
+          style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+        ),
+        const SizedBox(height: DesignTokens.s8),
+        _ActionButton(
+          label: codeOut ? 'Show QR again' : 'Collect',
+          icon: codeOut ? Icons.qr_code_2_rounded : Icons.photo_camera_rounded,
+          busy: busy || reporting,
+          onPressed: () => _collect(context, ref),
+        ),
+        const SizedBox(height: DesignTokens.s8),
+        OutlinedButton(
+          key: CourierJobScreen.cantCollectKey,
+          onPressed: busy || reporting ? null : () => _cantCollect(context, ref),
+          child: const Text("Can't collect"),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _collect(BuildContext context, WidgetRef ref) async {
+    final cached = ref.read(returnCollectPhotosProvider)[job.hopId];
+    List<String> photos;
+    String? note;
+    if (cached != null && cached.isNotEmpty) {
+      photos = cached;
+    } else {
+      final recorded = await showCourierReturnCollectSheet(context);
+      if (recorded == null || !context.mounted) return;
+      photos = recorded.photoUrls;
+      note = recorded.note;
+      ref
+          .read(returnCollectPhotosProvider.notifier)
+          .update((all) => {...all, job.hopId: photos});
+    }
+
+    final result = await ref
+        .read(courierJobActionsNotifierProvider.notifier)
+        .collect(job.hopId, photoUrls: photos, note: note);
+    if (!context.mounted) return;
+    await result.fold(
+      (failure) async =>
+          SmSnackbar.error(context, NetworkExceptions.getMessage(failure)),
+      (proof) async {
+        ref.invalidate(courierJobProvider(job.hopId));
+        final collected = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => CourierDeliveryQrScreen(
+              hopId: job.hopId,
+              initialProof: proof,
+              returnPickupPhotoUrls: photos,
+            ),
+          ),
+        );
+        if (!context.mounted) return;
+        ref.invalidate(courierJobProvider(job.hopId));
+        if (collected != true) return;
+        ref
+          ..invalidate(courierHopsProvider)
+          ..invalidate(courierJobsProvider);
+        ref
+            .read(returnCollectPhotosProvider.notifier)
+            .update((all) => {...all}..remove(job.hopId));
+        SmSnackbar.success(context, 'Collected. Take it to the seller.');
+      },
+    );
+  }
+
+  Future<void> _cantCollect(BuildContext context, WidgetRef ref) async {
+    final code = await showCourierCantCollectSheet(context);
+    if (code == null || !context.mounted) return;
+    final result = await ref
+        .read(courierActionsNotifierProvider.notifier)
+        .reportException(hopId: job.hopId, code: code, failHop: true);
+    if (!context.mounted) return;
+    if (result is CourierActionOk) {
+      ref
+        ..invalidate(courierJobProvider(job.hopId))
+        ..invalidate(courierHopsProvider)
+        ..invalidate(courierJobsProvider);
+      SmSnackbar.success(context, 'Reported. The seller is told.');
+      return;
+    }
+    showCourierActionFeedback(context, result);
   }
 }
 

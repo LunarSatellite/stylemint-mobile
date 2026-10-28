@@ -65,6 +65,8 @@ class DeliveryConfirmation {
     required this.packageNumber,
     required this.status,
     this.deliveredUtc,
+    this.purpose,
+    this.returnRequestId,
   });
 
   final String orderId;
@@ -72,6 +74,11 @@ class DeliveryConfirmation {
   final String packageNumber;
   final String status;
   final DateTime? deliveredUtc;
+
+  /// `Delivery` or `ReturnPickup` (return pickup contract §4); null from an
+  /// older server.
+  final String? purpose;
+  final String? returnRequestId;
 }
 
 /// Why a delivery could not be confirmed, in the terms the buyer needs.

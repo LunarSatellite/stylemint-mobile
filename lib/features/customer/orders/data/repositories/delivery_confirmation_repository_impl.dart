@@ -59,6 +59,8 @@ class DeliveryConfirmationRepositoryImpl
           final String v => DateTime.tryParse(v)?.toUtc(),
           _ => null,
         },
+        purpose: _text(json['purpose']),
+        returnRequestId: _text(json['returnRequestId']),
       );
 
   /// The contract's `delivery_proof.*` codes first, then the statuses they

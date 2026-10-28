@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_request.dart';
@@ -162,6 +163,32 @@ abstract interface class VendorOrdersRepository {
   Future<Either<NetworkExceptions, RiderProfileForVendor?>> riderProfile(
     String orderId,
     String courierId,
+  );
+
+  // ── Return pickup by rider (return pickup contract §4) ─────────────────
+
+  /// Where a return's rider pickup stands, or null when the server has none
+  /// for it (an older backend, or a return not approved yet).
+  Future<Either<NetworkExceptions, ReturnPickup?>> returnPickup(
+    String returnRequestId,
+  );
+
+  /// Opens — or re-opens: "Try again", "Find a rider" on a Legacy return —
+  /// a rider request for collecting a return from the buyer.
+  Future<Either<NetworkExceptions, DeliveryRequest>> openReturnPickupRequest(
+    String returnRequestId, {
+    bool allowVerifiedNonPro = false,
+  });
+
+  /// The current rider request for this return, or null when none was
+  /// opened.
+  Future<Either<NetworkExceptions, DeliveryRequest?>>
+  currentReturnPickupRequest(String returnRequestId);
+
+  /// Chooses one interested rider to collect the return.
+  Future<Either<NetworkExceptions, DeliveryRequest>> selectReturnPickupRider(
+    String returnRequestId,
+    String offerId,
   );
 
   /// Uploads one seal photo and returns its URL.

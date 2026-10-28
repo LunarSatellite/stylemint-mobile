@@ -310,6 +310,34 @@ final deliveryProofNotifierProvider = StateNotifierProvider.autoDispose
       ),
     );
 
+/// A return pickup's proof at the buyer's door. "New code" collects again
+/// with the same photos, rather than "Complete ride", which is the seller's
+/// end of the run. [photoUrls] is passed through as one list instance, so
+/// the key stays stable while the screen is open.
+final returnPickupProofNotifierProvider = StateNotifierProvider.autoDispose
+    .family<
+      DeliveryProofNotifier,
+      DeliveryProofState,
+      ({String hopId, DeliveryProof? initial, List<String> photoUrls})
+    >((ref, args) {
+      final repository = ref.watch(courierRepositoryProvider);
+      return DeliveryProofNotifier(
+        repository,
+        args.hopId,
+        initial: args.initial,
+        pollInterval: ref.watch(deliveryProofPollIntervalProvider),
+        renewWith: () =>
+            repository.collectReturnJob(args.hopId, photoUrls: args.photoUrls),
+      );
+    });
+
+/// The collection photos a rider took for each return hop this session, so
+/// "Show QR again" does not ask for them twice. Lost on restart, which only
+/// means taking the photos again.
+final returnCollectPhotosProvider = StateProvider<Map<String, List<String>>>(
+  (ref) => const {},
+);
+
 /// Road routes for the job map. Overridden in tests so they never touch the
 /// network; the map falls back to straight lines on a null.
 final courierRoutePlannerProvider = Provider<CourierRoutePlanner>(

@@ -1,13 +1,17 @@
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_reason_category.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/return_evidence.dart';
 
 /// Backend `ReturnRequestState`: 1 Submitted, 2 Approved, 3 Rejected,
-/// 4 Completed. [unknown] keeps a newer backend value from crashing.
+/// 4 Completed, 5 Cancelled (return pickup contract). [unknown] keeps a newer
+/// backend value from crashing.
 enum ReturnRequestStatus {
   submitted(1, 'Submitted'),
   approved(2, 'Approved'),
   rejected(3, 'Rejected'),
   completed(4, 'Completed'),
+  cancelled(5, 'Cancelled'),
   unknown(0, 'In review');
 
   const ReturnRequestStatus(this.value, this.label);
@@ -75,6 +79,19 @@ class ReturnTimelineEntry {
   final DateTime? occurredUtc;
 }
 
+/// "Item Rs 2,500 − pickup Rs 150 = refund Rs 2,350" (return pickup §6).
+class ReturnRefundBreakdown {
+  const ReturnRefundBreakdown({
+    required this.itemTotal,
+    required this.pickupFareDeducted,
+    required this.refundAmount,
+  });
+
+  final Money itemTotal;
+  final Money pickupFareDeducted;
+  final Money refundAmount;
+}
+
 /// Buyer view of a return request (`GET /v1/orders/returns[/{id}]`).
 class CustomerReturn {
   const CustomerReturn({
@@ -100,6 +117,10 @@ class CustomerReturn {
     this.replacementState = CustomerReplacementState.none,
     this.replacementPaymentStatus,
     this.evidence,
+    this.reasonCategory,
+    this.pickupFarePayer = ReturnFarePayer.unknown,
+    this.pickupStage,
+    this.refundBreakdown,
   });
 
   final String id;
@@ -129,4 +150,14 @@ class CustomerReturn {
   /// What the platform already knew at submission. Null on older returns;
   /// the UI then renders nothing at all.
   final ReturnEvidence? evidence;
+
+  /// Null on returns submitted before categories existed.
+  final ReturnReasonCategory? reasonCategory;
+  final ReturnFarePayer pickupFarePayer;
+
+  /// The rider pickup's stage, when the payload carries it.
+  final ReturnPickupStage? pickupStage;
+
+  /// Null until the refund is worked out, and on older returns.
+  final ReturnRefundBreakdown? refundBreakdown;
 }

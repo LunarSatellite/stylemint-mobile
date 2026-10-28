@@ -121,6 +121,15 @@ class LiveSignal {
           LiveScope.courierJobs,
         ];
     }
+    // Return pickups (return pickup contract §7): the buyer's return, the
+    // seller's returns and the rider's job all move together.
+    if (type == 'return.accepted' || type.startsWith('return_pickup.')) {
+      return const [
+        LiveScope.buyerOrders,
+        LiveScope.vendorOrders,
+        LiveScope.courierJobs,
+      ];
+    }
     // Order notifications (order.placed / packed / shipped / delivered /
     // cancelled …): the buyer's and the vendor's views of that order.
     if (type.startsWith('order.')) {

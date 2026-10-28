@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
@@ -375,6 +377,33 @@ class CourierRepositoryImpl implements CourierRepository {
             CourierJobMapper.proof(await remoteDataSource.getProof(hopId)),
       );
 
+  @override
+  Future<Either<NetworkExceptions, String>> uploadProofPhoto(String filePath) =>
+      _guard(() async {
+        final url = await remoteDataSource.uploadProofPhoto(
+          file: File(filePath),
+          idempotencyKey: _uuid.v4(),
+        );
+        if (url.isEmpty) throw const NetworkExceptions.unexpectedError();
+        return url;
+      });
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryProof>> collectReturnJob(
+    String hopId, {
+    required List<String> photoUrls,
+    String? note,
+  }) => _guard(
+    () async => CourierJobMapper.proof(
+      await remoteDataSource.collectJob(
+        hopId: hopId,
+        photoUrls: photoUrls,
+        note: note,
+        idempotencyKey: _uuid.v4(),
+      ),
+    ),
+  );
+
   // ── Plumbing ───────────────────────────────────────────────────────────
 
   /// Same shape as the other repositories here: offline is its own failure
@@ -483,6 +512,10 @@ class CourierRepositoryImpl implements CourierRepository {
     // The delivery-selection fields. All optional: an offer without them is
     // an auction offer, exactly as before they existed.
     mode: OfferMode.fromWire(json['mode']),
+    kind: OfferKind.fromWire(json['kind']),
+    returnRequestId: json['returnRequestId'] is String
+        ? json['returnRequestId'] as String
+        : null,
     interestState: OfferInterestState.fromWire(json['interestState']),
     pickup: _place(json['pickup']),
     dropoff: _place(json['dropoff']),

@@ -44,10 +44,22 @@ abstract final class CourierJobMapper {
       dropoff: stop(json['dropoff']),
       distanceKm: _double(json['distanceKm']),
       fare: CourierFareMapper.breakdown(json['fareBreakdown']),
+      isReturn: isReturnKind(json['kind']),
+      returnRequestId: _text(json['returnRequestId']),
     );
   }
 
+  /// `kind: Return` (return pickup contract §4); absent is a delivery.
+  static bool isReturnKind(Object? value) =>
+      switch (value?.toString().trim().toLowerCase().replaceAll('_', '')) {
+        'return' || 'returnpickup' || '2' => true,
+        _ => false,
+      };
+
   static DeliveryProof proof(Map<String, dynamic> json) => DeliveryProof(
+    isReturnPickup:
+        _text(json['purpose'])?.toLowerCase().replaceAll('_', '') ==
+        'returnpickup',
     hopId: _text(json['hopId']) ?? '',
     packageNumber: _text(json['packageNumber']) ?? '',
     status: DeliveryProofStatus.fromWire(json['status']),

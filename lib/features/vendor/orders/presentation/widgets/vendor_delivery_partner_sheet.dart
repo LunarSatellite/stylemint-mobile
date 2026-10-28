@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/delivery_partner_notifier.dart';
@@ -46,6 +48,29 @@ Future<VendorPartnerSheetOutcome?> showVendorDeliveryPartnerSheet(
   builder: (_) => VendorDeliveryPartnerSheet(subOrderId: subOrderId),
 );
 
+/// The same sheet for a rider to collect a return from the buyer (return
+/// pickup contract §4). [reopen] asks riders again at once — "Try again"
+/// after nobody came or a failed attempt, "Find a rider" on a Legacy return.
+Future<void> showVendorReturnPickupSheet(
+  BuildContext context, {
+  required String returnRequestId,
+  bool reopen = false,
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
+  backgroundColor: DesignTokens.bgAppBody,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(
+      top: Radius.circular(DesignTokens.radiusLarge),
+    ),
+  ),
+  builder: (_) => VendorDeliveryPartnerSheet.returnPickup(
+    returnRequestId: returnRequestId,
+    reopen: reopen,
+  ),
+);
+
 /// Find a StyleMint rider for this parcel, watch who is interested, choose.
 ///
 /// Replaces the old picker, which listed routing's candidates and offered the
@@ -59,9 +84,26 @@ Future<VendorPartnerSheetOutcome?> showVendorDeliveryPartnerSheet(
 /// `delivery.interest` push refreshes it at once, and both stop when the
 /// sheet closes.
 class VendorDeliveryPartnerSheet extends ConsumerStatefulWidget {
-  const VendorDeliveryPartnerSheet({required this.subOrderId, super.key});
+  const VendorDeliveryPartnerSheet({required this.subOrderId, super.key})
+    : forReturn = false,
+      reopen = false;
 
+  /// A rider to collect a return from the buyer. No own-courier option and
+  /// no handover button here: the rider brings it back, and the seller
+  /// confirms by scanning the rider's code on the return.
+  const VendorDeliveryPartnerSheet.returnPickup({
+    required String returnRequestId,
+    this.reopen = false,
+    super.key,
+  }) : subOrderId = returnRequestId,
+       forReturn = true;
+
+  /// The sub-order — or, when [forReturn], the return request.
   final String subOrderId;
+  final bool forReturn;
+
+  /// Ask riders again as soon as the sheet opens.
+  final bool reopen;
 
   static const Key findKey = ValueKey<String>('vendor-partner-find');
   static const Key retryKey = ValueKey<String>('vendor-partner-retry');
@@ -99,12 +141,21 @@ class _VendorDeliveryPartnerSheetState
   /// the sheet rather than one per card.
   Timer? _ticker;
 
-  DeliveryPartnerNotifier get _notifier =>
-      ref.read(deliveryPartnerNotifierProvider(widget.subOrderId).notifier);
+  StateNotifierProvider<DeliveryPartnerNotifier, DeliveryPartnerState>
+  get _provider => widget.forReturn
+      ? returnPickupPartnerNotifierProvider(widget.subOrderId)
+      : deliveryPartnerNotifierProvider(widget.subOrderId);
+
+  DeliveryPartnerNotifier get _notifier => ref.read(_provider.notifier);
 
   @override
   void initState() {
     super.initState();
+    if (widget.reopen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_notifier.findPartner());
+      });
+    }
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -122,6 +173,9 @@ class _VendorDeliveryPartnerSheetState
   }
 
   void _onPush(DeliveryPushEvent event) {
+    // A return's sheet is kept live by its poll; `delivery.interest` names
+    // sub-orders only.
+    if (widget.forReturn) return;
     if (!mounted || event.type != DeliveryPushType.interest) return;
     final target = event.subOrderId;
     // A push naming another order is someone else's sheet; one with no id
@@ -205,13 +259,14 @@ class _VendorDeliveryPartnerSheetState
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(deliveryPartnerNotifierProvider(widget.subOrderId));
+    final state = ref.watch(_provider);
     final now = DateTime.now().toUtc();
+    final forReturn = widget.forReturn;
 
     // The vendor's own search came back "no Pro rider for this high-value
     // parcel": ask at once. A poll or a reopened sheet shows the button
     // instead, so the question is never repeated on its own.
-    ref.listen(deliveryPartnerNotifierProvider(widget.subOrderId), (
+    ref.listen(_provider, (
       previous,
       next,
     ) {
@@ -255,14 +310,20 @@ class _VendorDeliveryPartnerSheetState
             Semantics(
               header: true,
               child: Text(
-                'Find a delivery partner',
+                forReturn
+                    ? 'Find a rider for this return'
+                    : 'Find a delivery partner',
                 style: DesignTokens.displaySection,
               ),
             ),
             const SizedBox(height: DesignTokens.s8),
             Text(
-              'StyleMint riders near you are asked who can take it. You see '
-              'who is interested and choose — nobody is assigned until you do.',
+              forReturn
+                  ? 'Riders near the buyer are asked who can collect it. You '
+                        'choose who does.'
+                  : 'StyleMint riders near you are asked who can take it. You '
+                        'see who is interested and choose — nobody is assigned '
+                        'until you do.',
               style: DesignTokens.smallDescription,
             ),
             const SizedBox(height: DesignTokens.s16),
@@ -276,6 +337,7 @@ class _VendorDeliveryPartnerSheetState
                       : 'Checking for riders…',
                 ),
               DeliveryPartnerNotRequested() => _NotRequested(
+                label: forReturn ? 'Find a rider' : 'Find a delivery partner',
                 onFind: _notifier.findPartner,
               ),
               DeliveryPartnerFailed(:final failure) => _Problem(
@@ -288,21 +350,28 @@ class _VendorDeliveryPartnerSheetState
                   now: now,
                   choosingOfferId: choosingOfferId,
                   onChoose: _choose,
-                  onDetails: _openDetails,
+                  // Rider details are served for sub-orders only.
+                  onDetails: forReturn ? null : _openDetails,
                   onAskAgain: _notifier.findPartner,
                   onUseVerified: () => unawaited(_askVerifiedRider()),
-                  onOwnCourier: () => Navigator.of(
-                    context,
-                  ).pop(const VendorPartnerUseOwnCourier()),
-                  onHandedOver: (rider) =>
-                      Navigator.of(context).pop(VendorPartnerHandedOver(rider)),
+                  onOwnCourier: forReturn
+                      ? null
+                      : () => Navigator.of(
+                          context,
+                        ).pop(const VendorPartnerUseOwnCourier()),
+                  onHandedOver: forReturn
+                      ? null
+                      : (rider) => Navigator.of(
+                          context,
+                        ).pop(VendorPartnerHandedOver(rider)),
                 ),
             },
             // The own-courier form stays one tap away in every state but an
             // assignment: a vendor with their own rider at the door should
             // never have to wait out a search to use them. Once a StyleMint
             // rider has the hop, handing it to someone else would strand them.
-            if (!assigned) ...[
+            // A return is the buyer's parcel: there is no own courier for it.
+            if (!assigned && !forReturn) ...[
               const SizedBox(height: DesignTokens.s16),
               TextButton(
                 key: VendorDeliveryPartnerSheet.ownCourierKey,
@@ -348,9 +417,10 @@ class _Busy extends StatelessWidget {
 }
 
 class _NotRequested extends StatelessWidget {
-  const _NotRequested({required this.onFind});
+  const _NotRequested({required this.onFind, required this.label});
 
   final VoidCallback onFind;
+  final String label;
 
   @override
   Widget build(BuildContext context) => _Panel(
@@ -365,7 +435,7 @@ class _NotRequested extends StatelessWidget {
         const SizedBox(height: DesignTokens.s12),
         _PrimaryButton(
           key: VendorDeliveryPartnerSheet.findKey,
-          label: 'Find a delivery partner',
+          label: label,
           onPressed: onFind,
         ),
       ],
@@ -432,11 +502,17 @@ class _Live extends StatelessWidget {
   final DateTime now;
   final String? choosingOfferId;
   final ValueChanged<InterestedRider> onChoose;
-  final ValueChanged<InterestedRider> onDetails;
+
+  /// Null where rider details are not served (a return).
+  final ValueChanged<InterestedRider>? onDetails;
   final VoidCallback onAskAgain;
   final VoidCallback onUseVerified;
-  final VoidCallback onOwnCourier;
-  final ValueChanged<AssignedRider> onHandedOver;
+
+  /// Null for a return: there is no own courier for the buyer's parcel.
+  final VoidCallback? onOwnCourier;
+
+  /// Null for a return: the seller confirms by scanning the rider's code.
+  final ValueChanged<AssignedRider>? onHandedOver;
 
   @override
   Widget build(BuildContext context) {
@@ -513,11 +589,13 @@ class _Live extends StatelessWidget {
                 onPressed: onAskAgain,
                 child: const Text('Try again'),
               ),
-              const SizedBox(height: DesignTokens.s8),
-              OutlinedButton(
-                onPressed: onOwnCourier,
-                child: const Text('Use your own courier'),
-              ),
+              if (onOwnCourier != null) ...[
+                const SizedBox(height: DesignTokens.s8),
+                OutlinedButton(
+                  onPressed: onOwnCourier,
+                  child: const Text('Use your own courier'),
+                ),
+              ],
             ],
           ),
         );
@@ -548,11 +626,13 @@ class _Live extends StatelessWidget {
                 label: 'Try again',
                 onPressed: onAskAgain,
               ),
-              const SizedBox(height: DesignTokens.s8),
-              OutlinedButton(
-                onPressed: onOwnCourier,
-                child: const Text('Use your own courier'),
-              ),
+              if (onOwnCourier != null) ...[
+                const SizedBox(height: DesignTokens.s8),
+                OutlinedButton(
+                  onPressed: onOwnCourier,
+                  child: const Text('Use your own courier'),
+                ),
+              ],
             ],
           ),
         );
@@ -568,9 +648,14 @@ class _Live extends StatelessWidget {
               ),
               const SizedBox(height: DesignTokens.s4),
               Text(
-                'Nobody on shift is close enough to be asked. Riders come '
-                'online through the day, so trying again in a few minutes '
-                'often finds someone — or hand it to your own courier.',
+                onOwnCourier == null
+                    ? 'Nobody on shift is close enough to be asked. Riders '
+                          'come online through the day, so try again in a few '
+                          'minutes.'
+                    : 'Nobody on shift is close enough to be asked. Riders '
+                          'come online through the day, so trying again in a '
+                          'few minutes often finds someone — or hand it to '
+                          'your own courier.',
                 style: DesignTokens.tiny.copyWith(
                   color: DesignTokens.textMuted,
                 ),
@@ -581,11 +666,13 @@ class _Live extends StatelessWidget {
                 label: 'Try again',
                 onPressed: onAskAgain,
               ),
-              const SizedBox(height: DesignTokens.s8),
-              OutlinedButton(
-                onPressed: onOwnCourier,
-                child: const Text('Use your own courier'),
-              ),
+              if (onOwnCourier != null) ...[
+                const SizedBox(height: DesignTokens.s8),
+                OutlinedButton(
+                  onPressed: onOwnCourier,
+                  child: const Text('Use your own courier'),
+                ),
+              ],
             ],
           ),
         );
@@ -622,7 +709,10 @@ class _Live extends StatelessWidget {
                 choosing: choosingOfferId == rider.offerId,
                 enabled: choosingOfferId == null,
                 onChoose: () => onChoose(rider),
-                onDetails: () => onDetails(rider),
+                onDetails: switch (onDetails) {
+                  final open? => () => open(rider),
+                  null => null,
+                },
               ),
             ],
           ],
@@ -691,7 +781,7 @@ class _RiderCard extends StatelessWidget {
   final bool choosing;
   final bool enabled;
   final VoidCallback onChoose;
-  final VoidCallback onDetails;
+  final VoidCallback? onDetails;
 
   /// "★ 4.8 (23) · 12 deliveries", or "New rider · …" under three ratings.
   static String ratingLine(InterestedRider rider) {
@@ -708,9 +798,11 @@ class _RiderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final vehicle = rider.vehicle;
     final interestedAt = rider.interestedUtc;
+    final fare = rider.fare;
     final details = <String>[
       '${rider.distanceKm.toStringAsFixed(1)} km away',
       ?vehicle,
+      if (fare != null) '${formatMoney(fare, decimalDigits: 0)} fare',
       if (interestedAt != null) 'interested ${_ago(interestedAt, now)}',
     ];
     return _Panel(
@@ -760,10 +852,11 @@ class _RiderCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: DesignTokens.textMuted,
-                  ),
+                  if (onDetails != null)
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: DesignTokens.textMuted,
+                    ),
                 ],
               ),
             ),
@@ -796,7 +889,7 @@ class _Assigned extends StatelessWidget {
   const _Assigned({required this.rider, required this.onHandedOver});
 
   final AssignedRider rider;
-  final ValueChanged<AssignedRider> onHandedOver;
+  final ValueChanged<AssignedRider>? onHandedOver;
 
   @override
   Widget build(BuildContext context) {
@@ -835,16 +928,21 @@ class _Assigned extends StatelessWidget {
           ),
           const SizedBox(height: DesignTokens.s12),
           Text(
-            '$first has the pick-up and the drop-off on their map. Record the '
-            'handover when they collect the parcel.',
+            onHandedOver == null
+                ? '$first is on the way to collect it from the buyer. Scan '
+                      "$first's code when they bring it to you."
+                : '$first has the pick-up and the drop-off on their map. '
+                      'Record the handover when they collect the parcel.',
             style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
           ),
-          const SizedBox(height: DesignTokens.s12),
-          _PrimaryButton(
-            key: VendorDeliveryPartnerSheet.handedOverKey,
-            label: 'Handed to $first',
-            onPressed: () => onHandedOver(rider),
-          ),
+          if (onHandedOver case final handedOver?) ...[
+            const SizedBox(height: DesignTokens.s12),
+            _PrimaryButton(
+              key: VendorDeliveryPartnerSheet.handedOverKey,
+              label: 'Handed to $first',
+              onPressed: () => handedOver(rider),
+            ),
+          ],
         ],
       ),
     );

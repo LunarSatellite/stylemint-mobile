@@ -338,8 +338,9 @@ class OrdersRemoteDataSource {
     List<String> photoUrls,
     int resolution,
     String? replacementVariantId,
-    String idempotencyKey,
-  ) async {
+    String idempotencyKey, {
+    String? reasonCategory,
+  }) async {
     final response = await apiClient.post(
       '/v1/orders/$orderId/returns',
       data: {
@@ -351,11 +352,62 @@ class OrdersRemoteDataSource {
         'resolution': resolution,
         if (replacementVariantId != null)
           'replacementVariantId': replacementVariantId,
+        // Return pickup contract §4: decides who pays the rider.
+        'reasonCategory': ?reasonCategory,
       },
       options: _idempotent(idempotencyKey),
     );
     // The backend answers with the created ReturnRequestDto.
     return response is Map<String, dynamic> ? response['id'] as String? : null;
+  }
+
+  /// GET `/v1/orders/{orderNumber}/returns/pickup-quote` — what a "changed my
+  /// mind" pickup costs, before the buyer submits.
+  Future<Map<String, dynamic>> getReturnPickupQuote(
+    String orderNumber, {
+    required String subOrderId,
+    required String subOrderLineId,
+    required int quantity,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/orders/${Uri.encodeComponent(orderNumber)}/returns/pickup-quote',
+      queryParameters: {
+        'subOrderId': subOrderId,
+        'subOrderLineId': subOrderLineId,
+        'quantity': quantity,
+      },
+    );
+    return (response as Map).cast<String, dynamic>();
+  }
+
+  /// POST `/v1/orders/returns/{id}/cancel` — allowed until the rider has the
+  /// item (`return.cancel_after_pickup` after that).
+  Future<CustomerReturnDto> cancelReturn(
+    String returnId, {
+    required String idempotencyKey,
+    String? note,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/orders/returns/${Uri.encodeComponent(returnId)}/cancel',
+      data: {'note': note},
+      options: _idempotent(idempotencyKey),
+    );
+    return CustomerReturnDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// POST `/v1/deliveries/returns/{id}/retry` — "Send a rider again" after a
+  /// failed attempt or when nobody was found.
+  Future<Map<String, dynamic>> retryReturnPickup(
+    String returnId, {
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/deliveries/returns/${Uri.encodeComponent(returnId)}/retry',
+      options: _idempotent(idempotencyKey),
+    );
+    return response is Map
+        ? response.cast<String, dynamic>()
+        : const <String, dynamic>{};
   }
 
   /// POST `/v1/orders/returns/images` — multipart upload, returns the CDN

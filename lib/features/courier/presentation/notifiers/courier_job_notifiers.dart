@@ -26,6 +26,25 @@ class CourierJobActionsNotifier extends StateNotifier<bool> {
   Future<Either<NetworkExceptions, DeliveryProof>> complete(String hopId) =>
       _run(() => _repository.completeJob(hopId));
 
+  /// A return pickup at the buyer's door: the collection photos, then the
+  /// QR the buyer scans. Calling it again shows the live code (or a new one).
+  Future<Either<NetworkExceptions, DeliveryProof>> collect(
+    String hopId, {
+    required List<String> photoUrls,
+    String? note,
+  }) => _run(
+    () => _repository.collectReturnJob(
+      hopId,
+      photoUrls: photoUrls,
+      note: note,
+    ),
+  );
+
+  /// One collection photo up, its URL back. Not a job action: the busy flag
+  /// stays with the buttons that change the job.
+  Future<Either<NetworkExceptions, String>> uploadPhoto(String filePath) =>
+      _repository.uploadProofPhoto(filePath);
+
   Future<Either<NetworkExceptions, T>> _run<T>(
     Future<Either<NetworkExceptions, T>> Function() body,
   ) async {
@@ -94,7 +113,9 @@ class DeliveryProofNotifier extends StateNotifier<DeliveryProofState> {
     DeliveryProof? initial,
     this.pollInterval = const Duration(seconds: 3),
     DateTime Function()? now,
+    Future<Either<NetworkExceptions, DeliveryProof>> Function()? renewWith,
   }) : _now = now ?? (() => DateTime.now().toUtc()),
+       _renewWith = renewWith,
        super(const DeliveryProofLoading()) {
     if (initial != null) {
       _apply(initial);
@@ -107,6 +128,11 @@ class DeliveryProofNotifier extends StateNotifier<DeliveryProofState> {
   final String hopId;
   final Duration pollInterval;
   final DateTime Function() _now;
+
+  /// What "New code" calls. "Complete ride" by default; for a return
+  /// pickup, collect again with the same photos.
+  final Future<Either<NetworkExceptions, DeliveryProof>> Function()?
+  _renewWith;
 
   Timer? _poll;
   bool _polling = false;
@@ -134,7 +160,7 @@ class DeliveryProofNotifier extends StateNotifier<DeliveryProofState> {
     final generation = ++_generation;
     _stop();
     state = const DeliveryProofLoading(renewing: true);
-    final result = await _repository.completeJob(hopId);
+    final result = await (_renewWith?.call() ?? _repository.completeJob(hopId));
     if (!mounted || generation != _generation) return;
     result.fold((failure) {
       state = DeliveryProofFailed(failure);

@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/data/datasource
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_payment_plan_json.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_return_request_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_candidate.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/delivery_request.dart';
@@ -282,6 +283,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
     VendorReturnRequestState.approved => 2,
     VendorReturnRequestState.rejected => 3,
     VendorReturnRequestState.completed => 4,
+    VendorReturnRequestState.cancelled => 5,
   };
 
   @override
@@ -664,6 +666,50 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
   ) => guardedNetworkCall(networkInfo, () async {
     final json = await remoteDataSource.getRiderProfile(orderId, courierId);
     return json == null ? null : RiderProfileForVendor.fromJson(json);
+  });
+
+  @override
+  Future<Either<NetworkExceptions, ReturnPickup?>> returnPickup(
+    String returnRequestId,
+  ) => guardedNetworkCall(networkInfo, () async {
+    final json = await remoteDataSource.getReturnPickup(returnRequestId);
+    return json == null ? null : ReturnPickup.fromJson(json);
+  });
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryRequest>> openReturnPickupRequest(
+    String returnRequestId, {
+    bool allowVerifiedNonPro = false,
+  }) => guardedNetworkCall(networkInfo, () async {
+    final json = await remoteDataSource.openReturnPickupRequest(
+      returnRequestId,
+      idempotencyKey: _uuid.v4(),
+      allowVerifiedNonPro: allowVerifiedNonPro,
+    );
+    return DeliveryRequest.fromJson(json);
+  });
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryRequest?>>
+  currentReturnPickupRequest(String returnRequestId) =>
+      guardedNetworkCall(networkInfo, () async {
+        final json = await remoteDataSource.getCurrentReturnPickupRequest(
+          returnRequestId,
+        );
+        return json == null ? null : DeliveryRequest.fromJson(json);
+      });
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryRequest>> selectReturnPickupRider(
+    String returnRequestId,
+    String offerId,
+  ) => guardedNetworkCall(networkInfo, () async {
+    final json = await remoteDataSource.selectReturnPickupRider(
+      returnRequestId,
+      offerId: offerId,
+      idempotencyKey: _uuid.v4(),
+    );
+    return DeliveryRequest.fromJson(json);
   });
 
   @override

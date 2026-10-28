@@ -5,6 +5,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/datasources/vendor_orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/repositories/vendor_orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/rider_profile_for_vendor.dart';
@@ -58,6 +59,30 @@ final vendorRiderProfileProvider = FutureProvider.autoDispose
       (ref, key) => ref
           .watch(vendorOrdersRepositoryProvider)
           .riderProfile(key.subOrderId, key.courierId),
+    );
+
+/// The "find a rider" sheet for collecting one return, keyed by the return
+/// request id. Same notifier as a delivery; the return routes.
+final returnPickupPartnerNotifierProvider = StateNotifierProvider.autoDispose
+    .family<DeliveryPartnerNotifier, DeliveryPartnerState, String>(
+      (ref, returnRequestId) => DeliveryPartnerNotifier(
+        ref.watch(vendorOrdersRepositoryProvider),
+        returnRequestId,
+        forReturn: true,
+      ),
+    );
+
+/// Where one return's rider pickup stands, for its card. Null when there is
+/// none or it could not be read — the card then behaves as it always did.
+final vendorReturnPickupProvider = FutureProvider.autoDispose
+    .family<ReturnPickup?, String>(
+      (ref, returnRequestId) async {
+        final result = await ref
+            .watch(vendorOrdersRepositoryProvider)
+            .returnPickup(returnRequestId);
+        return result.fold((_) => null, (pickup) => pickup);
+      },
+      retry: (_, _) => null,
     );
 
 final vendorReturnsProvider =FutureProvider.autoDispose((ref) {
