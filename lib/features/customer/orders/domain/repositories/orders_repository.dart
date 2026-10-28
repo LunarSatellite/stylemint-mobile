@@ -11,6 +11,8 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_reason_category.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_eligibility.dart';
@@ -51,10 +53,30 @@ abstract interface class OrdersRepository {
     required List<String> photoUrls,
     ReturnResolutionChoice resolution,
     String? replacementVariantId,
+    ReturnReasonCategory? reasonCategory,
   });
 
   Future<Either<NetworkExceptions, List<ReplacementOption>>>
   getReplacementOptions(String originalVariantId);
+
+  /// What a "changed my mind" rider pickup costs for this line.
+  Future<Either<NetworkExceptions, ReturnPickupQuote>> getReturnPickupQuote(
+    String orderNumber, {
+    required String subOrderId,
+    required String subOrderLineId,
+    required int quantity,
+  });
+
+  /// Cancels the buyer's own return, before the rider has the item.
+  Future<Either<NetworkExceptions, CustomerReturn>> cancelReturn(
+    String returnId, {
+    String? note,
+  });
+
+  /// "Send a rider again" after a failed attempt or when nobody was found.
+  Future<Either<NetworkExceptions, ReturnPickup>> retryReturnPickup(
+    String returnId,
+  );
 
   /// What actually happened to one order — the recorded events, plus the
   /// health of each source behind them (404 -> notFound).

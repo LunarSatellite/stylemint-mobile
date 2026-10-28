@@ -114,10 +114,27 @@ class CourierJob {
     this.notes,
     this.distanceKm,
     this.fare,
+    this.isReturn = false,
+    this.returnRequestId,
   });
 
   final String hopId;
   final String packageId;
+
+  /// A return pickup (return pickup contract §4, `kind: Return`): [pickup] is
+  /// the buyer and [dropoff] the seller's shop. The rider collects with
+  /// photos and the buyer's scan, never with "Picked up".
+  final bool isReturn;
+  final String? returnRequestId;
+
+  /// A return the rider has not collected yet: the buyer still has it. Read
+  /// from the status, and from "awaiting confirmation" with no pick-up time
+  /// — the buyer's scan pending — for a server that reports it that way.
+  bool get awaitingReturnCollection =>
+      isReturn &&
+      (status == CourierJobStatus.assigned ||
+          (status == CourierJobStatus.awaitingConfirmation &&
+              pickedUpUtc == null));
 
   /// `SM-D-00000013` — what the rider reads out at the shop and the door.
   final String packageNumber;
@@ -169,11 +186,15 @@ class DeliveryProof {
     required this.code,
     this.expiresUtc,
     this.confirmedUtc,
+    this.isReturnPickup = false,
   });
 
   final String hopId;
   final String packageNumber;
   final DeliveryProofStatus status;
+
+  /// `purpose: ReturnPickup` — the buyer scans it to hand a return over.
+  final bool isReturnPickup;
 
   /// `https://stylemint.voyageritnepal.com/dc/<token>`.
   final String qrPayload;

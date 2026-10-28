@@ -195,6 +195,18 @@ abstract class CourierRepository {
 
   Future<Either<NetworkExceptions, DeliveryProof>> getProof(String hopId);
 
+  /// Uploads one proof photo from [filePath] and returns its URL.
+  Future<Either<NetworkExceptions, String>> uploadProofPhoto(String filePath);
+
+  /// A return pickup at the buyer's door: records the 1–3 collection
+  /// [photoUrls] and returns the QR the buyer scans to hand it over. Calling
+  /// again returns the live code, or a fresh one once it expired.
+  Future<Either<NetworkExceptions, DeliveryProof>> collectReturnJob(
+    String hopId, {
+    required List<String> photoUrls,
+    String? note,
+  });
+
   /// [failHop] ends the courier's leg. A weather delay is worth recording
   /// without ending anything; a broken seal moves the package to Returning
   /// server-side whatever is passed here.

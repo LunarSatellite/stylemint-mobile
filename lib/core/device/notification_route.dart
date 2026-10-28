@@ -27,6 +27,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/auth/jwt_roles.dart';
 import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
 import 'package:stylemint_mobile_frontend/core/device/push_destination.dart';
+import 'package:stylemint_mobile_frontend/core/device/return_pickup_push.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/customer/kyc/domain/kyc_push.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/journeys/shared/journey_routes.dart';
@@ -205,6 +206,20 @@ String? notificationLocation(
   final type = payload.type;
   if (type != null) {
     if (type == KycDecidedPush.type) return RouteNames.customerKyc;
+
+    // Return pickups (return pickup contract §7), before the forward
+    // delivery types: a rider return request still arrives as
+    // `delivery.request` and goes to the offers screen below.
+    final returnPickup = ReturnPickupPush.fromData({
+      ...payload.data,
+      'type': type,
+    });
+    if (returnPickup != null) {
+      return returnPickup.routeFor(
+        vendor: viewer.actsAsVendor,
+        rider: viewer.onRiderSide,
+      );
+    }
 
     final delivery = DeliveryPushEvent.fromData({
       ...payload.data,

@@ -22,6 +22,10 @@ class VendorReturnRequestDto {
     this.rejectionNote,
     this.evidence,
     this.restocked,
+    this.reasonCategory,
+    this.pickupFarePayer,
+    this.pickupStage,
+    this.pickupAware = false,
   });
 
   factory VendorReturnRequestDto.fromJson(Map<String, dynamic> json) =>
@@ -44,6 +48,10 @@ class VendorReturnRequestDto {
         rejectionNote: json['rejectionNote'] as String?,
         evidence: ReturnEvidenceDto.maybeFromJson(json['evidence']),
         restocked: json['restocked'] as bool?,
+        reasonCategory: _text(json['reasonCategory']),
+        pickupFarePayer: _text(json['pickupFarePayer']),
+        pickupStage: _text(json['pickupStage']),
+        pickupAware: json.containsKey('pickupStage'),
       );
 
   final String id;
@@ -68,11 +76,24 @@ class VendorReturnRequestDto {
   /// open returns and from servers older than the restock change.
   final bool? restocked;
 
-  /// Backend `ReturnRequestState`: Submitted=1, Approved=2, Rejected=3, Completed=4.
+  /// Return pickup contract §4. Strings, all optional.
+  final String? reasonCategory;
+  final String? pickupFarePayer;
+  final String? pickupStage;
+  final bool pickupAware;
+
+  static String? _text(Object? value) {
+    final raw = value?.toString().trim();
+    return raw == null || raw.isEmpty ? null : raw;
+  }
+
+  /// Backend `ReturnRequestState`: Submitted=1, Approved=2, Rejected=3,
+  /// Completed=4, Cancelled=5.
   static VendorReturnRequestState _stateFromCode(int code) => switch (code) {
     2 => VendorReturnRequestState.approved,
     3 => VendorReturnRequestState.rejected,
     4 => VendorReturnRequestState.completed,
+    5 => VendorReturnRequestState.cancelled,
     _ => VendorReturnRequestState.submitted,
   };
 
@@ -93,5 +114,9 @@ class VendorReturnRequestDto {
     rejectionNote: rejectionNote,
     evidence: evidence?.toDomain(),
     restocked: restocked,
+    reasonCategory: reasonCategory,
+    pickupFarePayer: pickupFarePayer,
+    pickupStage: pickupStage,
+    pickupAware: pickupAware,
   );
 }

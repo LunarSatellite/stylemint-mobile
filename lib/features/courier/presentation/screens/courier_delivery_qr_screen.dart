@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/codes/presentation/widgets/style_mint_qr.dart';
 import 'package:stylemint_mobile_frontend/features/courier/domain/entities/courier_job.dart';
@@ -24,8 +25,15 @@ class CourierDeliveryQrScreen extends ConsumerStatefulWidget {
     required this.hopId,
     this.initialProof,
     this.closeAfter = const Duration(seconds: 2),
+    this.returnPickupPhotoUrls,
     super.key,
   });
+
+  /// Set for a return pickup at the buyer's door: the photos the rider took,
+  /// so "New code" collects again instead of completing the ride.
+  final List<String>? returnPickupPhotoUrls;
+
+  bool get isReturnPickup => returnPickupPhotoUrls != null;
 
   final String hopId;
 
@@ -40,6 +48,9 @@ class CourierDeliveryQrScreen extends ConsumerStatefulWidget {
   static const confirmedText = 'Delivered';
   static const instructionText =
       'Ask the recipient to scan this in their StyleMint app';
+  static const returnConfirmedText = 'Collected';
+  static const returnInstructionText =
+      'Ask the buyer to scan this in their StyleMint app';
 
   @override
   ConsumerState<CourierDeliveryQrScreen> createState() =>
@@ -51,8 +62,18 @@ class _CourierDeliveryQrScreenState
   Timer? _ticker;
   Timer? _close;
 
-  ({String hopId, DeliveryProof? initial}) get _args =>
-      (hopId: widget.hopId, initial: widget.initialProof);
+  StateNotifierProvider<DeliveryProofNotifier, DeliveryProofState>
+  get _provider => switch (widget.returnPickupPhotoUrls) {
+    final photos? => returnPickupProofNotifierProvider((
+      hopId: widget.hopId,
+      initial: widget.initialProof,
+      photoUrls: photos,
+    )),
+    null => deliveryProofNotifierProvider((
+      hopId: widget.hopId,
+      initial: widget.initialProof,
+    )),
+  };
 
   @override
   void initState() {
@@ -61,7 +82,7 @@ class _CourierDeliveryQrScreenState
     // than at the next poll.
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      ref.read(deliveryProofNotifierProvider(_args).notifier).checkExpiry();
+      ref.read(_provider.notifier).checkExpiry();
       setState(() {});
     });
   }
@@ -89,7 +110,8 @@ class _CourierDeliveryQrScreenState
 
   @override
   Widget build(BuildContext context) {
-    final provider = deliveryProofNotifierProvider(_args);
+    final provider = _provider;
+    final forReturn = widget.isReturnPickup;
     ref.listen<DeliveryProofState>(provider, (previous, next) {
       if (next is DeliveryProofConfirmed && previous is! DeliveryProofConfirmed) {
         _onConfirmed();
@@ -109,7 +131,7 @@ class _CourierDeliveryQrScreenState
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('Proof of delivery'),
+        title: Text(forReturn ? 'Return pickup' : 'Proof of delivery'),
       ),
       body: SafeArea(
         child: Center(
@@ -129,7 +151,11 @@ class _CourierDeliveryQrScreenState
                         proof: proof,
                         onNewCode: () => ref.read(provider.notifier).renew(),
                       )
-                    : _Showing(proof: proof, left: proof.remainingAt(now)),
+                    : _Showing(
+                        proof: proof,
+                        left: proof.remainingAt(now),
+                        forReturn: forReturn,
+                      ),
               DeliveryProofExpired(:final proof) => _Expired(
                 proof: proof,
                 onNewCode: () => ref.read(provider.notifier).renew(),
@@ -137,6 +163,7 @@ class _CourierDeliveryQrScreenState
               DeliveryProofConfirmed(:final proof) => _Confirmed(
                 proof: proof,
                 onDone: _finish,
+                forReturn: forReturn,
               ),
             },
           ),
@@ -147,10 +174,15 @@ class _CourierDeliveryQrScreenState
 }
 
 class _Showing extends StatelessWidget {
-  const _Showing({required this.proof, required this.left});
+  const _Showing({
+    required this.proof,
+    required this.left,
+    this.forReturn = false,
+  });
 
   final DeliveryProof proof;
   final Duration left;
+  final bool forReturn;
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +197,9 @@ class _Showing extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          CourierDeliveryQrScreen.instructionText,
+          forReturn
+              ? CourierDeliveryQrScreen.returnInstructionText
+              : CourierDeliveryQrScreen.instructionText,
           textAlign: TextAlign.center,
           style: DesignTokens.mediumSemibold,
         ),
@@ -260,10 +294,15 @@ class _Expired extends StatelessWidget {
 }
 
 class _Confirmed extends StatelessWidget {
-  const _Confirmed({required this.proof, required this.onDone});
+  const _Confirmed({
+    required this.proof,
+    required this.onDone,
+    this.forReturn = false,
+  });
 
   final DeliveryProof proof;
   final VoidCallback onDone;
+  final bool forReturn;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -280,12 +319,14 @@ class _Confirmed extends StatelessWidget {
       ),
       const SizedBox(height: DesignTokens.s16),
       Text(
-        '${CourierDeliveryQrScreen.confirmedText} ✓',
+        '${forReturn ? CourierDeliveryQrScreen.returnConfirmedText : CourierDeliveryQrScreen.confirmedText} ✓',
         style: DesignTokens.h1,
       ),
       const SizedBox(height: DesignTokens.s8),
       Text(
-        proof.packageNumber.isEmpty
+        forReturn
+            ? 'The buyer handed it over. Take it to the seller.'
+            : proof.packageNumber.isEmpty
             ? 'The recipient confirmed. Nice run!'
             : 'The recipient confirmed ${proof.packageNumber}. Nice run!',
         textAlign: TextAlign.center,
@@ -295,7 +336,7 @@ class _Confirmed extends StatelessWidget {
       FilledButton(
         key: CourierDeliveryQrScreen.doneKey,
         onPressed: onDone,
-        child: const Text('Back to deliveries'),
+        child: Text(forReturn ? 'Continue' : 'Back to deliveries'),
       ),
     ],
   );

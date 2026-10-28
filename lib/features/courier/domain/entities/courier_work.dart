@@ -64,6 +64,22 @@ enum OfferMode {
   }
 }
 
+/// What the rider would carry: a parcel out to a buyer, or a return from the
+/// buyer back to the seller (return pickup contract §4, `kind`).
+enum OfferKind {
+  delivery,
+  returnPickup;
+
+  /// Absent or unknown reads as [delivery] — every offer before the field.
+  static OfferKind fromWire(Object? value) =>
+      switch (value?.toString().trim().toLowerCase().replaceAll('_', '')) {
+        'return' || 'returnpickup' || '2' => OfferKind.returnPickup,
+        _ => OfferKind.delivery,
+      };
+
+  bool get isReturn => this == OfferKind.returnPickup;
+}
+
 /// Where a rider stands on a [OfferMode.vendorSelect] offer.
 enum OfferInterestState {
   none,
@@ -136,6 +152,8 @@ class HopOffer {
     this.dropoff,
     this.distanceToPickupKm,
     this.fare,
+    this.kind = OfferKind.delivery,
+    this.returnRequestId,
   });
 
   final String id;
@@ -143,6 +161,13 @@ class HopOffer {
   final DeliveryTier tier;
   final int hopIndex;
   final OfferMode mode;
+
+  /// A return pickup: [pickup] is the buyer, approximate until the seller
+  /// chooses this rider (contract D4), and [dropoff] is the seller's shop.
+  final OfferKind kind;
+  final String? returnRequestId;
+
+  bool get isReturn => kind.isReturn;
 
   /// How [proposedPayoutAmount] is made up; null for offers issued before
   /// the fare breakdown shipped.
@@ -246,7 +271,11 @@ enum DeliveryExceptionCode {
   weatherDelay(5),
   courierAccident(6),
   sealBroken(7),
-  noMatchingCourier(8);
+  noMatchingCourier(8),
+
+  /// Return pickups only: the buyer would not hand the item over. Cancels
+  /// the return at once (return pickup contract §8).
+  handoverRefused(9);
 
   const DeliveryExceptionCode(this.wire);
 
@@ -261,7 +290,19 @@ enum DeliveryExceptionCode {
     DeliveryExceptionCode.courierAccident => 'I had an accident',
     DeliveryExceptionCode.sealBroken => 'Seal is broken',
     DeliveryExceptionCode.noMatchingCourier => 'No onward courier',
+    DeliveryExceptionCode.handoverRefused => 'Buyer refused to hand it over',
   };
+
+  /// Only offered on a return pickup.
+  bool get returnPickupOnly => this == DeliveryExceptionCode.handoverRefused;
+
+  /// "Can't collect" on a return pickup: the buyer was not there, the
+  /// address was wrong, or the buyer refused (contract §4).
+  static const List<DeliveryExceptionCode> cantCollect = [
+    buyerUnreachable,
+    addressIncorrect,
+    handoverRefused,
+  ];
 
   /// Whether reporting this should also end the courier's leg. Offered as the
   /// default in the UI, not enforced: a damaged parcel might still be

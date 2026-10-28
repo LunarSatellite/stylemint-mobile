@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_reason_category.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/returns/return_evidence_section.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -13,6 +14,8 @@ class VendorReturnCard extends StatelessWidget {
     required this.onApprove,
     required this.onReject,
     required this.onComplete,
+    this.pickup,
+    this.completeLocked = false,
     super.key,
   });
 
@@ -21,6 +24,16 @@ class VendorReturnCard extends StatelessWidget {
   final VoidCallback onApprove;
   final VoidCallback onReject;
   final VoidCallback onComplete;
+
+  /// The rider pickup panel, for an approved return that has one.
+  final Widget? pickup;
+
+  /// A rider return the rider has not handed over yet: the server refuses
+  /// completing it (`return.pickup_not_received`), so the button waits.
+  final bool completeLocked;
+
+  static const completeLockedText =
+      'You can mark it received once the rider hands it over.';
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +54,12 @@ class VendorReturnCard extends StatelessWidget {
         'Refund started',
         DesignTokens.primaryGreen,
       ),
+      VendorReturnRequestState.cancelled => (
+        'Cancelled by buyer',
+        DesignTokens.textMuted,
+      ),
     };
+    final category = ReturnReasonCategory.fromWire(request.reasonCategory);
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: DesignTokens.cardDecoration(),
@@ -86,7 +104,14 @@ class VendorReturnCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Text(request.reason, style: DesignTokens.smallRegular),
+          if (category != null &&
+              category != ReturnReasonCategory.unspecified) ...[
+            Text(category.label, style: DesignTokens.mediumSemibold),
+            const SizedBox(height: 2),
+          ],
+          if (request.reason.trim().isNotEmpty &&
+              request.reason.trim() != category?.label)
+            Text(request.reason, style: DesignTokens.smallRegular),
           if (request.rejectionNote != null) ...[
             const SizedBox(height: 8),
             Text(
@@ -122,12 +147,25 @@ class VendorReturnCard extends StatelessWidget {
               ],
             ),
           ],
+          if (pickup case final panel?
+              when request.state == VendorReturnRequestState.approved) ...[
+            const SizedBox(height: 12),
+            panel,
+          ],
+          if (request.state == VendorReturnRequestState.approved &&
+              completeLocked) ...[
+            const SizedBox(height: 8),
+            Text(
+              completeLockedText,
+              style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+            ),
+          ],
           if (request.state == VendorReturnRequestState.approved) ...[
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: busy ? null : onComplete,
+                onPressed: busy || completeLocked ? null : onComplete,
                 icon: busy
                     ? const SizedBox(
                         width: 16,

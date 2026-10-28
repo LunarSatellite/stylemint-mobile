@@ -38,6 +38,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/handover_delegation_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/refill_plan_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/replenishment_rules_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/return_pickup_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 
 final ordersRemoteDataSourceProvider = Provider<OrdersRemoteDataSource>(
@@ -456,6 +457,12 @@ final returnPickupProvider = FutureProvider.autoDispose
         return null;
       }
     });
+
+/// Cancel the return / send a rider again, from the return detail.
+final returnPickupActionsNotifierProvider =
+    StateNotifierProvider.autoDispose<ReturnPickupActionsNotifier, bool>(
+      (ref) => ReturnPickupActionsNotifier(ref.watch(ordersRepositoryProvider)),
+    );
 
 /// Best-effort outbound tracking created after a replacement is approved and
 /// the returned item has reached the seller.

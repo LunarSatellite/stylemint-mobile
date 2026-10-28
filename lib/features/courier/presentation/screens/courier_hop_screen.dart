@@ -157,7 +157,9 @@ class CourierHopScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(DesignTokens.s16),
               child: Text('What happened?', style: DesignTokens.h3),
             ),
-            ...DeliveryExceptionCode.values.map(
+            ...DeliveryExceptionCode.values
+                .where((code) => !code.returnPickupOnly)
+                .map(
               (code) => ListTile(
                 title: Text(code.label),
                 subtitle: code.isCritical

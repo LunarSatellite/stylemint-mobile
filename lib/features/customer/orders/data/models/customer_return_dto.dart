@@ -1,6 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/customer_return.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_reason_category.dart';
 import 'package:stylemint_mobile_frontend/shared/data/models/return_evidence_dto.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -55,6 +57,52 @@ abstract class ReturnTimelineEntryDto with _$ReturnTimelineEntryDto {
   );
 }
 
+/// `{ amount, currency }` inside [ReturnRefundBreakdownDto].
+@freezed
+abstract class ReturnMoneyDto with _$ReturnMoneyDto {
+  const factory ReturnMoneyDto({
+    @Default(0) num amount,
+    @Default('NPR') String currency,
+  }) = _ReturnMoneyDto;
+
+  const ReturnMoneyDto._();
+
+  factory ReturnMoneyDto.fromJson(Map<String, dynamic> json) =>
+      _$ReturnMoneyDtoFromJson(json);
+
+  Money toDomain() => Money(amount: amount.toDouble(), currency: currency);
+}
+
+/// `refundBreakdown` (return pickup contract §4). Null until the refund is
+/// worked out.
+@freezed
+abstract class ReturnRefundBreakdownDto with _$ReturnRefundBreakdownDto {
+  const factory ReturnRefundBreakdownDto({
+    ReturnMoneyDto? itemTotal,
+    ReturnMoneyDto? pickupFareDeducted,
+    ReturnMoneyDto? refundAmount,
+  }) = _ReturnRefundBreakdownDto;
+
+  const ReturnRefundBreakdownDto._();
+
+  factory ReturnRefundBreakdownDto.fromJson(Map<String, dynamic> json) =>
+      _$ReturnRefundBreakdownDtoFromJson(json);
+
+  /// Null when the two ends of the sum are missing — nothing is shown then.
+  ReturnRefundBreakdown? toDomain() {
+    final item = itemTotal;
+    final refund = refundAmount;
+    if (item == null || refund == null) return null;
+    return ReturnRefundBreakdown(
+      itemTotal: item.toDomain(),
+      pickupFareDeducted:
+          pickupFareDeducted?.toDomain() ??
+          Money(amount: 0, currency: item.currency),
+      refundAmount: refund.toDomain(),
+    );
+  }
+}
+
 /// `CustomerReturnRequestDto` — list items and detail share this shape.
 @freezed
 abstract class CustomerReturnDto with _$CustomerReturnDto {
@@ -85,6 +133,12 @@ abstract class CustomerReturnDto with _$CustomerReturnDto {
     /// Evidence snapshot. Absent or null on every return opened before the
     /// snapshot existed — the ordinary case, never an error.
     ReturnEvidenceDto? evidence,
+
+    /// Return pickup contract §4. All absent on older returns.
+    String? reasonCategory,
+    String? pickupFarePayer,
+    String? pickupStage,
+    ReturnRefundBreakdownDto? refundBreakdown,
   }) = _CustomerReturnDto;
 
   const CustomerReturnDto._();
@@ -123,6 +177,10 @@ abstract class CustomerReturnDto with _$CustomerReturnDto {
     replacementState: CustomerReplacementState.fromCode(replacementState),
     replacementPaymentStatus: replacementPaymentStatus,
     evidence: evidence?.toDomain(),
+    reasonCategory: ReturnReasonCategory.fromWire(reasonCategory),
+    pickupFarePayer: ReturnFarePayer.fromWire(pickupFarePayer),
+    pickupStage: ReturnPickupStage.fromWire(pickupStage),
+    refundBreakdown: refundBreakdown?.toDomain(),
   );
 }
 

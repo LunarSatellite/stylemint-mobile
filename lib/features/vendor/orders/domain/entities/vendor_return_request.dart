@@ -1,6 +1,14 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/return_evidence.dart';
 
-enum VendorReturnRequestState { submitted, approved, rejected, completed }
+/// Backend `ReturnRequestState` 1-5. [cancelled] (5) is the buyer cancelling
+/// before the rider collected the item (return pickup contract §4).
+enum VendorReturnRequestState {
+  submitted,
+  approved,
+  rejected,
+  completed,
+  cancelled,
+}
 
 /// Vendor §8.1 — a customer return request awaiting (or past) the
 /// vendor's accept/reject decision. Backed by `GET /v1/vendor/returns`.
@@ -22,6 +30,10 @@ class VendorReturnRequest {
     this.rejectionNote,
     this.evidence,
     this.restocked,
+    this.reasonCategory,
+    this.pickupFarePayer,
+    this.pickupStage,
+    this.pickupAware = false,
   });
 
   final String id;
@@ -47,6 +59,20 @@ class VendorReturnRequest {
   /// stock, false when it was recorded as not resellable. Null before that,
   /// or when the server does not send it.
   final bool? restocked;
+  /// Return pickup contract §4, as sent (`Damaged`, `ChangedMind`, …); null
+  /// on older returns.
+  final String? reasonCategory;
+
+  /// `Seller` or `Buyer`; null on older returns.
+  final String? pickupFarePayer;
+
+  /// The rider pickup's `stage` string; null when there is none.
+  final String? pickupStage;
+
+  /// The row carried the `pickupStage` key at all (even as null): the
+  /// backend has rider pickups, so a return with none can be offered "Find a
+  /// rider". False from an older backend, where nothing new is shown.
+  final bool pickupAware;
 
   bool get isPending => state == VendorReturnRequestState.submitted;
 }

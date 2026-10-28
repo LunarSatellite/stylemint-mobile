@@ -21,6 +21,7 @@ class ReturnStatusPill extends StatelessWidget {
     ReturnRequestStatus.approved => OrderPillTone.progress,
     ReturnRequestStatus.rejected => OrderPillTone.negative,
     ReturnRequestStatus.completed => OrderPillTone.success,
+    ReturnRequestStatus.cancelled => OrderPillTone.neutral,
     ReturnRequestStatus.unknown => OrderPillTone.neutral,
   };
 
@@ -29,6 +30,7 @@ class ReturnStatusPill extends StatelessWidget {
     ReturnRequestStatus.approved => Icons.thumb_up_outlined,
     ReturnRequestStatus.rejected => Icons.do_not_disturb_alt_rounded,
     ReturnRequestStatus.completed => Icons.check_circle_outline_rounded,
+    ReturnRequestStatus.cancelled => Icons.cancel_outlined,
     ReturnRequestStatus.unknown => Icons.help_outline_rounded,
   };
 

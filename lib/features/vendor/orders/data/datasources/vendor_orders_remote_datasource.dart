@@ -439,6 +439,72 @@ class VendorOrdersRemoteDataSource {
     return (response as Map).cast<String, dynamic>();
   }
 
+  // ── Return pickup by rider (return pickup contract §4) ─────────────────
+
+  /// GET /v1/vendor/returns/{id}/pickup — the same `ReturnPickupDto` the
+  /// buyer reads. Null on 404: no pickup yet, or a backend without the route.
+  Future<Map<String, dynamic>?> getReturnPickup(String returnRequestId) async {
+    try {
+      final response = await apiClient.get(
+        '/v1/vendor/returns/${Uri.encodeComponent(returnRequestId)}/pickup',
+      );
+      return response is Map ? response.cast<String, dynamic>() : null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  String _returnRequests(String returnRequestId) =>
+      '/v1/vendor/returns/${Uri.encodeComponent(returnRequestId)}'
+      '/pickup-requests';
+
+  /// POST /v1/vendor/returns/{id}/pickup-requests — open or re-open.
+  Future<Map<String, dynamic>> openReturnPickupRequest(
+    String returnRequestId, {
+    required String idempotencyKey,
+    bool allowVerifiedNonPro = false,
+  }) async {
+    final response = await apiClient.post(
+      _returnRequests(returnRequestId),
+      data: allowVerifiedNonPro
+          ? const <String, dynamic>{'allowVerifiedNonPro': true}
+          : const <String, dynamic>{},
+      options: _idempotent(idempotencyKey),
+    );
+    return (response as Map).cast<String, dynamic>();
+  }
+
+  /// GET /v1/vendor/returns/{id}/pickup-requests/current, or null on 404.
+  Future<Map<String, dynamic>?> getCurrentReturnPickupRequest(
+    String returnRequestId,
+  ) async {
+    try {
+      final response = await apiClient.get(
+        '${_returnRequests(returnRequestId)}/current',
+      );
+      if (response == null) return null;
+      return (response as Map).cast<String, dynamic>();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  /// POST /v1/vendor/returns/{id}/pickup-requests/current/select.
+  Future<Map<String, dynamic>> selectReturnPickupRider(
+    String returnRequestId, {
+    required String offerId,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '${_returnRequests(returnRequestId)}/current/select',
+      data: {'offerId': offerId},
+      options: _idempotent(idempotencyKey),
+    );
+    return (response as Map).cast<String, dynamic>();
+  }
+
   /// GET /v1/vendor/sub-orders/{id}/delivery-requests/current/riders/{courierId}
   /// — what the vendor may see about one rider before choosing them.
   ///

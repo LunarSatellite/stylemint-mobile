@@ -204,12 +204,19 @@ class DeliveryCodeForm extends StatefulWidget {
     required this.onSubmit,
     this.initialPackageNumber = '',
     this.busy = false,
+    this.submitLabel = 'Confirm delivery',
+    this.packageHint = 'SM-D-00000000',
     super.key,
   });
 
   final String initialPackageNumber;
   final bool busy;
   final Future<void> Function(String packageNumber, String code) onSubmit;
+
+  /// The button's words; "Confirm delivery" unless a return handover says
+  /// otherwise.
+  final String submitLabel;
+  final String packageHint;
 
   static const packageFieldKey = ValueKey<String>('delivery-code-package');
   static const codeFieldKey = ValueKey<String>('delivery-code-digits');
@@ -258,9 +265,9 @@ class _DeliveryCodeFormState extends State<DeliveryCodeForm> {
           textCapitalization: TextCapitalization.characters,
           textInputAction: TextInputAction.next,
           style: DesignTokens.mediumRegular,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Package number',
-            hintText: 'SM-D-00000000',
+            hintText: widget.packageHint,
           ),
         ),
         const SizedBox(height: DesignTokens.s8),
@@ -291,7 +298,7 @@ class _DeliveryCodeFormState extends State<DeliveryCodeForm> {
             onPressed: _ready && !widget.busy
                 ? () => widget.onSubmit(_package.text, _code.text)
                 : null,
-            child: Text(widget.busy ? 'Confirming…' : 'Confirm delivery'),
+            child: Text(widget.busy ? 'Confirming…' : widget.submitLabel),
           ),
         ),
       ],

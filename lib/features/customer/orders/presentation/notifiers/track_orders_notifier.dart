@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_reason_category.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 
@@ -276,6 +277,7 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
     required List<String> photoUrls,
     ReturnResolutionChoice resolution = ReturnResolutionChoice.refund,
     String? replacementVariantId,
+    ReturnReasonCategory? reasonCategory,
   }) async {
     await state.maybeWhen(
       loadSuccess: (order) async {
@@ -289,6 +291,7 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
           photoUrls: photoUrls,
           resolution: resolution,
           replacementVariantId: replacementVariantId,
+          reasonCategory: reasonCategory,
         );
         state = either.fold(
           (failure) {
@@ -312,6 +315,20 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
   Future<Either<NetworkExceptions, List<ReplacementOption>>>
   getReplacementOptions(String originalVariantId) =>
       _repository.getReplacementOptions(originalVariantId);
+
+  /// What a "changed my mind" pickup costs; the return form shows it before
+  /// the buyer submits.
+  Future<Either<NetworkExceptions, ReturnPickupQuote>> getReturnPickupQuote(
+    String orderNumber, {
+    required String subOrderId,
+    required String subOrderLineId,
+    required int quantity,
+  }) => _repository.getReturnPickupQuote(
+    orderNumber,
+    subOrderId: subOrderId,
+    subOrderLineId: subOrderLineId,
+    quantity: quantity,
+  );
 
   Future<Either<NetworkExceptions, String>> uploadReturnPhoto(
     String filePath,

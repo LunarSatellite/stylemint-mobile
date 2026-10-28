@@ -18,6 +18,8 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_reason_category.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_eligibility.dart';
@@ -216,6 +218,50 @@ class OrdersRepositoryImpl implements OrdersRepository {
   );
 
   @override
+  Future<Either<NetworkExceptions, ReturnPickupQuote>> getReturnPickupQuote(
+    String orderNumber, {
+    required String subOrderId,
+    required String subOrderLineId,
+    required int quantity,
+  }) => guardedNetworkCall(
+    networkInfo,
+    () async => ReturnPickupQuote.fromJson(
+      await remoteDataSource.getReturnPickupQuote(
+        orderNumber,
+        subOrderId: subOrderId,
+        subOrderLineId: subOrderLineId,
+        quantity: quantity,
+      ),
+    ),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, CustomerReturn>> cancelReturn(
+    String returnId, {
+    String? note,
+  }) => guardedNetworkCall(
+    networkInfo,
+    () async => (await remoteDataSource.cancelReturn(
+      returnId,
+      idempotencyKey: _uuid.v4(),
+      note: note,
+    )).toDomain(),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, ReturnPickup>> retryReturnPickup(
+    String returnId,
+  ) => guardedNetworkCall(
+    networkInfo,
+    () async => ReturnPickup.fromJson(
+      await remoteDataSource.retryReturnPickup(
+        returnId,
+        idempotencyKey: _uuid.v4(),
+      ),
+    ),
+  );
+
+  @override
   Future<Either<NetworkExceptions, String?>> requestReturn(
     String orderId, {
     required String subOrderId,
@@ -225,6 +271,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
     required List<String> photoUrls,
     ReturnResolutionChoice resolution = ReturnResolutionChoice.refund,
     String? replacementVariantId,
+    ReturnReasonCategory? reasonCategory,
   }) async {
     if (await networkInfo.isConnected) {
       try {
@@ -238,6 +285,10 @@ class OrdersRepositoryImpl implements OrdersRepository {
           resolution == ReturnResolutionChoice.replacement ? 2 : 1,
           replacementVariantId,
           _uuid.v4(),
+          reasonCategory: reasonCategory == null ||
+                  reasonCategory == ReturnReasonCategory.unspecified
+              ? null
+              : reasonCategory.wire,
         );
         return right(returnId);
       } catch (e) {

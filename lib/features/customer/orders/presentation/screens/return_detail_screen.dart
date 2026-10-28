@@ -2,21 +2,25 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/customer_return.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_reason_category.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_shipment.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/customer_returns_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/kathmandu_time.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/orders_load_error_view.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/return_pickup_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/return_status_pill.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/tracking_step_list.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/returns/return_evidence_section.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refresh.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -64,12 +68,23 @@ class ReturnDetailScreen extends ConsumerWidget {
           note: r.rejectionNote,
         ),
       ],
+      ReturnRequestStatus.cancelled => [
+        submitted,
+        TrackingStepVm(
+          title: 'Return cancelled',
+          state: TrackingStepState.done,
+          tone: TrackingStepTone.negative,
+          timestamp: at(ReturnRequestStatus.cancelled, r.resolvedUtc),
+        ),
+      ],
       ReturnRequestStatus.approved => [
         submitted,
         TrackingStepVm(
           title: 'Approved by the seller',
           state: TrackingStepState.current,
-          subtitle: 'Send the item back as the seller instructs.',
+          subtitle: r.pickupStage == null
+              ? 'Send the item back as the seller instructs.'
+              : 'A rider collects it from you.',
           timestamp: at(ReturnRequestStatus.approved),
         ),
         const TrackingStepVm(
@@ -115,7 +130,21 @@ class ReturnDetailScreen extends ConsumerWidget {
         .asData
         ?.value;
 
-    return Scaffold(
+    Future<void> refreshAll() async {
+      ref.invalidate(returnPickupProvider(returnId));
+      await notifier.refresh();
+    }
+
+    final stage = pickup?.stage;
+    return LiveRefresh(
+      scopes: const {LiveScope.buyerOrders},
+      // While a rider is being found or is on the way, the stage moves
+      // without the buyer doing anything.
+      interval: stage == null || stage.isSettled
+          ? null
+          : const Duration(seconds: 15),
+      onRefresh: refreshAll,
+      child: Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
@@ -139,7 +168,7 @@ class ReturnDetailScreen extends ConsumerWidget {
         top: false,
         child: RefreshIndicator(
           color: DesignTokens.primaryGreen,
-          onRefresh: notifier.refresh,
+          onRefresh: refreshAll,
           child: state.when(
             initial: () => const _DetailSkeleton(),
             loadInProgress: () => const _DetailSkeleton(),
@@ -163,10 +192,7 @@ class ReturnDetailScreen extends ConsumerWidget {
                 const SizedBox(height: DesignTokens.s12),
                 _Section(
                   label: 'Reason',
-                  child: Text(
-                    r.reason.trim().isEmpty ? 'No reason given' : r.reason,
-                    style: DesignTokens.mediumRegular,
-                  ),
+                  child: _ReasonText(customerReturn: r),
                 ),
                 if (r.photoUrls.isNotEmpty) ...[
                   const SizedBox(height: DesignTokens.s12),
@@ -189,7 +215,12 @@ class ReturnDetailScreen extends ConsumerWidget {
                   const SizedBox(height: DesignTokens.s12),
                   _Section(
                     label: 'Return pickup',
-                    child: _ReturnPickupCard(pickup: pickup),
+                    child: pickup.stage == null
+                        ? _ReturnPickupCard(pickup: pickup)
+                        : ReturnPickupSection(
+                            pickup: pickup,
+                            onChanged: refreshAll,
+                          ),
                   ),
                 ],
                 const SizedBox(height: DesignTokens.s12),
@@ -204,13 +235,53 @@ class ReturnDetailScreen extends ConsumerWidget {
                 else
                   _Section(
                     label: 'Refund',
-                    child: _RefundStatus(refundStatus: r.refundStatus),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (r.refundBreakdown case final breakdown?) ...[
+                          ReturnRefundBreakdownLine(breakdown: breakdown),
+                          const SizedBox(height: DesignTokens.s8),
+                        ],
+                        _RefundStatus(refundStatus: r.refundStatus),
+                      ],
+                    ),
                   ),
               ],
             ),
           ),
         ),
       ),
+      ),
+    );
+  }
+}
+
+/// The category the buyer picked, then anything they wrote that says more.
+class _ReasonText extends StatelessWidget {
+  const _ReasonText({required this.customerReturn});
+
+  final CustomerReturn customerReturn;
+
+  @override
+  Widget build(BuildContext context) {
+    final category = customerReturn.reasonCategory;
+    final reason = customerReturn.reason.trim();
+    final extra = category != null && reason == category.label ? '' : reason;
+    if (category == null || category == ReturnReasonCategory.unspecified) {
+      return Text(
+        reason.isEmpty ? 'No reason given' : reason,
+        style: DesignTokens.mediumRegular,
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(category.label, style: DesignTokens.mediumSemibold),
+        if (extra.isNotEmpty) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Text(extra, style: DesignTokens.mediumRegular),
+        ],
+      ],
     );
   }
 }

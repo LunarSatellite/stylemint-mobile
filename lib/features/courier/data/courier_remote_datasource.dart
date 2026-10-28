@@ -573,6 +573,26 @@ class CourierRemoteDataSource {
     return (response as Map).cast<String, dynamic>();
   }
 
+  /// POST `/v1/courier/jobs/{hopId}/collect` — a return pickup at the
+  /// buyer's door: `{ photoUrls, note }` (1–3 photos from the proof-images
+  /// upload) → the pickup proof the buyer scans (return pickup contract §4).
+  Future<Map<String, dynamic>> collectJob({
+    required String hopId,
+    required List<String> photoUrls,
+    required String idempotencyKey,
+    String? note,
+  }) async {
+    final response = await apiClient.authPost(
+      '/v1/courier/jobs/${Uri.encodeComponent(hopId)}/collect',
+      data: {
+        'photoUrls': photoUrls,
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+      },
+      options: _idempotent(idempotencyKey),
+    );
+    return (response as Map).cast<String, dynamic>();
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────
 
   /// Matches the orders datasource: the interceptor reads requiresToken, and

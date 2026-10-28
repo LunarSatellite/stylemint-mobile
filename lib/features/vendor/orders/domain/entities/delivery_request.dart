@@ -1,3 +1,5 @@
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+
 /// Where a "find a delivery partner" request has got to. Mirrors the
 /// delivery-selection contract's `state` string.
 ///
@@ -62,6 +64,7 @@ class InterestedRider {
     this.interestedUtc,
     this.ratingCount,
     this.verified,
+    this.fare,
   });
 
   factory InterestedRider.fromJson(Map<String, dynamic> json) {
@@ -69,6 +72,7 @@ class InterestedRider {
     final count = json['ratingCount'];
     final verified = json['verified'];
     return InterestedRider(
+      fare: _money(json['fare']),
       offerId: _string(json['offerId']),
       courierId: _string(json['courierId']),
       displayName: _string(json['displayName']).isEmpty
@@ -117,6 +121,10 @@ class InterestedRider {
   /// which is not the same as "unverified".
   final bool? verified;
 
+  /// The fixed fare of this rider's offer (return pickup contract §4); null
+  /// from a server that does not send it.
+  final Money? fare;
+
   bool get isNew => rating == null;
 }
 
@@ -160,6 +168,8 @@ class DeliveryRequest {
     this.noRidersReason,
     this.canUseVerifiedRider = false,
     this.verifiedRiderConsentUtc,
+    this.kind = DeliveryRequestKind.delivery,
+    this.returnRequestId,
   });
 
   factory DeliveryRequest.fromJson(Map<String, dynamic> json) {
@@ -187,6 +197,8 @@ class DeliveryRequest {
     final radius = _double(json['radiusKm']);
     final consent = json['verifiedRiderConsent'];
     return DeliveryRequest(
+      kind: DeliveryRequestKind.fromWire(json['kind']),
+      returnRequestId: _stringOrNull(json['returnRequestId']),
       noRidersReason: _stringOrNull(json['noRidersReason']),
       canUseVerifiedRider: json['canUseVerifiedRider'] == true,
       verifiedRiderConsentUtc: consent is Map
@@ -224,6 +236,10 @@ class DeliveryRequest {
   /// null when they have not.
   final DateTime? verifiedRiderConsentUtc;
 
+  /// A parcel going out, or a return coming back (return pickup contract).
+  final DeliveryRequestKind kind;
+  final String? returnRequestId;
+
   /// `noRidersReason`: a high-value parcel may only go to a Pro rider and
   /// none is available. The seller is asked whether a verified rider may
   /// take it instead.
@@ -251,6 +267,30 @@ class DeliveryRequest {
     final left = expires.difference(nowUtc);
     return left.isNegative ? Duration.zero : left;
   }
+}
+
+/// `kind`: `Delivery | Return`. Absent or unknown is [delivery], which is
+/// what every request was before the field existed.
+enum DeliveryRequestKind {
+  delivery,
+  returnPickup;
+
+  static DeliveryRequestKind fromWire(Object? value) =>
+      switch (value?.toString().trim().toLowerCase()) {
+        'return' || 'returnpickup' || '2' => DeliveryRequestKind.returnPickup,
+        _ => DeliveryRequestKind.delivery,
+      };
+}
+
+Money? _money(Object? value) {
+  if (value is num) return Money(amount: value.toDouble(), currency: 'NPR');
+  if (value is! Map) return null;
+  final amount = value['amount'];
+  if (amount is! num) return null;
+  return Money(
+    amount: amount.toDouble(),
+    currency: _stringOrNull(value['currency']) ?? 'NPR',
+  );
 }
 
 String _string(Object? value) => value?.toString() ?? '';

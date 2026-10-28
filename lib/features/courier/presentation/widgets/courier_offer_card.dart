@@ -49,6 +49,9 @@ class CourierOfferCard extends StatelessWidget {
   static const Key openMapKey = ValueKey<String>('courier-offer-open-map');
 
   static const waitingText = 'Waiting for the vendor to choose…';
+  static const returnWaitingText = 'Waiting for the seller to choose…';
+  static const returnBadgeText = 'Return pickup';
+  static const approximateText = 'Exact address once the seller picks you.';
   static const selectedText = "You've got it!";
   static const notSelectedText = 'Another rider was chosen';
   static const expiredText = 'Expired';
@@ -124,13 +127,19 @@ class CourierOfferCard extends StatelessWidget {
                 ),
             ],
           ),
+          if (offer.isReturn) ...[
+            const SizedBox(height: DesignTokens.s4),
+            const _ReturnBadge(),
+          ],
           const SizedBox(height: DesignTokens.s4),
-          _Route(offer: offer),
+          _Route(offer: offer, exact: state == OfferInterestState.selected),
           if (offer.distanceToPickupKm case final km?)
             Padding(
               padding: const EdgeInsets.only(top: DesignTokens.s4),
               child: Text(
-                '${km.toStringAsFixed(1)} km to the pick-up',
+                offer.isReturn
+                    ? '${km.toStringAsFixed(1)} km to the buyer'
+                    : '${km.toStringAsFixed(1)} km to the pick-up',
                 style: DesignTokens.tiny.copyWith(
                   color: DesignTokens.textLight,
                 ),
@@ -203,7 +212,9 @@ class CourierOfferCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'The vendor chooses from the riders who say yes.',
+              offer.isReturn
+                  ? 'The seller chooses from the riders who say yes.'
+                  : 'The vendor chooses from the riders who say yes.',
               style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
             ),
             const SizedBox(height: DesignTokens.s8),
@@ -239,7 +250,10 @@ class CourierOfferCard extends StatelessWidget {
             ),
             const SizedBox(width: DesignTokens.s8),
             Expanded(
-              child: Text(waitingText, style: DesignTokens.smallRegular),
+              child: Text(
+                offer.isReturn ? returnWaitingText : waitingText,
+                style: DesignTokens.smallRegular,
+              ),
             ),
             TextButton(
               key: withdrawKey,
@@ -259,7 +273,9 @@ class CourierOfferCard extends StatelessWidget {
             ),
             const SizedBox(height: DesignTokens.s4),
             Text(
-              'The vendor chose you. The pick-up and drop-off are on your map.',
+              offer.isReturn
+                  ? 'The seller chose you. Collect it from the buyer, then bring it to the shop.'
+                  : 'The vendor chose you. The pick-up and drop-off are on your map.',
               style: DesignTokens.tiny.copyWith(color: DesignTokens.textLight),
             ),
             const SizedBox(height: DesignTokens.s8),
@@ -302,9 +318,12 @@ class CourierOfferCard extends StatelessWidget {
 /// "Pick up: Thamel → Drop off: Baluwatar · Neighbour". Falls back to the
 /// geohash cells when the server sent no labels.
 class _Route extends StatelessWidget {
-  const _Route({required this.offer});
+  const _Route({required this.offer, this.exact = false});
 
   final HopOffer offer;
+
+  /// The rider was chosen, so a return's buyer address is exact now.
+  final bool exact;
 
   @override
   Widget build(BuildContext context) {
@@ -314,6 +333,34 @@ class _Route extends StatelessWidget {
       return Text(
         '$pickupFallbackName → $dropoffFallbackName · ${offer.tier.label}',
         style: DesignTokens.tiny,
+      );
+    }
+    if (offer.isReturn) {
+      // A return runs from the buyer back to the shop. Until the seller
+      // picks this rider, the buyer's end is an area, not an address
+      // (return pickup contract D4).
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _place(
+            Icons.home_rounded,
+            exact ? 'Collect from' : 'Collect near',
+            pickupName(offer.pickup),
+          ),
+          const SizedBox(height: 2),
+          _place(
+            Icons.store_mall_directory_rounded,
+            'Bring to',
+            dropoffName(offer.dropoff),
+          ),
+          if (!exact) ...[
+            const SizedBox(height: 2),
+            Text(
+              CourierOfferCard.approximateText,
+              style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+            ),
+          ],
+        ],
       );
     }
     return Column(
@@ -349,5 +396,45 @@ class _Route extends StatelessWidget {
         ),
       ),
     ],
+  );
+}
+
+/// "Return pickup" — so a rider never mistakes a return for a delivery.
+class _ReturnBadge extends StatelessWidget {
+  const _ReturnBadge();
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: AlignmentDirectional.centerStart,
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: DesignTokens.colorWarning.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s8,
+          vertical: 2,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.keyboard_return_rounded,
+              size: 14,
+              color: DesignTokens.colorWarning,
+            ),
+            const SizedBox(width: DesignTokens.s4),
+            Text(
+              CourierOfferCard.returnBadgeText,
+              style: DesignTokens.tiny.copyWith(
+                color: DesignTokens.colorWarning,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
   );
 }
