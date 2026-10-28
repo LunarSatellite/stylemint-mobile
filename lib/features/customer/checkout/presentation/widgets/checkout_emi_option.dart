@@ -840,11 +840,11 @@ class _CheckoutEmiPlansState extends ConsumerState<CheckoutEmiPlans> {
           const _Label('Approved by the seller'),
           Text(plan, style: muted()),
           const SizedBox(height: DesignTokens.s4),
-          // Paid right here: checkout's own payment methods and Place Order
+          // Paid right here: checkout's own payment methods and its button
           // pay the down payment — no separate page.
           Text(
             'Choose how to pay the ${_money(a.downPayment)} down payment '
-            'below, then tap Place Order.',
+            'below, then continue with the button at the bottom.',
             key: CheckoutEmiOption.payHereKey,
             style: muted(),
           ),

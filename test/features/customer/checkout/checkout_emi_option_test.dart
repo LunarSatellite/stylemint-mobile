@@ -681,7 +681,7 @@ void main() {
       );
       expect(find.byKey(CheckoutEmiOption.approvedKey), findsOneWidget);
       expect(find.byKey(CheckoutEmiOption.payHereKey), findsOneWidget);
-      expect(find.textContaining('tap Place Order'), findsOneWidget);
+      expect(find.textContaining('continue with the button at the bottom'), findsOneWidget);
       expect(find.textContaining('12,000'), findsWidgets);
       expect(find.textContaining('Pay down payment'), findsNothing);
       expect(find.byType(FilledButton), findsNothing);

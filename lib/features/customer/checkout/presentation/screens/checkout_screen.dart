@@ -390,6 +390,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ? hasAddress
                     : hasAddress || isPickup || !needsAddress,
                 isProcessing: isProcessing || _placingEmi,
+                paysOnline: selectedPayment.type != PaymentMethodType.cod,
                 emiDueToday: emiPlan == null
                     ? null
                     : planMoney(emiPlan.downPayment),
@@ -1693,6 +1694,7 @@ class _BottomBar extends StatelessWidget {
     required this.isProcessing,
     required this.onAddAddress,
     required this.onPlaceOrder,
+    required this.paysOnline,
     this.emiDueToday,
   });
 
@@ -1700,6 +1702,10 @@ class _BottomBar extends StatelessWidget {
   final bool isProcessing;
   final VoidCallback onAddAddress;
   final VoidCallback onPlaceOrder;
+
+  /// Any method but cash on delivery: the button leads to the payment, and the
+  /// order is placed only once it is paid, so it must not say "Place Order".
+  final bool paysOnline;
 
   /// The seller approved EMI for an item in the cart: Place Order places it,
   /// paying only this down payment now — never the full price.
@@ -1810,8 +1816,8 @@ class _BottomBar extends StatelessWidget {
                   color: DesignTokens.buttonPrimaryText,
                 ),
               )
-            : const Text(
-                'Place Order',
+            : Text(
+                paysOnline ? 'Proceed to Payment' : 'Place Order',
                 style: DesignTokens.oneLinerSemibold,
               ),
       ),

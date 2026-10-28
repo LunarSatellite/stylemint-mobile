@@ -81,12 +81,14 @@ void main() {
     final (credit, opened) = await _pumpApproved(tester);
 
     // No separate EMI payment page, no "use the button above" in its place.
-    expect(find.textContaining('tap Place Order'), findsOneWidget);
+    expect(find.textContaining('continue with the button at the bottom'), findsOneWidget);
     expect(find.textContaining('EMI approved: pay the'), findsOneWidget);
     // Cash is not offered when the seller does not allow it.
     expect(find.text('Cash on delivery'), findsNothing);
 
-    await tester.tap(find.text('Place Order'));
+    // Paid online, so the button leads to the payment.
+    expect(find.text('Place Order'), findsNothing);
+    await tester.tap(find.text('Proceed to Payment'));
     await tester.pumpAndSettle();
 
     expect(credit.checkoutsStarted, 1);

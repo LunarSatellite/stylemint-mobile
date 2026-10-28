@@ -67,7 +67,9 @@ class OrderSuccessScreen extends ConsumerStatefulWidget {
   final bool paymentPending;
 
   /// How often an unpaid order is re-read.
-  static const pollInterval = Duration(seconds: 3);
+  /// One second: the buyer is looking at this screen, and the order appears a
+  /// few seconds after the payment; each read is one small request.
+  static const pollInterval = Duration(seconds: 1);
 
   /// How long it is re-read before the screen stops and offers "Check again".
   static const pollWindow = Duration(minutes: 3);

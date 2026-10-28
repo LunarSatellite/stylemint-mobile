@@ -98,7 +98,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Place Order'));
+    await tester.tap(find.text('Proceed to Payment'));
     await tester.pumpAndSettle();
 
     verify(
@@ -127,6 +127,8 @@ void main() {
       ),
     );
 
+    // Nothing to pay now, so the button places the order.
+    expect(find.text('Proceed to Payment'), findsNothing);
     await tester.tap(find.text('Place Order'));
     await tester.pumpAndSettle();
 
@@ -149,7 +151,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Place Order'));
+    await tester.tap(find.text('Proceed to Payment'));
     await tester.pumpAndSettle();
 
     expect(opened, [Uri.parse(_redirect)]);
