@@ -2,6 +2,11 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// Fulfillment status shown on the Track Orders list.
 enum OrderTrackStatus {
+  /// Bought with an online method (eSewa, card, PayPal) whose payment has not
+  /// cleared: the server holds the order at Placed and no seller sees it
+  /// yet. It is not placed until it is paid, so it never reads as placed or
+  /// confirmed — and it stays listed, because the buyer may still pay.
+  awaitingPayment('Awaiting payment'),
   preparingForShipping('Preparing for Shipping'),
   inTransit('In Transit'),
   outForDelivery('Out for Delivery'),

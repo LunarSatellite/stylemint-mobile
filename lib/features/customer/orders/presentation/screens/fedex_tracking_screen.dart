@@ -312,6 +312,8 @@ class _HorizontalTimeline extends StatelessWidget {
   ];
 
   int get _currentIndex => switch (status) {
+    // Not paid yet: none of the shipping stages has begun.
+    OrderTrackStatus.awaitingPayment => -1,
     OrderTrackStatus.preparingForShipping => 0,
     OrderTrackStatus.inTransit => 1,
     OrderTrackStatus.outForDelivery => 2,

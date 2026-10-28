@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_payment_state.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_delivery.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
@@ -251,8 +252,14 @@ abstract class OrderDetailDto with _$OrderDetailDto {
     final allCancelled = subOrders.isNotEmpty && live.isEmpty;
     final allDelivered =
         live.isNotEmpty && live.every((s) => s.state == _subOrderDelivered);
+    final awaitingPayment = OrderPaymentState.awaitsPayment(
+      state: state,
+      paymentMethod: paymentMethod,
+    );
     final overallStatus = allCancelled
         ? OrderTrackStatus.cancelled
+        : awaitingPayment
+        ? OrderTrackStatus.awaitingPayment
         : allDelivered && (state == 2 || state == 3)
         ? OrderTrackStatus.delivered
         : _statusFromState(state);
@@ -300,6 +307,10 @@ abstract class OrderDetailDto with _$OrderDetailDto {
                 s.id,
                 s.isCancelledBySeller
                     ? 'Cancelled by the seller'
+                    // An unpaid sub-order is Pending, which otherwise reads
+                    // "Confirmed" — not true until the payment clears.
+                    : awaitingPayment && s.state == _subOrderPending
+                    ? OrderTrackStatus.awaitingPayment.label
                     : _subOrderStateLabel(s.state),
               ),
             ),
@@ -327,8 +338,10 @@ abstract class OrderDetailDto with _$OrderDetailDto {
       paymentMethod: _paymentMethodLabel(paymentMethod),
       trackingNumber: trackingNumber,
       // The whole-order cancel never touches stays and trips (§4.2).
+      // The server cancels a Placed order as readily as a Paid one.
       canCancel:
-          overallStatus == OrderTrackStatus.preparingForShipping &&
+          (overallStatus == OrderTrackStatus.preparingForShipping ||
+              overallStatus == OrderTrackStatus.awaitingPayment) &&
           productSubOrders.isNotEmpty,
       canReturn:
           overallStatus == OrderTrackStatus.delivered &&
@@ -340,6 +353,9 @@ abstract class OrderDetailDto with _$OrderDetailDto {
           .toList(growable: false),
     );
   }
+
+  /// `SubOrderState.Pending` — the sub-order before its payment clears.
+  static const _subOrderPending = 1;
 
   /// `SubOrderState.Delivered`.
   static const _subOrderDelivered = 7;

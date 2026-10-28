@@ -671,8 +671,13 @@ class _TrackSummaryCard extends StatelessWidget {
           icon: OrderStatusBadge.iconFor(order.status),
           detail: delivered
               ? 'Delivered on $expected'
+              : order.status == OrderTrackStatus.awaitingPayment
+              // No delivery date for an order that is not placed yet.
+              ? 'Your order is placed as soon as the payment clears.'
               : 'Estimated delivery $expected',
-          footnote: 'Placed $placed',
+          footnote: order.status == OrderTrackStatus.awaitingPayment
+              ? 'Checked out $placed'
+              : 'Placed $placed',
         ),
         const SizedBox(height: DesignTokens.s12),
         Container(
@@ -793,6 +798,7 @@ class _TrackingTimeline extends StatelessWidget {
   // just-placed Cash on Delivery order rendered with "Shipped" highlighted
   // green before the vendor had even confirmed it).
   int get _current => switch (status) {
+    OrderTrackStatus.awaitingPayment => -1,
     OrderTrackStatus.preparingForShipping => -1,
     // On the collection path the order-level "fulfilling" state means the
     // seller is preparing it, not that it is moving through a network.

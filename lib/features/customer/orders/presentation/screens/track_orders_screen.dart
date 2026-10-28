@@ -78,7 +78,8 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
       result = result.where((o) {
         switch (_filter) {
           case _OrderFilter.ongoing:
-            return o.status == OrderTrackStatus.preparingForShipping ||
+            return o.status == OrderTrackStatus.awaitingPayment ||
+                o.status == OrderTrackStatus.preparingForShipping ||
                 o.status == OrderTrackStatus.inTransit ||
                 o.status == OrderTrackStatus.outForDelivery;
           case _OrderFilter.completed:

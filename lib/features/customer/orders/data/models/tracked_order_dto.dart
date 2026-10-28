@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_payment_state.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -24,6 +25,9 @@ abstract class TrackedOrderDto with _$TrackedOrderDto {
     @Default(1)
     int
     state, // OrderState: 1=Placed,2=Paid,3=Fulfilling,4=Completed,5=Cancelled
+    // PaymentMethod: 1=Card,2=PayPal,3=Esewa,4=Cod. Absent (an older
+    // server) reads as Cash on Delivery, which labels exactly as before.
+    @Default(OrderPaymentState.cashOnDelivery) int paymentMethod,
     // Service cart contract v1 §4.1: the order includes a stay or trip.
     @Default(false) bool hasServiceLines,
   }) = _TrackedOrderDto;
@@ -39,7 +43,12 @@ abstract class TrackedOrderDto with _$TrackedOrderDto {
     total: Money(amount: grandTotalAmount, currency: grandTotalCurrency),
     placedAt: placedUtc,
     itemCount: itemCount,
-    status: _statusFromState(state),
+    status: OrderPaymentState.awaitsPayment(
+          state: state,
+          paymentMethod: paymentMethod,
+        )
+        ? OrderTrackStatus.awaitingPayment
+        : _statusFromState(state),
     hasServiceLines: hasServiceLines,
   );
 

@@ -18,6 +18,7 @@ class OrderStatusBadge extends StatelessWidget {
   final bool dense;
 
   static OrderPillTone toneFor(OrderTrackStatus status) => switch (status) {
+    OrderTrackStatus.awaitingPayment => OrderPillTone.caution,
     OrderTrackStatus.preparingForShipping => OrderPillTone.info,
     OrderTrackStatus.inTransit => OrderPillTone.progress,
     OrderTrackStatus.outForDelivery => OrderPillTone.progress,
@@ -29,6 +30,7 @@ class OrderStatusBadge extends StatelessWidget {
   /// tone but not a glyph, because to a buyer waiting at home they are the
   /// difference between today and next week.
   static IconData iconFor(OrderTrackStatus status) => switch (status) {
+    OrderTrackStatus.awaitingPayment => Icons.hourglass_bottom_rounded,
     OrderTrackStatus.preparingForShipping => Icons.inventory_2_outlined,
     OrderTrackStatus.inTransit => Icons.local_shipping_outlined,
     OrderTrackStatus.outForDelivery => Icons.directions_run_rounded,

@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/device/delivery_push.dart';
 import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
 import 'package:stylemint_mobile_frontend/core/live/live_updates_client.dart';
 import 'package:stylemint_mobile_frontend/core/device/push_destination.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/payment_return_link.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -945,7 +946,22 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     // and threw "no routes for location". The provider's return to the site
     // (`/?payment=success|failed`) means the buyer is done there: close the
     // in-app browser and stay on the screen that opened it.
-    if (uri.path.startsWith('/payments/')) return;
+    //
+    // The provider's own return URL (/payments/esewa/return/success?data=…)
+    // is where the server confirms the payment. When universal links hand it
+    // to the app instead of the browser, the buyer is equally done paying:
+    // close the browser and load that URL ourselves, unauthenticated, so the
+    // order is confirmed now and the order screen's polling sees it Paid.
+    switch (classifyPaymentLink(uri)) {
+      case PaymentLinkKind.providerReturn:
+        unawaited(closeInAppWebView().catchError((Object _) {}));
+        unawaited(confirmPaymentReturn(uri));
+        return;
+      case PaymentLinkKind.otherPaymentPage:
+        return;
+      case PaymentLinkKind.none:
+        break;
+    }
     if ((uri.path.isEmpty || uri.path == '/') &&
         uri.queryParameters.containsKey('payment')) {
       unawaited(closeInAppWebView().catchError((Object _) {}));

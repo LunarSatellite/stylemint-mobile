@@ -1,10 +1,28 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+
+/// Where an order shown on [OrderSuccessScreen] stands.
+enum OrderSuccessPhase {
+  /// Sent to the payment provider; the server has not seen the payment yet.
+  awaitingPayment,
+
+  /// Still unpaid after the whole polling window. The buyer can ask again.
+  stillAwaitingPayment,
+
+  /// Paid (or Cash on Delivery): the order is placed and with the seller.
+  confirmed,
+
+  /// The payment failed or was abandoned and the server cancelled the order.
+  paymentFailed,
+}
 
 /// The one display moment in the post-purchase journey.
 ///
@@ -15,7 +33,16 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// clock, and copy that does not congratulate anyone. What follows is the same
 /// on both: the order number, and the four stages of what happens next, so the
 /// buyer leaves this screen oriented rather than merely pleased.
-class OrderSuccessScreen extends StatefulWidget {
+///
+/// An online payment (eSewa, card, PayPal) is not an order until it is paid:
+/// the server creates the order at Place Order but only releases it to the
+/// seller once the payment clears, and cancels it when the payment fails. So
+/// while [paymentPending] this screen never calls the order placed. It
+/// re-reads the order every [pollInterval] for [pollWindow], and again
+/// whenever the app comes back to the foreground (the buyer returning from
+/// the payment page), and moves to the confirmed view once the order is paid
+/// — or to "Payment didn't go through" once the server has cancelled it.
+class OrderSuccessScreen extends ConsumerStatefulWidget {
   const OrderSuccessScreen({
     required this.orderId,
     super.key,
@@ -32,23 +59,58 @@ class OrderSuccessScreen extends StatefulWidget {
   // exists but isn't paid yet, so this screen must not claim it is.
   final bool paymentPending;
 
+  /// How often an unpaid order is re-read.
+  static const pollInterval = Duration(seconds: 3);
+
+  /// How long it is re-read before the screen stops and offers "Check again".
+  static const pollWindow = Duration(minutes: 3);
+
+  /// What a freshly read order means for this screen; null while the payment
+  /// is still outstanding.
+  static OrderSuccessPhase? phaseFor(OrderTrackStatus status) =>
+      switch (status) {
+        OrderTrackStatus.awaitingPayment => null,
+        OrderTrackStatus.cancelled => OrderSuccessPhase.paymentFailed,
+        // Paid, or anything after it: the order is placed.
+        OrderTrackStatus.preparingForShipping ||
+        OrderTrackStatus.inTransit ||
+        OrderTrackStatus.outForDelivery ||
+        OrderTrackStatus.delivered => OrderSuccessPhase.confirmed,
+      };
+
   @override
-  State<OrderSuccessScreen> createState() => _OrderSuccessScreenState();
+  ConsumerState<OrderSuccessScreen> createState() => _OrderSuccessScreenState();
 }
 
-class _OrderSuccessScreenState extends State<OrderSuccessScreen>
-    with SingleTickerProviderStateMixin {
+class _OrderSuccessScreenState extends ConsumerState<OrderSuccessScreen>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _controller;
+  late OrderSuccessPhase _phase;
   bool _started = false;
+
+  Timer? _pollTimer;
+  Timer? _windowTimer;
+  bool _checking = false;
+
+  /// The provider's name once the order has been read ("eSewa", "Card",
+  /// "PayPal"); null until then, when the copy stays method-neutral.
+  String? _method;
 
   @override
   void initState() {
     super.initState();
+    _phase = widget.paymentPending
+        ? OrderSuccessPhase.awaitingPayment
+        : OrderSuccessPhase.confirmed;
     _controller = AnimationController(
       vsync: this,
       duration: DesignTokens.motionSlow * 2,
       value: 1,
     );
+    if (_awaiting) {
+      WidgetsBinding.instance.addObserver(this);
+      _startPolling();
+    }
   }
 
   @override
@@ -56,52 +118,199 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    // The bloom plays once, and not at all when the platform says no motion.
-    if (!MallMetrics.reduceMotion(context)) {
-      _controller.value = 0;
-      unawaited(_controller.forward());
+    _playBloom();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back from the payment page: ask at once rather than at the next tick,
+    // and give a lapsed window another round.
+    if (state != AppLifecycleState.resumed || !_awaiting) return;
+    if (_phase == OrderSuccessPhase.stillAwaitingPayment) {
+      _startPolling();
     }
+    unawaited(_check());
   }
 
   @override
   void dispose() {
+    _stopPolling();
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     super.dispose();
   }
 
-  bool get _pending => widget.paymentPending;
+  bool get _awaiting =>
+      _phase == OrderSuccessPhase.awaitingPayment ||
+      _phase == OrderSuccessPhase.stillAwaitingPayment;
 
-  MallStatusTone get _tone =>
-      _pending ? MallStatusTone.caution : MallStatusTone.success;
+  /// The bloom plays once per settled state, and not at all when the
+  /// platform says no motion.
+  void _playBloom() {
+    if (MallMetrics.reduceMotion(context)) {
+      _controller.value = 1;
+      return;
+    }
+    _controller.value = 0;
+    unawaited(_controller.forward());
+  }
 
-  String get _title => _pending ? 'Almost there' : 'Thank you';
+  void _startPolling() {
+    _stopPolling();
+    if (_phase == OrderSuccessPhase.stillAwaitingPayment) {
+      setState(() => _phase = OrderSuccessPhase.awaitingPayment);
+    }
+    _pollTimer = Timer.periodic(
+      OrderSuccessScreen.pollInterval,
+      (_) => unawaited(_check()),
+    );
+    _windowTimer = Timer(OrderSuccessScreen.pollWindow, () {
+      _stopPolling();
+      if (!mounted || _phase != OrderSuccessPhase.awaitingPayment) return;
+      setState(() => _phase = OrderSuccessPhase.stillAwaitingPayment);
+    });
+  }
 
-  String get _lead => _pending
-      ? 'Your order is placed. Finish the payment to confirm it.'
-      : 'Your order is confirmed.';
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _windowTimer?.cancel();
+    _windowTimer = null;
+  }
 
-  String get _body => _pending
-      ? "We've sent you to your payment provider. Nothing has been charged "
-            'yet — once the payment clears, this order moves to Confirmed and '
-            'you can track it from Order History.'
-      : 'You can follow every stage from Order History, and we will tell you '
-            'when it is out for delivery.';
+  /// Reads the order once. A failed read changes nothing: the next tick, or
+  /// the buyer's "Check again", asks again.
+  Future<void> _check() async {
+    if (_checking || !_awaiting) return;
+    _checking = true;
+    try {
+      final result = await ref
+          .read(ordersRepositoryProvider)
+          .getOrderDetail(widget.orderId);
+      if (!mounted || !_awaiting) return;
+      result.fold((_) {}, (order) {
+        final next = OrderSuccessScreen.phaseFor(order.status);
+        final method = order.paymentMethod.trim();
+        if (next == null) {
+          if (method.isNotEmpty && method != _method) {
+            setState(() => _method = method);
+          }
+          return;
+        }
+        _stopPolling();
+        setState(() {
+          _phase = next;
+          if (method.isNotEmpty) _method = method;
+        });
+        _playBloom();
+      });
+    } finally {
+      _checking = false;
+    }
+  }
 
-  List<MallTimelineStep> get _nextSteps => [
-    MallTimelineStep(
-      title: _pending ? 'Placed' : 'Confirmed',
-      state: _pending ? MallStepState.current : MallStepState.done,
-    ),
-    MallTimelineStep(
-      title: 'Packed',
-      state: _pending ? MallStepState.upcoming : MallStepState.current,
-    ),
-    const MallTimelineStep(title: 'Shipped', state: MallStepState.upcoming),
-    const MallTimelineStep(title: 'Delivered', state: MallStepState.upcoming),
-  ];
+  void _checkAgain() {
+    _startPolling();
+    unawaited(_check());
+  }
+
+  MallStatusTone get _tone => switch (_phase) {
+    OrderSuccessPhase.awaitingPayment ||
+    OrderSuccessPhase.stillAwaitingPayment => MallStatusTone.caution,
+    OrderSuccessPhase.confirmed => MallStatusTone.success,
+    OrderSuccessPhase.paymentFailed => MallStatusTone.danger,
+  };
+
+  String get _title => switch (_phase) {
+    OrderSuccessPhase.awaitingPayment ||
+    OrderSuccessPhase.stillAwaitingPayment => 'Waiting for your payment',
+    OrderSuccessPhase.confirmed => 'Thank you',
+    OrderSuccessPhase.paymentFailed => "Payment didn't go through",
+  };
+
+  String get _lead => switch (_phase) {
+    OrderSuccessPhase.awaitingPayment ||
+    OrderSuccessPhase.stillAwaitingPayment =>
+      _method == null
+          ? "Complete the payment — your order is placed as soon as it's paid."
+          : 'Complete the payment in $_method — your order is placed as '
+                "soon as it's paid.",
+    OrderSuccessPhase.confirmed => 'Your order is confirmed.',
+    OrderSuccessPhase.paymentFailed =>
+      'Your order was not placed and you were not charged.',
+  };
+
+  String get _body => switch (_phase) {
+    OrderSuccessPhase.awaitingPayment =>
+      'Nothing has been charged yet. This page updates by itself once the '
+          'payment clears.',
+    OrderSuccessPhase.stillAwaitingPayment =>
+      "We haven't heard back about the payment yet. If you finished paying, "
+          'it can take a few minutes — check again, or find this order in My '
+          'orders.',
+    OrderSuccessPhase.confirmed =>
+      'You can follow every stage from Order History, and we will tell you '
+          'when it is out for delivery.',
+    OrderSuccessPhase.paymentFailed =>
+      'Nothing was sent to the seller. You can go back to your cart and '
+          'check out again.',
+  };
+
+  List<MallTimelineStep> get _nextSteps {
+    final paid = _phase == OrderSuccessPhase.confirmed;
+    return [
+      MallTimelineStep(
+        title: paid ? 'Confirmed' : 'Paid',
+        state: paid ? MallStepState.done : MallStepState.current,
+      ),
+      MallTimelineStep(
+        title: 'Packed',
+        state: paid ? MallStepState.current : MallStepState.upcoming,
+      ),
+      const MallTimelineStep(title: 'Shipped', state: MallStepState.upcoming),
+      const MallTimelineStep(title: 'Delivered', state: MallStepState.upcoming),
+    ];
+  }
+
+  ({String label, VoidCallback onPressed}) get _primaryAction =>
+      switch (_phase) {
+        OrderSuccessPhase.awaitingPayment ||
+        OrderSuccessPhase.confirmed => (
+          label: 'View order',
+          onPressed: () => context.pushReplacement(
+            RouteNames.orderDetail.replaceAll(':orderId', widget.orderId),
+          ),
+        ),
+        OrderSuccessPhase.stillAwaitingPayment => (
+          label: 'Check again',
+          onPressed: _checkAgain,
+        ),
+        // There is no pay-again endpoint for a cancelled order: the way to
+        // try again is a fresh checkout.
+        OrderSuccessPhase.paymentFailed => (
+          label: 'Back to cart',
+          onPressed: () => context.go(RouteNames.cart),
+        ),
+      };
+
+  ({String label, VoidCallback onPressed}) get _secondaryAction =>
+      switch (_phase) {
+        OrderSuccessPhase.stillAwaitingPayment => (
+          label: 'View my orders',
+          onPressed: () => context.go(RouteNames.orders),
+        ),
+        OrderSuccessPhase.awaitingPayment ||
+        OrderSuccessPhase.confirmed ||
+        OrderSuccessPhase.paymentFailed => (
+          label: 'Keep shopping',
+          onPressed: () => context.go(RouteNames.home),
+        ),
+      };
 
   @override
   Widget build(BuildContext context) {
+    final primary = _primaryAction;
+    final secondary = _secondaryAction;
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       body: SafeArea(
@@ -120,6 +329,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                     const SizedBox(height: DesignTokens.s32),
                     Semantics(
                       header: true,
+                      liveRegion: true,
                       child: Text(
                         _title,
                         textAlign: TextAlign.center,
@@ -151,14 +361,17 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                     ),
                     const SizedBox(height: DesignTokens.s24),
                     _OrderNumberPlate(orderNumber: widget.orderId),
-                    const SizedBox(height: DesignTokens.s28),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: MallStatusStepper(
-                        steps: _nextSteps,
-                        semanticLabel: 'What happens next',
+                    // A cancelled order has nothing next to show.
+                    if (_phase != OrderSuccessPhase.paymentFailed) ...[
+                      const SizedBox(height: DesignTokens.s28),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: MallStatusStepper(
+                          steps: _nextSteps,
+                          semanticLabel: 'What happens next',
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -182,20 +395,15 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                   SizedBox(
                     width: double.infinity,
                     child: MallPrimaryCta(
-                      label: 'View order',
-                      onPressed: () => context.pushReplacement(
-                        RouteNames.orderDetail.replaceAll(
-                          ':orderId',
-                          widget.orderId,
-                        ),
-                      ),
+                      label: primary.label,
+                      onPressed: primary.onPressed,
                     ),
                   ),
                   const SizedBox(height: DesignTokens.s12),
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
-                      onPressed: () => context.go(RouteNames.home),
+                      onPressed: secondary.onPressed,
                       style: TextButton.styleFrom(
                         foregroundColor: DesignTokens.textLight,
                         backgroundColor: DesignTokens.bgAppBodyLight,
@@ -210,7 +418,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      child: const Text('Keep shopping'),
+                      child: Text(secondary.label),
                     ),
                   ),
                 ],
@@ -281,9 +489,14 @@ class _SuccessMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = mallStatusStyle(tone);
-    final glyph = tone == MallStatusTone.success
-        ? Icons.check_rounded
-        : Icons.hourglass_bottom_rounded;
+    final glyph = switch (tone) {
+      MallStatusTone.success => Icons.check_rounded,
+      MallStatusTone.danger => Icons.close_rounded,
+      MallStatusTone.neutral ||
+      MallStatusTone.info ||
+      MallStatusTone.progress ||
+      MallStatusTone.caution => Icons.hourglass_bottom_rounded,
+    };
     return ExcludeSemantics(
       child: SizedBox.square(
         dimension: 196,
