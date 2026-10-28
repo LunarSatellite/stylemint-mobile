@@ -29,6 +29,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_signals_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/related_products_rail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/return_record_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/size_advice_line.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/review_summary_block.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/emi_from_line.dart';
@@ -397,8 +398,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     }
     final alreadyInCart =
         cart != null &&
-        cart.productQuantity(product.id, variantId: _variantIdFor(product)) >
-            0;
+        cart.productQuantity(product.id, variantId: _variantIdFor(product)) > 0;
     if (!alreadyInCart && !await _addOne(product)) {
       if (mounted) setState(() => _cartBusy = false);
       return;
@@ -578,10 +578,26 @@ class _ProductBody extends StatelessWidget {
                         choice: serviceChoice,
                       ),
                       const SizedBox(height: DesignTokens.s24),
-                    ] else if (chooser case final ProductOptionChooser picker) ...[
+                    ] else if (chooser
+                        case final ProductOptionChooser picker) ...[
+                      // Fit advice learned from returns, next to the size
+                      // picker. Draws nothing when there is none; never
+                      // gates add-to-cart.
+                      SizeAdviceLine(
+                        productId: product.id,
+                        padding: const EdgeInsets.only(
+                          bottom: DesignTokens.s12,
+                        ),
+                      ),
                       ProductOptionChoosers(chooser: picker),
                       const SizedBox(height: DesignTokens.s16),
                     ] else if (product.variants.isNotEmpty) ...[
+                      SizeAdviceLine(
+                        productId: product.id,
+                        padding: const EdgeInsets.only(
+                          bottom: DesignTokens.s12,
+                        ),
+                      ),
                       _VariantChips(
                         variants: product.variants,
                         selected: selectedVariants,

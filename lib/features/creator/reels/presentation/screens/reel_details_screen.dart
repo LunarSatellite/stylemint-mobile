@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentat
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/widgets/add_tagged_product_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/widgets/reel_tag_suggestions_section.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/reel_caption/reel_caption.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -882,100 +883,104 @@ class _TaggedProductsSheet extends ConsumerWidget {
               style: DesignTokens.bodyText,
             ),
           ),
-          data: (tags) => Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Tagged products',
-                style: DesignTokens.sectionInnerTitle,
-              ),
-              const SizedBox(height: DesignTokens.s12),
-              if (tags.isEmpty)
+          data: (tags) => SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 const Text(
-                  'No products tagged on this reel yet.',
-                  style: DesignTokens.bodyText,
-                )
-              else
-                ...tags.map(
-                  (tag) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: tag.productImageUrl == null
-                        ? null
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              tag.productImageUrl!,
-                              width: 44,
-                              height: 44,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _e, _s) =>
-                                  const SizedBox(width: 44, height: 44),
+                  'Tagged products',
+                  style: DesignTokens.sectionInnerTitle,
+                ),
+                const SizedBox(height: DesignTokens.s12),
+                if (tags.isEmpty)
+                  const Text(
+                    'No products tagged on this reel yet.',
+                    style: DesignTokens.bodyText,
+                  )
+                else
+                  ...tags.map(
+                    (tag) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: tag.productImageUrl == null
+                          ? null
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                tag.productImageUrl!,
+                                width: 44,
+                                height: 44,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _e, _s) =>
+                                    const SizedBox(width: 44, height: 44),
+                              ),
                             ),
-                          ),
-                    title: Text(
-                      tag.productName ?? 'Product',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.bodyText,
-                    ),
-                    subtitle: Text(
-                      '${tag.priceLabel}  ·  '
-                      '${tag.commissionPercent.toStringAsFixed(0)}% '
-                      '(${tag.commissionPerSaleLabel})',
-                      style: DesignTokens.bodyText,
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        color: DesignTokens.textLight,
+                      title: Text(
+                        tag.productName ?? 'Product',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.bodyText,
                       ),
-                      tooltip: 'Remove tag',
-                      onPressed: () async {
-                        final ok = await ref
-                            .read(creatorReelActionsNotifierProvider.notifier)
-                            .untagProduct(reelId, tag.id);
-                        if (ok) {
-                          ref
-                            ..invalidate(reelTaggedProductsProvider(reelId))
-                            ..invalidate(creatorReelDetailProvider(reelId));
-                          // The shopper feed holds its own copy for the whole
-                          // session (reelsFeedNotifierProvider is not
-                          // autoDispose), so without this a removed tag kept
-                          // showing to shoppers until the app was relaunched —
-                          // the same staleness as adding one.
-                          unawaited(
+                      subtitle: Text(
+                        '${tag.priceLabel}  ·  '
+                        '${tag.commissionPercent.toStringAsFixed(0)}% '
+                        '(${tag.commissionPerSaleLabel})',
+                        style: DesignTokens.bodyText,
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: DesignTokens.textLight,
+                        ),
+                        tooltip: 'Remove tag',
+                        onPressed: () async {
+                          final ok = await ref
+                              .read(creatorReelActionsNotifierProvider.notifier)
+                              .untagProduct(reelId, tag.id);
+                          if (ok) {
                             ref
-                                .read(reelsFeedNotifierProvider.notifier)
-                                .refreshReel(reelId),
-                          );
-                        }
-                      },
+                              ..invalidate(reelTaggedProductsProvider(reelId))
+                              ..invalidate(creatorReelDetailProvider(reelId));
+                            // The shopper feed holds its own copy for the whole
+                            // session (reelsFeedNotifierProvider is not
+                            // autoDispose), so without this a removed tag kept
+                            // showing to shoppers until the app was relaunched —
+                            // the same staleness as adding one.
+                            unawaited(
+                              ref
+                                  .read(reelsFeedNotifierProvider.notifier)
+                                  .refreshReel(reelId),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: DesignTokens.s12),
+                // The counterpart to the remove button above. Tagging otherwise
+                // only exists inside the import wizard, and a reel that is
+                // already imported cannot re-enter it — the unique index on
+                // (source platform, external id) refuses a second import — so
+                // without this a creator whose partnership or product listing
+                // arrived after the import had no way to connect the two.
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('Tag a product'),
+                    onPressed: () => showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: DesignTokens.bgAppBody,
+                      builder: (_) => AddTaggedProductSheet(reelId: reelId),
                     ),
                   ),
                 ),
-              const SizedBox(height: DesignTokens.s12),
-              // The counterpart to the remove button above. Tagging otherwise
-              // only exists inside the import wizard, and a reel that is
-              // already imported cannot re-enter it — the unique index on
-              // (source platform, external id) refuses a second import — so
-              // without this a creator whose partnership or product listing
-              // arrived after the import had no way to connect the two.
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Tag a product'),
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: DesignTokens.bgAppBody,
-                    builder: (_) => AddTaggedProductSheet(reelId: reelId),
-                  ),
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s8),
-            ],
+                // ML matches for what is seen in the reel; hidden when none.
+                ReelTagSuggestionsSection(reelId: reelId),
+                const SizedBox(height: DesignTokens.s8),
+              ],
+            ),
           ),
         ),
       ),
