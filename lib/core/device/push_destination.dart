@@ -21,6 +21,7 @@ library;
 
 import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
 import 'package:stylemint_mobile_frontend/routes/deep_links.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
 const List<String> _keys = ['deepLink', 'deep_link', 'link', 'url', 'route'];
 
@@ -53,6 +54,8 @@ Uri? pushDestinationUri(Map<String, dynamic> data) {
 ///  * Anything else becomes its path: an https link's path as-is, a
 ///    custom-scheme link's host rebuilt in front of it
 ///    (`stylemint://auth/magic` -> `/auth/magic`). The query is kept.
+///  * The site itself (`https://<host>/`, the "Open StyleMint" button in every
+///    email) opens home: the router has no page at `/`.
 String deepLinkLocation(Uri uri) {
   final styleMintCode = StyleMintCode.parse(uri.toString());
   if (styleMintCode is StyleMintShortCode) return styleMintCode.route;
@@ -62,6 +65,7 @@ String deepLinkLocation(Uri uri) {
       ? '/${uri.host}${uri.path}'
       : uri.path;
   final path = rawPath.startsWith('/') ? rawPath : '/$rawPath';
+  if (path == '/') return RouteNames.home;
   final query = uri.queryParameters.entries
       .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
       .join('&');

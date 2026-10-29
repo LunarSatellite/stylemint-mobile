@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stylemint_mobile_frontend/core/device/push_destination.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
 void main() {
   group('pushDestinationUri', () {
@@ -72,6 +73,17 @@ void main() {
       expect(
         deepLinkLocation(Uri.parse('stylemint://orders/SM-1')),
         '/orders/SM-1',
+      );
+    });
+
+    test('the site root (the email button) opens home', () {
+      expect(
+        deepLinkLocation(Uri.parse('https://stylemint.voyageritnepal.com')),
+        RouteNames.home,
+      );
+      expect(
+        deepLinkLocation(Uri.parse('https://stylemint.voyageritnepal.com/')),
+        RouteNames.home,
       );
     });
 
