@@ -54,9 +54,17 @@ Uri? pushDestinationUri(Map<String, dynamic> data) {
 ///  * Anything else becomes its path: an https link's path as-is, a
 ///    custom-scheme link's host rebuilt in front of it
 ///    (`stylemint://auth/magic` -> `/auth/magic`). The query is kept.
-///  * The site itself (`https://<host>/`, the "Open StyleMint" button in every
-///    email) opens home: the router has no page at `/`.
+///  * The site itself (`https://<host>/`) opens home: the router has no page
+///    at `/`.
+///  * An email's button, `https://<host>/app/<app route>`, opens that route:
+///    the `/app` prefix is dropped (`/app/orders/NK2026-00041` ->
+///    `/orders/NK2026-00041`), and `/app` alone opens home. The web page
+///    behind the same link hands phones without App Links to
+///    `stylemint://<app route>`, which needs no unwrapping.
 String deepLinkLocation(Uri uri) {
+  final appLinkTarget = _appLinkTarget(uri);
+  if (appLinkTarget != null) return deepLinkLocation(appLinkTarget);
+
   final styleMintCode = StyleMintCode.parse(uri.toString());
   if (styleMintCode is StyleMintShortCode) return styleMintCode.route;
   final storefront = styleMintStorefrontRoute(uri.toString());
@@ -70,4 +78,36 @@ String deepLinkLocation(Uri uri) {
       .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
       .join('&');
   return query.isEmpty ? path : '$path?$query';
+}
+
+/// The first path segment of an email link (`https://<host>/app/...`).
+const _appLinkSegment = 'app';
+
+/// [uri] without its leading `/app` — the same link as the app route it
+/// names — or null when [uri] is not an `/app` link.
+///
+/// `stylemint://app/orders/X` counts too: there the segment lands in the
+/// host. The result keeps the scheme, so a custom-scheme link stays one
+/// (its next segment becomes the host) and an https link keeps its host.
+Uri? _appLinkTarget(Uri uri) {
+  final List<String> rest;
+  if (uri.scheme == 'stylemint') {
+    if (uri.host != _appLinkSegment) return null;
+    rest = uri.pathSegments;
+  } else {
+    final segments = uri.pathSegments;
+    if (segments.isEmpty || segments.first != _appLinkSegment) return null;
+    rest = segments.sublist(1);
+  }
+  final inner = rest.where((s) => s.isNotEmpty).toList();
+  final query = uri.hasQuery ? uri.query : null;
+  if (uri.scheme == 'stylemint') {
+    return Uri(
+      scheme: 'stylemint',
+      host: inner.isEmpty ? '' : inner.first,
+      pathSegments: inner.length > 1 ? inner.sublist(1) : null,
+      query: query,
+    );
+  }
+  return uri.replace(pathSegments: inner, query: query);
 }

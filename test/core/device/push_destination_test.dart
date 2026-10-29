@@ -102,5 +102,87 @@ void main() {
         startsWith('/c/'),
       );
     });
+
+    group('email links (https://<host>/app/<app route>)', () {
+      const site = 'https://stylemint.voyageritnepal.com';
+      const returnId = '0f8fad5b-d9cb-469f-a165-70867728950e';
+
+      test('drop the /app prefix and open the app route', () {
+        expect(
+          deepLinkLocation(Uri.parse('$site/app/orders/NK2026-00041')),
+          '/orders/NK2026-00041',
+        );
+        expect(
+          deepLinkLocation(Uri.parse('$site/app/orders/returns/$returnId')),
+          '/orders/returns/$returnId',
+        );
+        expect(deepLinkLocation(Uri.parse('$site/app/cart')), RouteNames.cart);
+        expect(
+          deepLinkLocation(Uri.parse('$site/app/creator/earnings')),
+          RouteNames.earnings,
+        );
+      });
+
+      test('/app on its own opens home', () {
+        expect(deepLinkLocation(Uri.parse('$site/app')), RouteNames.home);
+        expect(deepLinkLocation(Uri.parse('$site/app/')), RouteNames.home);
+        expect(deepLinkLocation(Uri.parse('stylemint://app')), RouteNames.home);
+        expect(
+          deepLinkLocation(Uri.parse('stylemint://app/')),
+          RouteNames.home,
+        );
+      });
+
+      test('the query is kept', () {
+        expect(
+          deepLinkLocation(Uri.parse('$site/app/orders?tab=open')),
+          '/orders?tab=open',
+        );
+      });
+
+      test('a StyleMint code under /app still opens the resolve screen', () {
+        expect(
+          deepLinkLocation(Uri.parse('$site/app/c/ABCD2345')),
+          startsWith('/c/'),
+        );
+      });
+
+      test('only a whole leading /app segment is the prefix', () {
+        expect(deepLinkLocation(Uri.parse('$site/apple')), '/apple');
+        expect(
+          deepLinkLocation(Uri.parse('$site/orders/app')),
+          '/orders/app',
+        );
+      });
+
+      test('stylemint://app/... and a bare /app push path unwrap too', () {
+        expect(
+          deepLinkLocation(Uri.parse('stylemint://app/orders/NK2026-00041')),
+          '/orders/NK2026-00041',
+        );
+        final pushed = pushDestinationUri({
+          'deepLink': '/app/orders/NK2026-00041',
+        });
+        expect(deepLinkLocation(pushed!), '/orders/NK2026-00041');
+      });
+    });
+
+    test("the web page's button, stylemint://<app route>, routes too", () {
+      // The /app page in a browser hands over to the custom scheme: the first
+      // segment lands in the host and is rebuilt in front of the path.
+      expect(
+        deepLinkLocation(Uri.parse('stylemint://orders/NK2026-00041')),
+        '/orders/NK2026-00041',
+      );
+      expect(
+        deepLinkLocation(
+          Uri.parse(
+            'stylemint://orders/returns/0f8fad5b-d9cb-469f-a165-70867728950e',
+          ),
+        ),
+        '/orders/returns/0f8fad5b-d9cb-469f-a165-70867728950e',
+      );
+      expect(deepLinkLocation(Uri.parse('stylemint://cart')), RouteNames.cart);
+    });
   });
 }

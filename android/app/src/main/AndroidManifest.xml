@@ -124,6 +124,20 @@
                 <data android:host="stylemint.voyageritnepal.com"/>
                 <data android:pathPrefix="/dc/"/>
             </intent-filter>
+            <!-- The button in every StyleMint email
+                 (https://stylemint.voyageritnepal.com/app/{app route}, e.g.
+                 /app/orders/NK2026-00041) opens that screen in-app
+                 (deepLinkLocation drops the /app prefix). Without the app the
+                 site shows an "Open this in the StyleMint app" page. Same
+                 assetlinks.json. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"/>
+                <data android:host="stylemint.voyageritnepal.com"/>
+                <data android:pathPrefix="/app/"/>
+            </intent-filter>
         </activity>
         <!-- No Maps SDK key: the drag-to-correct pin on the add-address
              screen renders OpenStreetMap raster tiles through flutter_map,
