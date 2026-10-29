@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show FutureProviderFamily;
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_review_summary.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/size_advice.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 
 /// Review summary above the product page's review tabs. Null (block hidden)
@@ -12,6 +13,22 @@ productReviewSummaryProvider = FutureProvider.autoDispose
         return await ref
             .watch(discoveryRemoteDataSourceProvider)
             .getReviewSummary(productId);
+      } on Object catch (_) {
+        return null;
+      }
+    });
+
+/// Fit advice next to the size picker. Null (line hidden) when there is none
+/// or it cannot be loaded; it never blocks the page or the purchase.
+final FutureProviderFamily<SizeAdvice?, String> productSizeAdviceProvider =
+    FutureProvider.autoDispose.family<SizeAdvice?, String>((
+      ref,
+      productId,
+    ) async {
+      try {
+        return await ref
+            .watch(discoveryRemoteDataSourceProvider)
+            .getSizeAdvice(productId);
       } on Object catch (_) {
         return null;
       }

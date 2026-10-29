@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/data/model
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_return_record_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_review_summary_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_review_summary.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/size_advice.dart';
 import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
 import 'package:uuid/uuid.dart';
 
@@ -134,6 +135,15 @@ class DiscoveryRemoteDataSource {
       '/v1/public/products/$productId/reviews/summary',
     );
     return ProductReviewSummaryDto.fromJson(readJsonObject(response));
+  }
+
+  /// `GET /v1/products/{productId}/size-advice` (anonymous) — fit advice
+  /// learned from returns. Null when the server has none.
+  Future<SizeAdvice?> getSizeAdvice(String productId) async {
+    final response = await apiClient.get(
+      '/v1/products/$productId/size-advice',
+    );
+    return SizeAdvice.fromEnvelope(response);
   }
 
   /// PDP urgency signals — backend `UrgencyDto`: a coarse in-stock /

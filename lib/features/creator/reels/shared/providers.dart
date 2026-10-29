@@ -6,6 +6,9 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/datasources/creator_reels_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/repositories/creator_reels_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/data/datasources/reel_tag_suggestions_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/data/repositories/reel_tag_suggestions_repository.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/reel_tag_suggestion.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/post_publish_report.dart';
@@ -126,3 +129,26 @@ final creatorReelActionsNotifierProvider =
         ref.watch(creatorReelsRepositoryProvider),
       ),
     );
+
+// ── ML tag suggestions (auto-disposed, keyed by reelId) ───────────────────────
+
+final reelTagSuggestionsRepositoryProvider =
+    Provider<ReelTagSuggestionsRepository>(
+      (ref) => ReelTagSuggestionsRepository(
+        remoteDataSource: ReelTagSuggestionsRemoteDataSource(
+          apiClient: ref.watch(apiClientProvider),
+        ),
+        networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+      ),
+    );
+
+/// Pending suggestions. Empty on failure: the section is advisory and hides
+/// itself rather than showing an error.
+// ignore: specify_nonobvious_property_types
+final reelTagSuggestionsProvider = FutureProvider.autoDispose
+    .family<List<ReelTagSuggestionDetection>, String>((ref, reelId) async {
+      final result = await ref
+          .watch(reelTagSuggestionsRepositoryProvider)
+          .listSuggestions(reelId);
+      return result.getOrElse((_) => const <ReelTagSuggestionDetection>[]);
+    });
