@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/image_recognition_outcome.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/domain/entities/engagement_event.dart'
+    show readRankingRequestId;
 
 /// Real backend search across products, brands, reels and creators in a
 /// single round-trip: `GET /api/v1/customer/search` signed in (personalised),
@@ -324,6 +326,7 @@ class CustomerSearchRemoteDataSource {
         _ => null,
       },
       understanding: readSearchUnderstanding(data['understanding']),
+      requestId: readRankingRequestId(data['requestId']),
     );
   }
 }
@@ -333,8 +336,7 @@ class CustomerSearchRemoteDataSource {
 /// [SearchChipKind.unknown] and never drawn.
 SearchUnderstanding? readSearchUnderstanding(Object? raw) {
   if (raw is! Map<String, dynamic>) return null;
-  int count(Object? value) =>
-      value is num && value > 0 ? value.toInt() : 0;
+  int count(Object? value) => value is num && value > 0 ? value.toInt() : 0;
   String text(Object? value) => value is String ? value : '';
   final chips = [
     for (final chip

@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart' show immutable;
+import 'package:stylemint_mobile_frontend/features/customer/engagement/domain/entities/engagement_event.dart'
+    show readRankingPosition, readRankingRequestId;
 
 /// What a feed item actually **is**, mirroring the backend `FeedSlotKind`.
 ///
@@ -145,6 +147,8 @@ class FeedProvenance {
     this.rank,
     this.explanation,
     this.explanationKind,
+    this.requestId,
+    this.position,
   });
 
   /// Reads one `FeedItemVm`. A missing `slotKind` degrades to
@@ -161,8 +165,18 @@ class FeedProvenance {
           ? explanation.trim()
           : null,
       explanationKind: FeedExplanationKind.parse(json['explanationKind']),
+      requestId: readRankingRequestId(json['requestId']),
+      position: readRankingPosition(json['position']),
     );
   }
+
+  /// The feed response this item was ranked in, echoed back on interaction
+  /// events for ranking-model training. Null when the server sent none.
+  final String? requestId;
+
+  /// The item's 0-based place in the server's ranking, as sent. Not [rank]:
+  /// that is the client's 1-based order among scored items of one page.
+  final int? position;
 
   final FeedSlotKind kind;
 
@@ -222,6 +236,8 @@ class FeedProvenance {
     rank: rank,
     explanation: explanation,
     explanationKind: explanationKind,
+    requestId: requestId,
+    position: position,
   );
 
   /// Assigns ranks across one page, highest score first.
@@ -243,9 +259,7 @@ class FeedProvenance {
       for (var position = 0; position < scored.length; position++)
         scored[position]: position + 1,
     };
-    return [
-      for (var i = 0; i < items.length; i++) items[i].withRank(ranks[i]),
-    ];
+    return [for (var i = 0; i < items.length; i++) items[i].withRank(ranks[i])];
   }
 
   @override
@@ -255,11 +269,20 @@ class FeedProvenance {
       other.score == score &&
       other.rank == rank &&
       other.explanation == explanation &&
-      other.explanationKind == explanationKind;
+      other.explanationKind == explanationKind &&
+      other.requestId == requestId &&
+      other.position == position;
 
   @override
-  int get hashCode =>
-      Object.hash(kind, score, rank, explanation, explanationKind);
+  int get hashCode => Object.hash(
+    kind,
+    score,
+    rank,
+    explanation,
+    explanationKind,
+    requestId,
+    position,
+  );
 
   @override
   String toString() =>

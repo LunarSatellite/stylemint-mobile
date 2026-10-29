@@ -88,6 +88,8 @@ class EngagementEvent {
     this.dwellMs,
     this.watchFraction,
     this.surface,
+    this.requestId,
+    this.position,
   });
 
   /// Reads one persisted event; null when it is not one this build wrote.
@@ -106,12 +108,12 @@ class EngagementEvent {
       kind: kind,
       occurredUtc: at.toUtc(),
       reelId: reelId is String && reelId.isNotEmpty ? reelId : null,
-      productId: productId is String && productId.isNotEmpty
-          ? productId
-          : null,
+      productId: productId is String && productId.isNotEmpty ? productId : null,
       dwellMs: dwell is num ? dwell.toInt() : null,
       watchFraction: fraction is num ? fraction.toDouble() : null,
       surface: EngagementSurface.parse(raw['surface']),
+      requestId: readRankingRequestId(raw['requestId']),
+      position: readRankingPosition(raw['position']),
     );
   }
 
@@ -128,6 +130,14 @@ class EngagementEvent {
   final double? watchFraction;
   final EngagementSurface? surface;
 
+  /// The ranking response the item was served in (personal feed `requestId`
+  /// or search `requestId`), echoed for ranking-model training. Null when
+  /// the item did not come from such a response, or the server sent none.
+  final String? requestId;
+
+  /// The item's 0-based place in that ranking; null when unknown.
+  final int? position;
+
   /// The longest dwell the contract accepts.
   static const int maxDwellMs = 600000;
 
@@ -141,7 +151,21 @@ class EngagementEvent {
       'watchFraction': fraction.clamp(0.0, 1.0),
     'occurredUtc': occurredUtc.toUtc().toIso8601String(),
     if (surface case final where?) 'surface': where.wire,
+    'requestId': ?requestId,
+    'position': ?position,
   };
+}
+
+/// A ranking `requestId` as sent by the server, or null when absent or blank.
+String? readRankingRequestId(Object? raw) =>
+    raw is String && raw.trim().isNotEmpty ? raw.trim() : null;
+
+/// A 0-based ranking position, or null when absent, negative or not a number.
+int? readRankingPosition(Object? raw) {
+  final value = raw is num
+      ? (raw == raw.truncate() ? raw.toInt() : null)
+      : (raw is String ? int.tryParse(raw.trim()) : null);
+  return value != null && value >= 0 ? value : null;
 }
 
 /// The share of a reel that played, or null when its length is unknown.

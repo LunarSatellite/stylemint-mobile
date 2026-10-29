@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/search_understanding_chips.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/sponsored_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/product_listing_query.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -95,9 +98,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
           title: "We couldn't run that search",
           body: 'Check your connection and try again.',
           onRetry: widget.initialResults == null
-              ? () => ref.invalidate(
-                  customerSearchResultsProvider(_query),
-                )
+              ? () => ref.invalidate(customerSearchResultsProvider(_query))
               : null,
         ),
         data: (results) => Column(
@@ -189,6 +190,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
                         ? searchSeeAllProductsLocation(_query)
                         : null,
                     productTotal: results.productTotal,
+                    requestId: results.requestId,
                   ),
                   _CreatorsTab(creators: results.creators),
                   _ReelsTab(
@@ -256,9 +258,13 @@ class _ProductsTab extends StatelessWidget {
     required this.showReasons,
     required this.seeAllLocation,
     required this.productTotal,
+    this.requestId,
   });
 
   final List<SearchResultProduct> products;
+
+  /// The search response's ranking id, echoed when a hit is opened.
+  final String? requestId;
 
   /// Per-product AI reasons are drawn only when AI shaped the results.
   final bool showReasons;
@@ -297,6 +303,10 @@ class _ProductsTab extends StatelessWidget {
           : _ProductResultTile(
               product: products[i - lead],
               showReason: showReasons,
+              requestId: requestId,
+              // 0-based place in the list as displayed (after any re-order),
+              // not counting the "See all" row above it.
+              position: i - lead,
             ),
     );
   }
@@ -362,10 +372,21 @@ class _SeeAllProducts extends StatelessWidget {
 /// with no reviews used to render "0.0 Stars", which reads as the worst
 /// rating on the page rather than as no rating at all.
 class _ProductResultTile extends StatelessWidget {
-  const _ProductResultTile({required this.product, required this.showReason});
+  const _ProductResultTile({
+    required this.product,
+    required this.showReason,
+    required this.position,
+    this.requestId,
+  });
 
   final SearchResultProduct product;
   final bool showReason;
+
+  /// The search response's ranking id; null when the server sent none.
+  final String? requestId;
+
+  /// This hit's 0-based place in the products list as displayed.
+  final int position;
 
   MallProductVm get _vm => MallProductVm(
     id: product.productId,
@@ -384,19 +405,27 @@ class _ProductResultTile extends StatelessWidget {
       key: ValueKey('search-product-${product.productId}'),
       child: MallResultRow(
         product: _vm,
-        onTap: () => context.push(
-          RouteNames.productDetail.replaceFirst(
-            ':productId',
-            product.productId,
-          ),
-        ),
+        onTap: () {
+          ProviderScope.containerOf(context, listen: false)
+              .read(engagementTrackerProvider)
+              .searchResultOpened(
+                productId: product.productId,
+                requestId: requestId,
+                position: position,
+              );
+          unawaited(
+            context.push(
+              RouteNames.productDetail.replaceFirst(
+                ':productId',
+                product.productId,
+              ),
+            ),
+          );
+        },
         // The disclosure is spoken first, before the product: a buyer hears
         // that a result is paid for before they hear what it sells.
         semanticPrefix: disclosure,
-        semanticExtras: [
-          if (byMeaning) MatchedByMeaningChip.label,
-          ?reason,
-        ],
+        semanticExtras: [if (byMeaning) MatchedByMeaningChip.label, ?reason],
         footer: (disclosure == null && reason == null && !byMeaning)
             ? null
             : Column(
@@ -755,9 +784,7 @@ class _BrandInitial extends StatelessWidget {
     child: Center(
       child: Text(
         initial,
-        style: DesignTokens.titleLarge.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
+        style: DesignTokens.titleLarge.copyWith(fontWeight: FontWeight.w700),
       ),
     ),
   );

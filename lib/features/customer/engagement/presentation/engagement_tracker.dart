@@ -91,8 +91,10 @@ class EngagementTracker {
   int _failures = 0;
   Timer? _timer;
 
-  /// The reel each product was last tapped from, and when.
-  final Map<String, ({String reelId, DateTime at})> _tappedFrom = {};
+  /// Where each product was last opened from, and when: the reel of a tag
+  /// tap, or a search result. Carries the ranking echo (`requestId`,
+  /// `position`) of the item it was opened from, when known.
+  final Map<String, _OpenedFrom> _tappedFrom = {};
 
   /// Whether the batch endpoint answered `404` this run.
   bool get endpointMissing => _endpointMissing;
@@ -116,6 +118,8 @@ class EngagementTracker {
   }) {
     final reelId = reel.id.trim();
     if (reelId.isEmpty || dwell.isNegative) return null;
+    final requestId = reel.provenance?.requestId;
+    final position = reel.provenance?.position;
     final id = _newId();
     if (dwell < reelViewThreshold) {
       _record(
@@ -125,6 +129,8 @@ class EngagementTracker {
           reelId: reelId,
           occurredUtc: _now(),
           surface: surface,
+          requestId: requestId,
+          position: position,
         ),
       );
       return id;
@@ -138,6 +144,8 @@ class EngagementTracker {
         watchFraction: reelWatchFraction(dwell, reel.durationSeconds),
         occurredUtc: _now(),
         surface: surface,
+        requestId: requestId,
+        position: position,
       ),
     );
     if (reelViewCompleted(dwell, reel.durationSeconds)) {
@@ -148,6 +156,8 @@ class EngagementTracker {
           reelId: reelId,
           occurredUtc: _now(),
           surface: surface,
+          requestId: requestId,
+          position: position,
         ),
       );
     }
@@ -155,19 +165,30 @@ class EngagementTracker {
   }
 
   /// The viewer saved or unsaved a reel (after the server agreed).
+  ///
+  /// [requestId] and [position] are the reel's personal-feed ranking echo
+  /// (`Reel.provenance`), when it came from the feed; omitted otherwise.
   void saveChanged(
     String reelId, {
     required bool saved,
     EngagementSurface? surface,
+    String? requestId,
+    int? position,
   }) => _reelEvent(
     saved ? EngagementKind.save : EngagementKind.unsave,
     reelId,
     surface,
+    requestId,
+    position,
   );
 
   /// The share sheet completed, or the link was copied.
-  void shared(String reelId, {EngagementSurface? surface}) =>
-      _reelEvent(EngagementKind.share, reelId, surface);
+  void shared(
+    String reelId, {
+    EngagementSurface? surface,
+    String? requestId,
+    int? position,
+  }) => _reelEvent(EngagementKind.share, reelId, surface, requestId, position);
 
   /// A tagged-product card on a reel was tapped. Remembers the reel, so the
   /// product page and a cart add that follow are attributed to it.
@@ -175,11 +196,18 @@ class EngagementTracker {
     required String reelId,
     required String productId,
     EngagementSurface? surface,
+    String? requestId,
+    int? position,
   }) {
     final reel = reelId.trim();
     final product = productId.trim();
     if (reel.isEmpty || product.isEmpty) return;
-    _tappedFrom[product] = (reelId: reel, at: _now());
+    _tappedFrom[product] = _OpenedFrom(
+      reelId: reel,
+      at: _now(),
+      requestId: requestId,
+      position: position,
+    );
     _record(
       EngagementEvent(
         clientEventId: _newId(),
@@ -188,7 +216,29 @@ class EngagementTracker {
         productId: product,
         occurredUtc: _now(),
         surface: surface,
+        requestId: requestId,
+        position: position,
       ),
+    );
+  }
+
+  /// A product search result was opened. Records nothing itself: the
+  /// product page that follows records the `product_view`, which then
+  /// carries `surface: search`, the search response's [requestId] and the
+  /// result's 0-based [position] as displayed. A later cart add of the same
+  /// product within [attributionWindow] carries them too.
+  void searchResultOpened({
+    required String productId,
+    String? requestId,
+    int? position,
+  }) {
+    final product = productId.trim();
+    if (product.isEmpty) return;
+    _tappedFrom[product] = _OpenedFrom(
+      at: _now(),
+      surface: EngagementSurface.search,
+      requestId: requestId,
+      position: position,
     );
   }
 
@@ -272,6 +322,8 @@ class EngagementTracker {
     EngagementKind kind,
     String reelId,
     EngagementSurface? surface,
+    String? requestId,
+    int? position,
   ) {
     final reel = reelId.trim();
     if (reel.isEmpty) return;
@@ -282,6 +334,8 @@ class EngagementTracker {
         reelId: reel,
         occurredUtc: _now(),
         surface: surface,
+        requestId: requestId,
+        position: position,
       ),
     );
   }
@@ -295,29 +349,36 @@ class EngagementTracker {
     final product = productId.trim();
     if (product.isEmpty) return null;
     final via = viaReelId?.trim();
+    final hasVia = via != null && via.isNotEmpty;
+    final from = _attributed(product);
+    // The opening's ranking echo only applies when this event is about the
+    // same opening: no explicit reel, or the very reel it was tapped from.
+    final echo = from != null && (!hasVia || from.reelId == via) ? from : null;
     final id = _newId();
     _record(
       EngagementEvent(
         clientEventId: id,
         kind: kind,
         productId: product,
-        reelId: (via != null && via.isNotEmpty) ? via : _attributed(product),
+        reelId: hasVia ? via : from?.reelId,
         occurredUtc: _now(),
-        surface: surface ?? EngagementSurface.product,
+        surface: surface ?? echo?.surface ?? EngagementSurface.product,
+        requestId: echo?.requestId,
+        position: echo?.position,
       ),
     );
     return id;
   }
 
-  /// The reel [productId] was tapped from within [attributionWindow].
-  String? _attributed(String productId) {
+  /// Where [productId] was opened from within [attributionWindow].
+  _OpenedFrom? _attributed(String productId) {
     final tap = _tappedFrom[productId];
     if (tap == null) return null;
     if (_now().difference(tap.at) > attributionWindow) {
       _tappedFrom.remove(productId);
       return null;
     }
-    return tap.reelId;
+    return tap;
   }
 
   void _record(EngagementEvent event) {
@@ -402,9 +463,7 @@ class EngagementTracker {
     }
   }
 
-  Future<EngagementSendOutcome> _sendSafely(
-    List<EngagementEvent> batch,
-  ) async {
+  Future<EngagementSendOutcome> _sendSafely(List<EngagementEvent> batch) async {
     try {
       return await _repository.send(batch);
     } on Object catch (_) {
@@ -425,4 +484,23 @@ class EngagementTracker {
       unawaited(flush());
     });
   }
+}
+
+/// One opening of a product page: from a reel's tag, or from a search hit.
+class _OpenedFrom {
+  const _OpenedFrom({
+    required this.at,
+    this.reelId,
+    this.surface,
+    this.requestId,
+    this.position,
+  });
+
+  final DateTime at;
+  final String? reelId;
+
+  /// The surface the product events inherit; null keeps the default.
+  final EngagementSurface? surface;
+  final String? requestId;
+  final int? position;
 }
