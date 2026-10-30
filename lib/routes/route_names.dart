@@ -390,6 +390,12 @@ abstract class RouteNames {
   static const vendorDash = '/vendor/dashboard';
   static const addProduct = '/vendor/add-product';
   static const vendorOrders = '/vendor/orders';
+
+  /// Query on [vendorOrders] naming the tab to open (`returns`).
+  static const vendorOrdersTabQuery = 'tab';
+
+  /// [vendorOrders] on its Returns tab — where a seller's return notice lands.
+  static const vendorOrdersReturns = '/vendor/orders?tab=returns';
   static const vendorOrderDetail = '/vendor/orders/:orderId';
 
   /// Query flag on [vendorOrderDetail] that opens the delivery-partner sheet

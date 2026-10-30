@@ -1,13 +1,56 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/return_evidence.dart';
 
-/// Backend `ReturnRequestState` 1-5. [cancelled] (5) is the buyer cancelling
-/// before the rider collected the item (return pickup contract §4).
+/// Backend `ReturnRequestState` 1-5. [cancelled] (5) is a return that ended
+/// before the item reached the seller — see [VendorReturnCancelReason] for
+/// who ended it (return pickup contract §4, return fixes contract B).
 enum VendorReturnRequestState {
   submitted,
   approved,
   rejected,
   completed,
   cancelled,
+}
+
+/// Backend `ReturnResolution`: Refund=1, Replacement=2.
+enum VendorReturnResolution {
+  refund,
+  replacement;
+
+  /// Accepts the number the API sends and the enum name; anything else is a
+  /// refund, the backend's default.
+  static VendorReturnResolution fromWire(Object? value) =>
+      switch (value?.toString().trim().toLowerCase()) {
+        '2' || 'replacement' => VendorReturnResolution.replacement,
+        _ => VendorReturnResolution.refund,
+      };
+}
+
+/// Why a return was cancelled (`cancelReason`, return pickup contract §5
+/// and return fixes contract B).
+enum VendorReturnCancelReason {
+  /// `buyer_cancelled` — the buyer withdrew it.
+  buyer,
+
+  /// `buyer_unavailable` — the rider could not reach the buyer for good.
+  buyerUnavailable,
+
+  /// `handover_refused` — the buyer would not hand the item over.
+  handoverRefused,
+
+  /// `support` — StyleMint support cancelled it.
+  support,
+
+  /// Absent (an older server or row) or a value this app does not know.
+  unknown;
+
+  static VendorReturnCancelReason fromWire(Object? value) =>
+      switch (value?.toString().trim().toLowerCase()) {
+        'buyer_cancelled' || 'buyer' => VendorReturnCancelReason.buyer,
+        'buyer_unavailable' => VendorReturnCancelReason.buyerUnavailable,
+        'handover_refused' => VendorReturnCancelReason.handoverRefused,
+        'support' => VendorReturnCancelReason.support,
+        _ => VendorReturnCancelReason.unknown,
+      };
 }
 
 /// Vendor §8.1 — a customer return request awaiting (or past) the
@@ -34,6 +77,8 @@ class VendorReturnRequest {
     this.pickupFarePayer,
     this.pickupStage,
     this.pickupAware = false,
+    this.resolution = VendorReturnResolution.refund,
+    this.cancelReason = VendorReturnCancelReason.unknown,
   });
 
   final String id;
@@ -73,6 +118,12 @@ class VendorReturnRequest {
   /// backend has rider pickups, so a return with none can be offered "Find a
   /// rider". False from an older backend, where nothing new is shown.
   final bool pickupAware;
+
+  /// What the buyer asked for: their money back, or the item replaced.
+  final VendorReturnResolution resolution;
+
+  /// Why a [VendorReturnRequestState.cancelled] return was cancelled.
+  final VendorReturnCancelReason cancelReason;
 
   bool get isPending => state == VendorReturnRequestState.submitted;
 }

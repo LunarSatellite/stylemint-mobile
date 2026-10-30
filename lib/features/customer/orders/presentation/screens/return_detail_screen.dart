@@ -6,6 +6,8 @@ import 'package:stylemint_mobile_frontend/core/live/live_refresh_signal.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart'
+    show orderPaymentPlanProvider;
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/customer_return.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_reason_category.dart';
@@ -24,9 +26,55 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/live_refre
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Copy shown while a return has no refund linked (contract §4: always null
-/// today).
+/// Copy shown while a return has no refund linked yet (an open return, or a
+/// server that does not send `refundStatus`).
 const String refundPendingCopy = 'Refund status will appear here';
+
+/// The buyer's words for a return's `refundStatus` (return fixes contract
+/// C), or null when there is none yet. [onPaymentPlan] is whether the order
+/// was bought on a payment plan (EMI), which covers the return instead.
+String? refundStatusText(
+  String? refundStatus, {
+  required CustomerReturnResolution resolution,
+  bool onPaymentPlan = false,
+}) {
+  final status = refundStatus?.trim().toLowerCase() ?? '';
+  if (status.isEmpty) return null;
+  return switch (status) {
+    'pending' => 'Refund processing',
+    'completed' => 'Refunded',
+    'notrequired' || 'not_required' =>
+      resolution == CustomerReturnResolution.replacement
+          ? 'No refund (replacement)'
+          : onPaymentPlan
+          ? 'Covered by your payment plan'
+          : 'No refund due',
+    // A state this app does not know yet: the money is still on its way.
+    _ => 'Refund processing',
+  };
+}
+
+/// Whether the order with this id is bought on a payment plan (EMI, pay
+/// later) — the buyer's plan for it, found by the EMI feature. Read only for
+/// a refund that is `NotRequired`, to say the plan covers it (return fixes
+/// contract C). False, never an error, when it cannot be told.
+final returnOrderOnPaymentPlanProvider = FutureProvider.autoDispose
+    .family<bool, String>((ref, orderId) async {
+      if (orderId.trim().isEmpty) return false;
+      final plan = await ref.watch(
+        orderPaymentPlanProvider((
+          orderId: orderId,
+          creditAgreementId: null,
+        )).future,
+      );
+      return plan != null;
+    });
+
+/// [CustomerReturn.refundStatus] is `NotRequired` on a refund, where only the
+/// order can say whether a payment plan covers it.
+bool _needsPlanLookup(CustomerReturn r) =>
+    r.resolution == CustomerReturnResolution.refund &&
+    (r.refundStatus?.trim().toLowerCase() ?? '') == 'notrequired';
 
 /// Return detail (`/orders/returns/:returnId`): product, reason, photos, the
 /// state timeline and refund status.
@@ -242,7 +290,7 @@ class ReturnDetailScreen extends ConsumerWidget {
                           ReturnRefundBreakdownLine(breakdown: breakdown),
                           const SizedBox(height: DesignTokens.s8),
                         ],
-                        _RefundStatus(refundStatus: r.refundStatus),
+                        _RefundStatus(customerReturn: r),
                       ],
                     ),
                   ),
@@ -540,15 +588,24 @@ class _ReturnPickupCard extends StatelessWidget {
   }
 }
 
-class _RefundStatus extends StatelessWidget {
-  const _RefundStatus({required this.refundStatus});
+class _RefundStatus extends ConsumerWidget {
+  const _RefundStatus({required this.customerReturn});
 
-  final String? refundStatus;
+  final CustomerReturn customerReturn;
 
   @override
-  Widget build(BuildContext context) {
-    final status = refundStatus?.trim();
-    final pending = status == null || status.isEmpty;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final r = customerReturn;
+    final onPaymentPlan =
+        _needsPlanLookup(r) &&
+        (ref.watch(returnOrderOnPaymentPlanProvider(r.orderId)).asData?.value ??
+            false);
+    final status = refundStatusText(
+      r.refundStatus,
+      resolution: r.resolution,
+      onPaymentPlan: onPaymentPlan,
+    );
+    final pending = status == null;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -560,7 +617,7 @@ class _RefundStatus extends StatelessWidget {
         const SizedBox(width: DesignTokens.s8),
         Expanded(
           child: Text(
-            pending ? refundPendingCopy : status,
+            status ?? refundPendingCopy,
             style: pending
                 ? DesignTokens.mediumRegular.copyWith(
                     color: DesignTokens.textMuted,
@@ -836,7 +893,7 @@ class _ReplacementStatus extends ConsumerWidget {
           ],
           if (differenceRefund > 0) ...[
             const SizedBox(height: DesignTokens.s12),
-            _RefundStatus(refundStatus: customerReturn.refundStatus),
+            _RefundStatus(customerReturn: customerReturn),
           ],
         ],
       ),

@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/wi
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_action_bar.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_return_card.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_return_error_copy.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_step_sheets.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_return_pickup_panel.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
@@ -25,8 +26,35 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_skeleton.dart';
 
+/// The Orders section's tabs, in order. [fromQuery] reads the route's `tab`
+/// query, so a notification can open one directly (a seller's return notice
+/// opens [returns]).
+enum VendorOrdersTab {
+  toShip,
+  inTransit,
+  shipped,
+  completed,
+  returns,
+  warranty;
+
+  static VendorOrdersTab fromQuery(String? value) =>
+      switch (value?.trim().toLowerCase()) {
+        'in-transit' || 'intransit' => VendorOrdersTab.inTransit,
+        'shipped' => VendorOrdersTab.shipped,
+        'completed' => VendorOrdersTab.completed,
+        'returns' => VendorOrdersTab.returns,
+        'warranty' => VendorOrdersTab.warranty,
+        _ => VendorOrdersTab.toShip,
+      };
+}
+
 class VendorOrdersScreen extends ConsumerStatefulWidget {
-  const VendorOrdersScreen({super.key});
+  const VendorOrdersScreen({
+    this.initialTab = VendorOrdersTab.toShip,
+    super.key,
+  });
+
+  final VendorOrdersTab initialTab;
 
   @override
   ConsumerState<VendorOrdersScreen> createState() => _VendorOrdersScreenState();
@@ -110,7 +138,21 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(
+      length: VendorOrdersTab.values.length,
+      initialIndex: widget.initialTab.index,
+      vsync: this,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant VendorOrdersScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Already on Orders when a return notice is tapped: the route rebuilds
+    // this screen rather than a new one, so move to the tab it names.
+    if (widget.initialTab != oldWidget.initialTab) {
+      _tabController.animateTo(widget.initialTab.index);
+    }
   }
 
   @override
@@ -1233,15 +1275,18 @@ class _VendorReturnsWorkspaceState
   Future<void> _complete(VendorReturnRequest request) async {
     final restock = await showVendorReturnReceivedSheet(context);
     if (restock == null || !mounted) return;
+    final outcome = switch (request.resolution) {
+      VendorReturnResolution.refund => 'The refund has been started.',
+      VendorReturnResolution.replacement => 'The replacement is next.',
+    };
     await _mutate(
       request,
       () => ref
           .read(vendorOrdersRepositoryProvider)
           .completeReturn(request.id, restock: restock),
       restock
-          ? 'Return completed and the item is back in stock. '
-                'The refund has been started.'
-          : 'Return completed. The refund has been started.',
+          ? 'Return completed and the item is back in stock. $outcome'
+          : 'Return completed. $outcome',
     );
   }
 
@@ -1256,7 +1301,16 @@ class _VendorReturnsWorkspaceState
     if (!mounted) return;
     var message = successMessage;
     result.fold(
-      (_) => message = 'Could not update this return. Please try again.',
+      (failure) {
+        message = VendorReturnErrorCopy.message(failure);
+        // The return moved on under the seller (a 409): re-read it so the
+        // card and its "Mark received" lock show where it really stands.
+        if (failure.isConflict) {
+          ref
+            ..invalidate(vendorReturnsProvider)
+            ..invalidate(vendorReturnPickupProvider(request.id));
+        }
+      },
       (_) => ref.invalidate(vendorReturnsProvider),
     );
     setState(() => _busyId = null);

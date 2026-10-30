@@ -35,29 +35,36 @@ class VendorReturnCard extends StatelessWidget {
   static const completeLockedText =
       'You can mark it received once the rider hands it over.';
 
+  /// The status pill's wording for [request] (return fixes contract C): a
+  /// completed return says what the buyer gets, a cancelled one who ended
+  /// it.
+  static String statusLabel(VendorReturnRequest request) =>
+      switch (request.state) {
+        VendorReturnRequestState.submitted => 'Needs review',
+        VendorReturnRequestState.approved => 'Awaiting return',
+        VendorReturnRequestState.rejected => 'Rejected',
+        VendorReturnRequestState.completed => switch (request.resolution) {
+          VendorReturnResolution.refund => 'Refund started',
+          VendorReturnResolution.replacement => 'Replacement sent',
+        },
+        VendorReturnRequestState.cancelled => switch (request.cancelReason) {
+          VendorReturnCancelReason.buyer => 'Cancelled by buyer',
+          VendorReturnCancelReason.buyerUnavailable => 'Pickup failed',
+          VendorReturnCancelReason.handoverRefused => 'Customer refused',
+          VendorReturnCancelReason.support => 'Cancelled by support',
+          VendorReturnCancelReason.unknown => 'Cancelled',
+        },
+      };
+
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (request.state) {
-      VendorReturnRequestState.submitted => (
-        'Needs review',
-        DesignTokens.warning500,
-      ),
-      VendorReturnRequestState.approved => (
-        'Awaiting return',
-        DesignTokens.primaryGreen,
-      ),
-      VendorReturnRequestState.rejected => (
-        'Rejected',
-        DesignTokens.colorError,
-      ),
-      VendorReturnRequestState.completed => (
-        'Refund started',
-        DesignTokens.primaryGreen,
-      ),
-      VendorReturnRequestState.cancelled => (
-        'Cancelled by buyer',
-        DesignTokens.textMuted,
-      ),
+    final label = statusLabel(request);
+    final color = switch (request.state) {
+      VendorReturnRequestState.submitted => DesignTokens.warning500,
+      VendorReturnRequestState.approved ||
+      VendorReturnRequestState.completed => DesignTokens.primaryGreen,
+      VendorReturnRequestState.rejected => DesignTokens.colorError,
+      VendorReturnRequestState.cancelled => DesignTokens.textMuted,
     };
     final category = ReturnReasonCategory.fromWire(request.reasonCategory);
     return Container(

@@ -46,13 +46,13 @@ class VendorReturnPickupScope extends ConsumerWidget {
   );
 
   /// From the list row alone, when the pickup itself could not be read: a
-  /// rider stage other than "received" holds completion back.
+  /// rider stage other than "received" holds completion back — Cancelled
+  /// too, as the server still refuses it (return fixes contract C).
   static bool lockedByListStage(String? pickupStage) {
     final stage = ReturnPickupStage.fromWire(pickupStage);
     return stage != null &&
         stage != ReturnPickupStage.unknown &&
-        stage != ReturnPickupStage.receivedBySeller &&
-        stage != ReturnPickupStage.cancelled;
+        stage != ReturnPickupStage.receivedBySeller;
   }
 
   @override

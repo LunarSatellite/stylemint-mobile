@@ -253,12 +253,15 @@ class ReturnPickup {
   /// The seller may only mark a rider return received once the rider handed
   /// it over (contract §3, `return.pickup_not_received`). Legacy and older
   /// returns are never held back here; the server still has the last word.
+  ///
+  /// A rider return with no `receivedUtc` stays held back whatever its stage
+  /// — Cancelled included — unless support marked it received
+  /// (ReceivedBySeller): the server answers 409 until then (return fixes
+  /// contract C).
   bool get blocksSellerCompletion =>
       isRider &&
       receivedUtc == null &&
-      stage != null &&
-      stage != ReturnPickupStage.receivedBySeller &&
-      stage != ReturnPickupStage.unknown;
+      stage != ReturnPickupStage.receivedBySeller;
 
   static String? _text(Object? value) {
     final raw = value?.toString().trim();

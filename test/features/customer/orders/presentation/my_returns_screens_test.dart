@@ -275,9 +275,11 @@ void main() {
       expect(find.text(refundPendingCopy), findsOneWidget);
     });
 
-    testWidgets('shows the refund status when the backend sends one', (
-      tester,
-    ) async {
+    Future<void> pumpRefund(
+      WidgetTester tester, {
+      required String refundStatus,
+      bool onPaymentPlan = false,
+    }) async {
       setPhoneView(tester);
       final base = _return('r2', status: ReturnRequestStatus.completed);
       when(() => repository.getReturn('r2')).thenAnswer(
@@ -295,23 +297,108 @@ void main() {
             status: base.status,
             submittedUtc: base.submittedUtc,
             timeline: const [],
-            refundStatus: 'Refunded to eSewa',
+            refundStatus: refundStatus,
           ),
         ),
       );
-
       await tester.pumpWidget(
-        _app(repository, const ReturnDetailScreen(returnId: 'r2')),
+        ProviderScope(
+          overrides: [
+            ordersRepositoryProvider.overrideWithValue(repository),
+            returnPickupProvider.overrideWith((ref, returnId) async => null),
+            replacementShipmentProvider.overrideWith(
+              (ref, returnId) async => null,
+            ),
+            returnOrderOnPaymentPlanProvider.overrideWith(
+              (ref, orderId) async => onPaymentPlan,
+            ),
+          ],
+          child: ordersTestApp(
+            const ReturnDetailScreen(returnId: 'r2'),
+            wrapInScaffold: false,
+          ),
+        ),
       );
       await tester.pumpAndSettle();
+    }
+
+    Future<void> expectRefundText(WidgetTester tester, String text) async {
       await tester.scrollUntilVisible(
-        find.text('Refunded to eSewa'),
+        find.text(text),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-
-      expect(find.text('Refunded to eSewa'), findsOneWidget);
+      expect(find.text(text), findsOneWidget);
       expect(find.text(refundPendingCopy), findsNothing);
+    }
+
+    testWidgets('a completed refund reads "Refunded", not the raw status', (
+      tester,
+    ) async {
+      await pumpRefund(tester, refundStatus: 'Completed');
+      await expectRefundText(tester, 'Refunded');
+      // The raw status is never the refund line (the pill may say Completed).
+      expect(find.text('Refunded'), findsOneWidget);
+    });
+
+    testWidgets('a pending refund reads "Refund processing"', (tester) async {
+      await pumpRefund(tester, refundStatus: 'Pending');
+      await expectRefundText(tester, 'Refund processing');
+    });
+
+    testWidgets('no refund on an EMI order: the payment plan covers it', (
+      tester,
+    ) async {
+      await pumpRefund(
+        tester,
+        refundStatus: 'NotRequired',
+        onPaymentPlan: true,
+      );
+      await expectRefundText(tester, 'Covered by your payment plan');
+    });
+
+    testWidgets('no refund on an order paid outright: none due', (
+      tester,
+    ) async {
+      await pumpRefund(tester, refundStatus: 'NotRequired');
+      await expectRefundText(tester, 'No refund due');
+    });
+
+    test('refundStatusText maps every refund state to plain words', () {
+      const refund = CustomerReturnResolution.refund;
+      const replacement = CustomerReturnResolution.replacement;
+      expect(refundStatusText(null, resolution: refund), isNull);
+      expect(refundStatusText('  ', resolution: refund), isNull);
+      expect(
+        refundStatusText('Pending', resolution: refund),
+        'Refund processing',
+      );
+      expect(refundStatusText('Completed', resolution: refund), 'Refunded');
+      expect(
+        refundStatusText('NotRequired', resolution: replacement),
+        'No refund (replacement)',
+      );
+      // A replacement says so even on an EMI order.
+      expect(
+        refundStatusText(
+          'NotRequired',
+          resolution: replacement,
+          onPaymentPlan: true,
+        ),
+        'No refund (replacement)',
+      );
+      expect(
+        refundStatusText('NotRequired', resolution: refund, onPaymentPlan: true),
+        'Covered by your payment plan',
+      );
+      expect(
+        refundStatusText('NotRequired', resolution: refund),
+        'No refund due',
+      );
+      expect(
+        refundStatusText('SomethingNew', resolution: refund),
+        'Refund processing',
+      );
     });
 
     test('state timeline steps follow the return state', () {

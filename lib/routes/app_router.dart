@@ -1750,7 +1750,11 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.vendorOrders,
-        builder: (ctx, state) => const VendorOrdersScreen(),
+        builder: (ctx, state) => VendorOrdersScreen(
+          initialTab: VendorOrdersTab.fromQuery(
+            state.uri.queryParameters[RouteNames.vendorOrdersTabQuery],
+          ),
+        ),
       ),
       GoRoute(
         path: RouteNames.vendorOrdersReadyToShip,

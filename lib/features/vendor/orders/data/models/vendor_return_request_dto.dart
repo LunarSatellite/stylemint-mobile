@@ -26,6 +26,8 @@ class VendorReturnRequestDto {
     this.pickupFarePayer,
     this.pickupStage,
     this.pickupAware = false,
+    this.resolution = VendorReturnResolution.refund,
+    this.cancelReason = VendorReturnCancelReason.unknown,
   });
 
   factory VendorReturnRequestDto.fromJson(Map<String, dynamic> json) =>
@@ -52,6 +54,8 @@ class VendorReturnRequestDto {
         pickupFarePayer: _text(json['pickupFarePayer']),
         pickupStage: _text(json['pickupStage']),
         pickupAware: json.containsKey('pickupStage'),
+        resolution: VendorReturnResolution.fromWire(json['resolution']),
+        cancelReason: VendorReturnCancelReason.fromWire(json['cancelReason']),
       );
 
   final String id;
@@ -81,6 +85,12 @@ class VendorReturnRequestDto {
   final String? pickupFarePayer;
   final String? pickupStage;
   final bool pickupAware;
+
+  /// `resolution` (1 Refund, 2 Replacement) and `cancelReason`
+  /// (`buyer_cancelled`, `buyer_unavailable`, `handover_refused`, `support`)
+  /// — return fixes contract C.
+  final VendorReturnResolution resolution;
+  final VendorReturnCancelReason cancelReason;
 
   static String? _text(Object? value) {
     final raw = value?.toString().trim();
@@ -118,5 +128,7 @@ class VendorReturnRequestDto {
     pickupFarePayer: pickupFarePayer,
     pickupStage: pickupStage,
     pickupAware: pickupAware,
+    resolution: resolution,
+    cancelReason: cancelReason,
   );
 }

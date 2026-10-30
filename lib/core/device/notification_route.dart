@@ -12,7 +12,9 @@
 /// Resolution order:
 ///  0. a seller EMI notice (`plan.vendor.*`) opens the seller's EMI plan;
 ///     a service vendor's booking, enquiry or appointment notice opens it
-///     (see `service_notification_route.dart`);
+///     (see `service_notification_route.dart`); a journey notice opens the
+///     journey; a return pickup notice opens the buyer's return, the
+///     seller's Returns tab or the rider's job, by `audience`;
 ///  1. an explicit link (`deepLink`, `deep_link`, `link`, `url`, `route`);
 ///  2. by type — KYC decision, delivery notifications (their own contract,
 ///     see `delivery_push.dart`), buyer orders, payment plans, payouts,
@@ -86,10 +88,19 @@ class NotificationPayload {
         data[key.substring(5)] = value;
       }
     }
+    final keyType = notificationTypeFromTemplateKey(templateKey);
     final type =
-        notificationTypeFromTemplateKey(data['type']?.toString()) ??
-        notificationTypeFromTemplateKey(templateKey);
+        notificationTypeFromTemplateKey(data['type']?.toString()) ?? keyType;
     if (type != null) data['type'] = type;
+    // A return notice's seller and rider wordings are their own templates
+    // (`return_pickup.collected.seller`, `….rider`) under the buyer's
+    // `data.type`: the key says who it is for when `audience` does not.
+    final audienceSuffix = keyType?.split('.').last;
+    if (data['audience'] == null &&
+        ReturnPickupPush.fromData({'type': type}) != null &&
+        (audienceSuffix == 'seller' || audienceSuffix == 'rider')) {
+      data['audience'] = audienceSuffix;
+    }
     return NotificationPayload(type: type, data: data);
   }
 
@@ -159,6 +170,19 @@ class NotificationViewer {
     if (onRiderSide) return false;
     return onVendorSide || roles.contains('vendor');
   }
+
+  /// The account holds the delivery-partner role (`Courier` on the token).
+  /// The courier screens are only reachable with it, so being on them counts.
+  bool get isCourier => onRiderSide || roles.contains('courier');
+
+  /// For a return notice from a server that does not say who it is for
+  /// (no `data.audience`): a courier account's notice that names a rider
+  /// job (`hopId`) is the rider's, whatever screen is showing — a tap from
+  /// the home screen or a cold start must not open the buyer's return, which
+  /// 404s for the rider. On the courier screens a courier's notice is the
+  /// rider's even without a job, as before.
+  bool riderForReturnNotice({required bool namesJob}) =>
+      isCourier && (namesJob || onRiderSide);
 }
 
 /// The go_router location a tapped notification opens, or null to just open
@@ -194,6 +218,24 @@ String? notificationLocation(
   );
   if (journey != null) return journey;
 
+  // 0d. Return pickups (return pickup contract §7, return fixes contract C)
+  //     route by who the notice is for, before any link: the buyer's return
+  //     page is the wrong place for the seller and a 404 for the rider. A
+  //     rider return request still arrives as `delivery.request` and goes to
+  //     the offers screen below.
+  final returnPickup = ReturnPickupPush.fromData({
+    ...payload.data,
+    'type': payload.type,
+  });
+  if (returnPickup != null) {
+    return returnPickup.routeFor(
+      vendor: viewer.actsAsVendor,
+      rider: viewer.riderForReturnNotice(
+        namesJob: returnPickup.hopId != null,
+      ),
+    );
+  }
+
   // 1. An explicit link always wins.
   final link = pushDestinationUri(payload.data);
   if (link != null) {
@@ -206,20 +248,6 @@ String? notificationLocation(
   final type = payload.type;
   if (type != null) {
     if (type == KycDecidedPush.type) return RouteNames.customerKyc;
-
-    // Return pickups (return pickup contract §7), before the forward
-    // delivery types: a rider return request still arrives as
-    // `delivery.request` and goes to the offers screen below.
-    final returnPickup = ReturnPickupPush.fromData({
-      ...payload.data,
-      'type': type,
-    });
-    if (returnPickup != null) {
-      return returnPickup.routeFor(
-        vendor: viewer.actsAsVendor,
-        rider: viewer.onRiderSide,
-      );
-    }
 
     final delivery = DeliveryPushEvent.fromData({
       ...payload.data,
@@ -245,6 +273,15 @@ String? notificationLocation(
         return '/vendor/orders/${Uri.encodeComponent(subOrderId)}';
       }
       if (type.contains('order')) return RouteNames.vendorOrders;
+    }
+
+    // A refund for a return opens that return (return fixes contract C):
+    // its refund line is there, the order only says "refunded".
+    if (type == 'order.refunded') {
+      final returnId = payload.id('returnRequestId');
+      if (returnId != null) {
+        return '${RouteNames.myReturns}/${Uri.encodeComponent(returnId)}';
+      }
     }
 
     // Every `order.*` template goes to the buyer.
