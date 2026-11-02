@@ -235,6 +235,7 @@ void main() {
     await tester.tap(find.byKey(VendorBundleDetailScreen.declineKey));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(ServiceReasonDialogKeys.field), 'No stock');
+    await tester.pump();
     await tester.tap(find.byKey(ServiceReasonDialogKeys.confirm));
     await tester.pumpAndSettle();
 

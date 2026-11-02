@@ -63,6 +63,7 @@ Map<String, dynamic> bundleCartWire({
   bool purchasable = true,
   List<Map<String, dynamic>> notices = const [],
   bool withBundle = true,
+  bool withLoose = true,
 }) => {
   'accountId': 'acc-1',
   'lines': [
@@ -116,7 +117,7 @@ Map<String, dynamic> bundleCartWire({
         'productVariantId': 'v-socks',
       },
     ],
-    {
+    if (withLoose) {
       'lineId': 'l-cap',
       'productId': 'p-cap',
       'productTitleSnapshot': 'Sun cap',

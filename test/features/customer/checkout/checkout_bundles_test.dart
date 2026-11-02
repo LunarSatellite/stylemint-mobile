@@ -9,6 +9,8 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/domain/reposito
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/data/models/checkout_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/checkout_bundle_widgets.dart';
+import 'package:stylemint_mobile_frontend/features/customer/emi/domain/entities/credit.dart'
+    show PlanOptions;
 import 'package:stylemint_mobile_frontend/features/customer/emi/shared/providers.dart';
 
 import '../bundles/bundle_fixtures.dart';
@@ -59,7 +61,12 @@ const _bundleSummary = CheckoutSummary(
 );
 
 Cart _cart({bool purchasable = true, bool withBundle = true}) => CartDto.fromJson(
-  bundleCartWire(purchasable: purchasable, withBundle: withBundle),
+  bundleCartWire(
+    purchasable: purchasable,
+    withBundle: withBundle,
+    // No ordinary line: its EMI plans would load from the network.
+    withLoose: false,
+  ),
 ).toDomain();
 
 void main() {
@@ -118,6 +125,14 @@ void main() {
         cartRepositoryProvider.overrideWithValue(cartRepo),
         emiSignedInProvider.overrideWithValue(false),
         myPaymentPlansProvider.overrideWith((ref) async => []),
+        // No plans offered: the EMI option never reaches the network.
+        planOptionsProvider.overrideWith(
+          (ref, variantId) async => PlanOptions(
+            variantId: variantId,
+            price: const Money(amount: 0, currency: npr),
+            options: const [],
+          ),
+        ),
       ],
     );
     return (checkout, cartRepo);
@@ -211,6 +226,14 @@ void main() {
         cartRepositoryProvider.overrideWithValue(cartRepo),
         emiSignedInProvider.overrideWithValue(false),
         myPaymentPlansProvider.overrideWith((ref) async => []),
+        // No plans offered: the EMI option never reaches the network.
+        planOptionsProvider.overrideWith(
+          (ref, variantId) async => PlanOptions(
+            variantId: variantId,
+            price: const Money(amount: 0, currency: npr),
+            options: const [],
+          ),
+        ),
       ],
     );
 
