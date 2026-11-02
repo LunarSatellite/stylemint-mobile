@@ -93,15 +93,24 @@ Map<String, dynamic> get _body => {
 };
 
 class _Api extends ApiClient {
-  _Api({this.body, this.status}) : super(dio: Dio());
+  _Api({this.body, this.status, this.cards, this.cardsFail = false})
+    : super(dio: Dio());
 
   final Map<String, dynamic>? body;
   final int? status;
+  final Map<String, dynamic>? cards;
+  final bool cardsFail;
   final List<String> gets = [];
+  final List<Map<String, dynamic>?> queries = [];
   final List<Map<String, dynamic>> sent = [];
 
   Future<dynamic> _answer(String uri, Map<String, dynamic>? query) async {
     gets.add(uri);
+    queries.add(query);
+    if (uri == '/v1/public/cards') {
+      if (cardsFail) throw StateError('cards down');
+      return cards;
+    }
     if (status != null) {
       final options = RequestOptions(path: uri);
       throw DioException(
@@ -232,7 +241,7 @@ void main() {
       const req = ComposedScreenRequest(ComposedScreenName.shopsForYou);
       expect(await repo.load(req, signedIn: true), isNotNull);
       await repo.load(req, signedIn: false);
-      expect(api.gets, [
+      expect(api.gets.where((g) => g.contains('/screens/')), [
         '/v1/customer/screens/shops_for_you',
         '/v1/public/screens/shops_for_you',
       ]);
@@ -355,6 +364,229 @@ void main() {
       ).toJson();
       expect(json['surface'], 'search');
       expect(json.containsKey('sectionId'), isFalse);
+    });
+  });
+
+  group('card hydration', () {
+    Map<String, dynamic> bare() => {
+      'requestId': _rid,
+      'screen': 'mall_home',
+      'sections': [
+        {
+          'sectionId': 's-p',
+          'kind': 'products',
+          'items': [
+            {'id': 'p-1', 'card': _product('p-1')},
+            {'id': 'p-2', 'position': 1},
+          ],
+        },
+        {
+          'sectionId': 's-c',
+          'kind': 'creators',
+          'items': [
+            {'id': 'C-1', 'position': 0},
+          ],
+        },
+        {
+          'sectionId': 's-b',
+          'kind': 'brands',
+          'items': [
+            {'id': 'b-1'},
+          ],
+        },
+      ],
+    };
+    const req = ComposedScreenRequest(ComposedScreenName.mallHome);
+
+    test('fills cards the composer did not embed, in one call', () async {
+      final api = _Api(
+        body: bare(),
+        cards: {
+          'products': [_product('p-2')],
+          'reels': <Object>[],
+          'creators': [
+            {'accountId': 'c-1', 'displayName': 'Asha'},
+          ],
+          'vendors': <Object>[],
+          'brands': [
+            {'vendorAccountId': 'b-1', 'name': 'Dhaka Weaves'},
+          ],
+          'missing': <Object>[],
+        },
+      );
+      final screen = (await ComposedScreenRepository(
+        apiClient: api,
+      ).load(req, signedIn: true))!;
+      expect(api.gets.where((g) => g == '/v1/public/cards'), hasLength(1));
+      expect(api.queries.last, {
+        'products': 'p-2',
+        'creators': 'C-1',
+        'brands': 'b-1',
+      });
+      expect(screen.sections.map((s) => s.sectionId), ['s-p', 's-c', 's-b']);
+      expect(screen.sections[0].items.map((i) => i.id), ['p-1', 'p-2']);
+      expect(screen.sections[0].items[1].position, 1);
+      expect(
+        (screen.sections[1].items.single.card as HomeCreator).displayName,
+        'Asha',
+      );
+      expect(screen.sections[2].items.single.card, isA<HomeBrand>());
+    });
+
+    test('ids the server reports missing stay dropped', () async {
+      final api = _Api(
+        body: bare(),
+        cards: {
+          'products': <Object>[],
+          'missing': [
+            {'kind': 'product', 'id': 'p-2'},
+          ],
+        },
+      );
+      final screen = (await ComposedScreenRepository(
+        apiClient: api,
+      ).load(req, signedIn: false))!;
+      expect(screen.sections.map((s) => s.sectionId), ['s-p']);
+      expect(screen.sections.single.items.map((i) => i.id), ['p-1']);
+    });
+
+    test('a failed cards call still drops them; the screen loads', () async {
+      final api = _Api(body: bare(), cardsFail: true);
+      final screen = (await ComposedScreenRepository(
+        apiClient: api,
+      ).load(req, signedIn: true))!;
+      expect(screen.sections.map((s) => s.sectionId), ['s-p']);
+      expect(screen.sections.single.items.map((i) => i.id), ['p-1']);
+    });
+
+    test('no call when every item has its card', () async {
+      final api = _Api(
+        body: {
+          'sections': [
+            {
+              'sectionId': 's',
+              'kind': 'products',
+              'items': [
+                {'id': 'p-1', 'card': _product('p-1')},
+              ],
+            },
+          ],
+        },
+      );
+      await ComposedScreenRepository(apiClient: api).load(req, signedIn: true);
+      expect(api.gets, ['/v1/customer/screens/mall_home']);
+    });
+
+    test('more than 50 missing ids are split across calls', () async {
+      final api = _Api(
+        body: {
+          'sections': [
+            {
+              'sectionId': 's',
+              'kind': 'products',
+              'items': [
+                for (var i = 0; i < 60; i++) {'id': 'p-$i'},
+              ],
+            },
+          ],
+        },
+        cards: {
+          'products': [for (var i = 0; i < 60; i++) _product('p-$i')],
+        },
+      );
+      final screen = (await ComposedScreenRepository(
+        apiClient: api,
+      ).load(req, signedIn: true))!;
+      final calls = [
+        for (final (i, g) in api.gets.indexed)
+          if (g == '/v1/public/cards') api.queries[i]!['products'] as String,
+      ];
+      expect(calls.map((c) => c.split(',').length), [50, 10]);
+      expect(screen.sections.single.items, hasLength(60));
+    });
+  });
+
+  group('subject and reel taps', () {
+    late _Api api;
+    late EngagementTracker tracker;
+
+    setUp(() {
+      api = _Api();
+      var ids = 0;
+      tracker = EngagementTracker(
+        repository: EngagementRepositoryImpl(
+          remoteDataSource: EngagementRemoteDataSource(apiClient: api),
+          store: InMemoryEngagementQueueStore(),
+        ),
+        allowed: () async => true,
+        owner: () => 'acct-1',
+        newId: () => 'e-${++ids}',
+        clock: () => DateTime.utc(2026, 11, 2, 10),
+        flushInterval: const Duration(hours: 1),
+      );
+      addTearDown(tracker.dispose);
+    });
+
+    for (final (kind, wire) in [
+      (EngagementKind.creatorView, 'creator_view'),
+      (EngagementKind.vendorView, 'vendor_view'),
+      (EngagementKind.brandView, 'brand_view'),
+    ]) {
+      test('$wire carries subjectId and the screen echo', () async {
+        tracker.screenSubjectOpened(
+          kind: kind,
+          subjectId: 'acc-9',
+          screen: 'creators_for_you',
+          requestId: _rid,
+          position: 2,
+          sectionId: 'rail-1',
+        );
+        await pumpEventQueue();
+        await tracker.flush();
+        final event = api.sent.single;
+        expect(event['kind'], wire);
+        expect(event['subjectId'], 'acc-9');
+        expect(event['surface'], 'screen:creators_for_you');
+        expect(event['requestId'], _rid);
+        expect(event['position'], 2);
+        expect(event['sectionId'], 'rail-1');
+        expect(event.containsKey('reelId'), isFalse);
+        expect(event.containsKey('productId'), isFalse);
+        expect(EngagementEvent.fromJson(event)!.toJson(), event);
+      });
+    }
+
+    test('other kinds never send subjectId', () {
+      final json = EngagementEvent(
+        clientEventId: 'e-1',
+        kind: EngagementKind.productView,
+        productId: 'p-1',
+        subjectId: 'stray',
+        occurredUtc: DateTime.utc(2026, 11, 2),
+      ).toJson();
+      expect(json.containsKey('subjectId'), isFalse);
+      expect(EngagementKind.view.needsSubject, isFalse);
+      expect(EngagementKind.creatorView.needsReel, isFalse);
+    });
+
+    test('opening a reel from a rail is a view with the echo', () async {
+      tracker.screenReelOpened(
+        reelId: 'r-1',
+        screen: 'mall_home',
+        requestId: _rid,
+        position: 0,
+        sectionId: 'reels_rail',
+      );
+      await pumpEventQueue();
+      await tracker.flush();
+      final event = api.sent.single;
+      expect(event['kind'], 'view');
+      expect(event['reelId'], 'r-1');
+      expect(event['surface'], 'screen:mall_home');
+      expect(event['requestId'], _rid);
+      expect(event['position'], 0);
+      expect(event['sectionId'], 'reels_rail');
+      expect(event.containsKey('subjectId'), isFalse);
     });
   });
 

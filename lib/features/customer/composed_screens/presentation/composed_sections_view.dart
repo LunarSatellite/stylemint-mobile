@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/customer/composed_screens/dom
 import 'package:stylemint_mobile_frontend/features/customer/composed_screens/presentation/ask_once_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/composed_screens/presentation/why_strings.dart';
 import 'package:stylemint_mobile_frontend/features/customer/composed_screens/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/domain/entities/engagement_event.dart';
 import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
@@ -224,6 +225,22 @@ class ComposedSectionRail extends ConsumerWidget {
     unawaited(context.push(MallRoutes.product(item.id)));
   }
 
+  void _openSubject(
+    WidgetRef ref,
+    ComposedItem item,
+    EngagementKind kind,
+    String subjectId,
+  ) => ref
+      .read(engagementTrackerProvider)
+      .screenSubjectOpened(
+        kind: kind,
+        subjectId: subjectId,
+        screen: screen.wire,
+        requestId: requestId,
+        position: item.position,
+        sectionId: section.sectionId,
+      );
+
   Widget _rail(BuildContext context, WidgetRef ref, String title) {
     final items = section.items;
     switch (section.kind) {
@@ -261,8 +278,18 @@ class ComposedSectionRail extends ConsumerWidget {
               item,
               MallReelCard(
                 reel: reel.toVm(),
-                onTap: () =>
-                    unawaited(openMallReelWindow(context, reel.toRef())),
+                onTap: () {
+                  ref
+                      .read(engagementTrackerProvider)
+                      .screenReelOpened(
+                        reelId: reel.id,
+                        screen: screen.wire,
+                        requestId: requestId,
+                        position: item.position,
+                        sectionId: section.sectionId,
+                      );
+                  unawaited(openMallReelWindow(context, reel.toRef()));
+                },
               ),
             );
           },
@@ -280,9 +307,17 @@ class ComposedSectionRail extends ConsumerWidget {
               item,
               MallCreatorCard(
                 creator: creator.toVm(),
-                onTap: () => unawaited(
-                  context.push(MallRoutes.creator(creator.accountId)),
-                ),
+                onTap: () {
+                  _openSubject(
+                    ref,
+                    item,
+                    EngagementKind.creatorView,
+                    creator.accountId,
+                  );
+                  unawaited(
+                    context.push(MallRoutes.creator(creator.accountId)),
+                  );
+                },
               ),
             );
           },
@@ -303,11 +338,21 @@ class ComposedSectionRail extends ConsumerWidget {
               item,
               MallBrandCard(
                 brand: brand.toVm(),
-                onTap: () => unawaited(
-                  context.push(
-                    MallRoutes.brand(brand.vendorAccountId, brand.name),
-                  ),
-                ),
+                onTap: () {
+                  _openSubject(
+                    ref,
+                    item,
+                    section.kind == ComposedSectionKind.brands
+                        ? EngagementKind.brandView
+                        : EngagementKind.vendorView,
+                    brand.vendorAccountId,
+                  );
+                  unawaited(
+                    context.push(
+                      MallRoutes.brand(brand.vendorAccountId, brand.name),
+                    ),
+                  );
+                },
               ),
             );
           },
