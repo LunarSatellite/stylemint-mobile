@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/features/customer/bundles/domain/bundle.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/feed_provenance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_journey.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/domain/entities/service_item.dart';
@@ -47,6 +48,7 @@ class Reel implements ReelMedia {
     this.durationSeconds,
     this.journey,
     this.railLabel,
+    this.taggedBundles = const <ReelTaggedBundle>[],
   });
 
   final String id;
@@ -74,6 +76,10 @@ class Reel implements ReelMedia {
   /// (§4.3). Null for every other reel, which then draws no label. Aggregate
   /// or content wording only: never a claim about the viewer.
   final String? railLabel;
+
+  /// Bundles tagged on this reel (shop bundles contract §B9), at most 3.
+  /// Empty on a server without bundles.
+  final List<ReelTaggedBundle> taggedBundles;
 
   /// The platform's own post/video id (YouTube videoId, TikTok item id,
   /// Instagram media id, Facebook video id) as stored by the backend.
@@ -147,6 +153,7 @@ class Reel implements ReelMedia {
     int? durationSeconds,
     ReelJourney? journey,
     String? railLabel,
+    List<ReelTaggedBundle>? taggedBundles,
   }) {
     return Reel(
       id: id ?? this.id,
@@ -176,6 +183,7 @@ class Reel implements ReelMedia {
       durationSeconds: durationSeconds ?? this.durationSeconds,
       journey: journey ?? this.journey,
       railLabel: railLabel ?? this.railLabel,
+      taggedBundles: taggedBundles ?? this.taggedBundles,
     );
   }
 

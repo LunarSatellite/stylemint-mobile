@@ -40,3 +40,21 @@ abstract interface class CartRepository {
 
   Future<Either<NetworkExceptions, Cart>> saveForLater(String lineId);
 }
+
+/// The cart's bundle groups (shop bundles contract §B8). Its own interface
+/// so every existing [CartRepository] stays complete without it.
+abstract interface class CartBundlesRepository {
+  /// How many of the bundle, every
+  /// line of the group scaled together.
+  Future<Either<NetworkExceptions, Cart>> setBundleQuantity(
+    String groupId,
+    int quantity,
+  );
+
+  /// Takes the whole bundle out of the cart.
+  Future<Either<NetworkExceptions, Cart>> removeBundle(String groupId);
+
+  /// Keeps the bundle's lines, at their list prices ("Buy items
+  /// separately").
+  Future<Either<NetworkExceptions, Cart>> unbundle(String groupId);
+}

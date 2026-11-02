@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/bundles/domain/bundle_failure.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/widgets/basket_findings_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/widgets/basket_insights_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/widgets/cart_bundle_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/widgets/cart_item_tile.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/composed_screens/data/composed_screen_repository.dart';
@@ -25,11 +27,38 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
+  static const Key bundleBrokenKey = Key('cart-bundle-broken-notice');
+
   @override
   ConsumerState<CartScreen> createState() => _CartScreenState();
 }
 
 class _CartScreenState extends ConsumerState<CartScreen> {
+  /// Bundle groups with a change in flight: their controls wait.
+  final Set<String> _bundleBusy = <String>{};
+
+  Future<void> _bundleAction(
+    String groupId,
+    Future<NetworkExceptions?> Function(CartNotifier notifier) action,
+  ) async {
+    if (_bundleBusy.contains(groupId)) return;
+    setState(() => _bundleBusy.add(groupId));
+    final failure = await action(ref.read(cartNotifierProvider.notifier));
+    if (!mounted) return;
+    setState(() => _bundleBusy.remove(groupId));
+    if (failure == null) return;
+    final code = failure.validationCode;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          (code == null ? null : bundleErrorMessage(code)) ??
+              NetworkExceptions.getMessage(failure),
+        ),
+        backgroundColor: DesignTokens.colorError,
+      ),
+    );
+  }
+
   Future<void> _openPromoSheet() async {
     final code = await showModalBottomSheet<String>(
       context: context,
@@ -64,6 +93,25 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           if (cart.items.isEmpty && hadItems) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Item removed from cart')),
+            );
+          }
+          // One bundle line removed: the rest of that bundle went back to
+          // full price (shop bundles contract §B8, `bundle_broken`).
+          for (final notice in cart.notices) {
+            if (!notice.isBundleBroken) continue;
+            final title = notice.bundleTitle;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                key: CartScreen.bundleBrokenKey,
+                content: Text(
+                  title == null
+                      ? 'The bundle was split up. The other items are back '
+                            'at their full price.'
+                      : '"$title" was split up. The other items are back '
+                            'at their full price.',
+                ),
+                duration: const Duration(seconds: 6),
+              ),
             );
           }
         },
@@ -119,33 +167,59 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       ),
                       const _OfferAdviceCard(),
                       const _TryOtherBasketsEntry(),
-                      ...List.generate(cart.items.length, (i) {
+                      // Bundles first: one card per bundle over its lines.
+                      for (final group in cart.bundleGroups)
+                        CartBundleCard(
+                          group: group,
+                          lines: cart.bundleLines(group.groupId),
+                          busy: _bundleBusy.contains(group.groupId),
+                          lineKey: basketLineAnchorKey,
+                          onQuantity: (q) => _bundleAction(
+                            group.groupId,
+                            (n) => n.setBundleQuantity(group.groupId, q),
+                          ),
+                          onUnbundle: () => _bundleAction(
+                            group.groupId,
+                            (n) => n.unbundle(group.groupId),
+                          ),
+                          onRemoveBundle: () => _bundleAction(
+                            group.groupId,
+                            (n) => n.removeBundle(group.groupId),
+                          ),
+                          // The server breaks the group and says so
+                          // (`bundle_broken`), heard by the listener above.
+                          onRemoveLine: (line) => ref
+                              .read(cartNotifierProvider.notifier)
+                              .removeItem(line.id),
+                        ),
+                      ...List.generate(cart.looseItems.length, (i) {
+                        final items = cart.looseItems;
                         return KeyedSubtree(
                           // A finding's "review these lines" action scrolls
                           // here; the line's own controls stay the only way to
                           // change anything.
-                          key: basketLineAnchorKey(cart.items[i].id),
+                          key: basketLineAnchorKey(items[i].id),
                           child: CartItemTile(
-                            item: cart.items[i],
+                            item: items[i],
                             onIncrement: () {
                               ref
                                   .read(cartNotifierProvider.notifier)
                                   .updateItem(
-                                    itemId: cart.items[i].id,
-                                    quantity: cart.items[i].quantity + 1,
+                                    itemId: items[i].id,
+                                    quantity: items[i].quantity + 1,
                                   );
                             },
                             onDecrement: () {
-                              final newQty = cart.items[i].quantity - 1;
+                              final newQty = items[i].quantity - 1;
                               if (newQty <= 0) {
                                 ref
                                     .read(cartNotifierProvider.notifier)
-                                    .removeItem(cart.items[i].id);
+                                    .removeItem(items[i].id);
                               } else {
                                 ref
                                     .read(cartNotifierProvider.notifier)
                                     .updateItem(
-                                      itemId: cart.items[i].id,
+                                      itemId: items[i].id,
                                       quantity: newQty,
                                     );
                               }
@@ -153,21 +227,21 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             onDelete: () {
                               ref
                                   .read(cartNotifierProvider.notifier)
-                                  .removeItem(cart.items[i].id);
+                                  .removeItem(items[i].id);
                             },
                             onSaveForLater: () {
                               ref
                                   .read(cartNotifierProvider.notifier)
-                                  .saveForLater(cart.items[i].id);
+                                  .saveForLater(items[i].id);
                             },
                             // A stay or trip: back to its item page with
                             // these options, to add the new choice in place
                             // of this line.
-                            onEditService: cart.items[i].isService
+                            onEditService: items[i].isService
                                 ? () => context.push(
                                     RouteNames.serviceItemEditPath(
-                                      cart.items[i].productId,
-                                      cart.items[i].id,
+                                      items[i].productId,
+                                      items[i].id,
                                     ),
                                   )
                                 : null,

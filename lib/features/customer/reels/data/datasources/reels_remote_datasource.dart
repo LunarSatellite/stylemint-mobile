@@ -2,6 +2,7 @@ import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/features/customer/bundles/data/bundle_json.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/feed_provenance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_journey_json.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_like_response_dto.dart';
@@ -126,6 +127,8 @@ class ReelsRemoteDataSource {
       durationSeconds: _intOrNull(r['durationSeconds']),
       // Journey reels contract v1 §2. Absent or empty: an ordinary reel.
       journey: readFirstReelJourney(r['journeys']),
+      // Shop bundles contract §B9. Absent: no bundles on this reel.
+      taggedBundles: readReelTaggedBundles(r['taggedBundles']),
     );
   }
 
@@ -296,6 +299,8 @@ class ReelsRemoteDataSource {
       durationSeconds: _intOrNull(r['durationSeconds']),
       // Journey reels contract v1 §2. Absent or empty: an ordinary reel.
       journey: readFirstReelJourney(r['journeys']),
+      // Shop bundles contract §B9. Absent: no bundles on this reel.
+      taggedBundles: readReelTaggedBundles(r['taggedBundles']),
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/bundles/shared/vendor_bundle_routes.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/journeys/shared/journey_routes.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_category.dart';
@@ -101,6 +102,14 @@ class _VendorMoreMenu extends StatelessWidget {
                 icon: Icons.route_rounded,
                 title: 'Journeys',
                 onTap: () => _go(context, JourneyRoutes.list),
+              ),
+              const _MoreDivider(),
+              // Multi-shop bundles: invites to accept, decline or withdraw.
+              // Bundles are made in Seller Center.
+              _MoreItem(
+                icon: Icons.inventory_2_outlined,
+                title: 'Bundles',
+                onTap: () => _go(context, VendorBundleRoutes.list),
               ),
               const _MoreDivider(),
               _MoreItem(

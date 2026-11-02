@@ -118,6 +118,12 @@ abstract class CheckoutItemDto with _$CheckoutItemDto {
     String? lineId,
     Object? lineKind,
     Object? service,
+    // Shop bundles contract §B8, and the shop shipping the line. Absent on
+    // a server before bundles.
+    String? bundleGroupId,
+    String? bundleTitleSnapshot,
+    String? vendorAccountId,
+    @JsonKey(readValue: _readCheckoutVendorName) String? vendorName,
   }) = _CheckoutItemDto;
 
   const CheckoutItemDto._();
@@ -135,8 +141,23 @@ abstract class CheckoutItemDto with _$CheckoutItemDto {
     service: isServiceLineKind(lineKind) || service != null
         ? readServiceLine(service, lineId: lineId)
         : null,
+    bundleGroupId: _blankToNull(bundleGroupId),
+    bundleTitle: _blankToNull(bundleTitleSnapshot),
+    vendorAccountId: _blankToNull(vendorAccountId),
+    vendorName: _blankToNull(vendorName),
   );
 }
+
+String? _blankToNull(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+Object? _readCheckoutVendorName(Map<dynamic, dynamic> json, String key) =>
+    json['vendorName'] ??
+    json['vendorNameSnapshot'] ??
+    json['shopName'] ??
+    json['vendorBusinessName'];
 
 /// Maps `POST/GET /v1/checkout/sessions` (`CheckoutSessionDto` on the
 /// backend). A session starts in Draft: no address/payment chosen yet and

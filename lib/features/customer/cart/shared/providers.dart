@@ -19,8 +19,18 @@ final cartRepositoryProvider = Provider<CartRepository>(
   ),
 );
 
+/// The cart's bundle group calls (shop bundles contract §B8). Null when the
+/// cart repository in use has none (a test fake).
+final cartBundlesRepositoryProvider = Provider<CartBundlesRepository?>((ref) {
+  final Object repo = ref.watch(cartRepositoryProvider);
+  return repo is CartBundlesRepository ? repo : null;
+});
+
 final cartNotifierProvider = StateNotifierProvider<CartNotifier, CartState>(
-  (ref) => CartNotifier(ref.watch(cartRepositoryProvider)),
+  (ref) => CartNotifier(
+    ref.watch(cartRepositoryProvider),
+    bundles: ref.watch(cartBundlesRepositoryProvider),
+  ),
 );
 
 /// Units in the cart, for count badges (the bottom bar's Cart tab).

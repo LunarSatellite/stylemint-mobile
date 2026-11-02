@@ -3,6 +3,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/datasources/cart_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/data/models/cart_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/basket_finding.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/basket_scenarios.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
@@ -10,8 +11,48 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/repositories/cart_repository.dart';
 import 'package:uuid/uuid.dart';
 
-class CartRepositoryImpl implements CartRepository {
+class CartRepositoryImpl implements CartRepository, CartBundlesRepository {
   CartRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> setBundleQuantity(
+    String groupId,
+    int quantity,
+  ) => _cartCall(
+    () => remoteDataSource.setBundleQuantity(
+      groupId: groupId,
+      quantity: quantity,
+      idempotencyKey: _uuid.v4(),
+    ),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> removeBundle(String groupId) =>
+      _cartCall(
+        () => remoteDataSource.removeBundle(
+          groupId: groupId,
+          idempotencyKey: _uuid.v4(),
+        ),
+      );
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> unbundle(String groupId) =>
+      _cartCall(
+        () => remoteDataSource.unbundle(
+          groupId: groupId,
+          idempotencyKey: _uuid.v4(),
+        ),
+      );
+
+  Future<Either<NetworkExceptions, Cart>> _cartCall(
+    Future<CartDto> Function() call,
+  ) async {
+    try {
+      return right((await call()).toDomain());
+    } catch (e) {
+      return left(_mapError(e));
+    }
+  }
 
   final CartRemoteDataSource remoteDataSource;
   static const _uuid = Uuid();

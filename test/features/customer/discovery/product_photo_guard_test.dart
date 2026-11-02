@@ -186,6 +186,20 @@ const List<_Exemption> _productPhotoExemptions = [
     'Checkout line items — the order being confirmed, not a catalogue.',
   ),
   _Exemption(
+    'lib/features/customer/cart/presentation/widgets/cart_bundle_card.dart',
+    'The lines of a bundle in the cart (shop bundles contract §B8). Same '
+        'reasoning as the cart line: goods already in the bag, the photo '
+        'confirms which variant.',
+  ),
+  _Exemption(
+    'lib/features/customer/bundles/presentation/bundle_screen.dart',
+    'The bundle page (shop bundles contract §B6): a detail page for a set of '
+        'products from several shops, where the buyer picks a variant per '
+        'item. It plays the role product detail plays for one product, so '
+        'each item shows its thumbnail. Added 2026-11-02 with the bundles '
+        'feature; the owner may reverse it.',
+  ),
+  _Exemption(
     'lib/features/social/group_cart/presentation/widgets/group_cart_item_tile.dart',
     'A shared-cart line. Same reasoning as the cart line above, and the '
         'photo is how a friend tells whose item is whose.',

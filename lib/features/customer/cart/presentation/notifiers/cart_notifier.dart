@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
@@ -19,11 +20,51 @@ abstract class CartState with _$CartState {
 }
 
 class CartNotifier extends StateNotifier<CartState> {
-  CartNotifier(this._repository) : super(const CartState.initial()) {
+  CartNotifier(this._repository, {CartBundlesRepository? bundles})
+    : _bundles = bundles,
+      super(const CartState.initial()) {
     unawaited(fetchCart());
   }
 
   final CartRepository _repository;
+
+  /// The bundle group calls; null where the app wires no bundles (old
+  /// tests, the preview build), and every bundle action then just reloads.
+  final CartBundlesRepository? _bundles;
+
+  /// Scales bundle group [groupId] to [quantity] bundles. Returns the
+  /// failure, or null when it worked. A refused change keeps the cart on
+  /// screen (it does not turn into the error page) and reloads it.
+  Future<NetworkExceptions?> setBundleQuantity(String groupId, int quantity) =>
+      _bundleCall((r) => r.setBundleQuantity(groupId, quantity));
+
+  /// Takes the whole bundle [groupId] out of the cart.
+  Future<NetworkExceptions?> removeBundle(String groupId) =>
+      _bundleCall((r) => r.removeBundle(groupId));
+
+  /// Keeps bundle [groupId]'s lines at their list prices.
+  Future<NetworkExceptions?> unbundle(String groupId) =>
+      _bundleCall((r) => r.unbundle(groupId));
+
+  Future<NetworkExceptions?> _bundleCall(
+    Future<Either<NetworkExceptions, Cart>> Function(CartBundlesRepository r)
+    call,
+  ) async {
+    final repo = _bundles;
+    if (repo == null) {
+      await fetchCart();
+      return const NetworkExceptions.unexpectedError();
+    }
+    final either = await call(repo);
+    final failure = either.fold<NetworkExceptions?>((l) => l, (_) => null);
+    if (failure == null) {
+      either.fold((_) {}, (cart) => state = CartState.loadSuccess(cart));
+      return null;
+    }
+    final refreshed = await _repository.getCart();
+    refreshed.fold((_) {}, (cart) => state = CartState.loadSuccess(cart));
+    return failure;
+  }
 
   /// Clears any leftover cart state from a previous account's session.
   /// The provider is an app-lifetime singleton, so without this a fresh

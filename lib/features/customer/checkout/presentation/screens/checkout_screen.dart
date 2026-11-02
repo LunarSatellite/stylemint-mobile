@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/notifiers/checkout_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/checkout_bundle_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/checkout_emi_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/widgets/delivery_distance_note.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/providers.dart';
@@ -211,6 +212,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           );
         },
         failure: (failure) {
+          // A bundle stopped being purchasable after checkout opened: the
+          // buyer removes it or buys its items separately, then checkout
+          // starts again (shop bundles contract §B8).
+          if (isBundleUnavailable(failure)) {
+            unawaited(
+              showCheckoutBundleUnavailableSheet(
+                context,
+                onResolved: () =>
+                    ref.read(checkoutNotifierProvider.notifier).load(),
+                onBackToCart: () => context.popOrHome(),
+              ),
+            );
+            return;
+          }
           // A stay or trip the server could not hold or place says which,
           // on its own line above.
           final lineErrors = checkoutServiceLineErrors(failure);
@@ -357,6 +372,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                       const SizedBox(height: DesignTokens.s16),
                     ],
+                    // One parcel per shop (bundles span shops).
+                    CheckoutParcelsCard(items: summary.items),
                     // ── Bill details ticket card ───────────────────────
                     _BillTicketCard(
                       summary: summary,
@@ -374,6 +391,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     // Pay with EMI: a single eligible item opens the plan
                     // sheet (down payment now, the rest monthly).
                     CheckoutEmiOption(items: _cartItemsForEmi()),
+                    if (summary.items.any((i) => i.isBundleLine) ||
+                        _cartHasBundleLines())
+                      const CheckoutBundleEmiNote(),
                     _PaymentMethodList(
                       availableMethods: methods,
                       selectedMethod: selectedPayment,
@@ -429,9 +449,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           );
         },
         loadFailure: (failure, _) =>
+            // A bundle in the cart is not purchasable any more: remove it or
+            // buy its items separately, then start checkout again.
+            isBundleUnavailable(failure)
+            ? CheckoutBundleUnavailable(
+                onResolved: () =>
+                    ref.read(checkoutNotifierProvider.notifier).load(),
+                onBackToCart: () => context.popOrHome(),
+              )
             // A stay or trip in the cart could not be held: say which, and
             // send the buyer back to the cart to remove it.
-            checkoutServiceLineErrors(failure).isNotEmpty ||
+            : checkoutServiceLineErrors(failure).isNotEmpty ||
                 checkoutServiceMessage(failure) != null
             ? CheckoutServiceUnavailable(
                 failure: failure,
@@ -452,13 +480,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   /// Checkout can be opened before the cart was ever loaded (a deep link, a
   /// cold start straight into checkout); load it then rather than showing no
   /// EMI at all.
+  /// The cart holds bundle lines, which are never on an EMI plan.
+  bool _cartHasBundleLines() => ref
+      .watch(cartNotifierProvider)
+      .maybeWhen(loadSuccess: (c) => c.hasBundleLines, orElse: () => false);
+
   List<CartItem> _cartItemsForEmi() {
     final cart = ref.watch(cartNotifierProvider);
     return cart.maybeWhen(
-      // Stays and trips have no instalment plan.
+      // Stays and trips have no instalment plan, and neither do bundle
+      // lines (shop bundles contract §B7: phase 1 refuses EMI on them).
       loadSuccess: (c) => [
         for (final i in c.items)
-          if (!i.isService) i,
+          if (!i.isService && !i.isBundleLine) i,
       ],
       initial: () {
         WidgetsBinding.instance.addPostFrameCallback((_) {
