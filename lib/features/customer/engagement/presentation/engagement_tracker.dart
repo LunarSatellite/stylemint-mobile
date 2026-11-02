@@ -242,6 +242,31 @@ class EngagementTracker {
     );
   }
 
+  /// A product on a server-composed [screen] was tapped. Like
+  /// [searchResultOpened], the product page that follows records the
+  /// `product_view` with `surface: screen:<screen>`, the composer's
+  /// [requestId], the item's 0-based [position] within its section and the
+  /// [sectionId].
+  void screenItemOpened({
+    required String productId,
+    required String screen,
+    String? requestId,
+    int? position,
+    String? sectionId,
+  }) {
+    final product = productId.trim();
+    final name = screen.trim();
+    if (product.isEmpty || name.isEmpty) return;
+    _tappedFrom[product] = _OpenedFrom(
+      at: _now(),
+      surface: EngagementSurface.screen,
+      requestId: requestId,
+      position: position,
+      screen: name,
+      sectionId: sectionId,
+    );
+  }
+
   /// A product page was opened. [viaReelId] when the caller knows the reel;
   /// otherwise the reel of a recent tag tap on this product, if any.
   ///
@@ -365,6 +390,8 @@ class EngagementTracker {
         surface: surface ?? echo?.surface ?? EngagementSurface.product,
         requestId: echo?.requestId,
         position: echo?.position,
+        screen: echo?.screen,
+        sectionId: echo?.sectionId,
       ),
     );
     return id;
@@ -494,6 +521,8 @@ class _OpenedFrom {
     this.surface,
     this.requestId,
     this.position,
+    this.screen,
+    this.sectionId,
   });
 
   final DateTime at;
@@ -503,4 +532,6 @@ class _OpenedFrom {
   final EngagementSurface? surface;
   final String? requestId;
   final int? position;
+  final String? screen;
+  final String? sectionId;
 }

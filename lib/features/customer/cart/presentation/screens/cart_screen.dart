@@ -11,12 +11,15 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/wi
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/widgets/basket_insights_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/widgets/cart_item_tile.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/data/composed_screen_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/domain/composed_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/presentation/composed_sections_view.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 // ─── CART SCREEN ──────────────────────────────────────────────────────────────
 class CartScreen extends ConsumerStatefulWidget {
@@ -171,6 +174,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                           ),
                         );
                       }),
+                      // Optional composer cross-sell; nothing while the
+                      // composer is disabled (404) or fails.
+                      ComposedScreenSlot(
+                        request: ComposedScreenRequest(
+                          ComposedScreenName.cartCrossSell,
+                          productIds: [
+                            for (final item in cart.items) item.productId,
+                          ],
+                        ),
+                      ),
                       // Promo pill
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
@@ -861,7 +874,9 @@ class _CheckoutBar extends StatelessWidget {
                 ),
                 Text(
                   formatMoney(
-                    cart.hasServiceLines ? cart.payNowTotal ?? cart.total : cart.total,
+                    cart.hasServiceLines
+                        ? cart.payNowTotal ?? cart.total
+                        : cart.total,
                   ),
                   key: const Key('cart-checkout-amount'),
                   style: DesignTokens.moneyLarge,

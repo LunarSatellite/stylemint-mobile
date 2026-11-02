@@ -58,6 +58,10 @@ enum EngagementSurface {
   profile('profile'),
   search('search'),
   product('product'),
+
+  /// A server-composed screen (`GET v1/customer/screens/{screen}`); on the
+  /// wire `screen:<screen>`, with the screen name in [EngagementEvent.screen].
+  screen('screen'),
   other('other');
 
   const EngagementSurface(this.wire);
@@ -65,6 +69,7 @@ enum EngagementSurface {
   final String wire;
 
   static EngagementSurface? parse(Object? raw) {
+    if (raw is String && raw.startsWith('screen:')) return screen;
     for (final surface in values) {
       if (surface.wire == raw) return surface;
     }
@@ -90,6 +95,8 @@ class EngagementEvent {
     this.surface,
     this.requestId,
     this.position,
+    this.screen,
+    this.sectionId,
   });
 
   /// Reads one persisted event; null when it is not one this build wrote.
@@ -114,6 +121,8 @@ class EngagementEvent {
       surface: EngagementSurface.parse(raw['surface']),
       requestId: readRankingRequestId(raw['requestId']),
       position: readRankingPosition(raw['position']),
+      screen: _screenOf(raw['surface']),
+      sectionId: readRankingRequestId(raw['sectionId']),
     );
   }
 
@@ -138,6 +147,25 @@ class EngagementEvent {
   /// The item's 0-based place in that ranking; null when unknown.
   final int? position;
 
+  /// With [EngagementSurface.screen]: which composed screen (`mall_home`…).
+  final String? screen;
+
+  /// With [EngagementSurface.screen]: the composer section the item sat in.
+  final String? sectionId;
+
+  static String? _screenOf(Object? raw) {
+    if (raw is! String || !raw.startsWith('screen:')) return null;
+    final name = raw.substring('screen:'.length).trim();
+    return name.isEmpty ? null : name;
+  }
+
+  /// The wire `surface`: `screen:<screen>` for a composed screen.
+  String? get surfaceWire => switch (surface) {
+    null => null,
+    EngagementSurface.screen => screen == null ? 'other' : 'screen:$screen',
+    final where => where.wire,
+  };
+
   /// The longest dwell the contract accepts.
   static const int maxDwellMs = 600000;
 
@@ -150,9 +178,10 @@ class EngagementEvent {
     if (watchFraction case final fraction?)
       'watchFraction': fraction.clamp(0.0, 1.0),
     'occurredUtc': occurredUtc.toUtc().toIso8601String(),
-    if (surface case final where?) 'surface': where.wire,
+    'surface': ?surfaceWire,
     'requestId': ?requestId,
     'position': ?position,
+    'sectionId': ?sectionId,
   };
 }
 

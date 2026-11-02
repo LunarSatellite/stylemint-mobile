@@ -76,6 +76,9 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/presen
 import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_gate_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_job_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/domain/composed_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/presentation/for_you_list_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/preferences/presentation/preference_centre_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/services_routes.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/emi_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plan_detail_screen.dart';
@@ -2061,6 +2064,23 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const MyStyleMintCodeScreen(),
       ),
 
+      // Composer-only "for you" lists.
+      GoRoute(
+        path: RouteNames.creatorsForYou,
+        builder: (ctx, state) =>
+            const ForYouListScreen(screen: ComposedScreenName.creatorsForYou),
+      ),
+      GoRoute(
+        path: RouteNames.shopsForYou,
+        builder: (ctx, state) =>
+            const ForYouListScreen(screen: ComposedScreenName.shopsForYou),
+      ),
+      GoRoute(
+        path: RouteNames.brandsForYou,
+        builder: (ctx, state) =>
+            const ForYouListScreen(screen: ComposedScreenName.brandsForYou),
+      ),
+
       // Settings
       GoRoute(
         path: RouteNames.settings,
@@ -2092,6 +2112,10 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: _subPath(RouteNames.settings, RouteNames.settingsMemory),
             builder: (ctx, state) => const MemoryVaultScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.settings, RouteNames.settingsPreferences),
+            builder: (ctx, state) => const PreferenceCentreScreen(),
           ),
           GoRoute(
             path: _subPath(
@@ -2231,9 +2255,10 @@ GoRouter appRouter(Ref ref) {
       // activity feed before, which a buyer cannot see.)
       GoRoute(
         path: RouteNames.customerRecentActivity,
-        builder: (ctx, state) => const notifications_activity.RecentActivityScreen(
-          source: notifications_activity.RecentActivitySource.inbox,
-        ),
+        builder: (ctx, state) =>
+            const notifications_activity.RecentActivityScreen(
+              source: notifications_activity.RecentActivitySource.inbox,
+            ),
       ),
 
       // Clienteling — v1/clienteling/*

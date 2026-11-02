@@ -4,35 +4,38 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
-import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/ai_rails/presentation/widgets/collab_product_rail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/ai_rails/presentation/widgets/product_matched_reels_rail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/commerce_intelligence/presentation/widgets/evidence_answer_panel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/data/composed_screen_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/domain/composed_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/presentation/composed_sections_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_option_chooser.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/passport_claims_section.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_option_choosers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/delivery_estimate_line.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/passport_claims_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_badges_row.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_comparison_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_image_carousel.dart';
-import 'package:stylemint_mobile_frontend/features/customer/ai_rails/presentation/widgets/collab_product_rail.dart';
-import 'package:stylemint_mobile_frontend/features/customer/ai_rails/presentation/widgets/product_matched_reels_rail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_option_choosers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_save_button.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_signals_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/related_products_rail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/return_record_card.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/size_advice_line.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/review_summary_block.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/size_advice_line.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/widgets/emi_from_line.dart';
+import 'package:stylemint_mobile_frontend/features/customer/engagement/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/group_buy/presentation/widgets/group_buy_banner.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
@@ -52,12 +55,12 @@ import 'package:stylemint_mobile_frontend/features/customer/services/shared/serv
 import 'package:stylemint_mobile_frontend/features/customer/try_on/presentation/widgets/try_on_entry_button.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
-import 'package:stylemint_mobile_frontend/shared/digital_goods/digital_goods_policy.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({
@@ -678,16 +681,28 @@ class _ProductBody extends StatelessWidget {
                       productId: product.id,
                       padding: const EdgeInsets.only(top: DesignTokens.s24),
                     ),
-                    // Reserves space for the overlaid _BottomBar, whose own
-                    // height grows with MediaQuery's bottom safe-area inset
-                    // (see its padding) — without adding that same inset
-                    // here, the last section sits under the bar on devices
-                    // with a 3-button nav bar instead of gesture nav.
-                    SizedBox(
-                      height: 100 + MediaQuery.of(context).padding.bottom,
-                    ),
                   ],
                 ),
+              ),
+            ),
+            // Optional composer rails below the PDP content; nothing while
+            // the composer is disabled (404) or fails.
+            SliverToBoxAdapter(
+              child: ComposedScreenSlot(
+                request: ComposedScreenRequest(
+                  ComposedScreenName.productDetail,
+                  productIds: [product.id],
+                ),
+              ),
+            ),
+            // Reserves space for the overlaid _BottomBar, whose own height
+            // grows with MediaQuery's bottom safe-area inset (see its
+            // padding) — without adding that same inset here, the last
+            // section sits under the bar on devices with a 3-button nav bar
+            // instead of gesture nav.
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 100 + MediaQuery.of(context).padding.bottom,
               ),
             ),
           ],

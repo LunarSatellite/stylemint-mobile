@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/data/composed_screen_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/domain/composed_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/presentation/composed_sections_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_feed.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_feedback.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/discover_feed_notifier.dart';
@@ -168,6 +171,13 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
         return [
           SliverToBoxAdapter(
             child: _DiscoveryContext(label: state.selected.label),
+          ),
+          // Optional composer rails above the feed; nothing while the
+          // composer is disabled (404) or fails.
+          const SliverToBoxAdapter(
+            child: ComposedScreenSlot(
+              request: ComposedScreenRequest(ComposedScreenName.discovery),
+            ),
           ),
           ...slivers,
           if (feed.hasMore || feed.loadMoreFailed)

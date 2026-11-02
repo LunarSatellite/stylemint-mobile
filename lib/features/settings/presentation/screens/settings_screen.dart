@@ -95,6 +95,11 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push(RouteNames.settingsMemory),
           ),
           _MenuTile(
+            icon: Icons.tune_outlined,
+            label: 'Your preferences',
+            onTap: () => context.push(RouteNames.settingsPreferences),
+          ),
+          _MenuTile(
             icon: Icons.smart_toy_outlined,
             label: 'Connected assistants',
             onTap: () => context.push(RouteNames.settingsConnectedAssistants),

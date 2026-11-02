@@ -243,6 +243,11 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'Your StyleMint Memory',
               onTap: () => context.push(RouteNames.settingsMemory),
             ),
+            ProfileMenuItem(
+              icon: Icons.tune_outlined,
+              label: 'Your preferences',
+              onTap: () => context.push(RouteNames.settingsPreferences),
+            ),
           ],
         ),
         const SizedBox(height: DesignTokens.s20),

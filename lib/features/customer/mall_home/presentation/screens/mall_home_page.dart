@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/data/composed_screen_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/domain/composed_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/composed_screens/presentation/composed_sections_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_view_mappers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_zones.dart';
@@ -282,6 +285,13 @@ class _MallHomePageState extends ConsumerState<MallHomePage> {
                       : (isHero ? block : MallEnter(child: block)),
                 );
               },
+            ),
+            // Optional: the screen composer's personal rails. Draws nothing
+            // while it is disabled (404) or fails, leaving the page as is.
+            const SliverToBoxAdapter(
+              child: ComposedScreenSlot(
+                request: ComposedScreenRequest(ComposedScreenName.mallHome),
+              ),
             ),
             SliverToBoxAdapter(
               child: SizedBox(height: DesignTokens.s48 + bottomInset),
