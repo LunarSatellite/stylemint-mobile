@@ -174,7 +174,7 @@ void main() {
       ]);
     await _pump(tester, api, VendorBundleRoutes.list);
 
-    expect(find.text('Waiting for you'), findsOneWidget);
+    expect(find.text('Needs your answer'), findsOneWidget);
     expect(find.text('Live'), findsWidgets);
     expect(find.text('Answer needed'), findsOneWidget);
     final waiting = tester.getTopLeft(find.text('Trekking kit')).dy;

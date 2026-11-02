@@ -132,7 +132,7 @@ class _BundleList extends ConsumerWidget {
                 const SizedBox(height: DesignTokens.s4),
                 Text(
                   'When a creator, StyleMint or another shop puts your '
-                  'products in a bundle, it shows here for you to accept.',
+                  'products in a bundle, it shows here to accept or decline.',
                   textAlign: TextAlign.center,
                   style: DesignTokens.smallRegular.copyWith(
                     color: DesignTokens.textMuted,
@@ -142,7 +142,7 @@ class _BundleList extends ConsumerWidget {
             ),
           ),
         if (waiting.isNotEmpty) ...[
-          const ServiceSectionTitle('Waiting for you'),
+          const ServiceSectionTitle('Needs your answer'),
           for (final b in waiting) _BundleTile(bundle: b, onTap: () => open(b)),
         ],
         if (live.isNotEmpty) ...[
