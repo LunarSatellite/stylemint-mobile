@@ -95,7 +95,7 @@ void main() {
             'shopCount': 2,
           },
         },
-        {'taggedBundleId': '', 'bundle': {}},
+        {'taggedBundleId': '', 'bundle': <String, dynamic>{}},
         'junk',
       ]);
       expect(tags, hasLength(1));

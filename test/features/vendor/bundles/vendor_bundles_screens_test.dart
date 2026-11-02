@@ -9,7 +9,6 @@ import 'package:stylemint_mobile_frontend/features/vendor/bundles/bundle_vendor_
 import 'package:stylemint_mobile_frontend/features/vendor/bundles/data/vendor_bundles_api.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/bundles/domain/vendor_bundle.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/bundles/presentation/vendor_bundle_detail_screen.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/bundles/presentation/vendor_bundles_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/bundles/shared/vendor_bundle_providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/bundles/shared/vendor_bundle_routes.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_widgets.dart';
