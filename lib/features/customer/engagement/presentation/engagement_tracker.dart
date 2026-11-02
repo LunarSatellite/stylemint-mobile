@@ -267,6 +267,64 @@ class EngagementTracker {
     );
   }
 
+  /// A creator, shop or brand on a server-composed [screen] was opened:
+  /// records [kind] (`creator_view`, `vendor_view` or `brand_view`) with
+  /// [subjectId] — the creator's accountId, or the vendor account id — and
+  /// the same `screen:<screen>` / [requestId] / [position] / [sectionId]
+  /// echo as a product tap.
+  void screenSubjectOpened({
+    required EngagementKind kind,
+    required String subjectId,
+    required String screen,
+    String? requestId,
+    int? position,
+    String? sectionId,
+  }) {
+    final subject = subjectId.trim();
+    final name = screen.trim();
+    if (!kind.needsSubject || subject.isEmpty || name.isEmpty) return;
+    _record(
+      EngagementEvent(
+        clientEventId: _newId(),
+        kind: kind,
+        subjectId: subject,
+        occurredUtc: _now(),
+        surface: EngagementSurface.screen,
+        screen: name,
+        requestId: requestId,
+        position: position,
+        sectionId: sectionId,
+      ),
+    );
+  }
+
+  /// A reel on a server-composed [screen] was opened: a `view` of [reelId]
+  /// with the composer's echo.
+  void screenReelOpened({
+    required String reelId,
+    required String screen,
+    String? requestId,
+    int? position,
+    String? sectionId,
+  }) {
+    final reel = reelId.trim();
+    final name = screen.trim();
+    if (reel.isEmpty || name.isEmpty) return;
+    _record(
+      EngagementEvent(
+        clientEventId: _newId(),
+        kind: EngagementKind.view,
+        reelId: reel,
+        occurredUtc: _now(),
+        surface: EngagementSurface.screen,
+        screen: name,
+        requestId: requestId,
+        position: position,
+        sectionId: sectionId,
+      ),
+    );
+  }
+
   /// A product page was opened. [viaReelId] when the caller knows the reel;
   /// otherwise the reel of a recent tag tap on this product, if any.
   ///

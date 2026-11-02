@@ -27,7 +27,19 @@ enum EngagementKind {
   productView('product_view'),
 
   /// An item was added to the cart.
-  addToCart('add_to_cart');
+  addToCart('add_to_cart'),
+
+  /// A creator was opened from a composed screen; needs a `subjectId` (the
+  /// creator's accountId).
+  creatorView('creator_view'),
+
+  /// A shop was opened from a composed screen; `subjectId` is its vendor
+  /// account id.
+  vendorView('vendor_view'),
+
+  /// A brand was opened from a composed screen; `subjectId` is its vendor
+  /// account id.
+  brandView('brand_view');
 
   const EngagementKind(this.wire);
 
@@ -43,8 +55,13 @@ enum EngagementKind {
   /// Whether the event is about a reel, and so needs a `reelId`.
   bool get needsReel => switch (this) {
     view || complete || skip || save || unsave || share || tagTap => true,
-    productView || addToCart => false,
+    productView || addToCart || creatorView || vendorView || brandView => false,
   };
+
+  /// Whether the event is about a creator, shop or brand, and so needs a
+  /// `subjectId` (and only these kinds send one).
+  bool get needsSubject =>
+      this == creatorView || this == vendorView || this == brandView;
 
   /// Whether the event is about a product, and so needs a `productId`.
   bool get needsProduct =>
@@ -97,6 +114,7 @@ class EngagementEvent {
     this.position,
     this.screen,
     this.sectionId,
+    this.subjectId,
   });
 
   /// Reads one persisted event; null when it is not one this build wrote.
@@ -110,6 +128,7 @@ class EngagementEvent {
     final fraction = raw['watchFraction'];
     final reelId = raw['reelId'];
     final productId = raw['productId'];
+    final subjectId = raw['subjectId'];
     return EngagementEvent(
       clientEventId: id,
       kind: kind,
@@ -123,6 +142,10 @@ class EngagementEvent {
       position: readRankingPosition(raw['position']),
       screen: _screenOf(raw['surface']),
       sectionId: readRankingRequestId(raw['sectionId']),
+      subjectId:
+          kind.needsSubject && subjectId is String && subjectId.isNotEmpty
+          ? subjectId
+          : null,
     );
   }
 
@@ -153,6 +176,10 @@ class EngagementEvent {
   /// With [EngagementSurface.screen]: the composer section the item sat in.
   final String? sectionId;
 
+  /// `creator_view` / `vendor_view` / `brand_view` only: the creator's
+  /// accountId, or the shop's / brand's vendor account id.
+  final String? subjectId;
+
   static String? _screenOf(Object? raw) {
     if (raw is! String || !raw.startsWith('screen:')) return null;
     final name = raw.substring('screen:'.length).trim();
@@ -182,6 +209,7 @@ class EngagementEvent {
     'requestId': ?requestId,
     'position': ?position,
     'sectionId': ?sectionId,
+    if (kind.needsSubject) 'subjectId': ?subjectId,
   };
 }
 

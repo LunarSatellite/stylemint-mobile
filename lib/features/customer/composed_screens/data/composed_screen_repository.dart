@@ -65,7 +65,11 @@ class ComposedScreenRepository {
       final raw = signedIn
           ? await apiClient.get(path, queryParameters: query)
           : await apiClient.authGet(path, queryParameters: query);
-      final screen = parseComposedScreen(readJsonObject(raw));
+      final json = readJsonObject(raw);
+      final screen = parseComposedScreen(
+        json,
+        cards: await _hydrate(missingComposedCards(json)),
+      );
       return screen.isEmpty ? null : screen;
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) _notDeployed = true;
@@ -73,5 +77,41 @@ class ComposedScreenRepository {
     } on Object catch (_) {
       return null;
     }
+  }
+
+  /// The most ids `GET v1/public/cards` takes in one call.
+  static const int maxCardsPerCall = 50;
+
+  /// Fetches the cards the composer did not embed, [maxCardsPerCall] ids a
+  /// call. A failed call hydrates nothing for its ids: those items are then
+  /// dropped, as before.
+  Future<ComposedCardLookup> _hydrate(
+    List<(ComposedSectionKind, String)> missing,
+  ) async {
+    final out = <String, Map<String, Map<String, dynamic>>>{};
+    for (var start = 0; start < missing.length; start += maxCardsPerCall) {
+      final end = start + maxCardsPerCall < missing.length
+          ? start + maxCardsPerCall
+          : missing.length;
+      final byKind = <String, List<String>>{};
+      for (final (kind, id) in missing.sublist(start, end)) {
+        (byKind[composedCardsKey(kind)] ??= []).add(id);
+      }
+      try {
+        final raw = await apiClient.authGet(
+          '/v1/public/cards',
+          queryParameters: {
+            for (final MapEntry(:key, :value) in byKind.entries)
+              key: value.join(','),
+          },
+        );
+        for (final MapEntry(:key, :value) in readComposedCards(raw).entries) {
+          (out[key] ??= {}).addAll(value);
+        }
+      } on Object catch (_) {
+        // Tolerated: these items stay without a card and are dropped.
+      }
+    }
+    return out;
   }
 }
