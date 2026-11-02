@@ -82,6 +82,7 @@ abstract class RouteNames {
   /// line to change dates, rooms or guests. Adding the new choice removes
   /// that line (a service line's options are fixed once added).
   static const productReplaceLineParam = 'replaceLine';
+
   /// `?tag=` on [productDetail]: the reel tag a stay or trip was opened
   /// from, so adding it to the cart credits the reel's creator as a product
   /// added from the reel would (service items contract v1 §6).
@@ -229,8 +230,8 @@ abstract class RouteNames {
   /// bank product, an appointment at one of the bank's branches
   /// (`?productId=` optional).
   static const bankEnquiryForm = '/bank-requests/enquire/:productId';
-  static String bankEnquiryFormPath(String productId) =>
-      bankEnquiryForm.replaceFirst(':productId', Uri.encodeComponent(productId));
+  static String bankEnquiryFormPath(String productId) => bankEnquiryForm
+      .replaceFirst(':productId', Uri.encodeComponent(productId));
   static const bankAppointmentForm = '/bank-requests/appointment/:bankId';
   static String bankAppointmentFormPath(String bankId, {String? productId}) {
     final path = bankAppointmentForm.replaceFirst(
@@ -414,6 +415,7 @@ abstract class RouteNames {
   // legacy edit-details route now that the form handles both Create
   // and Edit modes.
   static const vendorEditProduct = '/vendor/products/:productId/edit';
+
   /// Try-on & sizes for one product: size chart + overlay image.
   static const vendorProductTryOn = '/vendor/products/:productId/try-on';
   static String vendorProductTryOnPath(String productId) => vendorProductTryOn
@@ -582,6 +584,15 @@ abstract class RouteNames {
   static const legalPrivacy = '/privacy';
   static const settingsAbout = '/settings/about';
   static const settingsMemory = '/settings/memory';
+
+  /// "Your preferences": the shopper's declared dimensions (registry-driven).
+  static const settingsPreferences = '/settings/preferences';
+
+  /// Composer-only lists (`creators_for_you`, `shops_for_you`,
+  /// `brands_for_you`).
+  static const creatorsForYou = '/for-you/creators';
+  static const shopsForYou = '/for-you/shops';
+  static const brandsForYou = '/for-you/brands';
 
   /// Outside AI shopping assistants: issue, read and revoke their mandates,
   /// confirm the baskets they prepare, and read what they did.

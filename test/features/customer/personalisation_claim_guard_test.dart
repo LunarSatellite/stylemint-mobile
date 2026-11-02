@@ -92,6 +92,15 @@ const List<String> _claimPhrases = [
 ///
 /// An entry here is a claim someone checked, not a claim someone waived.
 const Map<String, String> _exemptions = {
+  // ── Screen composer (`GET v1/customer/screens/{screen}`) ───────────────
+  // Drawn only from a composer response: every section and item carries the
+  // server's `reasonKey`, and these strings explain exactly that key.
+  'lib/features/customer/composed_screens/presentation/why_strings.dart':
+      'Explains the composer `reasonKey` sent with each section and item.',
+  'lib/features/customer/composed_screens/presentation/composed_sections_view.dart':
+      'The "for you" links render only inside a live composer response.',
+  'lib/features/customer/composed_screens/presentation/for_you_list_screen.dart':
+      'Titles the composer-only `*_for_you` screens; empty state otherwise.',
   // ── Wire values, not copy ───────────────────────────────────────────────
   // `'personalized'` here is a contract token the server sends and these
   // files parse. Nobody reads it. The honest-label vocabulary itself lives in
