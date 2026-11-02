@@ -27,6 +27,16 @@ abstract class CartItemDto with _$CartItemDto {
     // Raw, and read by hand: a server before the contract sends neither.
     Object? lineKind,
     Object? service,
+    // Shop bundles contract §B8. Absent on an ordinary line and on a server
+    // without bundles.
+    String? bundleId,
+    String? bundleGroupId,
+    String? bundleItemId,
+    num? bundleListUnitPrice,
+    String? bundleTitleSnapshot,
+    // The shop shipping the line, when the server sends it.
+    String? vendorAccountId,
+    @JsonKey(readValue: _readVendorName) String? vendorName,
   }) = _CartItemDto;
 
   const CartItemDto._();
@@ -54,7 +64,91 @@ abstract class CartItemDto with _$CartItemDto {
     service: isServiceLineKind(lineKind) || service != null
         ? readServiceLine(service, lineId: id)
         : null,
+    bundleId: _blank(bundleId),
+    bundleGroupId: _blank(bundleGroupId),
+    bundleItemId: _blank(bundleItemId),
+    bundleListUnitPrice: bundleListUnitPrice == null
+        ? null
+        : Money(
+            amount: bundleListUnitPrice!.toDouble(),
+            currency: unitPriceCurrency,
+          ),
+    bundleTitle: _blank(bundleTitleSnapshot),
+    vendorAccountId: _blank(vendorAccountId),
+    vendorName: _blank(vendorName),
   );
+}
+
+String? _blank(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+Object? _readVendorName(Map<dynamic, dynamic> json, String key) =>
+    json['vendorName'] ??
+    json['vendorNameSnapshot'] ??
+    json['shopName'] ??
+    json['vendorBusinessName'];
+
+String? _readString(Object? raw) =>
+    raw is String && raw.trim().isNotEmpty ? raw.trim() : null;
+
+double _readNum(Object? raw) => raw is num
+    ? raw.toDouble()
+    : raw is String
+    ? double.tryParse(raw) ?? 0
+    : 0;
+
+/// `CartViewDto.bundles[]` (shop bundles contract §B8). Absent: none.
+List<CartBundleGroup> readCartBundleGroups(Object? raw, String currency) {
+  if (raw is! List) return const <CartBundleGroup>[];
+  return List.unmodifiable([
+    for (final row in raw)
+      if (row is Map && _readString(row['groupId']) != null)
+        CartBundleGroup(
+          groupId: _readString(row['groupId'])!,
+          bundleId: _readString(row['bundleId']) ?? '',
+          title: _readString(row['title']) ?? 'Bundle',
+          quantity: row['quantity'] is num
+              ? (row['quantity'] as num).toInt()
+              : 1,
+          listTotal: Money(amount: _readNum(row['listTotal']), currency: currency),
+          total: Money(amount: _readNum(row['total']), currency: currency),
+          saving: Money(amount: _readNum(row['saving']), currency: currency),
+          isPurchasable: row['isPurchasable'] is bool
+              ? row['isPurchasable'] as bool
+              : true,
+          unavailableReason: _readString(row['unavailableReason']),
+        ),
+  ]);
+}
+
+/// `CartViewDto.notices[]` that carry a `code` (`bundle_broken`) — or a
+/// `kind` naming the bundle break (`BundleBroken`, or 4 as a number). The
+/// older product-archived/promo kinds are not shown here.
+List<CartNotice> readCartNotices(Object? raw) {
+  if (raw is! List) return const <CartNotice>[];
+  String? codeOf(Map<dynamic, dynamic> row) {
+    final code = _readString(row['code']);
+    if (code != null) return code;
+    final kind = row['kind'];
+    if (kind == 4) return 'bundle_broken';
+    if (kind is String &&
+        kind.toLowerCase().replaceAll('_', '') == 'bundlebroken') {
+      return 'bundle_broken';
+    }
+    return null;
+  }
+
+  return List.unmodifiable([
+    for (final row in raw)
+      if (row is Map && codeOf(row) != null)
+        CartNotice(
+          code: codeOf(row)!,
+          bundleTitle: _readString(row['bundleTitle']),
+          productTitle: _readString(row['productTitleSnapshot']),
+        ),
+  ]);
 }
 
 @freezed
@@ -194,6 +288,9 @@ abstract class CartDto with _$CartDto {
     num? payAtVenueTotalAmount,
     @Default(false) bool hasServiceLines,
     @Default(true) bool requiresShippingAddress,
+    // Shop bundles contract §B8. Read by hand; absent before bundles.
+    Object? bundles,
+    Object? notices,
   }) = _CartDto;
 
   const CartDto._();
@@ -237,5 +334,7 @@ abstract class CartDto with _$CartDto {
           ),
     hasServiceLines: hasServiceLines,
     requiresShippingAddress: requiresShippingAddress,
+    bundles: readCartBundleGroups(bundles, totalCurrency),
+    notices: readCartNotices(notices),
   );
 }

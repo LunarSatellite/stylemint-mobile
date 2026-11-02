@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/features/customer/bundles/presentation/bundle_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/feed_provenance_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/creator_info.dart';
@@ -445,6 +446,19 @@ class _ReelCardState extends ConsumerState<ReelCard> {
                             // photos; neighbours the pager keeps alive hold
                             // still.
                             isActive: widget.isActive,
+                          ),
+                        ],
+                        // Bundles tagged on the reel, beside its products
+                        // (shop bundles contract §B9).
+                        if (widget.reel.taggedBundles.isNotEmpty) ...[
+                          const SizedBox(height: DesignTokens.s8),
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: DesignTokens.s12,
+                            ),
+                            child: ReelBundleTags(
+                              bundles: widget.reel.taggedBundles,
+                            ),
                           ),
                         ],
                         const SizedBox(height: DesignTokens.s16),

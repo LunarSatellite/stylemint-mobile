@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/bundles/presentation/bundle_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/brand_storefront/domain/entities/public_brand_profile.dart';
 import 'package:stylemint_mobile_frontend/features/customer/brand_storefront/presentation/brand_story.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/catalog_product.dart';
@@ -178,6 +179,11 @@ class BrandHomeTab extends ConsumerWidget {
           eyebrow: 'Most loved',
           title: 'Best sellers',
           onSeeAll: onShopBestSellers,
+        ),
+        // Every Live bundle this brand is a shop of (shop bundles contract
+        // §B10). Draws nothing without bundles.
+        BundleRailSliver(
+          listKey: (vendorAccountId: vendorAccountId, creatorAccountId: null),
         ),
         ..._featured(context, collections),
         ..._reelsRail(context, reels),

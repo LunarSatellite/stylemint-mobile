@@ -6,8 +6,9 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/widgets/reel_bundle_tag_panel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/shared/reel_bundle_tag_providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -48,6 +49,9 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 class AddTaggedProductSheet extends ConsumerStatefulWidget {
   const AddTaggedProductSheet({required this.reelId, super.key});
 
+  static const Key productModeKey = Key('tag-sheet-mode-product');
+  static const Key bundleModeKey = Key('tag-sheet-mode-bundle');
+
   final String reelId;
 
   @override
@@ -65,6 +69,9 @@ class _AddTaggedProductSheetState extends ConsumerState<AddTaggedProductSheet> {
   /// The product currently being tagged, so only its row shows a spinner
   /// instead of the whole list going busy.
   String? _taggingProductId;
+
+  /// "Tag a bundle" instead of a product (shop bundles contract §B9).
+  bool _bundleMode = false;
 
   /// Shortest query worth sending. Matches the import wizard's own picker;
   /// a single letter matches most of a catalog and is not a search.
@@ -134,6 +141,10 @@ class _AddTaggedProductSheetState extends ConsumerState<AddTaggedProductSheet> {
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(productSearchSheetNotifierProvider);
+    // The bundle option appears once the creator's bundles load; a server
+    // without bundles (bare 404) keeps the sheet products-only.
+    final bundlesReady = ref.watch(creatorTaggableBundlesProvider).hasValue;
+    final bundleMode = _bundleMode && bundlesReady;
 
     return SafeArea(
       child: Padding(
@@ -149,8 +160,39 @@ class _AddTaggedProductSheetState extends ConsumerState<AddTaggedProductSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Tag a product', style: DesignTokens.sectionInnerTitle),
+            Text(
+              bundleMode ? 'Tag a bundle' : 'Tag a product',
+              style: DesignTokens.sectionInnerTitle,
+            ),
+            if (bundlesReady) ...[
+              const SizedBox(height: DesignTokens.s8),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment<bool>(
+                    value: false,
+                    label: Text('Product', key: AddTaggedProductSheet.productModeKey),
+                    icon: Icon(Icons.sell_outlined),
+                  ),
+                  ButtonSegment<bool>(
+                    value: true,
+                    label: Text('Bundle', key: AddTaggedProductSheet.bundleModeKey),
+                    icon: Icon(Icons.inventory_2_outlined),
+                  ),
+                ],
+                selected: {bundleMode},
+                onSelectionChanged: (s) =>
+                    setState(() => _bundleMode = s.first),
+              ),
+            ],
             const SizedBox(height: DesignTokens.s12),
+            if (bundleMode)
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.5,
+                ),
+                child: ReelBundleTagPanel(reelId: widget.reelId),
+              )
+            else ...[
             TextField(
               controller: _controller,
               onChanged: _onQueryChanged,
@@ -243,6 +285,7 @@ class _AddTaggedProductSheetState extends ConsumerState<AddTaggedProductSheet> {
                       ),
               ),
             ),
+            ],
           ],
         ),
       ),

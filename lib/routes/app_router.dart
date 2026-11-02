@@ -77,6 +77,8 @@ import 'package:stylemint_mobile_frontend/features/creator/support/presentation/
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_gate_screen.dart';
 import 'package:stylemint_mobile_frontend/features/courier/presentation/screens/courier_job_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/services/services_routes.dart';
+import 'package:stylemint_mobile_frontend/features/customer/bundles/bundle_customer_routes.dart';
+import 'package:stylemint_mobile_frontend/features/customer/bundles/shared/bundle_routes.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/emi_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/payment_plan_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/emi/presentation/screens/plan_checkout_screen.dart';
@@ -264,6 +266,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entiti
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/presentation/screens/vendor_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/demand_signals/presentation/screens/vendor_demand_signals_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/journeys/journey_vendor_routes.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/bundles/bundle_vendor_routes.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/service_vendor_routes.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/sponsored_products/presentation/screens/vendor_sponsored_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/store_actions/presentation/screens/vendor_store_actions_screen.dart';
@@ -341,6 +344,8 @@ const _publicPaths = {
   RouteNames.profile,
   RouteNames.productDetail,
   RouteNames.productReviews,
+  // Bundle pages browse signed out; adding asks to sign in.
+  BundleRoutes.detail,
   // Public creator storefronts browse signed out; follow and save ask to sign in.
   RouteNames.creatorProfile,
   // Brand storefronts browse signed out; follow asks to sign in.
@@ -695,6 +700,9 @@ GoRouter appRouter(Ref ref) {
           checkoutSessionId: state.pathParameters['sessionId']!,
         ),
       ),
+
+      // A multi-shop bundle (shop bundles contract §B10).
+      ...bundleCustomerRoutes,
 
       // Product Detail
       GoRoute(
@@ -1736,6 +1744,8 @@ GoRouter appRouter(Ref ref) {
       // appointments, the service step of the vendor application).
       ...serviceVendorRoutes,
       ...vendorJourneyRoutes,
+      // Multi-shop bundles: invites and acceptance (shop bundles contract).
+      ...vendorBundleRoutes,
       GoRoute(
         path: RouteNames.vendorEmiPlanDetail,
         builder: (ctx, state) => VendorEmiPlanDetailScreen(

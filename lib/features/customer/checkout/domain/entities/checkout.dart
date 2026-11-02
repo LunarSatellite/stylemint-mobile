@@ -651,6 +651,10 @@ class CheckoutItem {
     required this.quantity,
     required this.unitPrice,
     this.service,
+    this.bundleGroupId,
+    this.bundleTitle,
+    this.vendorAccountId,
+    this.vendorName,
   });
 
   /// A stay or trip line (service cart contract v1 §3.2 `items[].service`).
@@ -663,6 +667,17 @@ class CheckoutItem {
   final int quantity;
   final Money unitPrice;
 
+  /// The bundle this line is part of (shop bundles contract §B8), if any.
+  final String? bundleGroupId;
+  final String? bundleTitle;
+
+  /// The shop that ships this line, when the server says. Each shop's
+  /// lines travel as their own parcel.
+  final String? vendorAccountId;
+  final String? vendorName;
+
+  bool get isBundleLine => bundleGroupId != null;
+
   CheckoutItem copyWith({
     String? productId,
     String? productName,
@@ -673,6 +688,10 @@ class CheckoutItem {
   }) {
     return CheckoutItem(
       service: service,
+      bundleGroupId: bundleGroupId,
+      bundleTitle: bundleTitle,
+      vendorAccountId: vendorAccountId,
+      vendorName: vendorName,
       productId: productId ?? this.productId,
       productName: productName ?? this.productName,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -701,6 +720,45 @@ class CheckoutItem {
     quantity,
     unitPrice,
   );
+}
+
+/// The lines one shop ships: one parcel (multi-shop bundles split into one
+/// parcel per shop, shop bundles contract §B10).
+class CheckoutParcel {
+  const CheckoutParcel({
+    required this.vendorAccountId,
+    required this.shopName,
+    required this.items,
+  });
+
+  final String vendorAccountId;
+  final String? shopName;
+  final List<CheckoutItem> items;
+}
+
+/// [items] (stays and trips left out) grouped by shop, in the order the
+/// shops first appear. Empty when any product line has no shop: then the
+/// app cannot say how the order splits and says nothing.
+List<CheckoutParcel> checkoutParcels(List<CheckoutItem> items) {
+  final order = <String>[];
+  final byShop = <String, List<CheckoutItem>>{};
+  for (final item in items) {
+    if (item.service != null) continue;
+    final shop = item.vendorAccountId;
+    if (shop == null) return const <CheckoutParcel>[];
+    if (!byShop.containsKey(shop)) order.add(shop);
+    (byShop[shop] ??= <CheckoutItem>[]).add(item);
+  }
+  return [
+    for (final shop in order)
+      CheckoutParcel(
+        vendorAccountId: shop,
+        shopName: byShop[shop]!
+            .map((i) => i.vendorName)
+            .firstWhere((n) => n != null, orElse: () => null),
+        items: List.unmodifiable(byShop[shop]!),
+      ),
+  ];
 }
 
 class CheckoutSummary {

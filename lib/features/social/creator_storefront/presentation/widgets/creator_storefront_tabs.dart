@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/bundles/presentation/bundle_widgets.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_choice_chip.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
@@ -157,6 +158,12 @@ class CreatorHomeTab extends ConsumerWidget {
       slivers: [
         ..._reelsSection(context, reels),
         ..._shopSection(context, shop),
+        // The creator's own bundles and the ones they tagged (shop
+        // bundles contract §B10). Draws nothing without bundles.
+        BundleRailSliver(
+          listKey: (vendorAccountId: null, creatorAccountId: accountId),
+          eyebrow: 'Picked together',
+        ),
         ..._featuredSection(context, collections),
         ..._looksSection(context, looks),
         const SliverToBoxAdapter(child: SizedBox(height: DesignTokens.s40)),

@@ -32,6 +32,7 @@ import 'package:stylemint_mobile_frontend/core/device/push_destination.dart';
 import 'package:stylemint_mobile_frontend/core/device/return_pickup_push.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/customer/kyc/domain/kyc_push.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/bundles/shared/vendor_bundle_routes.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/journeys/shared/journey_routes.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/services/shared/service_notification_route.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -217,6 +218,18 @@ String? notificationLocation(
     link: pushLink == null ? null : deepLinkLocation(pushLink),
   );
   if (journey != null) return journey;
+
+  // 0c2. A bundle notice for a shop (shop bundles contract §B4: invites,
+  //      terms pending, live, paused) opens the seller's bundle screen. A
+  //      creator owner's notice links to Creator Studio on the web and falls
+  //      through.
+  final bundle = bundleNotificationLocation(
+    payload.type,
+    payload.data,
+    link: pushLink == null ? null : deepLinkLocation(pushLink),
+    actsAsVendor: viewer.actsAsVendor,
+  );
+  if (bundle != null) return bundle;
 
   // 0d. Return pickups (return pickup contract §7, return fixes contract C)
   //     route by who the notice is for, before any link: the buyer's return

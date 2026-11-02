@@ -67,6 +67,13 @@ class CartItem {
     this.commissionRate,
     this.variantId,
     this.service,
+    this.bundleId,
+    this.bundleGroupId,
+    this.bundleItemId,
+    this.bundleListUnitPrice,
+    this.bundleTitle,
+    this.vendorAccountId,
+    this.vendorName,
   });
 
   final String id;
@@ -98,6 +105,26 @@ class CartItem {
 
   bool get isService => service != null;
 
+  /// Multi-shop bundles (shop bundles contract §B8): the bundle this line
+  /// was added with, the "add bundle" action it belongs to (one group per
+  /// add), and its bundle item. All null on an ordinary line, and again
+  /// after the group is broken or unbundled.
+  final String? bundleId;
+  final String? bundleGroupId;
+  final String? bundleItemId;
+
+  /// The price this line goes back to if the bundle is broken.
+  final Money? bundleListUnitPrice;
+  final String? bundleTitle;
+
+  /// The shop that ships this line, when the server says.
+  final String? vendorAccountId;
+  final String? vendorName;
+
+  /// A line priced as part of a bundle. Its quantity moves with the bundle
+  /// (`bundle_line_quantity_locked`), never on its own.
+  bool get isBundleLine => bundleGroupId != null;
+
   CartItem copyWith({
     String? id,
     String? productId,
@@ -113,6 +140,13 @@ class CartItem {
   }) {
     return CartItem(
       service: service,
+      bundleId: bundleId,
+      bundleGroupId: bundleGroupId,
+      bundleItemId: bundleItemId,
+      bundleListUnitPrice: bundleListUnitPrice,
+      bundleTitle: bundleTitle,
+      vendorAccountId: vendorAccountId,
+      vendorName: vendorName,
       id: id ?? this.id,
       productId: productId ?? this.productId,
       productName: productName ?? this.productName,
@@ -141,6 +175,7 @@ class CartItem {
       other.creatorHandle == creatorHandle &&
       other.commissionRate == commissionRate &&
       other.variantId == variantId &&
+      other.bundleGroupId == bundleGroupId &&
       identical(other.service, service);
 
   @override
@@ -156,7 +191,51 @@ class CartItem {
     creatorHandle,
     commissionRate,
     variantId,
+    bundleGroupId,
   );
+}
+
+/// One bundle in the cart (`CartViewDto.bundles[]`): the card drawn over
+/// the lines that share its [groupId].
+class CartBundleGroup {
+  const CartBundleGroup({
+    required this.groupId,
+    required this.bundleId,
+    required this.title,
+    required this.quantity,
+    required this.listTotal,
+    required this.total,
+    required this.saving,
+    this.isPurchasable = true,
+    this.unavailableReason,
+  });
+
+  final String groupId;
+  final String bundleId;
+  final String title;
+
+  /// How many of the bundle (each line holds item quantity × this).
+  final int quantity;
+  final Money listTotal;
+  final Money total;
+  final Money saving;
+  final bool isPurchasable;
+
+  /// `paused`, `item_out_of_stock`, `item_unavailable` — as sent.
+  final String? unavailableReason;
+}
+
+/// Something the server did to the cart that the buyer should hear about
+/// (`CartLineNoticeDto`), e.g. `bundle_broken` after one bundle line was
+/// removed: the rest went back to their list prices.
+class CartNotice {
+  const CartNotice({required this.code, this.bundleTitle, this.productTitle});
+
+  final String code;
+  final String? bundleTitle;
+  final String? productTitle;
+
+  bool get isBundleBroken => code == 'bundle_broken';
 }
 
 class Cart {
@@ -175,10 +254,70 @@ class Cart {
     this.payAtVenueTotal,
     this.hasServiceLines = false,
     this.requiresShippingAddress = true,
+    this.bundles = const <CartBundleGroup>[],
+    this.notices = const <CartNotice>[],
   });
 
   final String id;
   final List<CartItem> items;
+
+  /// The bundles in the cart; their lines are in [items] too.
+  final List<CartBundleGroup> bundles;
+
+  /// What the last change did that the buyer should be told.
+  final List<CartNotice> notices;
+
+  bool get hasBundleLines => items.any((i) => i.isBundleLine);
+
+  /// The lines of bundle group [groupId].
+  List<CartItem> bundleLines(String groupId) => [
+    for (final i in items)
+      if (i.bundleGroupId == groupId) i,
+  ];
+
+  /// Bundle groups as the screen draws them: every group the server listed
+  /// that still has lines, plus any group whose lines arrived without a
+  /// `bundles[]` entry (built from the lines' own snapshot), so no bundle
+  /// line is ever left without its card.
+  List<CartBundleGroup> get bundleGroups {
+    final known = {for (final b in bundles) b.groupId};
+    final extra = <String, CartBundleGroup>{};
+    for (final i in items) {
+      final g = i.bundleGroupId;
+      if (g == null || known.contains(g) || extra.containsKey(g)) continue;
+      final lines = bundleLines(g);
+      final currency = i.unitPrice.currency;
+      final total = lines.fold<double>(
+        0,
+        (s, l) => s + l.unitPrice.amount * l.quantity,
+      );
+      final list = lines.fold<double>(
+        0,
+        (s, l) =>
+            s + (l.bundleListUnitPrice ?? l.unitPrice).amount * l.quantity,
+      );
+      extra[g] = CartBundleGroup(
+        groupId: g,
+        bundleId: i.bundleId ?? '',
+        title: i.bundleTitle ?? 'Bundle',
+        quantity: 1,
+        listTotal: Money(amount: list, currency: currency),
+        total: Money(amount: total, currency: currency),
+        saving: Money(amount: list - total, currency: currency),
+      );
+    }
+    return [
+      for (final b in bundles)
+        if (items.any((i) => i.bundleGroupId == b.groupId)) b,
+      ...extra.values,
+    ];
+  }
+
+  /// Lines that are not part of a bundle.
+  List<CartItem> get looseItems => [
+    for (final i in items)
+      if (!i.isBundleLine) i,
+  ];
   final Money subtotal;
   final Money shippingTotal;
   final Money taxTotal;
@@ -265,6 +404,10 @@ class Cart {
       payAtVenueTotal: payAtVenueTotal,
       hasServiceLines: hasServiceLines,
       requiresShippingAddress: requiresShippingAddress,
+      bundles: bundles,
+      // A notice belongs to the server reply that carried it; a local copy
+      // (an optimistic edit) must not announce it a second time.
+      notices: const <CartNotice>[],
     );
   }
 

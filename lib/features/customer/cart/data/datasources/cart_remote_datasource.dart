@@ -124,6 +124,47 @@ class CartRemoteDataSource {
     options: _idempotent(idempotencyKey),
   );
 
+  // ── Bundles (shop bundles contract §B8) ────────────────────────────────
+
+  static String _group(String groupId) =>
+      '/v1/cart/bundles/${Uri.encodeComponent(groupId)}';
+
+  /// PATCH `/v1/cart/bundles/{groupId}` — scales every line of the group.
+  Future<CartDto> setBundleQuantity({
+    required String groupId,
+    required int quantity,
+    required String idempotencyKey,
+  }) async => _cart(
+    await apiClient.patch(
+      _group(groupId),
+      data: {'quantity': quantity},
+      options: _idempotent(idempotencyKey),
+    ),
+  );
+
+  /// DELETE `/v1/cart/bundles/{groupId}` — removes the whole bundle.
+  Future<CartDto> removeBundle({
+    required String groupId,
+    required String idempotencyKey,
+  }) async => _cart(
+    await apiClient.authDelete(
+      _group(groupId),
+      options: _idempotent(idempotencyKey),
+    ),
+  );
+
+  /// POST `/v1/cart/bundles/{groupId}/unbundle` — the lines stay, at their
+  /// list prices.
+  Future<CartDto> unbundle({
+    required String groupId,
+    required String idempotencyKey,
+  }) async => _cart(
+    await apiClient.post(
+      '${_group(groupId)}/unbundle',
+      options: _idempotent(idempotencyKey),
+    ),
+  );
+
   Options _idempotent(String idempotencyKey) => Options(
     headers: {
       'requiresToken': true,
